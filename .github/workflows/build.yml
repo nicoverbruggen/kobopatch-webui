@@ -36,7 +36,13 @@ jobs:
       - name: Run WASM tests
         run: |
           cd kobopatch-wasm/kobopatch-src
-          GOOS=js GOARCH=wasm go test -exec="$(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./...
+          GOROOT="$(go env GOROOT)"
+          if [ -f "$GOROOT/lib/wasm/go_js_wasm_exec" ]; then
+            EXEC="$GOROOT/lib/wasm/go_js_wasm_exec"
+          else
+            EXEC="$GOROOT/misc/wasm/go_js_wasm_exec"
+          fi
+          GOOS=js GOARCH=wasm go test -exec="$EXEC" ./...
 
       - name: Build WASM binary
         run: |
