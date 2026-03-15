@@ -7,13 +7,15 @@
 }
 
 :root {
-    --bg: #fafafa;
+    --bg: #f5f5f7;
     --card-bg: #fff;
-    --border: #e0e0e0;
-    --text: #1a1a1a;
-    --text-secondary: #555;
-    --primary: #1a6ed8;
-    --primary-hover: #1558b0;
+    --border: #d1d5db;
+    --border-light: #e5e7eb;
+    --text: #111827;
+    --text-secondary: #6b7280;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #eff6ff;
     --error-bg: #fef2f2;
     --error-border: #fca5a5;
     --error-text: #991b1b;
@@ -23,37 +25,56 @@
     --success-bg: #f0fdf4;
     --success-border: #86efac;
     --success-text: #166534;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
 }
 
 main {
-    max-width: 600px;
-    margin: 3rem auto;
-    padding: 0 1.5rem;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+/* Hero header */
+.hero {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
 }
 
 h1 {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.hero-accent {
+    color: var(--primary);
     font-weight: 600;
 }
 
 .subtitle {
     color: var(--text-secondary);
-    margin-bottom: 2rem;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
 }
 
 h2 {
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
+    color: var(--text);
 }
 
+/* Steps */
 .step {
     margin-bottom: 2rem;
 }
@@ -61,52 +82,67 @@ h2 {
 .step p {
     color: var(--text-secondary);
     margin-bottom: 1rem;
-    font-size: 0.95rem;
+    font-size: 0.93rem;
+    line-height: 1.6;
 }
 
+/* Buttons */
 button {
-    font-size: 0.95rem;
-    padding: 0.6rem 1.4rem;
-    border-radius: 6px;
+    font-size: 0.9rem;
+    padding: 0.55rem 1.25rem;
+    border-radius: 8px;
     border: 1px solid var(--border);
     cursor: pointer;
     font-weight: 500;
-    transition: background 0.15s, border-color 0.15s;
+    transition: all 0.15s ease;
 }
 
 button.primary {
     background: var(--primary);
     color: #fff;
     border-color: var(--primary);
+    box-shadow: var(--shadow);
 }
 
 button.primary:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
+    box-shadow: var(--shadow-md);
 }
 
 button.secondary {
     background: var(--card-bg);
     color: var(--text);
+    box-shadow: var(--shadow);
 }
 
 button.secondary:hover {
-    background: #f0f0f0;
+    background: #f9fafb;
+    border-color: #9ca3af;
 }
 
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Cards */
 .info-card {
     background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 0.75rem 1.25rem;
     margin-bottom: 1rem;
+    box-shadow: var(--shadow);
 }
 
 .info-row {
     display: flex;
     justify-content: space-between;
-    padding: 0.4rem 0;
-    border-bottom: 1px solid var(--border);
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .info-row:last-child {
@@ -116,22 +152,25 @@ button.secondary:hover {
 .info-row .label {
     font-weight: 500;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
 .info-row .value {
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 0.9rem;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.88rem;
 }
 
+/* Status banners */
 .warning {
     background: var(--warning-bg);
     border: 1px solid var(--warning-border);
     color: var(--warning-text);
-    padding: 1rem 1.25rem;
+    padding: 0.75rem 1rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     line-height: 1.5;
 }
 
@@ -143,37 +182,39 @@ button.secondary:hover {
     background: var(--error-bg);
     border: 1px solid var(--error-border);
     color: var(--error-text);
-    padding: 1rem 1.25rem;
+    padding: 0.75rem 1rem;
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .status-supported {
     background: var(--success-bg);
     border: 1px solid var(--success-border);
     color: var(--success-text);
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .status-unsupported {
     background: var(--warning-bg);
     border: 1px solid var(--warning-border);
     color: var(--warning-text);
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 /* Patch file sections */
 .patch-file-section {
     background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
     margin-bottom: 0.75rem;
+    box-shadow: var(--shadow);
+    overflow: hidden;
 }
 
 .patch-file-section summary {
@@ -183,23 +224,31 @@ button.secondary:hover {
     justify-content: space-between;
     align-items: center;
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 0.93rem;
     user-select: none;
+    transition: background 0.1s;
 }
 
 .patch-file-section summary:hover {
-    background: #f5f5f5;
+    background: #f9fafb;
+}
+
+.patch-file-section[open] summary {
+    border-bottom: 1px solid var(--border-light);
 }
 
 .patch-count {
     font-weight: 400;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 0.15rem 0.6rem;
+    border-radius: 10px;
 }
 
 .patch-list {
-    border-top: 1px solid var(--border);
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
 }
 
 .patch-item {
@@ -207,7 +256,7 @@ button.secondary:hover {
 }
 
 .patch-item + .patch-item {
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--border-light);
 }
 
 .patch-header {
@@ -215,11 +264,12 @@ button.secondary:hover {
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .patch-header input {
     flex-shrink: 0;
+    accent-color: var(--primary);
 }
 
 .patch-name {
@@ -227,9 +277,10 @@ button.secondary:hover {
 }
 
 .patch-group-badge {
-    font-size: 0.75rem;
-    background: #e8e8e8;
-    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: var(--primary-light);
+    color: var(--primary);
     padding: 0.1rem 0.5rem;
     border-radius: 4px;
     margin-left: auto;
@@ -237,24 +288,19 @@ button.secondary:hover {
 }
 
 .patch-description {
-    margin-top: 0.35rem;
+    margin-top: 0.3rem;
     margin-left: 1.6rem;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--text-secondary);
     white-space: pre-line;
-    line-height: 1.4;
+    line-height: 1.45;
 }
 
 /* Firmware input */
 input[type="file"] {
     display: block;
     margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    font-size: 0.88rem;
 }
 
 #build-actions {
@@ -265,89 +311,116 @@ button:disabled {
 
 /* Spinner */
 .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border);
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border-light);
     border-top-color: var(--primary);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: spin 0.7s linear infinite;
+    margin: 0.5rem 0;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
+/* Build log terminal */
 .build-log {
     margin-top: 0.75rem;
-    padding: 0.75rem;
-    background: #1a1a1a;
-    color: #a0a0a0;
-    border-radius: 6px;
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: 8px;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.73rem;
     white-space: pre-wrap;
     height: calc(10 * 1.5em + 1.5rem);
     overflow-y: auto;
     line-height: 1.5;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .hint {
     margin-top: 1rem;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     background: var(--success-bg);
     border: 1px solid var(--success-border);
     color: var(--success-text);
     border-radius: 8px;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
 }
 
 .error-log {
     margin-top: 0.75rem;
-    padding: 0.75rem;
-    background: #1a1a1a;
-    color: #e0e0e0;
-    border-radius: 6px;
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 0.8rem;
+    padding: 0.75rem 1rem;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.78rem;
     white-space: pre-wrap;
     max-height: 300px;
     overflow-y: auto;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .step a {
     color: var(--primary);
+    text-decoration: none;
+}
+
+.step a:hover {
+    text-decoration: underline;
 }
 
 .fallback-hint {
     margin-top: 1rem;
-    font-size: 0.85rem;
+    font-size: 0.83rem;
     color: var(--text-secondary);
 }
 
 .info-banner {
-    background: #eff6ff;
+    background: var(--primary-light);
     border: 1px solid #bfdbfe;
     color: #1e40af;
-    padding: 0.65rem 1rem;
+    padding: 0.6rem 1rem;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.83rem;
     margin-bottom: 1rem;
 }
 
 #firmware-download-url {
-    font-size: 0.8rem;
+    display: inline-block;
+    margin: 0.4rem 0;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
     word-break: break-all;
-    color: var(--text-secondary);
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
 }
 
 select {
     display: block;
     width: 100%;
     padding: 0.5rem 0.75rem;
-    font-size: 0.95rem;
+    font-size: 0.93rem;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--card-bg);
     color: var(--text);
     margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+}
+
+select:focus,
+button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }

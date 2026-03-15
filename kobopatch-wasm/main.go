@@ -5,7 +5,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
-	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -132,7 +131,6 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 	}
 
 	// Parse config.
-	logf("Parsing config...")
 	var config Config
 	dec := yaml.NewDecoder(bytes.NewReader(configYAML))
 	if err := dec.Decode(&config); err != nil {
@@ -142,8 +140,6 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 	if config.Version == "" || len(config.Patches) == 0 {
 		return nil, errors.New("invalid config: version and patches are required")
 	}
-
-	logf("Firmware version: %s", config.Version)
 
 	// Open the firmware zip from memory.
 	logf("Opening firmware zip (%d MB)...", len(firmwareZip)/1024/1024)
@@ -182,7 +178,6 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 	outGZ := gzip.NewWriter(&outBuf)
 	outTar := tar.NewWriter(outGZ)
 	var outTarExpectedSize int64
-	sums := map[string]string{}
 
 	// Iterate over firmware tar entries and apply patches.
 	for {
@@ -210,7 +205,7 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 			return nil, fmt.Errorf("could not patch '%s': not a regular file", h.Name)
 		}
 
-		logf("Patching %s", h.Name)
+		logf("\nPatching %s", h.Name)
 
 		entryBytes, err := io.ReadAll(tarReader)
 		if err != nil {
@@ -220,7 +215,6 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 		pt := patchlib.NewPatcher(entryBytes)
 
 		for _, pfn := range matchingPatchFiles {
-			logf("  Loading patch file: %s", pfn)
 
 			patchData, ok := patchFileContents[pfn]
 			if !ok {
@@ -240,14 +234,15 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 
 			// Apply overrides.
 			if overrides, ok := config.Overrides[pfn]; ok {
+				logf("  Applying overrides")
 				for name, enabled := range overrides {
 					if err := ps.SetEnabled(name, enabled); err != nil {
 						return nil, fmt.Errorf("could not set override '%s' in '%s': %w", name, pfn, err)
 					}
 					if enabled {
-						logf("    ENABLE  %s", name)
+						logf("    ENABLE  `%s`", name)
 					} else {
-						logf("    DISABLE %s", name)
+						logf("    DISABLE `%s`", name)
 					}
 				}
 			}
@@ -256,9 +251,8 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 				return nil, fmt.Errorf("invalid patch file '%s': %w", pfn, err)
 			}
 
-			patchfile.Log = func(format string, a ...interface{}) {
-				logf("    "+format, a...)
-			}
+			// patchfile.Log is debug-level output (goes to log file in native kobopatch)
+			patchfile.Log = func(format string, a ...interface{}) {}
 
 			if err := ps.ApplyTo(pt); err != nil {
 				return nil, fmt.Errorf("error applying patches from '%s': %w", pfn, err)
@@ -289,7 +283,6 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 			return nil, fmt.Errorf("could not write patched '%s': %w", h.Name, err)
 		}
 
-		sums[h.Name] = fmt.Sprintf("%x", sha1.Sum(patchedBytes))
 	}
 
 	// Finalize the output tar.gz.
@@ -301,7 +294,7 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 	}
 
 	// Verify consistency.
-	logf("Verifying output KoboRoot.tgz...")
+	logf("\nChecking patched KoboRoot.tgz for consistency")
 	verifyReader, err := gzip.NewReader(bytes.NewReader(outBuf.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("could not verify output: %w", err)
@@ -320,11 +313,6 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 	}
 	if verifySum != outTarExpectedSize {
 		return nil, fmt.Errorf("output size mismatch: expected %d, got %d", outTarExpectedSize, verifySum)
-	}
-
-	logf("Output verified. Size: %d bytes", outBuf.Len())
-	for f, s := range sums {
-		logf("  sha1 %s  %s", s, f)
 	}
 
 	return &patchResult{

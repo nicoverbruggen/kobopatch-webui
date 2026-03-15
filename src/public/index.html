@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kobopatch Web UI</title>
+    <title>KoboPatch Web UI</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 </head>
 <body>
     <main>
-        <h1>Kobopatch Web UI</h1>
-        <p class="subtitle">Custom patches for your Kobo e-reader</p>
+        <header class="hero">
+            <h1>KoboPatch <span class="hero-accent">Web UI</span></h1>
+            <p class="subtitle">Custom patches for your Kobo e-reader</p>
+        </header>
 
         <!-- Step 1: Connect device (automatic, Chromium only) -->
         <section id="step-connect" class="step" hidden>
@@ -90,7 +92,8 @@
             </p>
             <input type="file" id="firmware-input" accept=".zip" hidden>
             -->
-            <button id="btn-build" class="primary">Build Patched Firmware</button>
+            <button id="btn-build" class="primary" disabled>Build Patched Firmware</button>
+            <p id="patch-count-hint" class="fallback-hint"></p>
         </section>
 
         <!-- Step 5: Building -->
@@ -125,7 +128,7 @@
         </section>
     </main>
 
-    <script src="wasm_exec.js"></script>
+    <!-- wasm_exec.js loaded by patch-worker.js inside the Web Worker -->
     <script src="kobo-device.js"></script>
     <script src="kobopatch.js"></script>
     <script src="patch-ui.js"></script>

@@ -16,8 +16,15 @@ GOOS=js GOARCH=wasm go build -o kobopatch.wasm .
 
 echo "WASM binary size: $(du -h kobopatch.wasm | cut -f1)"
 
+# Cache-busting timestamp
+TS=$(date +%s)
+
 echo "Copying artifacts to $PUBLIC_DIR..."
 cp kobopatch.wasm "$PUBLIC_DIR/kobopatch.wasm"
 cp wasm_exec.js "$PUBLIC_DIR/wasm_exec.js"
 
+# Update the cache-busting timestamp in the worker
+sed -i "s|kobopatch\.wasm?ts=[0-9]*|kobopatch.wasm?ts=$TS|g" "$PUBLIC_DIR/patch-worker.js"
+
+echo "Build timestamp: $TS"
 echo "Done."

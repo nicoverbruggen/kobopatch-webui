@@ -157,6 +157,8 @@ class PatchUI {
         this.patchConfig = {};
         this.firmwareVersion = null;
         this.configYAML = null;
+        // Called when patch selection changes
+        this.onChange = null;
     }
 
     /**
@@ -304,6 +306,18 @@ class PatchUI {
             if (countEl) countEl.textContent = `${count} / ${patches.length} enabled`;
             idx++;
         }
+        if (this.onChange) this.onChange();
+    }
+
+    /**
+     * Count total enabled patches across all files.
+     */
+    getEnabledCount() {
+        let count = 0;
+        for (const [, { patches }] of Object.entries(this.patchFiles)) {
+            count += patches.filter(p => p.enabled).length;
+        }
+        return count;
     }
 
     /**

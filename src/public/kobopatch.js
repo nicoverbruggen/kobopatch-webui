@@ -1,35 +1,13 @@
 /**
- * Loads and manages the kobopatch WASM module.
+ * Runs kobopatch WASM in a Web Worker for non-blocking UI.
  */
 class KobopatchRunner {
     constructor() {
-        this.ready = false;
-        this._go = null;
+        this._worker = null;
     }
 
     /**
-     * Load the WASM module. Must be called before patchFirmware().
-     */
-    async load() {
-        if (this.ready) return;
-
-        this._go = new Go();
-        const result = await WebAssembly.instantiateStreaming(
-            fetch('kobopatch.wasm'),
-            this._go.importObject
-        );
-        // Go WASM runs as a long-lived instance.
-        this._go.run(result.instance);
-
-        // Wait for the global function to become available.
-        if (typeof globalThis.patchFirmware !== 'function') {
-            throw new Error('WASM module loaded but patchFirmware() not found');
-        }
-        this.ready = true;
-    }
-
-    /**
-     * Run the patching pipeline.
+     * Run the patching pipeline in a Web Worker.
      *
      * @param {string} configYAML - kobopatch.yaml content
      * @param {Uint8Array} firmwareZip - firmware zip file bytes
@@ -37,10 +15,39 @@ class KobopatchRunner {
      * @param {Function} [onProgress] - optional callback(message) for progress updates
      * @returns {Promise<{tgz: Uint8Array, log: string}>}
      */
-    async patchFirmware(configYAML, firmwareZip, patchFiles, onProgress) {
-        if (!this.ready) {
-            throw new Error('WASM module not loaded. Call load() first.');
-        }
-        return globalThis.patchFirmware(configYAML, firmwareZip, patchFiles, onProgress || null);
+    patchFirmware(configYAML, firmwareZip, patchFiles, onProgress) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker('patch-worker.js');
+            this._worker = worker;
+
+            worker.onmessage = (e) => {
+                const msg = e.data;
+                if (msg.type === 'progress') {
+                    if (onProgress) onProgress(msg.message);
+                } else if (msg.type === 'done') {
+                    worker.terminate();
+                    this._worker = null;
+                    resolve({ tgz: msg.tgz, log: msg.log });
+                } else if (msg.type === 'error') {
+                    worker.terminate();
+                    this._worker = null;
+                    reject(new Error(msg.message));
+                }
+            };
+
+            worker.onerror = (e) => {
+                worker.terminate();
+                this._worker = null;
+                reject(new Error('Worker error: ' + e.message));
+            };
+
+            // Transfer the firmwareZip buffer to avoid copying
+            worker.postMessage({
+                type: 'patch',
+                configYAML,
+                firmwareZip,
+                patchFiles,
+            }, [firmwareZip.buffer]);
+        });
     }
 }

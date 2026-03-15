@@ -41,6 +41,19 @@
     const writeSuccess = document.getElementById('write-success');
     const firmwareVersionLabel = document.getElementById('firmware-version-label');
     // const firmwareVersionLabelManual = document.getElementById('firmware-version-label-manual'); // fallback
+    const patchCountHint = document.getElementById('patch-count-hint');
+
+    function updatePatchCount() {
+        const count = patchUI.getEnabledCount();
+        btnBuild.disabled = count === 0;
+        patchCountHint.textContent = count === 0
+            ? 'Select at least one patch to continue.'
+            : count === 1
+                ? '1 patch selected.'
+                : count + ' patches selected.';
+    }
+
+    patchUI.onChange = updatePatchCount;
 
     const allSteps = [stepConnect, stepManual, stepDevice, stepPatches, stepFirmware, stepBuilding, stepDone, stepError];
 
@@ -112,6 +125,7 @@
 
         await patchUI.loadFromURL('patches/' + match.filename);
         patchUI.render(patchContainer);
+        updatePatchCount();
         return true;
     }
 
@@ -190,6 +204,7 @@
 
                 await patchUI.loadFromURL('patches/' + match.filename);
                 patchUI.render(patchContainer);
+                updatePatchCount();
                 configureFirmwareStep(info.firmware, info.serialPrefix);
 
                 showSteps(stepDevice, stepPatches, stepFirmware);
@@ -278,19 +293,17 @@
             const firmwareBytes = await downloadFirmware(firmwareURL);
             appendLog('Firmware downloaded: ' + (firmwareBytes.length / 1024 / 1024).toFixed(1) + ' MB');
 
-            buildProgress.textContent = 'Loading WASM patcher...';
-            await runner.load();
-            appendLog('WASM module loaded');
-
             buildProgress.textContent = 'Applying patches...';
             const configYAML = patchUI.generateConfig();
             const patchFiles = patchUI.getPatchFileBytes();
 
             const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
                 appendLog(msg);
-                // Update headline with the latest high-level step
-                if (msg.startsWith('Patching ') || msg.startsWith('Extracting ') || msg.startsWith('Verifying ')) {
-                    buildProgress.textContent = msg;
+                // Update headline with high-level steps
+                const trimmed = msg.trimStart();
+                if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
+                    trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
+                    buildProgress.textContent = trimmed;
                 }
             });
 
