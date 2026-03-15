@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kobopatch Web UI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main>
+        <h1>Kobopatch Web UI</h1>
+        <p class="subtitle">Custom patches for your Kobo e-reader</p>
+
+        <section id="browser-warning" class="warning" hidden>
+            <strong>Unsupported browser.</strong>
+            The File System Access API is required and only available in Chrome, Edge, and Opera.
+            <a href="https://caniuse.com/native-filesystem-api" target="_blank">Learn more</a>
+        </section>
+
+        <section id="step-connect" class="step">
+            <h2>Step 1: Connect your Kobo</h2>
+            <p>
+                Connect your Kobo e-reader via USB. It should appear as a removable drive.
+                Then click the button below and select the root of the Kobo drive.
+            </p>
+            <button id="btn-connect" class="primary">Select Kobo Drive</button>
+        </section>
+
+        <section id="step-device" class="step" hidden>
+            <h2>Step 2: Device Detected</h2>
+            <div id="device-info" class="info-card">
+                <div class="info-row">
+                    <span class="label">Model</span>
+                    <span id="device-model" class="value">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Serial</span>
+                    <span id="device-serial" class="value">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Firmware</span>
+                    <span id="device-firmware" class="value">—</span>
+                </div>
+            </div>
+            <div id="device-status"></div>
+            <button id="btn-disconnect" class="secondary">Disconnect &amp; Start Over</button>
+        </section>
+
+        <section id="step-error" class="step" hidden>
+            <h2>Something went wrong</h2>
+            <p id="error-message" class="error"></p>
+            <button id="btn-retry" class="secondary">Try Again</button>
+        </section>
+    </main>
+
+    <script src="kobo-device.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
