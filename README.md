@@ -1,5 +1,8 @@
 # KoboPatch Web UI
 
+> [!IMPORTANT]
+> **This is an experiment**, mostly created with the help of Claude and some very precise instructions. Until I can validate that this project consistently outputs identically patched files to the local binaries and I am confident the patcher works as expected, this message will remain.
+
 A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/firmware selection on other browsers.
 
 The app makes it easy to configure which patches to apply, downloads the correct firmware from Kobo's servers, runs the patcher (compiled to WebAssembly), and places the resulting `KoboRoot.tgz` on the device. The user then reboots to apply.
