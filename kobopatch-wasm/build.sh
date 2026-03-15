@@ -8,10 +8,16 @@ if [ ! -d "$SCRIPT_DIR/kobopatch-src" ]; then
     exit 1
 fi
 
+PUBLIC_DIR="$SCRIPT_DIR/../src/public"
+
 echo "Building kobopatch WASM..."
 cd "$SCRIPT_DIR"
 GOOS=js GOARCH=wasm go build -o kobopatch.wasm .
 
 echo "WASM binary size: $(du -h kobopatch.wasm | cut -f1)"
-echo ""
-echo "Output: $SCRIPT_DIR/kobopatch.wasm"
+
+echo "Copying artifacts to $PUBLIC_DIR..."
+cp kobopatch.wasm "$PUBLIC_DIR/kobopatch.wasm"
+cp wasm_exec.js "$PUBLIC_DIR/wasm_exec.js"
+
+echo "Done."

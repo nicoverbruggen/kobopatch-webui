@@ -10,5 +10,9 @@ kobopatch-wasm/kobopatch-src/
 kobopatch-wasm/kobopatch.wasm
 kobopatch-wasm/wasm_exec.js
 
+# WASM artifacts copied to webroot for serving
+src/public/kobopatch.wasm
+src/public/wasm_exec.js
+
 # Claude
 .claude

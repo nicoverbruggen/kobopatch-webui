@@ -41,6 +41,58 @@ const KOBO_MODELS = {
  */
 const SUPPORTED_FIRMWARE = '4.45.23646';
 
+/**
+ * Firmware download URLs by version and serial prefix.
+ * Source: https://help.kobo.com/hc/en-us/articles/35059171032727
+ *
+ * The kobo prefix (kobo12, kobo13, kobo14) is stable per device family.
+ * The date path segment (e.g. Mar2026) changes per release.
+ * help.kobo.com may lag behind; verify URLs when adding new versions.
+ */
+const FIRMWARE_DOWNLOADS = {
+    '4.45.23646': {
+        'N428': 'https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip',
+        'N365': 'https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip',
+        'N367': 'https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip',
+        'P365': 'https://ereaderfiles.kobo.com/firmwares/kobo14/Mar2026/kobo-update-4.45.23646.zip',
+    },
+};
+
+/**
+ * Get the firmware download URL for a given serial prefix and firmware version.
+ * Returns null if no URL is available.
+ */
+function getFirmwareURL(serialPrefix, version) {
+    const versionMap = FIRMWARE_DOWNLOADS[version];
+    if (!versionMap) return null;
+    return versionMap[serialPrefix] || null;
+}
+
+/**
+ * Get all device models that have firmware downloads for a given version.
+ * Returns array of { prefix, model } objects.
+ */
+function getDevicesForVersion(version) {
+    const versionMap = FIRMWARE_DOWNLOADS[version];
+    if (!versionMap) return [];
+    const devices = [];
+    const seen = {};
+    for (const prefix of Object.keys(versionMap)) {
+        const model = KOBO_MODELS[prefix] || 'Unknown (' + prefix + ')';
+        // Track duplicates to disambiguate with serial prefix
+        if (seen[model]) seen[model].push(prefix);
+        else seen[model] = [prefix];
+    }
+    for (const prefix of Object.keys(versionMap)) {
+        const model = KOBO_MODELS[prefix] || 'Unknown (' + prefix + ')';
+        const label = seen[model].length > 1
+            ? model + ' (serial ' + prefix + '...)'
+            : model;
+        devices.push({ prefix, model: label });
+    }
+    return devices;
+}
+
 class KoboDevice {
     constructor() {
         this.directoryHandle = null;

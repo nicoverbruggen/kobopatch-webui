@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kobopatch Web UI</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+</head>
+<body>
+    <main>
+        <h1>Kobopatch Web UI</h1>
+        <p class="subtitle">Custom patches for your Kobo e-reader</p>
+
+        <!-- Step 1: Connect device (automatic, Chromium only) -->
+        <section id="step-connect" class="step" hidden>
+            <h2>Step 1: Connect your Kobo</h2>
+            <p>
+                Connect your Kobo e-reader via USB. It should appear as a removable drive.
+                Then click the button below and select the root of the Kobo drive.
+            </p>
+            <button id="btn-connect" class="primary">Select Kobo Drive</button>
+            <p class="fallback-hint">
+                Don't want to use Chrome?
+                <a href="#" id="btn-manual-from-auto">Select your firmware version manually</a> instead.
+            </p>
+        </section>
+
+        <!-- Step 1 (manual): Select firmware version -->
+        <section id="step-manual" class="step" hidden>
+            <h2>Step 1: Select Your Device</h2>
+            <p id="manual-chrome-hint" class="info-banner" hidden>
+                Tip: if you use Chrome or Edge, this tool can auto-detect your device
+                and write patched files directly to it. Even easier, but sadly requires a Chromium based browser.
+            </p>
+            <p>Select your Kobo model and firmware version.</p>
+            <select id="manual-version">
+                <option value="">-- Select firmware version --</option>
+            </select>
+            <select id="manual-model" hidden>
+                <option value="">-- Select your Kobo model --</option>
+            </select>
+            <button id="btn-manual-confirm" class="primary" disabled>Continue</button>
+        </section>
+
+        <!-- Step 2: Device detected, loading patches -->
+        <section id="step-device" class="step" hidden>
+            <h2>Step 2: Device Detected</h2>
+            <div id="device-info" class="info-card">
+                <div class="info-row">
+                    <span class="label">Model</span>
+                    <span id="device-model" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Serial</span>
+                    <span id="device-serial" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Firmware</span>
+                    <span id="device-firmware" class="value">--</span>
+                </div>
+            </div>
+            <div id="device-status"></div>
+        </section>
+
+        <!-- Step 3: Configure patches -->
+        <section id="step-patches" class="step" hidden>
+            <h2>Step 3: Configure Patches</h2>
+            <p>Enable or disable patches below. Patches in the same group are mutually exclusive.</p>
+            <div id="patch-container"></div>
+        </section>
+
+        <!-- Step 4: Build -->
+        <section id="step-firmware" class="step" hidden>
+            <h2>Step 4: Build Patched Firmware</h2>
+            <p id="firmware-auto-info">
+                Firmware <strong id="firmware-version-label"></strong> will be downloaded
+                automatically from Kobo's servers:<br>
+                <code id="firmware-download-url"></code><br>
+                You can verify this URL on
+                <a href="https://help.kobo.com/hc/en-us/articles/35059171032727" target="_blank">Kobo's support page</a>.
+            </p>
+            <!--
+            <p id="firmware-manual-info" hidden>
+                No automatic download available for your device.
+                Please select the firmware zip file manually.
+                You can download it from
+                <a href="https://pgaskin.net/KoboStuff/kobofirmware.html" target="_blank">pgaskin.net</a>.
+                Make sure it matches firmware version <strong id="firmware-version-label-manual"></strong>.
+            </p>
+            <input type="file" id="firmware-input" accept=".zip" hidden>
+            -->
+            <button id="btn-build" class="primary">Build Patched Firmware</button>
+        </section>
+
+        <!-- Step 5: Building -->
+        <section id="step-building" class="step" hidden>
+            <h2>Building...</h2>
+            <p id="build-progress">Starting...</p>
+            <div class="spinner"></div>
+            <pre id="build-log" class="build-log"></pre>
+        </section>
+
+        <!-- Step 6: Done -->
+        <section id="step-done" class="step" hidden>
+            <h2>Done!</h2>
+            <div id="build-status" class="status-supported"></div>
+            <div id="build-actions">
+                <button id="btn-write" class="primary">Write to Kobo</button>
+                <button id="btn-download" class="secondary">Download KoboRoot.tgz</button>
+            </div>
+            <p class="hint" hidden id="write-success">
+                KoboRoot.tgz has been written to your Kobo.
+                Safely eject the device and reboot it to apply the patches.
+            </p>
+        </section>
+
+        <!-- Error state -->
+        <section id="step-error" class="step" hidden>
+            <h2>Something went wrong</h2>
+            <p id="error-message" class="error"></p>
+            <pre id="error-log" class="error-log" hidden></pre>
+            <button id="btn-retry" class="secondary">Try Again</button>
+        </section>
+    </main>
+
+    <script src="wasm_exec.js"></script>
+    <script src="kobo-device.js"></script>
+    <script src="kobopatch.js"></script>
+    <script src="patch-ui.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

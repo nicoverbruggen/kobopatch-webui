@@ -1,0 +1,353 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #fafafa;
+    --card-bg: #fff;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --text-secondary: #555;
+    --primary: #1a6ed8;
+    --primary-hover: #1558b0;
+    --error-bg: #fef2f2;
+    --error-border: #fca5a5;
+    --error-text: #991b1b;
+    --warning-bg: #fffbeb;
+    --warning-border: #fcd34d;
+    --warning-text: #92400e;
+    --success-bg: #f0fdf4;
+    --success-border: #86efac;
+    --success-text: #166534;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+main {
+    max-width: 600px;
+    margin: 3rem auto;
+    padding: 0 1.5rem;
+}
+
+h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.step {
+    margin-bottom: 2rem;
+}
+
+.step p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+button {
+    font-size: 0.95rem;
+    padding: 0.6rem 1.4rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+button.primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+button.primary:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+button.secondary {
+    background: var(--card-bg);
+    color: var(--text);
+}
+
+button.secondary:hover {
+    background: #f0f0f0;
+}
+
+.info-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row .label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.info-row .value {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.9rem;
+}
+
+.warning {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.warning a {
+    color: inherit;
+}
+
+.error {
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.status-supported {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    color: var(--success-text);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.status-unsupported {
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
+    color: var(--warning-text);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+/* Patch file sections */
+.patch-file-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.patch-file-section summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.95rem;
+    user-select: none;
+}
+
+.patch-file-section summary:hover {
+    background: #f5f5f5;
+}
+
+.patch-count {
+    font-weight: 400;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.patch-list {
+    border-top: 1px solid var(--border);
+    padding: 0.5rem 0;
+}
+
+.patch-item {
+    padding: 0.5rem 1rem;
+}
+
+.patch-item + .patch-item {
+    border-top: 1px solid #f0f0f0;
+}
+
+.patch-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.patch-header input {
+    flex-shrink: 0;
+}
+
+.patch-name {
+    font-weight: 500;
+}
+
+.patch-group-badge {
+    font-size: 0.75rem;
+    background: #e8e8e8;
+    color: var(--text-secondary);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.patch-description {
+    margin-top: 0.35rem;
+    margin-left: 1.6rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: pre-line;
+    line-height: 1.4;
+}
+
+/* Firmware input */
+input[type="file"] {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#build-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* Spinner */
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.build-log {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #1a1a1a;
+    color: #a0a0a0;
+    border-radius: 6px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.hint {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    color: var(--success-text);
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.error-log {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #1a1a1a;
+    color: #e0e0e0;
+    border-radius: 6px;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.step a {
+    color: var(--primary);
+}
+
+.fallback-hint {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.info-banner {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+#firmware-download-url {
+    font-size: 0.8rem;
+    word-break: break-all;
+    color: var(--text-secondary);
+}
+
+select {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text);
+    margin-bottom: 1rem;
+}

@@ -53,6 +53,7 @@ func main() {
 //	args[0]: configYAML (string) - the kobopatch.yaml config content
 //	args[1]: firmwareZip (Uint8Array) - the firmware zip file bytes
 //	args[2]: patchFiles (Object) - map of filename -> Uint8Array patch file contents
+//	args[3]: onProgress (Function, optional) - callback(message string) for progress updates
 //
 // Returns: a Promise that resolves to { tgz: Uint8Array, log: string } or rejects with an error.
 func jsPatchFirmware(this js.Value, args []js.Value) interface{} {
@@ -107,17 +108,31 @@ func runPatch(args []js.Value) (*patchResult, error) {
 		patchFiles[key] = buf
 	}
 
-	return patchFirmware([]byte(configYAML), firmwareZip, patchFiles)
+	// Optional progress callback.
+	var progressFn func(string)
+	if len(args) >= 4 && args[3].Type() == js.TypeFunction {
+		cb := args[3]
+		progressFn = func(msg string) {
+			cb.Invoke(msg)
+		}
+	}
+
+	return patchFirmware([]byte(configYAML), firmwareZip, patchFiles, progressFn)
 }
 
 // patchFirmware runs the kobopatch patching pipeline entirely in memory.
-func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[string][]byte) (*patchResult, error) {
+func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[string][]byte, progressFn func(string)) (*patchResult, error) {
 	var logBuf bytes.Buffer
 	logf := func(format string, a ...interface{}) {
-		fmt.Fprintf(&logBuf, format+"\n", a...)
+		msg := fmt.Sprintf(format, a...)
+		logBuf.WriteString(msg + "\n")
+		if progressFn != nil {
+			progressFn(msg)
+		}
 	}
 
 	// Parse config.
+	logf("Parsing config...")
 	var config Config
 	dec := yaml.NewDecoder(bytes.NewReader(configYAML))
 	if err := dec.Decode(&config); err != nil {
@@ -128,16 +143,17 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 		return nil, errors.New("invalid config: version and patches are required")
 	}
 
-	logf("kobopatch wasm")
 	logf("Firmware version: %s", config.Version)
 
 	// Open the firmware zip from memory.
+	logf("Opening firmware zip (%d MB)...", len(firmwareZip)/1024/1024)
 	zipReader, err := zip.NewReader(bytes.NewReader(firmwareZip), int64(len(firmwareZip)))
 	if err != nil {
 		return nil, fmt.Errorf("could not open firmware zip: %w", err)
 	}
 
 	// Find and extract KoboRoot.tgz from the zip.
+	logf("Extracting KoboRoot.tgz from firmware...")
 	var koboRootTgz io.ReadCloser
 	for _, f := range zipReader.File {
 		if f.Name == "KoboRoot.tgz" {
@@ -285,7 +301,7 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 	}
 
 	// Verify consistency.
-	logf("\nVerifying output KoboRoot.tgz...")
+	logf("Verifying output KoboRoot.tgz...")
 	verifyReader, err := gzip.NewReader(bytes.NewReader(outBuf.Bytes()))
 	if err != nil {
 		return nil, fmt.Errorf("could not verify output: %w", err)
