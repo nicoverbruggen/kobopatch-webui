@@ -1,5 +1,14 @@
-firmware
-kobo_usb_root
-kobopatch-src
-kobopatch
+# Local device data
+kobo_usb_root/
+firmware/
+
+# Pre-built kobopatch tool (reference only)
+kobopatch/
+
+# Kobopatch WASM build artifacts
+kobopatch-wasm/kobopatch-src/
+kobopatch-wasm/kobopatch.wasm
+kobopatch-wasm/wasm_exec.js
+
+# Claude
 .claude
