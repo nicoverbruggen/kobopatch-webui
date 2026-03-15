@@ -272,6 +272,15 @@ class PatchUI {
                 header.appendChild(input);
                 header.appendChild(nameSpan);
 
+                if (patch.description) {
+                    const toggle = document.createElement('button');
+                    toggle.className = 'patch-desc-toggle';
+                    toggle.textContent = '?';
+                    toggle.title = 'Toggle description';
+                    toggle.type = 'button';
+                    header.appendChild(toggle);
+                }
+
                 if (patch.patchGroup) {
                     const groupBadge = document.createElement('span');
                     groupBadge.className = 'patch-group-badge';
@@ -285,7 +294,16 @@ class PatchUI {
                     const desc = document.createElement('p');
                     desc.className = 'patch-description';
                     desc.textContent = patch.description;
+                    desc.hidden = true;
                     item.appendChild(desc);
+
+                    const toggle = header.querySelector('.patch-desc-toggle');
+                    toggle.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        desc.hidden = !desc.hidden;
+                        toggle.textContent = desc.hidden ? '?' : '\u2212';
+                    });
                 }
 
                 list.appendChild(item);

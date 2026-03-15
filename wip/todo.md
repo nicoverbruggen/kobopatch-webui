@@ -26,17 +26,21 @@
 - [x] Progress reporting: download % with MB, WASM log output in terminal window
 - [x] WASM `patchFirmware` accepts optional progress callback (4th arg)
 - [x] Verified patched binaries are byte-identical between native and WASM builds
+- [x] Web Worker for WASM patching (non-blocking UI, live progress)
+- [x] Cache-busting timestamp on WASM file (`?ts=` query string)
+- [x] Matched log output to native kobopatch (no debug spam from patchfile.Log)
+- [x] Step navigation: 3-step indicator (Device → Patches → Build) with back/forward
+- [x] Discrete steps with proper state management
+- [x] Scrollable patch list (50vh max height with border)
+- [x] Toggleable patch descriptions (hidden by default, `?` button)
+- [x] UI polish: renamed to "KoboPatch Web UI", styled firmware URL, patch count hint
+- [x] Disambiguated identical model names in dropdown (serial prefix suffix)
 
 ## To Test
 
 - [ ] End-to-end test in browser with real Kobo device (auto mode)
 - [ ] Verify File System Access API write to `.kobo/KoboRoot.tgz`
 - [ ] Test manual mode flow across Firefox/Safari/Chrome
-
-## In Progress
-
-- [ ] Web Worker for WASM patching (avoid blocking UI, enable live progress)
-  - `patch-worker.js` created, not yet wired up
 
 ## Remaining Work
 
@@ -58,5 +62,6 @@
 - **Firmware auto-downloaded from Kobo's CDN.**
   `ereaderfiles.kobo.com` serves `Access-Control-Allow-Origin: *`, so direct `fetch()` works.
   User no longer needs to provide firmware manually. URLs hardcoded in `kobo-device.js`.
-- **Web Worker for WASM (in progress).**
+- **Web Worker for WASM.**
   Moves patching off the main thread so progress updates render live during the build.
+  `patch-worker.js` loads `wasm_exec.js` + `kobopatch.wasm`, communicates via `postMessage`.

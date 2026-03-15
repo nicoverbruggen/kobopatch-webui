@@ -4,12 +4,13 @@
     const runner = new KobopatchRunner();
 
     let firmwareURL = null;
-    // let firmwareFile = null; // fallback: manual file input
     let resultTgz = null;
     let manualMode = false;
     let selectedPrefix = null;
+    let patchesLoaded = false;
 
     // DOM elements
+    const stepNav = document.getElementById('step-nav');
     const stepConnect = document.getElementById('step-connect');
     const stepManual = document.getElementById('step-manual');
     const stepDevice = document.getElementById('step-device');
@@ -25,14 +26,16 @@
     const manualVersion = document.getElementById('manual-version');
     const manualModel = document.getElementById('manual-model');
     const manualChromeHint = document.getElementById('manual-chrome-hint');
+    const btnDeviceNext = document.getElementById('btn-device-next');
+    const btnPatchesBack = document.getElementById('btn-patches-back');
+    const btnPatchesNext = document.getElementById('btn-patches-next');
+    const btnBuildBack = document.getElementById('btn-build-back');
     const btnBuild = document.getElementById('btn-build');
     const btnWrite = document.getElementById('btn-write');
     const btnDownload = document.getElementById('btn-download');
     const btnRetry = document.getElementById('btn-retry');
 
-    // const firmwareInput = document.getElementById('firmware-input'); // fallback
     const firmwareAutoInfo = document.getElementById('firmware-auto-info');
-    // const firmwareManualInfo = document.getElementById('firmware-manual-info'); // fallback
     const errorMessage = document.getElementById('error-message');
     const errorLog = document.getElementById('error-log');
     const deviceStatus = document.getElementById('device-status');
@@ -40,12 +43,36 @@
     const buildStatus = document.getElementById('build-status');
     const writeSuccess = document.getElementById('write-success');
     const firmwareVersionLabel = document.getElementById('firmware-version-label');
-    // const firmwareVersionLabelManual = document.getElementById('firmware-version-label-manual'); // fallback
     const patchCountHint = document.getElementById('patch-count-hint');
 
+    const allSteps = [stepConnect, stepManual, stepDevice, stepPatches, stepFirmware, stepBuilding, stepDone, stepError];
+
+    // --- Step navigation ---
+    function showStep(step) {
+        for (const s of allSteps) {
+            s.hidden = (s !== step);
+        }
+    }
+
+    function setNavStep(num) {
+        const items = stepNav.querySelectorAll('li');
+        items.forEach((li, i) => {
+            const stepNum = i + 1;
+            li.classList.remove('active', 'done');
+            if (stepNum < num) li.classList.add('done');
+            else if (stepNum === num) li.classList.add('active');
+        });
+        stepNav.hidden = false;
+    }
+
+    function hideNav() {
+        stepNav.hidden = true;
+    }
+
+    // --- Patch count ---
     function updatePatchCount() {
         const count = patchUI.getEnabledCount();
-        btnBuild.disabled = count === 0;
+        btnPatchesNext.disabled = count === 0;
         patchCountHint.textContent = count === 0
             ? 'Select at least one patch to continue.'
             : count === 1
@@ -55,53 +82,29 @@
 
     patchUI.onChange = updatePatchCount;
 
-    const allSteps = [stepConnect, stepManual, stepDevice, stepPatches, stepFirmware, stepBuilding, stepDone, stepError];
-
-    // Decide initial step based on browser support
-    const hasFileSystemAccess = KoboDevice.isSupported();
-    if (hasFileSystemAccess) {
-        showSteps(stepConnect);
-    } else {
-        // Skip straight to manual mode
-        enterManualMode();
-    }
-
-    function showSteps(...steps) {
-        for (const s of allSteps) {
-            s.hidden = !steps.includes(s);
-        }
-    }
-
-    function showError(message, log) {
-        errorMessage.textContent = message;
-        if (log) {
-            errorLog.textContent = log;
-            errorLog.hidden = false;
-        } else {
-            errorLog.hidden = true;
-        }
-        showSteps(stepError);
-    }
-
-    /**
-     * Configure the firmware step for auto-download.
-     */
+    // --- Firmware step config ---
     function configureFirmwareStep(version, prefix) {
         firmwareURL = prefix ? getFirmwareURL(prefix, version) : null;
         firmwareVersionLabel.textContent = version;
         document.getElementById('firmware-download-url').textContent = firmwareURL || '';
     }
 
+    // --- Initial state ---
+    const hasFileSystemAccess = KoboDevice.isSupported();
+    if (hasFileSystemAccess) {
+        setNavStep(1);
+        showStep(stepConnect);
+    } else {
+        enterManualMode();
+    }
+
+    // --- Step 1: Device selection ---
     async function enterManualMode() {
         manualMode = true;
-
-        // Show the Chrome hint only if the browser actually supports it
-        // (i.e., user chose manual mode voluntarily)
         if (hasFileSystemAccess) {
             manualChromeHint.hidden = false;
         }
 
-        // Populate version dropdown from available patches
         const available = await scanAvailablePatches();
         manualVersion.innerHTML = '<option value="">-- Select firmware version --</option>';
         for (const p of available) {
@@ -112,30 +115,18 @@
             manualVersion.appendChild(opt);
         }
 
-        // Reset model dropdown
         manualModel.innerHTML = '<option value="">-- Select your Kobo model --</option>';
         manualModel.hidden = true;
 
-        showSteps(stepManual);
+        setNavStep(1);
+        showStep(stepManual);
     }
 
-    async function loadPatchesForVersion(version, available) {
-        const match = available.find(p => p.version === version);
-        if (!match) return false;
-
-        await patchUI.loadFromURL('patches/' + match.filename);
-        patchUI.render(patchContainer);
-        updatePatchCount();
-        return true;
-    }
-
-    // Switch to manual mode from auto mode
     btnManualFromAuto.addEventListener('click', (e) => {
         e.preventDefault();
         enterManualMode();
     });
 
-    // Manual mode: version selected → populate model dropdown
     manualVersion.addEventListener('change', () => {
         const version = manualVersion.value;
         selectedPrefix = null;
@@ -146,7 +137,6 @@
             return;
         }
 
-        // Populate device dropdown for this firmware version
         const devices = getDevicesForVersion(version);
         manualModel.innerHTML = '<option value="">-- Select your Kobo model --</option>';
         for (const d of devices) {
@@ -159,13 +149,12 @@
         btnManualConfirm.disabled = true;
     });
 
-    // Manual mode: model selected
     manualModel.addEventListener('change', () => {
         selectedPrefix = manualModel.value || null;
         btnManualConfirm.disabled = !manualVersion.value || !manualModel.value;
     });
 
-    // Manual mode: confirm selection
+    // Manual confirm → load patches → go to step 2
     btnManualConfirm.addEventListener('click', async () => {
         const version = manualVersion.value;
         if (!version || !selectedPrefix) return;
@@ -178,13 +167,13 @@
                 return;
             }
             configureFirmwareStep(version, selectedPrefix);
-            showSteps(stepPatches, stepFirmware);
+            goToPatches();
         } catch (err) {
             showError(err.message);
         }
     });
 
-    // Auto mode: connect device
+    // Auto connect → show device info
     btnConnect.addEventListener('click', async () => {
         try {
             const info = await device.connect();
@@ -205,15 +194,17 @@
                 await patchUI.loadFromURL('patches/' + match.filename);
                 patchUI.render(patchContainer);
                 updatePatchCount();
+                patchesLoaded = true;
                 configureFirmwareStep(info.firmware, info.serialPrefix);
 
-                showSteps(stepDevice, stepPatches, stepFirmware);
+                showStep(stepDevice);
             } else {
                 deviceStatus.className = 'status-unsupported';
                 deviceStatus.textContent =
                     'No patches available for firmware ' + info.firmware + '. ' +
                     'Supported versions: ' + available.map(p => p.version).join(', ');
-                showSteps(stepDevice);
+                btnDeviceNext.hidden = true;
+                showStep(stepDevice);
             }
         } catch (err) {
             if (err.name === 'AbortError') return;
@@ -221,18 +212,55 @@
         }
     });
 
-    // // Firmware file selected (fallback for devices without auto-download URL)
-    // firmwareInput.addEventListener('change', () => {
-    //     firmwareFile = firmwareInput.files[0] || null;
-    // });
+    // Device info → patches
+    btnDeviceNext.addEventListener('click', () => {
+        if (patchesLoaded) goToPatches();
+    });
+
+    async function loadPatchesForVersion(version, available) {
+        const match = available.find(p => p.version === version);
+        if (!match) return false;
+
+        await patchUI.loadFromURL('patches/' + match.filename);
+        patchUI.render(patchContainer);
+        updatePatchCount();
+        patchesLoaded = true;
+        return true;
+    }
+
+    // --- Step 2: Patches ---
+    function goToPatches() {
+        setNavStep(2);
+        showStep(stepPatches);
+    }
+
+    btnPatchesBack.addEventListener('click', () => {
+        setNavStep(1);
+        if (manualMode) {
+            showStep(stepManual);
+        } else {
+            showStep(stepDevice);
+        }
+    });
+
+    btnPatchesNext.addEventListener('click', () => {
+        if (patchUI.getEnabledCount() === 0) return;
+        goToBuild();
+    });
+
+    // --- Step 3: Review & Build ---
+    function goToBuild() {
+        setNavStep(3);
+        showStep(stepFirmware);
+    }
+
+    btnBuildBack.addEventListener('click', () => {
+        goToPatches();
+    });
 
     const buildProgress = document.getElementById('build-progress');
     const buildLog = document.getElementById('build-log');
 
-    /**
-     * Download firmware zip from Kobo's servers with progress tracking.
-     * Returns Uint8Array of the zip file.
-     */
     async function downloadFirmware(url) {
         const resp = await fetch(url);
         if (!resp.ok) {
@@ -241,7 +269,6 @@
 
         const contentLength = resp.headers.get('Content-Length');
         if (!contentLength || !resp.body) {
-            // Fallback: no streaming progress
             buildProgress.textContent = 'Downloading firmware...';
             return new Uint8Array(await resp.arrayBuffer());
         }
@@ -262,7 +289,6 @@
             buildProgress.textContent = `Downloading firmware... ${mb} / ${totalMB} MB (${pct}%)`;
         }
 
-        // Concatenate chunks into single Uint8Array
         const result = new Uint8Array(received);
         let offset = 0;
         for (const chunk of chunks) {
@@ -277,10 +303,9 @@
         buildLog.scrollTop = buildLog.scrollHeight;
     }
 
-    // Build
     btnBuild.addEventListener('click', async () => {
-        const stepsToShow = manualMode ? [stepBuilding] : [stepDevice, stepBuilding];
-        showSteps(...stepsToShow);
+        hideNav();
+        showStep(stepBuilding);
         buildLog.textContent = '';
         buildProgress.textContent = 'Starting...';
 
@@ -299,7 +324,6 @@
 
             const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
                 appendLog(msg);
-                // Update headline with high-level steps
                 const trimmed = msg.trimStart();
                 if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
                     trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
@@ -313,22 +337,19 @@
                 (resultTgz.length / 1024).toFixed(0) + ' KB.';
             writeSuccess.hidden = true;
 
-            // Copy log to done step
             const doneLog = document.getElementById('done-log');
             doneLog.textContent = buildLog.textContent;
             doneLog.scrollTop = doneLog.scrollHeight;
 
-            // In manual mode, hide the "Write to Kobo" button
             btnWrite.hidden = manualMode;
-
-            const doneSteps = manualMode ? [stepDone] : [stepDevice, stepDone];
-            showSteps(...doneSteps);
+            hideNav();
+            showStep(stepDone);
         } catch (err) {
             showError('Build failed: ' + err.message, buildLog.textContent);
         }
     });
 
-    // Write to device (auto mode only)
+    // --- Done step ---
     btnWrite.addEventListener('click', async () => {
         if (!resultTgz || !device.directoryHandle) return;
 
@@ -344,7 +365,6 @@
         }
     });
 
-    // Download
     btnDownload.addEventListener('click', () => {
         if (!resultTgz) return;
         const blob = new Blob([resultTgz], { type: 'application/gzip' });
@@ -356,17 +376,32 @@
         URL.revokeObjectURL(url);
     });
 
-    // Retry
+    // --- Error / Retry ---
+    function showError(message, log) {
+        errorMessage.textContent = message;
+        if (log) {
+            errorLog.textContent = log;
+            errorLog.hidden = false;
+        } else {
+            errorLog.hidden = true;
+        }
+        hideNav();
+        showStep(stepError);
+    }
+
     btnRetry.addEventListener('click', () => {
         device.disconnect();
         firmwareURL = null;
         resultTgz = null;
         manualMode = false;
         selectedPrefix = null;
+        patchesLoaded = false;
         btnWrite.hidden = false;
+        btnDeviceNext.hidden = false;
 
         if (hasFileSystemAccess) {
-            showSteps(stepConnect);
+            setNavStep(1);
+            showStep(stepConnect);
         } else {
             enterManualMode();
         }

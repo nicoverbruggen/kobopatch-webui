@@ -14,9 +14,17 @@
             <p class="subtitle">Custom patches for your Kobo e-reader</p>
         </header>
 
-        <!-- Step 1: Connect device (automatic, Chromium only) -->
+        <!-- Step indicator -->
+        <nav id="step-nav" class="step-nav" hidden>
+            <ol>
+                <li data-step="1" class="active">Device</li>
+                <li data-step="2">Patches</li>
+                <li data-step="3">Build</li>
+            </ol>
+        </nav>
+
+        <!-- Step 1a: Connect device (automatic, Chromium only) -->
         <section id="step-connect" class="step" hidden>
-            <h2>Step 1: Connect your Kobo</h2>
             <p>
                 Connect your Kobo e-reader via USB. It should appear as a removable drive.
                 Then click the button below and select the root of the Kobo drive.
@@ -28,9 +36,8 @@
             </p>
         </section>
 
-        <!-- Step 1 (manual): Select firmware version -->
+        <!-- Step 1b (manual): Select device model + firmware -->
         <section id="step-manual" class="step" hidden>
-            <h2>Step 1: Select Your Device</h2>
             <p id="manual-chrome-hint" class="info-banner" hidden>
                 Tip: if you use Chrome or Edge, this tool can auto-detect your device
                 and write patched files directly to it. Even easier, but sadly requires a Chromium based browser.
@@ -45,9 +52,8 @@
             <button id="btn-manual-confirm" class="primary" disabled>Continue</button>
         </section>
 
-        <!-- Step 2: Device detected, loading patches -->
+        <!-- Step 1c: Device detected (auto mode info card) -->
         <section id="step-device" class="step" hidden>
-            <h2>Step 2: Device Detected</h2>
             <div id="device-info" class="info-card">
                 <div class="info-row">
                     <span class="label">Model</span>
@@ -63,18 +69,24 @@
                 </div>
             </div>
             <div id="device-status"></div>
+            <div class="step-actions">
+                <button id="btn-device-next" class="primary">Configure Patches</button>
+            </div>
         </section>
 
-        <!-- Step 3: Configure patches -->
+        <!-- Step 2: Configure patches -->
         <section id="step-patches" class="step" hidden>
-            <h2>Step 3: Configure Patches</h2>
             <p>Enable or disable patches below. Patches in the same group are mutually exclusive.</p>
-            <div id="patch-container"></div>
+            <div id="patch-container" class="patch-container-scroll"></div>
+            <div class="step-actions">
+                <button id="btn-patches-back" class="secondary">Back</button>
+                <button id="btn-patches-next" class="primary" disabled>Continue</button>
+            </div>
+            <p id="patch-count-hint" class="fallback-hint"></p>
         </section>
 
-        <!-- Step 4: Build -->
+        <!-- Step 3: Review & Build -->
         <section id="step-firmware" class="step" hidden>
-            <h2>Step 4: Build Patched Firmware</h2>
             <p id="firmware-auto-info">
                 Firmware <strong id="firmware-version-label"></strong> will be downloaded
                 automatically from Kobo's servers:<br>
@@ -92,21 +104,21 @@
             </p>
             <input type="file" id="firmware-input" accept=".zip" hidden>
             -->
-            <button id="btn-build" class="primary" disabled>Build Patched Firmware</button>
-            <p id="patch-count-hint" class="fallback-hint"></p>
+            <div class="step-actions">
+                <button id="btn-build-back" class="secondary">Back</button>
+                <button id="btn-build" class="primary">Build Patched Firmware</button>
+            </div>
         </section>
 
-        <!-- Step 5: Building -->
+        <!-- Step 4: Building -->
         <section id="step-building" class="step" hidden>
-            <h2>Building...</h2>
             <p id="build-progress">Starting...</p>
             <div class="spinner"></div>
             <pre id="build-log" class="build-log"></pre>
         </section>
 
-        <!-- Step 6: Done -->
+        <!-- Step 5: Done -->
         <section id="step-done" class="step" hidden>
-            <h2>Done!</h2>
             <div id="build-status" class="status-supported"></div>
             <pre id="done-log" class="build-log"></pre>
             <div id="build-actions">
@@ -124,7 +136,7 @@
             <h2>Something went wrong</h2>
             <p id="error-message" class="error"></p>
             <pre id="error-log" class="error-log" hidden></pre>
-            <button id="btn-retry" class="secondary">Try Again</button>
+            <button id="btn-retry" class="secondary">Start Over</button>
         </section>
     </main>
 

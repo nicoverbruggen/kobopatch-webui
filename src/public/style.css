@@ -45,8 +45,8 @@ main {
 
 /* Hero header */
 .hero {
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-light);
 }
 
@@ -74,9 +74,83 @@ h2 {
     color: var(--text);
 }
 
+/* Step navigation */
+.step-nav {
+    margin-bottom: 1.5rem;
+}
+
+.step-nav ol {
+    display: flex;
+    list-style: none;
+    gap: 0;
+    counter-reset: step;
+}
+
+.step-nav li {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    position: relative;
+    counter-increment: step;
+}
+
+.step-nav li::before {
+    content: counter(step);
+    display: block;
+    width: 1.6rem;
+    height: 1.6rem;
+    line-height: 1.6rem;
+    margin: 0 auto 0.3rem;
+    border-radius: 50%;
+    background: var(--border-light);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.step-nav li.active::before {
+    background: var(--primary);
+    color: #fff;
+}
+
+.step-nav li.active {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.step-nav li.done::before {
+    background: var(--success-text);
+    color: #fff;
+    content: "\2713";
+}
+
+.step-nav li.done {
+    color: var(--success-text);
+}
+
+/* Connector lines between steps */
+.step-nav li + li::after {
+    content: '';
+    position: absolute;
+    top: 1.05rem;
+    right: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--border-light);
+    z-index: -1;
+}
+
+.step-nav li.done + li::after,
+.step-nav li.done + li.active::after {
+    background: var(--success-text);
+}
+
 /* Steps */
 .step {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .step p {
@@ -84,6 +158,13 @@ h2 {
     margin-bottom: 1rem;
     font-size: 0.93rem;
     line-height: 1.6;
+}
+
+/* Step action buttons (back/next) */
+.step-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
 }
 
 /* Buttons */
@@ -207,6 +288,15 @@ button:disabled {
     font-size: 0.88rem;
 }
 
+/* Scrollable patch container */
+.patch-container-scroll {
+    max-height: 50vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.5rem;
+}
+
 /* Patch file sections */
 .patch-file-section {
     background: var(--card-bg);
@@ -239,7 +329,6 @@ button:disabled {
 
 .patch-count {
     font-weight: 400;
-    color: var(--text-secondary);
     font-size: 0.8rem;
     background: var(--primary-light);
     color: var(--primary);
@@ -252,7 +341,7 @@ button:disabled {
 }
 
 .patch-item {
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 1rem;
 }
 
 .patch-item + .patch-item {
@@ -264,7 +353,7 @@ button:disabled {
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
 .patch-header input {
@@ -274,6 +363,23 @@ button:disabled {
 
 .patch-name {
     font-weight: 500;
+}
+
+.patch-desc-toggle {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 0 0.3rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    box-shadow: none;
+    opacity: 0.6;
+    transition: opacity 0.1s;
+}
+
+.patch-desc-toggle:hover {
+    opacity: 1;
 }
 
 .patch-group-badge {
@@ -290,10 +396,15 @@ button:disabled {
 .patch-description {
     margin-top: 0.3rem;
     margin-left: 1.6rem;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
     white-space: pre-line;
-    line-height: 1.45;
+    line-height: 1.4;
+    padding: 0.25rem 0;
+}
+
+.patch-description[hidden] {
+    display: none;
 }
 
 /* Firmware input */
@@ -374,7 +485,7 @@ input[type="file"] {
 }
 
 .fallback-hint {
-    margin-top: 1rem;
+    margin-top: 0.75rem;
     font-size: 0.83rem;
     color: var(--text-secondary);
 }

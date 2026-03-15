@@ -47,7 +47,7 @@ Browser
 - Enforces PatchGroup mutual exclusion (radio buttons)
 - Generates kobopatch.yaml config with overrides from UI state
 
-### `patch-worker.js` — Web Worker (in progress)
+### `patch-worker.js` — Web Worker
 - Loads `wasm_exec.js` and `kobopatch.wasm` off the main thread
 - Receives patch config + firmware via `postMessage`
 - Sends progress updates back to main thread for live UI rendering
@@ -65,7 +65,8 @@ Browser
 
 ### `kobopatch.js` — Runner Interface
 - Abstracts WASM loading and invocation
-- Will be updated to communicate with Web Worker
+- Spawns Web Worker per build, handles progress/done/error messages
+- Transfers firmware buffer zero-copy via transferable
 
 ### Static Assets
 - Patch config zips in `src/public/patches/` with `index.json` index
