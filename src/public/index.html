@@ -115,19 +115,25 @@
 
         <!-- Step 4: Building -->
         <section id="step-building" class="step" hidden>
-            <p id="build-progress">Starting...</p>
-            <div class="spinner"></div>
+            <div class="build-header">
+                <div class="spinner"></div>
+                <p id="build-progress">Starting...</p>
+            </div>
             <pre id="build-log" class="build-log"></pre>
         </section>
 
         <!-- Step 5: Done -->
         <section id="step-done" class="step" hidden>
-            <div id="build-status" class="status-supported"></div>
-            <pre id="done-log" class="build-log"></pre>
+            <div id="build-status" class="info-banner"></div>
+            <pre id="done-log" class="build-log done-log"></pre>
             <div id="build-actions">
                 <button id="btn-write" class="primary">Write to Kobo</button>
                 <button id="btn-download" class="secondary">Download KoboRoot.tgz</button>
             </div>
+            <p class="fallback-hint" id="download-hint">
+                Place the downloaded <strong>KoboRoot.tgz</strong> in the <strong>.kobo</strong> directory
+                on your Kobo's USB drive, then safely eject and reboot the device.
+            </p>
             <p class="hint" hidden id="write-success">
                 KoboRoot.tgz has been written to your Kobo.
                 Safely eject the device and reboot it to apply the patches.
