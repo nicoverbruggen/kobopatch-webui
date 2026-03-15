@@ -1,6 +1,10 @@
 # KoboPatch Web UI
 
-Fully client-side web app for applying [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. No backend — runs entirely in the browser via WebAssembly. Can be hosted as a static site.
+A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/firmware selection on other browsers.
+
+The app makes it easy to configure which patches to apply, downloads the correct firmware from Kobo's servers, runs the patcher (compiled to WebAssembly), and places the resulting `KoboRoot.tgz` on the device. The user then reboots to apply.
+
+Fully client-side — no backend needed, can be hosted as a static site. Patches are community-contributed via [MobileRead](https://www.mobileread.com/) and need to be manually updated when new Kobo firmware versions come out.
 
 ## User flow
 
