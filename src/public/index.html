@@ -49,7 +49,7 @@
             <select id="manual-model" hidden>
                 <option value="">-- Select your Kobo model --</option>
             </select>
-            <button id="btn-manual-confirm" class="primary" disabled>Continue</button>
+            <button id="btn-manual-confirm" class="primary" disabled>Continue &#x203A;</button>
         </section>
 
         <!-- Step 1c: Device detected (auto mode info card) -->
@@ -70,7 +70,7 @@
             </div>
             <div id="device-status"></div>
             <div class="step-actions">
-                <button id="btn-device-next" class="primary">Configure Patches</button>
+                <button id="btn-device-next" class="primary">Configure Patches &#x203A;</button>
             </div>
         </section>
 
@@ -79,8 +79,8 @@
             <p>Enable or disable patches below. Patches in the same group are mutually exclusive.</p>
             <div id="patch-container" class="patch-container-scroll"></div>
             <div class="step-actions">
-                <button id="btn-patches-back" class="secondary">Back</button>
-                <button id="btn-patches-next" class="primary" disabled>Continue</button>
+                <button id="btn-patches-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-patches-next" class="primary" disabled>Continue &#x203A;</button>
             </div>
             <p id="patch-count-hint" class="fallback-hint"></p>
         </section>
@@ -88,11 +88,14 @@
         <!-- Step 3: Review & Build -->
         <section id="step-firmware" class="step" hidden>
             <p id="firmware-auto-info">
-                Firmware <strong id="firmware-version-label"></strong> will be downloaded
-                automatically from Kobo's servers:<br>
+                Firmware <strong id="firmware-version-label"></strong> for
+                <strong id="firmware-device-label"></strong> will be downloaded
+                automatically from Kobo's servers and will be patched after the download completes:<br>
                 <code id="firmware-download-url"></code><br>
-                You can verify this URL on
-                <a href="https://help.kobo.com/hc/en-us/articles/35059171032727" target="_blank">Kobo's support page</a>.
+                <span id="firmware-verify-notice">
+                    You can verify if this URL matches your Kobo's model on
+                    <a href="https://help.kobo.com/hc/en-us/articles/35059171032727" target="_blank">Kobo's support page</a>. The most important bit is that "koboXX" matches, for example "kobo13" for Kobo Libra Color.
+                </span>
             </p>
             <!--
             <p id="firmware-manual-info" hidden>
@@ -105,7 +108,7 @@
             <input type="file" id="firmware-input" accept=".zip" hidden>
             -->
             <div class="step-actions">
-                <button id="btn-build-back" class="secondary">Back</button>
+                <button id="btn-build-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-build" class="primary">Build Patched Firmware</button>
             </div>
         </section>

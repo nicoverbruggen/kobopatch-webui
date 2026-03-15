@@ -163,8 +163,13 @@ h2 {
 /* Step action buttons (back/next) */
 .step-actions {
     display: flex;
+    justify-content: space-between;
     gap: 0.75rem;
     margin-top: 1.25rem;
+}
+
+.step-actions .primary:first-child {
+    margin-left: auto;
 }
 
 /* Buttons */
@@ -510,6 +515,10 @@ input[type="file"] {
     background: #f1f5f9;
     border: 1px solid #e2e8f0;
     border-radius: 4px;
+}
+
+#firmware-verify-notice {
+    font-size: 12px;
 }
 
 select {

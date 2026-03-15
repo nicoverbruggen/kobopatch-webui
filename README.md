@@ -1,58 +1,66 @@
 # KoboPatch Web UI
 
-A fully client-side web application for applying [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. No backend required — runs entirely in the browser using WebAssembly.
+Fully client-side web app for applying [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. No backend — runs entirely in the browser via WebAssembly. Can be hosted as a static site.
 
-## Features
+## User flow
 
-- **Auto mode** (Chromium): detect your Kobo model and firmware via the File System Access API, then write the patched file directly back to the device
-- **Manual mode** (all browsers): select your model and firmware version from dropdowns, download the result
-- Firmware is downloaded automatically from Kobo's servers
-- Step-by-step wizard with live build progress
-- Patch descriptions and PatchGroup mutual exclusion
+1. Select device (auto-detect via File System Access API on Chromium, or manual dropdowns on any browser)
+2. Configure patches (enable/disable, PatchGroup mutual exclusion via radio buttons)
+3. Build — firmware auto-downloaded from Kobo's CDN (`ereaderfiles.kobo.com`, CORS open), patched via WASM in a Web Worker
+4. Write `KoboRoot.tgz` to device (Chromium auto mode) or download manually
 
-## How it works
+## File structure
 
-1. Connect your Kobo via USB (or select your model/firmware manually)
-2. Enable/disable patches in the configurator
-3. Click **Build** — firmware is fetched from Kobo's CDN, patches are applied via WASM in a Web Worker
-4. Write `KoboRoot.tgz` to your device or download it manually
-5. Safely eject and reboot your Kobo
+```
+src/public/                     # Webroot — serve this directory
+  index.html                    # Single-page app, 3-step wizard (Device → Patches → Build)
+  style.css
+  app.js                        # Step navigation, flow orchestration, firmware download with progress
+  kobo-device.js                # KOBO_MODELS (serial prefix → name), FIRMWARE_DOWNLOADS (version+prefix → URL),
+                                #   getDevicesForVersion(), getFirmwareURL(), KoboDevice class (File System Access API)
+  patch-ui.js                   # PatchUI class: loads patch zips (JSZip), parses YAML, renders toggle UI,
+                                #   generates kobopatch.yaml config with overrides
+  kobopatch.js                  # KobopatchRunner: spawns Web Worker per build, handles progress/done/error messages
+  patch-worker.js               # Web Worker: loads wasm_exec.js + kobopatch.wasm, runs patchFirmware(),
+                                #   posts progress back, transfers result buffer zero-copy
+  wasm_exec.js                  # Go WASM support runtime (copied from Go SDK by setup.sh, gitignored)
+  kobopatch.wasm                # Compiled WASM binary (built by build.sh, gitignored)
+  patches/
+    index.json                  # [{ "version": "4.45.23646", "filename": "patches_4.45.23646.zip" }]
+    patches_*.zip               # Each contains kobopatch.yaml + src/*.yaml patch files
 
-## Building
+kobopatch-wasm/                 # WASM build
+  main.go                       # Go entry point: jsPatchFirmware() → patchFirmware() pipeline
+                                #   Accepts configYAML, firmwareZip, patchFiles, optional progressFn
+                                #   Returns { tgz: Uint8Array, log: string }
+  go.mod
+  setup.sh                      # Clones kobopatch source, copies wasm_exec.js
+  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to src/public/,
+                                #   sets ?ts= cache-bust timestamp in patch-worker.js
+```
 
-### Prerequisites
+## Adding a new firmware version
 
-- Go 1.21+ (for compiling kobopatch to WASM)
+1. Add the patch zip to `src/public/patches/` and update `index.json`
+2. Add firmware download URLs to `FIRMWARE_DOWNLOADS` in `kobo-device.js` (keyed by version then serial prefix)
+3. The kobo CDN prefix per device family (e.g. `kobo12`, `kobo13`) is stable; the date path segment changes per release
 
-### Setup & build
+## Building the WASM binary
+
+Requires Go 1.21+.
 
 ```bash
 cd kobopatch-wasm
-./setup.sh    # clones kobopatch source, copies wasm_exec.js
-./build.sh    # compiles WASM, copies artifacts to src/public/
+./setup.sh    # first time only
+./build.sh    # compiles WASM, copies to src/public/
 ```
 
-### Running locally
-
-Any static file server works:
+## Running locally
 
 ```bash
 python3 -m http.server -d src/public/ 8888
 ```
 
-Then open `http://localhost:8888`.
+## Credits
 
-## Supported devices
-
-Currently supports firmware **4.45.23646** for:
-
-- Kobo Libra Colour
-- Kobo Clara BW (N365)
-- Kobo Clara BW (P365)
-- Kobo Clara Colour
-
-Additional firmware versions can be added by placing patch zips in `src/public/patches/` and updating `index.json` and the firmware URL map in `kobo-device.js`.
-
-## License
-
-kobopatch is by [pgaskin](https://github.com/pgaskin/kobopatch). Patches are community-contributed via [MobileRead](https://www.mobileread.com/).
+kobopatch by [pgaskin](https://github.com/pgaskin/kobopatch). Patches from [MobileRead](https://www.mobileread.com/).

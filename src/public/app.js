@@ -43,6 +43,7 @@
     const buildStatus = document.getElementById('build-status');
     const writeSuccess = document.getElementById('write-success');
     const firmwareVersionLabel = document.getElementById('firmware-version-label');
+    const firmwareDeviceLabel = document.getElementById('firmware-device-label');
     const patchCountHint = document.getElementById('patch-count-hint');
 
     const allSteps = [stepConnect, stepManual, stepDevice, stepPatches, stepFirmware, stepBuilding, stepDone, stepError];
@@ -86,6 +87,7 @@
     function configureFirmwareStep(version, prefix) {
         firmwareURL = prefix ? getFirmwareURL(prefix, version) : null;
         firmwareVersionLabel.textContent = version;
+        firmwareDeviceLabel.textContent = KOBO_MODELS[prefix] || prefix;
         document.getElementById('firmware-download-url').textContent = firmwareURL || '';
     }
 
