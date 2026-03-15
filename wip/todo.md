@@ -17,20 +17,29 @@
 - [x] JSZip for client-side zip extraction
 - [x] Renamed `src/frontend` → `src/public` (webroot)
 - [x] Moved `patches/` into `src/public/patches/`
+- [x] Manual mode fallback for non-Chromium browsers (model + firmware version dropdowns)
+- [x] Auto-download firmware from Kobo's servers (CORS confirmed working)
+- [x] Firmware download URLs hardcoded per device prefix and version
+- [x] Firmware download URL displayed in build step for user verification
+- [x] Fixed CRLF line ending bug in patch YAML parser
+- [x] Copy `kobopatch.wasm` + `wasm_exec.js` to `src/public/` as part of build
+- [x] Progress reporting: download % with MB, WASM log output in terminal window
+- [x] WASM `patchFirmware` accepts optional progress callback (4th arg)
+- [x] Verified patched binaries are byte-identical between native and WASM builds
 
 ## To Test
 
-- [ ] End-to-end test in browser with real Kobo device + firmware zip
-- [ ] Verify WASM loads and `patchFirmware()` works in browser (not just Node.js)
-- [ ] Verify patch YAML parser handles all 6 patch files correctly
+- [ ] End-to-end test in browser with real Kobo device (auto mode)
 - [ ] Verify File System Access API write to `.kobo/KoboRoot.tgz`
-- [ ] Verify download fallback works
+- [ ] Test manual mode flow across Firefox/Safari/Chrome
+
+## In Progress
+
+- [ ] Web Worker for WASM patching (avoid blocking UI, enable live progress)
+  - `patch-worker.js` created, not yet wired up
 
 ## Remaining Work
 
-- [ ] Copy `kobopatch.wasm` + `wasm_exec.js` to `src/public/` as part of build
-- [ ] Run WASM patching in a Web Worker (avoid blocking UI during build)
-- [ ] Loading/progress feedback during WASM load + build
 - [ ] Better error messages for common failures
 - [ ] Test with multiple firmware versions / patch zips
 
@@ -46,4 +55,8 @@
   Reason: avoid storing Kobo firmware files on a server (legal risk).
 - **Patches served from zip files in `src/public/patches/`.**
   App scans `patches/index.json` to find compatible patch zips for the detected firmware.
-  User provides their own firmware zip. kobopatch runs as WASM in the browser.
+- **Firmware auto-downloaded from Kobo's CDN.**
+  `ereaderfiles.kobo.com` serves `Access-Control-Allow-Origin: *`, so direct `fetch()` works.
+  User no longer needs to provide firmware manually. URLs hardcoded in `kobo-device.js`.
+- **Web Worker for WASM (in progress).**
+  Moves patching off the main thread so progress updates render live during the build.

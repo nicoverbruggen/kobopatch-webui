@@ -300,6 +300,11 @@
                 (resultTgz.length / 1024).toFixed(0) + ' KB.';
             writeSuccess.hidden = true;
 
+            // Copy log to done step
+            const doneLog = document.getElementById('done-log');
+            doneLog.textContent = buildLog.textContent;
+            doneLog.scrollTop = doneLog.scrollHeight;
+
             // In manual mode, hide the "Write to Kobo" button
             btnWrite.hidden = manualMode;
 

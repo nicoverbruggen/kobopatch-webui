@@ -286,7 +286,7 @@ button:disabled {
     font-family: "SF Mono", "Fira Code", monospace;
     font-size: 0.75rem;
     white-space: pre-wrap;
-    max-height: 200px;
+    height: calc(10 * 1.5em + 1.5rem);
     overflow-y: auto;
     line-height: 1.5;
 }
