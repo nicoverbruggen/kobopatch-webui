@@ -106,9 +106,7 @@
     // --- Step 1: Device selection ---
     async function enterManualMode() {
         manualMode = true;
-        if (hasFileSystemAccess) {
-            manualChromeHint.hidden = false;
-        }
+        manualChromeHint.hidden = false;
 
         const available = await scanAvailablePatches();
         manualVersion.innerHTML = '<option value="">-- Select firmware version --</option>';

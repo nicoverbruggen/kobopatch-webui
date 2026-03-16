@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="style.css?ts=1773670636">
+    <link rel="stylesheet" href="style.css?ts=1773672116">
     <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 </head>
 <body>
@@ -52,25 +52,30 @@
                 Proceed with care.
             </div>
             <p id="manual-chrome-hint" class="info-banner" hidden>
-                Tip: if you use Chrome or Edge, this tool can auto-detect your device
-                and write patched files directly to it. Even easier, but sadly requires a Chromium based browser.
+                <b>Tip</b>: if you use Chrome or Edge, this tool can auto-detect your device
+                and write patched files directly to it, which is even easier to do!
             </p>
-            <p>Select your Kobo model and firmware version.
-                Not sure which model you have?
-                <a href="https://help.kobo.com/hc/en-us/articles/360019676973-Identify-your-Kobo-eReader-or-Kobo-tablet" target="_blank">Identify your Kobo eReader</a>.
+            <p>
+                Select your firmware version first, and then the Kobo model.
             </p>
             <select id="manual-version">
                 <option value="">-- Select firmware version --</option>
             </select>
+            <p id="manual-version-hint" class="fallback-hint">
+                You can identify your the version number shown on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> and by checking <strong>Software version</strong>.
+            </p>
             <select id="manual-model" hidden>
                 <option value="">-- Select your Kobo model --</option>
             </select>
             <p id="manual-model-hint" class="fallback-hint" hidden>
                 You can identify your model by the serial number prefix shown on your Kobo
-                under <strong>Settings &gt; Device information</strong>.
+                under <strong>More &gt; Settings &gt; Device information</strong>.
                 Match the first characters (e.g. N428) to the list above.
+                If your device isn't listed, it is not supported by this tool.
             </p>
-            <button id="btn-manual-confirm" class="primary" disabled>Continue &#x203A;</button>
+            <div class="step-actions" style="margin-top: 15px">
+                <button id="btn-manual-confirm" class="primary" disabled>Continue &#x203A;</button>
+            </div>
         </section>
 
         <!-- Step 1c: Device detected (auto mode info card) -->
@@ -122,16 +127,6 @@
                     <a href="https://help.kobo.com/hc/en-us/articles/35059171032727" target="_blank">Kobo's support page</a>. The most important bit is that "koboXX" matches, for example "kobo13" for Kobo Libra Color.
                 </p>
             </details>
-            <!--
-            <p id="firmware-manual-info" hidden>
-                No automatic download available for your device.
-                Please select the firmware zip file manually.
-                You can download it from
-                <a href="https://pgaskin.net/KoboStuff/kobofirmware.html" target="_blank">pgaskin.net</a>.
-                Make sure it matches firmware version <strong id="firmware-version-label-manual"></strong>.
-            </p>
-            <input type="file" id="firmware-input" accept=".zip" hidden>
-            -->
             <div class="step-actions">
                 <button id="btn-build-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-build" class="primary">Build Patched Firmware</button>
@@ -253,9 +248,9 @@
     </dialog>
 
     <!-- wasm_exec.js loaded by patch-worker.js inside the Web Worker -->
-    <script src="kobo-device.js?ts=1773670636"></script>
-    <script src="kobopatch.js?ts=1773670636"></script>
-    <script src="patch-ui.js?ts=1773670636"></script>
-    <script src="app.js?ts=1773670636"></script>
+    <script src="kobo-device.js?ts=1773672116"></script>
+    <script src="kobopatch.js?ts=1773672116"></script>
+    <script src="patch-ui.js?ts=1773672116"></script>
+    <script src="app.js?ts=1773672116"></script>
 </body>
 </html>

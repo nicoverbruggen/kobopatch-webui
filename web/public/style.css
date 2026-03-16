@@ -406,10 +406,11 @@ button.btn-success:hover {
     flex-shrink: 0;
 }
 
-.patch-description {
+.step .patch-description {
     margin-top: 0.3rem;
     margin-left: 1.6rem;
-    font-size: 0.75rem;
+    margin-bottom: 0;
+    font-size: 0.72rem;
     color: var(--text-secondary);
     white-space: pre-line;
     line-height: 1.4;
@@ -500,7 +501,7 @@ input[type="file"] {
     height: calc(7 * 1.5em + 1.5rem);
 }
 
-.hint {
+.step .hint {
     margin-top: 1rem;
     padding: 0.65rem 1rem;
     background: var(--success-bg);
@@ -532,14 +533,20 @@ input[type="file"] {
     text-decoration: underline;
 }
 
-.fallback-hint {
-    margin-top: 0.75rem;
-    font-size: 0.83rem;
+.step .fallback-hint {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.78rem;
     color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+select + .fallback-hint {
+    margin-top: -0.5rem;
 }
 
 /* Install summary */
-.install-summary {
+.step .install-summary {
     font-size: 0.93rem;
     color: var(--text);
     line-height: 1.6;
@@ -555,7 +562,7 @@ input[type="file"] {
     margin-bottom: 0.75rem;
 }
 
-.install-instructions .hint {
+.step .install-instructions .hint {
     margin-top: 0;
 }
 
@@ -570,7 +577,7 @@ input[type="file"] {
     padding: 0.1rem 0;
 }
 
-.info-banner {
+.step .info-banner {
     background: var(--primary-light);
     border: 1px solid #bfdbfe;
     color: #1e40af;
@@ -594,6 +601,10 @@ input[type="file"] {
 
 #firmware-verify-notice {
     font-size: 12px;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 select {
