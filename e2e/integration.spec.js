@@ -17,7 +17,7 @@ const EXPECTED_SHA1 = {
 const FIRMWARE_PATH = process.env.FIRMWARE_ZIP
   || path.resolve(__dirname, '..', 'kobopatch-wasm', 'testdata', 'kobo-update-4.45.23646.zip');
 
-const WEBROOT_FIRMWARE = path.resolve(__dirname, '..', 'src', 'public', '_test_firmware.zip');
+const WEBROOT_FIRMWARE = path.resolve(__dirname, '..', 'web', 'public', '_test_firmware.zip');
 
 /**
  * Parse a tar archive (uncompressed) and return a map of entry name -> Buffer.

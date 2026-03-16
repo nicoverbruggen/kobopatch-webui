@@ -1,7 +1,7 @@
 # KoboPatch Web UI
 
 > [!IMPORTANT]
-> **This is an experiment**, mostly created with the help of Claude and some very precise instructions. Until I can validate that this project consistently outputs identically patched files to the local binaries and I am confident the patcher works as expected, this message will remain.
+> **This is an experiment**, mostly created with the help of Claude and some very precise instructions.
 
 A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/firmware selection on other browsers.
 
@@ -21,7 +21,7 @@ Fully client-side — no backend needed, can be hosted as a static site. Patches
 ## File structure
 
 ```
-src/public/                     # Webroot — serve this directory
+web/public/                     # Webroot — serve this directory
   index.html                    # Single-page app, 3-step wizard (Device → Patches → Build)
   style.css
   app.js                        # Step navigation, flow orchestration, firmware download with progress
@@ -44,13 +44,13 @@ kobopatch-wasm/                 # WASM build
                                 #   Returns { tgz: Uint8Array, log: string }
   go.mod
   setup.sh                      # Clones kobopatch source, copies wasm_exec.js
-  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to src/public/,
+  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to web/public/,
                                 #   sets ?ts= cache-bust timestamp in patch-worker.js
 ```
 
 ## Adding a new firmware version
 
-1. Add the patch zip to `src/public/patches/` and update `index.json`
+1. Add the patch zip to `web/public/patches/` and update `index.json`
 2. Add firmware download URLs to `FIRMWARE_DOWNLOADS` in `kobo-device.js` (keyed by version then serial prefix)
 3. The kobo CDN prefix per device family (e.g. `kobo12`, `kobo13`) is stable; the date path segment changes per release
 
@@ -61,13 +61,13 @@ Requires Go 1.21+.
 ```bash
 cd kobopatch-wasm
 ./setup.sh    # first time only
-./build.sh    # compiles WASM, copies to src/public/
+./build.sh    # compiles WASM, copies to web/public/
 ```
 
 ## Running locally
 
 ```bash
-python3 -m http.server -d src/public/ 8888
+python3 -m http.server -d web/public/ 8888
 ```
 
 ## Testing

@@ -8,7 +8,7 @@ if [ ! -d "$SCRIPT_DIR/kobopatch-src" ]; then
     exit 1
 fi
 
-PUBLIC_DIR="$SCRIPT_DIR/../src/public"
+PUBLIC_DIR="$SCRIPT_DIR/../web/public"
 
 echo "Building kobopatch WASM..."
 cd "$SCRIPT_DIR"

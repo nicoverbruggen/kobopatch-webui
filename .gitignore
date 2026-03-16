@@ -12,11 +12,11 @@ kobopatch-wasm/kobopatch.wasm
 kobopatch-wasm/wasm_exec.js
 
 # Test artifacts in webroot
-src/public/_test_firmware.zip
+web/public/_test_firmware.zip
 
 # WASM artifacts copied to webroot for serving
-src/public/kobopatch.wasm
-src/public/wasm_exec.js
+web/public/kobopatch.wasm
+web/public/wasm_exec.js
 
 # E2E tests
 e2e/node_modules/
