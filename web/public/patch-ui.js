@@ -236,7 +236,58 @@ class PatchUI {
                 }
             }
 
-            for (const patch of patches) {
+            // Sort: grouped (radio) patches first, then standalone (checkbox) patches.
+            const sorted = [...patches].sort((a, b) => {
+                const aGrouped = a.patchGroup && patchGroups[a.patchGroup].length > 1 ? 0 : 1;
+                const bGrouped = b.patchGroup && patchGroups[b.patchGroup].length > 1 ? 0 : 1;
+                return aGrouped - bGrouped;
+            });
+
+            const renderedGroupNone = {};
+            // Group wrapper elements keyed by patchGroup name.
+            const groupWrappers = {};
+
+            for (const patch of sorted) {
+                const isGrouped = patch.patchGroup && patchGroups[patch.patchGroup].length > 1;
+
+                // Create a group wrapper and "None" option before the first patch in each group.
+                if (isGrouped && !renderedGroupNone[patch.patchGroup]) {
+                    renderedGroupNone[patch.patchGroup] = true;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'patch-group';
+
+                    const groupLabel = document.createElement('div');
+                    groupLabel.className = 'patch-group-label';
+                    groupLabel.textContent = patch.patchGroup;
+                    wrapper.appendChild(groupLabel);
+
+                    const noneItem = document.createElement('div');
+                    noneItem.className = 'patch-item';
+                    const noneHeader = document.createElement('label');
+                    noneHeader.className = 'patch-header';
+                    const noneInput = document.createElement('input');
+                    noneInput.type = 'radio';
+                    noneInput.name = `pg_${filename}_${patch.patchGroup}`;
+                    noneInput.checked = !patchGroups[patch.patchGroup].some(p => p.enabled);
+                    noneInput.addEventListener('change', () => {
+                        for (const other of patchGroups[patch.patchGroup]) {
+                            other.enabled = false;
+                        }
+                        this._updateCounts(container);
+                    });
+                    const noneName = document.createElement('span');
+                    noneName.className = 'patch-name patch-name-none';
+                    noneName.textContent = 'None (do not patch)';
+                    noneHeader.appendChild(noneInput);
+                    noneHeader.appendChild(noneName);
+                    noneItem.appendChild(noneHeader);
+                    wrapper.appendChild(noneItem);
+
+                    groupWrappers[patch.patchGroup] = wrapper;
+                    list.appendChild(wrapper);
+                }
+
                 const item = document.createElement('div');
                 item.className = 'patch-item';
 
@@ -244,7 +295,6 @@ class PatchUI {
                 header.className = 'patch-header';
 
                 const input = document.createElement('input');
-                const isGrouped = patch.patchGroup && patchGroups[patch.patchGroup].length > 1;
 
                 if (isGrouped) {
                     input.type = 'radio';
@@ -281,13 +331,6 @@ class PatchUI {
                     header.appendChild(toggle);
                 }
 
-                if (patch.patchGroup) {
-                    const groupBadge = document.createElement('span');
-                    groupBadge.className = 'patch-group-badge';
-                    groupBadge.textContent = patch.patchGroup;
-                    header.appendChild(groupBadge);
-                }
-
                 item.appendChild(header);
 
                 if (patch.description) {
@@ -306,7 +349,11 @@ class PatchUI {
                     });
                 }
 
-                list.appendChild(item);
+                if (isGrouped) {
+                    groupWrappers[patch.patchGroup].appendChild(item);
+                } else {
+                    list.appendChild(item);
+                }
             }
 
             section.appendChild(list);
@@ -336,6 +383,19 @@ class PatchUI {
             count += patches.filter(p => p.enabled).length;
         }
         return count;
+    }
+
+    /**
+     * Get names of all enabled patches across all files.
+     */
+    getEnabledPatches() {
+        const names = [];
+        for (const [, { patches }] of Object.entries(this.patchFiles)) {
+            for (const p of patches) {
+                if (p.enabled) names.push(p.name);
+            }
+        }
+        return names;
     }
 
     /**

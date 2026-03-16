@@ -61,6 +61,20 @@ h1 {
     font-weight: 600;
 }
 
+.beta-pill {
+    font-size: 0.55rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--error-text);
+    color: #fff;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    vertical-align: middle;
+    position: relative;
+    top: -0.15rem;
+}
+
 .subtitle {
     color: var(--text-secondary);
     font-size: 0.95rem;
@@ -135,7 +149,7 @@ h2 {
 .step-nav li + li::after {
     content: '';
     position: absolute;
-    top: 1.05rem;
+    top: 1.3rem;
     right: 50%;
     width: 100%;
     height: 2px;
@@ -324,12 +338,37 @@ button.btn-success:hover {
     padding: 0.6rem 0.75rem;
     cursor: pointer;
     display: flex;
-    justify-content: space-between;
     align-items: center;
     font-weight: 500;
     font-size: 0.93rem;
     user-select: none;
     transition: background 0.1s;
+    list-style: none;
+}
+
+.patch-file-section summary::-webkit-details-marker {
+    display: none;
+}
+
+.patch-file-section summary::before {
+    content: "\203A";
+    display: inline-block;
+    width: 1rem;
+    margin-right: 0.35rem;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: transform 0.15s ease;
+}
+
+.patch-file-section[open] summary::before {
+    transform: rotate(90deg) translateX(0.1rem);
+}
+
+.patch-file-section summary .patch-count {
+    margin-left: auto;
 }
 
 .patch-file-section summary:hover {
@@ -378,6 +417,10 @@ button.btn-success:hover {
     font-weight: 500;
 }
 
+.patch-name-none {
+    color: var(--text-secondary);
+}
+
 .patch-desc-toggle {
     flex-shrink: 0;
     background: none;
@@ -395,15 +438,25 @@ button.btn-success:hover {
     opacity: 1;
 }
 
-.patch-group-badge {
-    font-size: 0.7rem;
-    font-weight: 500;
-    background: var(--primary-light);
+/* Visual grouping for mutually exclusive patches */
+.patch-group {
+    background: #f8fafc;
+    border-left: 3px solid var(--primary);
+    margin: 0.35rem 0.5rem;
+    border-radius: 0 6px 6px 0;
+}
+
+.patch-group .patch-item {
+    padding: 0.4rem 0.75rem;
+}
+
+.patch-group-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
     color: var(--primary);
-    padding: 0.1rem 0.5rem;
-    border-radius: 4px;
-    margin-left: auto;
-    flex-shrink: 0;
+    padding: 0.45rem 0.75rem 0;
 }
 
 .step .patch-description {
@@ -585,6 +638,18 @@ select + .fallback-hint {
     border-radius: 8px;
     font-size: 0.83rem;
     margin-bottom: 1rem;
+}
+
+/* Selected patches summary on build step */
+.selected-patches-list {
+    margin: 0 0 0.75rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.selected-patches-list li {
+    padding: 0.05rem 0;
 }
 
 #firmware-download-url {

@@ -193,7 +193,7 @@ test('restore original firmware pipeline', async ({ page }) => {
   // Step 5: Verify build step shows restore text.
   await expect(page.locator('#step-firmware')).not.toBeHidden();
   await expect(page.locator('#firmware-description')).toContainText('without modifications');
-  await expect(page.locator('#btn-build')).toContainText('Restore Original Firmware');
+  await expect(page.locator('#btn-build')).toContainText('Restore Original Software');
 
   // Step 6: Build and wait for completion.
   await page.click('#btn-build');
@@ -208,7 +208,7 @@ test('restore original firmware pipeline', async ({ page }) => {
     throw new Error(`Restore failed: ${errorMsg}`);
   }
 
-  await expect(page.locator('#build-status')).toContainText('Firmware extracted');
+  await expect(page.locator('#build-status')).toContainText('Software extracted');
 
   // Step 7: Download KoboRoot.tgz and verify it matches the original.
   const [download] = await Promise.all([

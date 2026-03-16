@@ -78,7 +78,7 @@
         const count = patchUI.getEnabledCount();
         btnPatchesNext.disabled = false;
         if (count === 0) {
-            patchCountHint.textContent = 'No patches selected — continuing will restore the original unpatched firmware.';
+            patchCountHint.textContent = 'No patches selected — continuing will restore the original unpatched software.';
         } else {
             patchCountHint.textContent = count === 1 ? '1 patch selected.' : count + ' patches selected.';
         }
@@ -109,7 +109,7 @@
         manualChromeHint.hidden = false;
 
         const available = await scanAvailablePatches();
-        manualVersion.innerHTML = '<option value="">-- Select firmware version --</option>';
+        manualVersion.innerHTML = '<option value="">-- Select software version --</option>';
         for (const p of available) {
             const opt = document.createElement('option');
             opt.value = p.version;
@@ -169,7 +169,7 @@
             const available = await scanAvailablePatches();
             const loaded = await loadPatchesForVersion(version, available);
             if (!loaded) {
-                showError('Could not load patches for firmware ' + version);
+                showError('Could not load patches for software version ' + version);
                 return;
             }
             configureFirmwareStep(version, selectedPrefix);
@@ -185,7 +185,13 @@
             const info = await device.connect();
 
             document.getElementById('device-model').textContent = info.model;
-            document.getElementById('device-serial').textContent = info.serial;
+            const serialEl = document.getElementById('device-serial');
+            serialEl.textContent = '';
+            const prefixLen = info.serialPrefix.length;
+            const u = document.createElement('u');
+            u.textContent = info.serial.slice(0, prefixLen);
+            serialEl.appendChild(u);
+            serialEl.appendChild(document.createTextNode(info.serial.slice(prefixLen)));
             document.getElementById('device-firmware').textContent = info.firmware;
 
             selectedPrefix = info.serialPrefix;
@@ -196,7 +202,7 @@
             if (match) {
                 deviceStatus.className = '';
                 deviceStatus.textContent =
-                    'KoboPatch Web UI currently supports this version of the firmware. ' +
+                    'KoboPatch Web UI currently supports this version of the software. ' +
                     'You can choose to customize it or simply restore the original software.';
 
                 await patchUI.loadFromURL('patches/' + match.filename);
@@ -211,7 +217,7 @@
             } else {
                 deviceStatus.className = 'status-unsupported';
                 deviceStatus.textContent =
-                    'No patches available for firmware ' + info.firmware + '. ' +
+                    'No patches available for software version ' + info.firmware + '. ' +
                     'Supported versions: ' + available.map(p => p.version).join(', ');
                 btnDeviceNext.hidden = true;
                 btnDeviceRestore.hidden = true;
@@ -273,12 +279,27 @@
         if (isRestore) {
             firmwareDescription.textContent =
                 'will be downloaded and extracted without modifications to restore the original unpatched software.';
-            btnBuild.textContent = 'Restore Original Firmware';
+            btnBuild.textContent = 'Restore Original Software';
         } else {
             firmwareDescription.textContent =
                 'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes.';
-            btnBuild.textContent = 'Build Patched Firmware';
+            btnBuild.textContent = 'Build Patched Software';
         }
+        // Populate selected patches list.
+        const patchList = document.getElementById('selected-patches-list');
+        patchList.innerHTML = '';
+        const enabled = patchUI.getEnabledPatches();
+        if (enabled.length > 0) {
+            for (const name of enabled) {
+                const li = document.createElement('li');
+                li.textContent = name;
+                patchList.appendChild(li);
+            }
+        }
+        const hasPatches = enabled.length > 0;
+        patchList.hidden = !hasPatches;
+        document.getElementById('selected-patches-heading').hidden = !hasPatches;
+
         setNavStep(3);
         showStep(stepFirmware);
     }
@@ -293,12 +314,12 @@
     async function downloadFirmware(url) {
         const resp = await fetch(url);
         if (!resp.ok) {
-            throw new Error('Firmware download failed: HTTP ' + resp.status);
+            throw new Error('Download failed: HTTP ' + resp.status);
         }
 
         const contentLength = resp.headers.get('Content-Length');
         if (!contentLength || !resp.body) {
-            buildProgress.textContent = 'Downloading firmware...';
+            buildProgress.textContent = 'Downloading software update...';
             return new Uint8Array(await resp.arrayBuffer());
         }
 
@@ -315,7 +336,7 @@
             const pct = ((received / total) * 100).toFixed(0);
             const mb = (received / 1024 / 1024).toFixed(1);
             const totalMB = (total / 1024 / 1024).toFixed(1);
-            buildProgress.textContent = `Downloading firmware... ${mb} / ${totalMB} MB (${pct}%)`;
+            buildProgress.textContent = `Downloading software update... ${mb} / ${totalMB} MB (${pct}%)`;
         }
 
         const result = new Uint8Array(received);
@@ -337,24 +358,24 @@
         buildLog.textContent = '';
         buildProgress.textContent = 'Starting...';
         document.getElementById('build-wait-hint').textContent = isRestore
-            ? 'Please wait while the original firmware is being downloaded and extracted...'
+            ? 'Please wait while the original software is being downloaded and extracted...'
             : 'Please wait while the patch is being applied...';
 
         try {
             if (!firmwareURL) {
-                showError('No firmware download URL available for this device.');
+                showError('No download URL available for this device.');
                 return;
             }
 
             const firmwareBytes = await downloadFirmware(firmwareURL);
-            appendLog('Firmware downloaded: ' + (firmwareBytes.length / 1024 / 1024).toFixed(1) + ' MB');
+            appendLog('Download complete: ' + (firmwareBytes.length / 1024 / 1024).toFixed(1) + ' MB');
 
             if (isRestore) {
                 buildProgress.textContent = 'Extracting KoboRoot.tgz...';
-                appendLog('Extracting original KoboRoot.tgz from firmware...');
+                appendLog('Extracting original KoboRoot.tgz from software update...');
                 const zip = await JSZip.loadAsync(firmwareBytes);
                 const koboRoot = zip.file('KoboRoot.tgz');
-                if (!koboRoot) throw new Error('KoboRoot.tgz not found in firmware zip');
+                if (!koboRoot) throw new Error('KoboRoot.tgz not found in software update');
                 resultTgz = new Uint8Array(await koboRoot.async('arraybuffer'));
                 appendLog('Extracted KoboRoot.tgz: ' + (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB');
             } else {
@@ -374,7 +395,7 @@
                 resultTgz = result.tgz;
             }
             const sizeTxt = (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB';
-            const action = isRestore ? 'Firmware extracted' : 'Patching complete';
+            const action = isRestore ? 'Software extracted' : 'Patching complete';
             const description = isRestore
                 ? 'This will restore the original unpatched software.'
                 : '';

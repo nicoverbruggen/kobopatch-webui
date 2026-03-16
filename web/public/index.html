@@ -13,7 +13,7 @@
 <body>
     <main>
         <header class="hero">
-            <h1>KoboPatch <span class="hero-accent">Web UI</span></h1>
+            <h1>KoboPatch <span class="hero-accent">Web UI</span> <span class="beta-pill">beta</span></h1>
             <p class="subtitle">Custom patches for your Kobo e-reader</p>
         </header>
 
@@ -40,7 +40,7 @@
             <button id="btn-connect" class="primary">Select Kobo Drive</button>
             <p class="fallback-hint">
                 Don't want to use Chrome?
-                <a href="#" id="btn-manual-from-auto">Select your firmware version manually</a> instead.
+                <a href="#" id="btn-manual-from-auto">Select your software version manually</a> instead.
             </p>
         </section>
 
@@ -56,10 +56,10 @@
                 and write patched files directly to it, which is even easier to do!
             </p>
             <p>
-                Select your firmware version first, and then the Kobo model.
+                Select your software version first, and then the Kobo model.
             </p>
             <select id="manual-version">
-                <option value="">-- Select firmware version --</option>
+                <option value="">-- Select software version --</option>
             </select>
             <p id="manual-version-hint" class="fallback-hint">
                 You can identify your the version number shown on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> and by checking <strong>Software version</strong>.
@@ -90,7 +90,7 @@
                     <span id="device-serial" class="value">--</span>
                 </div>
                 <div class="info-row">
-                    <span class="label">Firmware</span>
+                    <span class="label">Software</span>
                     <span id="device-firmware" class="value">--</span>
                 </div>
             </div>
@@ -115,12 +115,14 @@
         <!-- Step 3: Review & Build -->
         <section id="step-firmware" class="step" hidden>
             <p id="firmware-auto-info">
-                Firmware <strong id="firmware-version-label"></strong> for
+                Software update <strong id="firmware-version-label"></strong> for
                 <strong id="firmware-device-label"></strong>
                 <span id="firmware-description">will be downloaded automatically from Kobo's servers and will be patched after the download completes.</span>
             </p>
+            <p id="selected-patches-heading" hidden>The following patches will be applied:</p>
+            <ul id="selected-patches-list" class="selected-patches-list"></ul>
             <details class="log-details">
-                <summary>Firmware download URL</summary>
+                <summary>Software download URL</summary>
                 <code id="firmware-download-url"></code>
                 <p id="firmware-verify-notice" class="fallback-hint">
                     You can verify if this URL matches your Kobo's model on
@@ -129,7 +131,7 @@
             </details>
             <div class="step-actions">
                 <button id="btn-build-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-build" class="primary">Build Patched Firmware</button>
+                <button id="btn-build" class="primary">Build Patched Software</button>
             </div>
         </section>
 
@@ -211,14 +213,14 @@
                 <ol>
                     <li><strong>Device selection</strong> &mdash; On Chromium-based browsers (Chrome, Edge), the app can
                         auto-detect your Kobo via the File System Access API when connected over USB.
-                        On other browsers, you manually select your model and firmware version.</li>
+                        On other browsers, you manually select your model and software version.</li>
                     <li><strong>Patch configuration</strong> &mdash; You choose which patches to enable or disable.
                         Patches in the same group are mutually exclusive (radio buttons).
                         The patches themselves are community-contributed via the
                         <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.</li>
-                    <li><strong>Build</strong> &mdash; The correct firmware is downloaded directly from Kobo's servers
+                    <li><strong>Build</strong> &mdash; The correct software update is downloaded directly from Kobo's servers
                         (<code>ereaderfiles.kobo.com</code>). The patcher, compiled from Go to WebAssembly, runs
-                        inside a Web Worker so the UI stays responsive. It extracts the firmware's
+                        inside a Web Worker so the UI stays responsive. It extracts
                         <code>KoboRoot.tgz</code>, applies your selected patches as in-place byte replacements
                         to the ELF binaries, validates the results (ELF headers, file sizes, archive consistency),
                         and produces a new <code>KoboRoot.tgz</code>.</li>
@@ -229,9 +231,9 @@
 
                 <h3>Restoring original software</h3>
                 <p>
-                    You can also use this tool to restore the original unpatched firmware. In that case,
+                    You can also use this tool to restore the original unpatched software. In that case,
                     no patches are applied &mdash; the original <code>KoboRoot.tgz</code> is extracted
-                    from the firmware zip as-is.
+                    from the software update as-is.
                 </p>
 
                 <h3>Safety</h3>
