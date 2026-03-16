@@ -136,14 +136,22 @@ function parsePatchConfig(configYAML) {
 
 /**
  * Scan the patches/ directory for available patch zips.
- * Returns an array of { filename, version } sorted by version descending.
+ * Returns an array of { filename, version } objects.
+ * Each entry in index.json may list multiple versions; these are flattened
+ * so that each version gets its own entry pointing to the same filename.
  */
 async function scanAvailablePatches() {
     try {
         const resp = await fetch('patches/index.json');
         if (!resp.ok) return [];
         const list = await resp.json();
-        return list;
+        const result = [];
+        for (const entry of list) {
+            for (const version of entry.versions) {
+                result.push({ filename: entry.filename, version });
+            }
+        }
+        return result;
     } catch {
         return [];
     }

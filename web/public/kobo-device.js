@@ -37,11 +37,6 @@ const KOBO_MODELS = {
 };
 
 /**
- * Supported firmware version for patching.
- */
-const SUPPORTED_FIRMWARE = '4.45.23646';
-
-/**
  * Firmware download URLs by version and serial prefix.
  * Source: https://help.kobo.com/hc/en-us/articles/35059171032727
  *
@@ -57,6 +52,11 @@ const FIRMWARE_DOWNLOADS = {
         'P365': 'https://ereaderfiles.kobo.com/firmwares/kobo14/Mar2026/kobo-update-4.45.23646.zip',
     },
 };
+
+/**
+ * Supported firmware versions for patching (derived from FIRMWARE_DOWNLOADS).
+ */
+const SUPPORTED_FIRMWARE = Object.keys(FIRMWARE_DOWNLOADS);
 
 /**
  * Get the firmware download URL for a given serial prefix and firmware version.
@@ -153,7 +153,7 @@ class KoboDevice {
             ? serial.substring(0, 4)
             : serial.substring(0, 3);
         const model = KOBO_MODELS[serialPrefix] || 'Unknown Kobo (' + serial.substring(0, 4) + ')';
-        const isSupported = firmware === SUPPORTED_FIRMWARE;
+        const isSupported = SUPPORTED_FIRMWARE.includes(firmware);
 
         return {
             serial,

@@ -215,10 +215,9 @@
                 btnDeviceRestore.hidden = false;
                 showStep(stepDevice);
             } else {
-                deviceStatus.className = 'status-unsupported';
+                deviceStatus.className = 'warning';
                 deviceStatus.textContent =
-                    'No patches available for software version ' + info.firmware + '. ' +
-                    'Supported versions: ' + available.map(p => p.version).join(', ');
+                    'No patch available for this specific version and model combination. Currently, only Kobo Libra Colour, Kobo Clara Colour and Kobo Clara BW can be patched via this website.';
                 btnDeviceNext.hidden = true;
                 btnDeviceRestore.hidden = true;
                 showStep(stepDevice);
