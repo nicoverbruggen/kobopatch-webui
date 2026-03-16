@@ -213,17 +213,13 @@ button:disabled {
     box-shadow: none;
 }
 
-button.btn-success {
-    background: var(--success-text);
-    border-color: var(--success-text);
-    color: #fff;
-    opacity: 1;
-    cursor: default;
-}
-
+button.btn-success,
 button.btn-success:hover {
     background: var(--success-text);
     border-color: var(--success-text);
+    color: #fff;
+    cursor: default;
+    opacity: 0.7;
 }
 
 /* Cards */
@@ -433,6 +429,7 @@ input[type="file"] {
 
 #build-actions {
     display: flex;
+    justify-content: space-between;
     gap: 0.75rem;
     margin-top: 1.25rem;
 }
@@ -539,6 +536,14 @@ input[type="file"] {
     margin-top: 0.75rem;
     font-size: 0.83rem;
     color: var(--text-secondary);
+}
+
+/* Install summary */
+.install-summary {
+    font-size: 0.93rem;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
 }
 
 /* Install instructions */

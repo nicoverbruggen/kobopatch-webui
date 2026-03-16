@@ -8,6 +8,7 @@
     let manualMode = false;
     let selectedPrefix = null;
     let patchesLoaded = false;
+    let isRestore = false;
 
     // DOM elements
     const stepNav = document.getElementById('step-nav');
@@ -27,10 +28,10 @@
     const manualModel = document.getElementById('manual-model');
     const manualChromeHint = document.getElementById('manual-chrome-hint');
     const btnDeviceNext = document.getElementById('btn-device-next');
+    const btnDeviceRestore = document.getElementById('btn-device-restore');
     const btnPatchesBack = document.getElementById('btn-patches-back');
     const btnPatchesNext = document.getElementById('btn-patches-next');
     const btnBuildBack = document.getElementById('btn-build-back');
-    const btnBuild = document.getElementById('btn-build');
     const btnWrite = document.getElementById('btn-write');
     const btnDownload = document.getElementById('btn-download');
     const btnRetry = document.getElementById('btn-retry');
@@ -41,6 +42,7 @@
     const deviceStatus = document.getElementById('device-status');
     const patchContainer = document.getElementById('patch-container');
     const buildStatus = document.getElementById('build-status');
+    const existingTgzWarning = document.getElementById('existing-tgz-warning');
     const writeInstructions = document.getElementById('write-instructions');
     const downloadInstructions = document.getElementById('download-instructions');
     const firmwareVersionLabel = document.getElementById('firmware-version-label');
@@ -74,12 +76,12 @@
     // --- Patch count ---
     function updatePatchCount() {
         const count = patchUI.getEnabledCount();
-        btnPatchesNext.disabled = count === 0;
-        patchCountHint.textContent = count === 0
-            ? 'Select at least one patch to continue.'
-            : count === 1
-                ? '1 patch selected.'
-                : count + ' patches selected.';
+        btnPatchesNext.disabled = false;
+        if (count === 0) {
+            patchCountHint.textContent = 'No patches selected — continuing will restore the original unpatched firmware.';
+        } else {
+            patchCountHint.textContent = count === 1 ? '1 patch selected.' : count + ' patches selected.';
+        }
     }
 
     patchUI.onChange = updatePatchCount;
@@ -134,8 +136,10 @@
         const version = manualVersion.value;
         selectedPrefix = null;
 
+        const modelHint = document.getElementById('manual-model-hint');
         if (!version) {
             manualModel.hidden = true;
+            modelHint.hidden = true;
             btnManualConfirm.disabled = true;
             return;
         }
@@ -149,6 +153,7 @@
             manualModel.appendChild(opt);
         }
         manualModel.hidden = false;
+        modelHint.hidden = false;
         btnManualConfirm.disabled = true;
     });
 
@@ -191,8 +196,10 @@
             const match = available.find(p => p.version === info.firmware);
 
             if (match) {
-                deviceStatus.className = 'status-supported';
-                deviceStatus.textContent = 'Patches available for firmware ' + info.firmware + '.';
+                deviceStatus.className = '';
+                deviceStatus.textContent =
+                    'KoboPatch Web UI currently supports this version of the firmware. ' +
+                    'You can choose to customize it or simply restore the original software.';
 
                 await patchUI.loadFromURL('patches/' + match.filename);
                 patchUI.render(patchContainer);
@@ -200,6 +207,8 @@
                 patchesLoaded = true;
                 configureFirmwareStep(info.firmware, info.serialPrefix);
 
+                btnDeviceNext.hidden = false;
+                btnDeviceRestore.hidden = false;
                 showStep(stepDevice);
             } else {
                 deviceStatus.className = 'status-unsupported';
@@ -207,6 +216,7 @@
                     'No patches available for firmware ' + info.firmware + '. ' +
                     'Supported versions: ' + available.map(p => p.version).join(', ');
                 btnDeviceNext.hidden = true;
+                btnDeviceRestore.hidden = true;
                 showStep(stepDevice);
             }
         } catch (err) {
@@ -218,6 +228,12 @@
     // Device info → patches
     btnDeviceNext.addEventListener('click', () => {
         if (patchesLoaded) goToPatches();
+    });
+
+    btnDeviceRestore.addEventListener('click', () => {
+        if (!patchesLoaded) return;
+        isRestore = true;
+        goToBuild();
     });
 
     async function loadPatchesForVersion(version, available) {
@@ -247,12 +263,24 @@
     });
 
     btnPatchesNext.addEventListener('click', () => {
-        if (patchUI.getEnabledCount() === 0) return;
+        isRestore = patchUI.getEnabledCount() === 0;
         goToBuild();
     });
 
     // --- Step 3: Review & Build ---
+    const btnBuild = document.getElementById('btn-build');
+    const firmwareDescription = document.getElementById('firmware-description');
+
     function goToBuild() {
+        if (isRestore) {
+            firmwareDescription.textContent =
+                'will be downloaded and extracted without modifications to restore the original unpatched software:';
+            btnBuild.textContent = 'Restore Original Firmware';
+        } else {
+            firmwareDescription.textContent =
+                'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes:';
+            btnBuild.textContent = 'Build Patched Firmware';
+        }
         setNavStep(3);
         showStep(stepFirmware);
     }
@@ -320,7 +348,7 @@
             const firmwareBytes = await downloadFirmware(firmwareURL);
             appendLog('Firmware downloaded: ' + (firmwareBytes.length / 1024 / 1024).toFixed(1) + ' MB');
 
-            buildProgress.textContent = 'Applying patches...';
+            buildProgress.textContent = isRestore ? 'Extracting firmware...' : 'Applying patches...';
             const configYAML = patchUI.generateConfig();
             const patchFiles = patchUI.getPatchFileBytes();
 
@@ -334,9 +362,17 @@
             });
 
             resultTgz = result.tgz;
-            buildStatus.textContent =
-                'Patching complete. KoboRoot.tgz is ' +
-                (resultTgz.length / 1024).toFixed(0) + ' KB.';
+            const sizeTxt = (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB';
+            const action = isRestore ? 'Firmware extracted' : 'Patching complete';
+            const description = isRestore
+                ? 'This will restore the original unpatched software.'
+                : '';
+            buildStatus.innerHTML =
+                action + '. <strong>KoboRoot.tgz</strong> (' + sizeTxt + ') is ready. ' +
+                (description ? description + ' ' : '') +
+                (manualMode
+                    ? 'Download the file and copy it to your Kobo.'
+                    : 'Write it directly to your connected Kobo, or download for manual installation.');
 
             const doneLog = document.getElementById('done-log');
             doneLog.textContent = buildLog.textContent;
@@ -349,6 +385,18 @@
             btnDownload.disabled = false;
             writeInstructions.hidden = true;
             downloadInstructions.hidden = true;
+            existingTgzWarning.hidden = true;
+
+            // Check if a KoboRoot.tgz already exists on the device.
+            if (!manualMode && device.directoryHandle) {
+                try {
+                    const koboDir = await device.directoryHandle.getDirectoryHandle('.kobo');
+                    await koboDir.getFileHandle('KoboRoot.tgz');
+                    existingTgzWarning.hidden = false;
+                } catch {
+                    // No existing file — that's fine.
+                }
+            }
 
             setNavStep(4);
             showStep(stepDone);
@@ -421,7 +469,9 @@
         manualMode = false;
         selectedPrefix = null;
         patchesLoaded = false;
+        isRestore = false;
         btnDeviceNext.hidden = false;
+        btnDeviceRestore.hidden = false;
 
         if (hasFileSystemAccess) {
             setNavStep(1);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KoboPatch Web UI</title>
-    <link rel="stylesheet" href="style.css?ts=1773666969">
+    <link rel="stylesheet" href="style.css?ts=1773669670">
     <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 </head>
 <body>
@@ -27,9 +27,8 @@
         <!-- Step 1a: Connect device (automatic, Chromium only) -->
         <section id="step-connect" class="step" hidden>
             <div class="warning">
-                Patching modifies system files on your Kobo. If something goes wrong,
+                <b>Patching modifies system files on your Kobo, and <u>will void your warranty</u>.</b> This process allows for custom modifications to be applied, or undone. If something has gone wrong,
                 you may need to <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">manually reset your device</a>.
-                Proceed with care.
             </div>
             <p>
                 Connect your Kobo e-reader via USB. It should appear as a removable drive.
@@ -53,13 +52,21 @@
                 Tip: if you use Chrome or Edge, this tool can auto-detect your device
                 and write patched files directly to it. Even easier, but sadly requires a Chromium based browser.
             </p>
-            <p>Select your Kobo model and firmware version.</p>
+            <p>Select your Kobo model and firmware version.
+                Not sure which model you have?
+                <a href="https://help.kobo.com/hc/en-us/articles/360019676973-Identify-your-Kobo-eReader-or-Kobo-tablet" target="_blank">Identify your Kobo eReader</a>.
+            </p>
             <select id="manual-version">
                 <option value="">-- Select firmware version --</option>
             </select>
             <select id="manual-model" hidden>
                 <option value="">-- Select your Kobo model --</option>
             </select>
+            <p id="manual-model-hint" class="fallback-hint" hidden>
+                You can identify your model by the serial number prefix shown on your Kobo
+                under <strong>Settings &gt; Device information</strong>.
+                Match the first characters (e.g. N428) to the list above.
+            </p>
             <button id="btn-manual-confirm" class="primary" disabled>Continue &#x203A;</button>
         </section>
 
@@ -79,8 +86,9 @@
                     <span id="device-firmware" class="value">--</span>
                 </div>
             </div>
-            <div id="device-status"></div>
+            <p id="device-status"></p>
             <div class="step-actions">
+                <button id="btn-device-restore" class="secondary">Restore Unpatched Software</button>
                 <button id="btn-device-next" class="primary">Configure Patches &#x203A;</button>
             </div>
         </section>
@@ -100,8 +108,8 @@
         <section id="step-firmware" class="step" hidden>
             <p id="firmware-auto-info">
                 Firmware <strong id="firmware-version-label"></strong> for
-                <strong id="firmware-device-label"></strong> will be downloaded
-                automatically from Kobo's servers and will be patched after the download completes:<br>
+                <strong id="firmware-device-label"></strong>
+                <span id="firmware-description">will be downloaded automatically from Kobo's servers and will be patched after the download completes:</span><br>
                 <code id="firmware-download-url"></code><br>
                 <span id="firmware-verify-notice">
                     You can verify if this URL matches your Kobo's model on
@@ -131,11 +139,15 @@
                 <p id="build-progress">Starting...</p>
             </div>
             <pre id="build-log" class="build-log"></pre>
+            <p class="fallback-hint">Please wait while the patch is being applied...</p>
         </section>
 
         <!-- Step 5: Install -->
         <section id="step-done" class="step" hidden>
-            <div id="build-status" class="info-banner"></div>
+            <p id="build-status" class="install-summary"></p>
+            <div id="existing-tgz-warning" class="warning" hidden>
+                An existing KoboRoot.tgz file was found on your Kobo and has not been applied yet. It will be overwritten.
+            </div>
             <details class="log-details">
                 <summary>Build log</summary>
                 <pre id="done-log" class="build-log done-log"></pre>
@@ -170,9 +182,9 @@
     </main>
 
     <!-- wasm_exec.js loaded by patch-worker.js inside the Web Worker -->
-    <script src="kobo-device.js?ts=1773666969"></script>
-    <script src="kobopatch.js?ts=1773666969"></script>
-    <script src="patch-ui.js?ts=1773666969"></script>
-    <script src="app.js?ts=1773666969"></script>
+    <script src="kobo-device.js?ts=1773669670"></script>
+    <script src="kobopatch.js?ts=1773669670"></script>
+    <script src="patch-ui.js?ts=1773669670"></script>
+    <script src="app.js?ts=1773669670"></script>
 </body>
 </html>

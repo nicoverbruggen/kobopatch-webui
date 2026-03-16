@@ -76,19 +76,9 @@ function getDevicesForVersion(version) {
     const versionMap = FIRMWARE_DOWNLOADS[version];
     if (!versionMap) return [];
     const devices = [];
-    const seen = {};
     for (const prefix of Object.keys(versionMap)) {
-        const model = KOBO_MODELS[prefix] || 'Unknown (' + prefix + ')';
-        // Track duplicates to disambiguate with serial prefix
-        if (seen[model]) seen[model].push(prefix);
-        else seen[model] = [prefix];
-    }
-    for (const prefix of Object.keys(versionMap)) {
-        const model = KOBO_MODELS[prefix] || 'Unknown (' + prefix + ')';
-        const label = seen[model].length > 1
-            ? model + ' (serial ' + prefix + '...)'
-            : model;
-        devices.push({ prefix, model: label });
+        const model = KOBO_MODELS[prefix] || 'Unknown';
+        devices.push({ prefix, model: model + ' (' + prefix + ')' });
     }
     return devices;
 }
