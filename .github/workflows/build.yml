@@ -2,10 +2,8 @@ name: Build & Test WASM
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ['v*']
-  pull_request:
-    branches: [main]
 
 jobs:
   build-and-test:
@@ -73,5 +71,5 @@ jobs:
       - name: Full integration test (Playwright)
         if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
-          cd e2e
+          cd tests/e2e
           ./run-e2e.sh

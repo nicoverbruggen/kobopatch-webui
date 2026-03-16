@@ -19,9 +19,9 @@ web/public/wasm/kobopatch.wasm
 web/public/js/wasm_exec.js
 
 # E2E tests
-e2e/node_modules/
-e2e/test-results/
-e2e/playwright-report/
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
 
 # Claude
 .claude

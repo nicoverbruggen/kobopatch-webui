@@ -14,11 +14,11 @@ cd "$(dirname "$0")"
 
 FIRMWARE_VERSION="4.45.23646"
 FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-${FIRMWARE_VERSION}.zip"
-FIRMWARE_DIR="../kobopatch-wasm/testdata"
+FIRMWARE_DIR="../../kobopatch-wasm/testdata"
 FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
 
 # Check WASM is built.
-if [ ! -f "../web/public/wasm/kobopatch.wasm" ]; then
+if [ ! -f "../../web/public/wasm/kobopatch.wasm" ]; then
     echo "ERROR: kobopatch.wasm not found. Run kobopatch-wasm/build.sh first."
     exit 1
 fi
@@ -45,5 +45,5 @@ npx playwright install chromium --with-deps 2>/dev/null || npx playwright instal
 
 # Run the test.
 echo "Running E2E integration test..."
-FIRMWARE_ZIP="$(cd .. && pwd)/kobopatch-wasm/testdata/kobo-update-${FIRMWARE_VERSION}.zip" \
+FIRMWARE_ZIP="$(cd ../.. && pwd)/kobopatch-wasm/testdata/kobo-update-${FIRMWARE_VERSION}.zip" \
     npx playwright test --reporter=list

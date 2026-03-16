@@ -14,29 +14,32 @@ Fully client-side — no backend needed, can be hosted as a static site. Patches
 
 ## User flow
 
-1. Select device (auto-detect via File System Access API on Chromium, or manual dropdowns on any browser)
-2. Configure patches (enable/disable, PatchGroup mutual exclusion via radio buttons) — or select none to restore original software
-3. Build — software update auto-downloaded from Kobo's CDN (`ereaderfiles.kobo.com`, CORS open), patched via WASM in a Web Worker
-4. Write `KoboRoot.tgz` to device (Chromium auto mode) or download manually
+1. **Select device** — auto-detect via File System Access API on Chromium, or manual dropdowns on any browser
+2. **Configure patches** — enable/disable patches (PatchGroup mutual exclusion via radio buttons), or select none to restore original unpatched software
+3. **Build** — software update is auto-downloaded from Kobo's CDN (`ereaderfiles.kobo.com`, CORS open) and either patched via WASM in a Web Worker, or the original `KoboRoot.tgz` is extracted as-is for restoring
+4. **Install** — write `KoboRoot.tgz` directly to the device (Chromium auto mode) or download for manual installation
 
 ## File structure
 
 ```
 web/public/                     # Webroot — serve this directory
-  index.html                    # Single-page app, 3-step wizard (Device → Patches → Build)
-  style.css
-  app.js                        # Step navigation, flow orchestration, firmware download with progress
-  kobo-device.js                # KOBO_MODELS (serial prefix → name), FIRMWARE_DOWNLOADS (version+prefix → URL),
+  index.html                    # Single-page app, 4-step wizard (Device → Patches → Build → Install)
+  css/
+    style.css
+  js/
+    app.js                      # Step navigation, flow orchestration, firmware download with progress
+    kobo-device.js              # KOBO_MODELS (serial prefix → name), FIRMWARE_DOWNLOADS (version+prefix → URL),
                                 #   getDevicesForVersion(), getFirmwareURL(), KoboDevice class (File System Access API)
-  patch-ui.js                   # PatchUI class: loads patch zips (JSZip), parses YAML, renders toggle UI,
+    patch-ui.js                 # PatchUI class: loads patch zips (JSZip), parses YAML, renders toggle UI,
                                 #   generates kobopatch.yaml config with overrides
-  kobopatch.js                  # KobopatchRunner: spawns Web Worker per build, handles progress/done/error messages
-  patch-worker.js               # Web Worker: loads wasm_exec.js + kobopatch.wasm, runs patchFirmware(),
+    kobopatch.js                # KobopatchRunner: spawns Web Worker per build, handles progress/done/error messages
+    patch-worker.js             # Web Worker: loads wasm_exec.js + kobopatch.wasm, runs patchFirmware(),
                                 #   posts progress back, transfers result buffer zero-copy
-  wasm_exec.js                  # Go WASM support runtime (copied from Go SDK by setup.sh, gitignored)
-  kobopatch.wasm                # Compiled WASM binary (built by build.sh, gitignored)
+    wasm_exec.js                # Go WASM support runtime (copied from Go SDK by setup.sh, gitignored)
+  wasm/
+    kobopatch.wasm              # Compiled WASM binary (built by build.sh, gitignored)
   patches/
-    index.json                  # [{ "version": "4.45.23646", "filename": "patches_4.45.23646.zip" }]
+    index.json                  # Contains a list of available patches
     patches_*.zip               # Each contains kobopatch.yaml + src/*.yaml patch files
 
 kobopatch-wasm/                 # WASM build
@@ -45,14 +48,23 @@ kobopatch-wasm/                 # WASM build
                                 #   Returns { tgz: Uint8Array, log: string }
   go.mod
   setup.sh                      # Clones kobopatch source, copies wasm_exec.js
-  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to web/public/,
-                                #   sets ?ts= cache-bust timestamp in patch-worker.js
+  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to web/public/wasm/,
+                                #   sets ?ts= cache-bust timestamp in js/patch-worker.js
+  integration_test.go           # Go integration test: validates SHA1 checksums of patched binaries
+  test-integration.sh           # Downloads firmware and runs integration_test.go
+
+tests/
+  e2e/                          # Playwright E2E tests
+    integration.spec.js         # Full browser pipeline test (patch + restore)
+    playwright.config.js
+    run-e2e.sh                  # Headless E2E runner (downloads firmware, installs browser)
+    run-e2e-local.sh            # Headed E2E runner (visible browser window)
 ```
 
 ## Adding a new software version
 
 1. Add the patch zip to `web/public/patches/` and update `index.json`
-2. Add download URLs to `FIRMWARE_DOWNLOADS` in `kobo-device.js` (keyed by version then serial prefix)
+2. Add download URLs to `FIRMWARE_DOWNLOADS` in `js/kobo-device.js` (keyed by version then serial prefix)
 3. The Kobo CDN prefix per device family (e.g. `kobo12`, `kobo13`) is stable; the date path segment changes per release
 
 ## Building the WASM binary
@@ -62,7 +74,7 @@ Requires Go 1.21+.
 ```bash
 cd kobopatch-wasm
 ./setup.sh    # first time only
-./build.sh    # compiles WASM, copies to web/public/
+./build.sh    # compiles WASM, copies to web/public/wasm/
 ```
 
 ## Running locally
@@ -89,14 +101,14 @@ cd kobopatch-wasm
 **Playwright E2E test** — drives the full browser UI (manual mode, headless):
 
 ```bash
-cd e2e
+cd tests/e2e
 ./run-e2e.sh
 ```
 
 To run the Playwright test with a visible browser window:
 
 ```bash
-cd e2e
+cd tests/e2e
 ./run-e2e-local.sh
 ```
 

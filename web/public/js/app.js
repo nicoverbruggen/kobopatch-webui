@@ -14,7 +14,42 @@
     // Fetch patch index immediately so it's ready when needed.
     const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 
-    // DOM elements
+    // --- Helpers ---
+
+    function formatMB(bytes) {
+        return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+
+    function populateSelect(selectEl, placeholder, items) {
+        selectEl.innerHTML = '';
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = placeholder;
+        selectEl.appendChild(defaultOpt);
+        for (const { value, text, data } of items) {
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = text;
+            if (data) {
+                for (const [k, v] of Object.entries(data)) {
+                    opt.dataset[k] = v;
+                }
+            }
+            selectEl.appendChild(opt);
+        }
+    }
+
+    function triggerDownload(data, filename, mimeType) {
+        const blob = new Blob([data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // --- DOM elements ---
     const stepNav = document.getElementById('step-nav');
     const stepConnect = document.getElementById('step-connect');
     const stepManual = document.getElementById('step-manual');
@@ -40,7 +75,6 @@
     const btnDownload = document.getElementById('btn-download');
     const btnRetry = document.getElementById('btn-retry');
 
-    const firmwareAutoInfo = document.getElementById('firmware-auto-info');
     const errorMessage = document.getElementById('error-message');
     const errorLog = document.getElementById('error-log');
     const deviceStatus = document.getElementById('device-status');
@@ -82,7 +116,7 @@
         const count = patchUI.getEnabledCount();
         btnPatchesNext.disabled = false;
         if (count === 0) {
-            patchCountHint.textContent = 'No patches selected — continuing will restore the original unpatched software.';
+            patchCountHint.textContent = 'No patches selected \u2014 continuing will restore the original unpatched software.';
         } else {
             patchCountHint.textContent = count === 1 ? '1 patch selected.' : count + ' patches selected.';
         }
@@ -113,16 +147,11 @@
         manualChromeHint.hidden = false;
 
         await availablePatchesReady;
-        manualVersion.innerHTML = '<option value="">-- Select software version --</option>';
-        for (const p of availablePatches) {
-            const opt = document.createElement('option');
-            opt.value = p.version;
-            opt.textContent = p.version;
-            opt.dataset.filename = p.filename;
-            manualVersion.appendChild(opt);
-        }
+        populateSelect(manualVersion, '-- Select software version --',
+            availablePatches.map(p => ({ value: p.version, text: p.version, data: { filename: p.filename } }))
+        );
 
-        manualModel.innerHTML = '<option value="">-- Select your Kobo model --</option>';
+        populateSelect(manualModel, '-- Select your Kobo model --', []);
         manualModel.hidden = true;
 
         setNavStep(1);
@@ -147,13 +176,9 @@
         }
 
         const devices = getDevicesForVersion(version);
-        manualModel.innerHTML = '<option value="">-- Select your Kobo model --</option>';
-        for (const d of devices) {
-            const opt = document.createElement('option');
-            opt.value = d.prefix;
-            opt.textContent = d.model;
-            manualModel.appendChild(opt);
-        }
+        populateSelect(manualModel, '-- Select your Kobo model --',
+            devices.map(d => ({ value: d.prefix, text: d.model }))
+        );
         manualModel.hidden = false;
         modelHint.hidden = false;
         btnManualConfirm.disabled = true;
@@ -164,7 +189,7 @@
         btnManualConfirm.disabled = !manualVersion.value || !manualModel.value;
     });
 
-    // Manual confirm → load patches → go to step 2
+    // Manual confirm -> load patches -> go to step 2
     btnManualConfirm.addEventListener('click', async () => {
         const version = manualVersion.value;
         if (!version || !selectedPrefix) return;
@@ -182,7 +207,7 @@
         }
     });
 
-    // Auto connect → show device info
+    // Auto connect -> show device info
     btnConnect.addEventListener('click', async () => {
         try {
             const info = await device.connect();
@@ -231,7 +256,7 @@
         }
     });
 
-    // Device info → patches
+    // Device info -> patches
     btnDeviceNext.addEventListener('click', () => {
         if (patchesLoaded) goToPatches();
     });
@@ -261,11 +286,7 @@
 
     btnPatchesBack.addEventListener('click', () => {
         setNavStep(1);
-        if (manualMode) {
-            showStep(stepManual);
-        } else {
-            showStep(stepDevice);
-        }
+        showStep(manualMode ? stepManual : stepDevice);
     });
 
     btnPatchesNext.addEventListener('click', () => {
@@ -277,6 +298,20 @@
     const btnBuild = document.getElementById('btn-build');
     const firmwareDescription = document.getElementById('firmware-description');
 
+    function populateSelectedPatchesList() {
+        const patchList = document.getElementById('selected-patches-list');
+        patchList.innerHTML = '';
+        const enabled = patchUI.getEnabledPatches();
+        for (const name of enabled) {
+            const li = document.createElement('li');
+            li.textContent = name;
+            patchList.appendChild(li);
+        }
+        const hasPatches = enabled.length > 0;
+        patchList.hidden = !hasPatches;
+        document.getElementById('selected-patches-heading').hidden = !hasPatches;
+    }
+
     function goToBuild() {
         if (isRestore) {
             firmwareDescription.textContent =
@@ -287,21 +322,7 @@
                 'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes.';
             btnBuild.textContent = 'Build Patched Software';
         }
-        // Populate selected patches list.
-        const patchList = document.getElementById('selected-patches-list');
-        patchList.innerHTML = '';
-        const enabled = patchUI.getEnabledPatches();
-        if (enabled.length > 0) {
-            for (const name of enabled) {
-                const li = document.createElement('li');
-                li.textContent = name;
-                patchList.appendChild(li);
-            }
-        }
-        const hasPatches = enabled.length > 0;
-        patchList.hidden = !hasPatches;
-        document.getElementById('selected-patches-heading').hidden = !hasPatches;
-
+        populateSelectedPatchesList();
         setNavStep(3);
         showStep(stepFirmware);
     }
@@ -312,6 +333,11 @@
 
     const buildProgress = document.getElementById('build-progress');
     const buildLog = document.getElementById('build-log');
+
+    function appendLog(msg) {
+        buildLog.textContent += msg + '\n';
+        buildLog.scrollTop = buildLog.scrollHeight;
+    }
 
     async function downloadFirmware(url) {
         const resp = await fetch(url);
@@ -336,9 +362,8 @@
             chunks.push(value);
             received += value.length;
             const pct = ((received / total) * 100).toFixed(0);
-            const mb = (received / 1024 / 1024).toFixed(1);
-            const totalMB = (total / 1024 / 1024).toFixed(1);
-            buildProgress.textContent = `Downloading software update... ${mb} / ${totalMB} MB (${pct}%)`;
+            buildProgress.textContent =
+                `Downloading software update... ${formatMB(received)} / ${formatMB(total)} (${pct}%)`;
         }
 
         const result = new Uint8Array(received);
@@ -350,9 +375,76 @@
         return result;
     }
 
-    function appendLog(msg) {
-        buildLog.textContent += msg + '\n';
-        buildLog.scrollTop = buildLog.scrollHeight;
+    async function extractOriginalTgz(firmwareBytes) {
+        buildProgress.textContent = 'Extracting KoboRoot.tgz...';
+        appendLog('Extracting original KoboRoot.tgz from software update...');
+        const zip = await JSZip.loadAsync(firmwareBytes);
+        const koboRoot = zip.file('KoboRoot.tgz');
+        if (!koboRoot) throw new Error('KoboRoot.tgz not found in software update');
+        const tgz = new Uint8Array(await koboRoot.async('arraybuffer'));
+        appendLog('Extracted KoboRoot.tgz: ' + formatMB(tgz.length));
+        return tgz;
+    }
+
+    async function runPatcher(firmwareBytes) {
+        buildProgress.textContent = 'Applying patches...';
+        const configYAML = patchUI.generateConfig();
+        const patchFiles = patchUI.getPatchFileBytes();
+
+        const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
+            appendLog(msg);
+            const trimmed = msg.trimStart();
+            if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
+                trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
+                buildProgress.textContent = trimmed;
+            }
+        });
+
+        return result.tgz;
+    }
+
+    function showBuildResult() {
+        const action = isRestore ? 'Software extracted' : 'Patching complete';
+        const description = isRestore ? 'This will restore the original unpatched software.' : '';
+        const deviceName = KOBO_MODELS[selectedPrefix] || 'Kobo';
+        const installHint = manualMode
+            ? 'Download the file and copy it to your ' + deviceName + '.'
+            : 'Write it directly to your connected Kobo, or download for manual installation.';
+
+        buildStatus.innerHTML =
+            action + '. <strong>KoboRoot.tgz</strong> (' + formatMB(resultTgz.length) + ') is ready. ' +
+            (description ? description + ' ' : '') + installHint;
+
+        const doneLog = document.getElementById('done-log');
+        doneLog.textContent = buildLog.textContent;
+
+        // Reset install step state.
+        btnWrite.hidden = manualMode;
+        btnWrite.disabled = false;
+        btnWrite.className = 'primary';
+        btnWrite.textContent = 'Write to Kobo';
+        btnDownload.disabled = false;
+        writeInstructions.hidden = true;
+        downloadInstructions.hidden = true;
+        existingTgzWarning.hidden = true;
+
+        setNavStep(4);
+        showStep(stepDone);
+
+        requestAnimationFrame(() => {
+            doneLog.scrollTop = doneLog.scrollHeight;
+        });
+    }
+
+    async function checkExistingTgz() {
+        if (manualMode || !device.directoryHandle) return;
+        try {
+            const koboDir = await device.directoryHandle.getDirectoryHandle('.kobo');
+            await koboDir.getFileHandle('KoboRoot.tgz');
+            existingTgzWarning.hidden = false;
+        } catch {
+            // No existing file — that's fine.
+        }
     }
 
     btnBuild.addEventListener('click', async () => {
@@ -370,75 +462,14 @@
             }
 
             const firmwareBytes = await downloadFirmware(firmwareURL);
-            appendLog('Download complete: ' + (firmwareBytes.length / 1024 / 1024).toFixed(1) + ' MB');
+            appendLog('Download complete: ' + formatMB(firmwareBytes.length));
 
-            if (isRestore) {
-                buildProgress.textContent = 'Extracting KoboRoot.tgz...';
-                appendLog('Extracting original KoboRoot.tgz from software update...');
-                const zip = await JSZip.loadAsync(firmwareBytes);
-                const koboRoot = zip.file('KoboRoot.tgz');
-                if (!koboRoot) throw new Error('KoboRoot.tgz not found in software update');
-                resultTgz = new Uint8Array(await koboRoot.async('arraybuffer'));
-                appendLog('Extracted KoboRoot.tgz: ' + (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB');
-            } else {
-                buildProgress.textContent = 'Applying patches...';
-                const configYAML = patchUI.generateConfig();
-                const patchFiles = patchUI.getPatchFileBytes();
+            resultTgz = isRestore
+                ? await extractOriginalTgz(firmwareBytes)
+                : await runPatcher(firmwareBytes);
 
-                const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
-                    appendLog(msg);
-                    const trimmed = msg.trimStart();
-                    if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
-                        trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
-                        buildProgress.textContent = trimmed;
-                    }
-                });
-
-                resultTgz = result.tgz;
-            }
-            const sizeTxt = (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB';
-            const action = isRestore ? 'Software extracted' : 'Patching complete';
-            const description = isRestore
-                ? 'This will restore the original unpatched software.'
-                : '';
-            buildStatus.innerHTML =
-                action + '. <strong>KoboRoot.tgz</strong> (' + sizeTxt + ') is ready. ' +
-                (description ? description + ' ' : '') +
-                (manualMode
-                    ? 'Download the file and copy it to your ' + (KOBO_MODELS[selectedPrefix] || 'Kobo') + '.'
-                    : 'Write it directly to your connected Kobo, or download for manual installation.');
-
-            const doneLog = document.getElementById('done-log');
-            doneLog.textContent = buildLog.textContent;
-
-            // Reset install step state.
-            btnWrite.hidden = manualMode;
-            btnWrite.disabled = false;
-            btnWrite.className = 'primary';
-            btnWrite.textContent = 'Write to Kobo';
-            btnDownload.disabled = false;
-            writeInstructions.hidden = true;
-            downloadInstructions.hidden = true;
-            existingTgzWarning.hidden = true;
-
-            // Check if a KoboRoot.tgz already exists on the device.
-            if (!manualMode && device.directoryHandle) {
-                try {
-                    const koboDir = await device.directoryHandle.getDirectoryHandle('.kobo');
-                    await koboDir.getFileHandle('KoboRoot.tgz');
-                    existingTgzWarning.hidden = false;
-                } catch {
-                    // No existing file — that's fine.
-                }
-            }
-
-            setNavStep(4);
-            showStep(stepDone);
-
-            // Scroll log to bottom after the step becomes visible.
-            requestAnimationFrame(() => {
-                doneLog.scrollTop = doneLog.scrollHeight;
-            });
+            showBuildResult();
+            await checkExistingTgz();
         } catch (err) {
             showError('Build failed: ' + err.message, buildLog.textContent);
         }
@@ -471,14 +502,7 @@
 
     btnDownload.addEventListener('click', () => {
         if (!resultTgz) return;
-        const blob = new Blob([resultTgz], { type: 'application/gzip' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'KoboRoot.tgz';
-        a.click();
-        URL.revokeObjectURL(url);
-
+        triggerDownload(resultTgz, 'KoboRoot.tgz', 'application/gzip');
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
         document.getElementById('download-device-name').textContent = KOBO_MODELS[selectedPrefix] || 'Kobo';
