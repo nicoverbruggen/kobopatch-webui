@@ -3,17 +3,20 @@
 > [!IMPORTANT]
 > **This is an experiment**, mostly created with the help of Claude and some very precise instructions. It currently only supports the latest version of Kobo's software, and only for the Kobo Libra Color, Kobo Clara Color and Kobo Clara BW models. Further support may be added at a later date.
 
-A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/firmware selection on other browsers.
+A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection on other browsers.
 
-The app makes it easy to configure which patches to apply, downloads the correct firmware from Kobo's servers, runs the patcher (compiled to WebAssembly), and places the resulting `KoboRoot.tgz` on the device. The user then reboots to apply.
+The app makes it easy to configure which patches to apply, downloads the correct software update from Kobo's servers, runs the patcher (compiled to WebAssembly), and places the resulting `KoboRoot.tgz` on the device. The user then safely ejects and reboots to apply. It can also restore the original unpatched software.
 
-Fully client-side — no backend needed, can be hosted as a static site. Patches are community-contributed via [MobileRead](https://www.mobileread.com/) and need to be manually updated when new Kobo firmware versions come out.
+Fully client-side — no backend needed, can be hosted as a static site. Patches are community-contributed via the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) and need to be manually updated when new Kobo software versions come out.
+
+> [!NOTE]
+> This project is not affiliated with Rakuten Kobo Inc. Patching modifies system files on your Kobo and will void your warranty. If something goes wrong, you may need to [manually reset your device](https://help.kobo.com/hc/en-us/articles/360017605314).
 
 ## User flow
 
 1. Select device (auto-detect via File System Access API on Chromium, or manual dropdowns on any browser)
-2. Configure patches (enable/disable, PatchGroup mutual exclusion via radio buttons)
-3. Build — firmware auto-downloaded from Kobo's CDN (`ereaderfiles.kobo.com`, CORS open), patched via WASM in a Web Worker
+2. Configure patches (enable/disable, PatchGroup mutual exclusion via radio buttons) — or select none to restore original software
+3. Build — software update auto-downloaded from Kobo's CDN (`ereaderfiles.kobo.com`, CORS open), patched via WASM in a Web Worker
 4. Write `KoboRoot.tgz` to device (Chromium auto mode) or download manually
 
 ## File structure
@@ -46,11 +49,11 @@ kobopatch-wasm/                 # WASM build
                                 #   sets ?ts= cache-bust timestamp in patch-worker.js
 ```
 
-## Adding a new firmware version
+## Adding a new software version
 
 1. Add the patch zip to `web/public/patches/` and update `index.json`
-2. Add firmware download URLs to `FIRMWARE_DOWNLOADS` in `kobo-device.js` (keyed by version then serial prefix)
-3. The kobo CDN prefix per device family (e.g. `kobo12`, `kobo13`) is stable; the date path segment changes per release
+2. Add download URLs to `FIRMWARE_DOWNLOADS` in `kobo-device.js` (keyed by version then serial prefix)
+3. The Kobo CDN prefix per device family (e.g. `kobo12`, `kobo13`) is stable; the date path segment changes per release
 
 ## Building the WASM binary
 
@@ -72,9 +75,9 @@ python3 -m http.server -d web/public/ 8888
 
 To further validate the patched `KoboRoot.tgz` packages are identical to what a local version of `kobopatch` would generate, two integration tests have been added.
 
-Both integration tests run the full patching pipeline with firmware 4.45.23646 (Kobo Libra Color), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. The firmware zip (~150MB) is downloaded once and cached in `kobopatch-wasm/testdata/`.
+Both integration tests run the full patching pipeline with software version 4.45.23646 (Kobo Libra Color), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. The software update zip (~150MB) is downloaded once and cached in `kobopatch-wasm/testdata/`.
 
-The reason this particular combination is used is simple: the author has actually used that specific firmware on an actual device before and it's a known, working, patched version of the firmware. So comparing hashes against it seems like a good idea.
+The reason this particular combination is used is simple: the author has actually used that specific version on an actual device before and it's a known, working, patched version of the software. So comparing hashes against it seems like a good idea.
 
 **WASM integration test** — calls `patchFirmware()` directly in Go/WASM via Node.js:
 
@@ -107,4 +110,4 @@ The WASM patcher performs several checks on each patched binary before including
 
 ## Credits
 
-kobopatch by [pgaskin](https://github.com/pgaskin/kobopatch). Patches from [MobileRead](https://www.mobileread.com/).
+Built on [kobopatch](https://github.com/pgaskin/kobopatch) by pgaskin. Patches and discussion on the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247).
