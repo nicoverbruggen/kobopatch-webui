@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"encoding/binary"
 	"io"
 	"path/filepath"
 	"strings"
@@ -260,6 +261,17 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 		}
 
 		patchedBytes := pt.GetBytes()
+
+		// Sanity check: patched binary must be the same size as the input.
+		if len(patchedBytes) != len(entryBytes) {
+			return nil, fmt.Errorf("size changed after patching '%s': was %d bytes, now %d bytes", h.Name, len(entryBytes), len(patchedBytes))
+		}
+
+		// Validate ELF header is intact after patching.
+		if err := validateELF(patchedBytes, h.Name); err != nil {
+			return nil, err
+		}
+
 		outTarExpectedSize += h.Size
 
 		// Write patched file to output tar, preserving original attributes.
@@ -319,6 +331,36 @@ func patchFirmware(configYAML []byte, firmwareZip []byte, patchFileContents map[
 		tgzBytes: outBuf.Bytes(),
 		log:      logBuf.String(),
 	}, nil
+}
+
+// validateELF checks that the patched binary still has a valid ARM ELF header.
+func validateELF(data []byte, name string) error {
+	if len(data) < 20 {
+		return fmt.Errorf("patched '%s' is too small to be a valid ELF binary (%d bytes)", name, len(data))
+	}
+
+	// ELF magic: \x7fELF
+	if data[0] != 0x7f || data[1] != 'E' || data[2] != 'L' || data[3] != 'F' {
+		return fmt.Errorf("patched '%s' has corrupted ELF magic bytes", name)
+	}
+
+	// EI_CLASS: must be 32-bit (1) — Kobo uses ARM 32-bit binaries
+	if data[4] != 1 {
+		return fmt.Errorf("patched '%s' has wrong ELF class: expected 32-bit (1), got %d", name, data[4])
+	}
+
+	// EI_DATA: must be little-endian (1)
+	if data[5] != 1 {
+		return fmt.Errorf("patched '%s' has wrong ELF endianness: expected little-endian (1), got %d", name, data[5])
+	}
+
+	// e_machine at offset 18 (2 bytes LE): must be ARM (0x28 = 40)
+	machine := binary.LittleEndian.Uint16(data[18:20])
+	if machine != 0x28 {
+		return fmt.Errorf("patched '%s' has wrong ELF machine type: expected ARM (0x28), got 0x%x", name, machine)
+	}
+
+	return nil
 }
 
 func detectFormat(filename string) string {

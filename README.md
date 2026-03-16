@@ -70,6 +70,14 @@ cd kobopatch-wasm
 python3 -m http.server -d src/public/ 8888
 ```
 
+## Output validation
+
+The WASM patcher performs several checks on each patched binary before including it in the output `KoboRoot.tgz`:
+
+- **File size sanity check** — the patched binary must be exactly the same size as the input. kobopatch does in-place byte replacement, so any size change indicates corruption.
+- **ELF header validation** — verifies the magic bytes (`\x7fELF`), 32-bit class, little-endian encoding, and ARM machine type (`0x28`) are intact after patching.
+- **Archive consistency check** — after building the output tar.gz, re-reads the entire archive and verifies the sum of entry sizes matches what was written.
+
 ## Credits
 
 kobopatch by [pgaskin](https://github.com/pgaskin/kobopatch). Patches from [MobileRead](https://www.mobileread.com/).

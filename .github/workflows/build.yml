@@ -3,6 +3,7 @@ name: Build & Test WASM
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -12,6 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -43,6 +46,23 @@ jobs:
             EXEC="$GOROOT/misc/wasm/go_js_wasm_exec"
           fi
           GOOS=js GOARCH=wasm go test -exec="$EXEC" ./...
+
+      - name: Check if integration test needed
+        id: check-wasm
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD~1 HEAD | grep -q '^kobopatch-wasm/'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Integration test (full patching pipeline)
+        if: steps.check-wasm.outputs.run == 'true'
+        run: |
+          cd kobopatch-wasm
+          ./test-integration.sh
 
       - name: Build WASM binary
         run: |

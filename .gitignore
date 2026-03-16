@@ -7,6 +7,7 @@ kobopatch/
 
 # Kobopatch WASM build artifacts
 kobopatch-wasm/kobopatch-src/
+kobopatch-wasm/testdata/
 kobopatch-wasm/kobopatch.wasm
 kobopatch-wasm/wasm_exec.js
 
