@@ -44,7 +44,7 @@ const KOBO_MODELS = {
  * The date path segment (e.g. Mar2026) changes per release.
  * help.kobo.com may lag behind; verify URLs when adding new versions.
  */
-const FIRMWARE_DOWNLOADS = {
+var FIRMWARE_DOWNLOADS = {
     '4.45.23646': {
         'N428': 'https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip',
         'N365': 'https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip',

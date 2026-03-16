@@ -9,6 +9,10 @@
     let selectedPrefix = null;
     let patchesLoaded = false;
     let isRestore = false;
+    let availablePatches = null;
+
+    // Fetch patch index immediately so it's ready when needed.
+    const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 
     // DOM elements
     const stepNav = document.getElementById('step-nav');
@@ -108,9 +112,9 @@
         manualMode = true;
         manualChromeHint.hidden = false;
 
-        const available = await scanAvailablePatches();
+        await availablePatchesReady;
         manualVersion.innerHTML = '<option value="">-- Select software version --</option>';
-        for (const p of available) {
+        for (const p of availablePatches) {
             const opt = document.createElement('option');
             opt.value = p.version;
             opt.textContent = p.version;
@@ -166,8 +170,7 @@
         if (!version || !selectedPrefix) return;
 
         try {
-            const available = await scanAvailablePatches();
-            const loaded = await loadPatchesForVersion(version, available);
+            const loaded = await loadPatchesForVersion(version, availablePatches);
             if (!loaded) {
                 showError('Could not load patches for software version ' + version);
                 return;
@@ -196,8 +199,8 @@
 
             selectedPrefix = info.serialPrefix;
 
-            const available = await scanAvailablePatches();
-            const match = available.find(p => p.version === info.firmware);
+            await availablePatchesReady;
+            const match = availablePatches.find(p => p.version === info.firmware);
 
             if (match) {
                 deviceStatus.className = '';

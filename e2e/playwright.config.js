@@ -5,8 +5,12 @@ module.exports = defineConfig({
   testMatch: '*.spec.js',
   timeout: 300_000,
   retries: 0,
+  expect: {
+    timeout: 10_000,
+  },
   use: {
     baseURL: 'http://localhost:8889',
+    actionTimeout: 10_000,
     launchOptions: {
       args: ['--disable-dev-shm-usage'],
     },
