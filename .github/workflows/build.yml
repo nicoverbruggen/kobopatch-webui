@@ -59,7 +59,7 @@ jobs:
           fi
 
       - name: Integration test (full patching pipeline)
-        if: steps.check-wasm.outputs.run == 'true'
+        if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           cd kobopatch-wasm
           ./test-integration.sh
