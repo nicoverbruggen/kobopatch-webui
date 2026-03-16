@@ -19,7 +19,14 @@ cd "$(dirname "$0")"
 if [ ! -f "$FIRMWARE_FILE" ]; then
     echo "Downloading firmware ${FIRMWARE_VERSION} (~150MB)..."
     mkdir -p "$FIRMWARE_DIR"
-    curl -L --progress-bar -o "$FIRMWARE_FILE" "$FIRMWARE_URL"
+    curl -fL --progress-bar -o "$FIRMWARE_FILE.tmp" "$FIRMWARE_URL"
+    # Validate it's actually a zip file.
+    if ! file "$FIRMWARE_FILE.tmp" | grep -q "Zip archive"; then
+        echo "ERROR: downloaded file is not a valid zip"
+        rm -f "$FIRMWARE_FILE.tmp"
+        exit 1
+    fi
+    mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
     echo "Downloaded to $FIRMWARE_FILE"
 else
     echo "Using cached firmware: $FIRMWARE_FILE"
