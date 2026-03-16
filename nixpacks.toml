@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["go", "git", "python3"]
+nixPkgs = ["go", "git", "python3Minimal"]
 cmds = [
     "cd kobopatch-wasm && bash setup.sh",
     "cd kobopatch-wasm && bash build.sh",

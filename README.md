@@ -111,3 +111,7 @@ The WASM patcher performs several checks on each patched binary before including
 ## Credits
 
 Built on [kobopatch](https://github.com/pgaskin/kobopatch) by pgaskin. Patches and discussion on the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247).
+
+## License
+
+[MIT](LICENSE)
