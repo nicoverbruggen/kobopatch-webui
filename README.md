@@ -1,7 +1,7 @@
 # KoboPatch Web UI
 
 > [!IMPORTANT]
-> **This is an experiment**, mostly created with the help of Claude and some very precise instructions.
+> **This is an experiment**, mostly created with the help of Claude and some very precise instructions. It currently only supports the latest version of Kobo's software, and only for the Kobo Libra Color, Kobo Clara Color and Kobo Clara BW models. Further support may be added at a later date.
 
 A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/firmware selection on other browsers.
 
