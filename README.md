@@ -70,6 +70,35 @@ cd kobopatch-wasm
 python3 -m http.server -d src/public/ 8888
 ```
 
+## Testing
+
+To further validate the patched `KoboRoot.tgz` packages are identical to what a local version of `kobopatch` would generate, two integration tests have been added.
+
+Both integration tests run the full patching pipeline with firmware 4.45.23646 (Kobo Libra Color), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. The firmware zip (~150MB) is downloaded once and cached in `kobopatch-wasm/testdata/`.
+
+The reason this particular combination is used is simple: the author has actually used that specific firmware on an actual device before and it's a known, working, patched version of the firmware. So comparing hashes against it seems like a good idea.
+
+**WASM integration test** — calls `patchFirmware()` directly in Go/WASM via Node.js:
+
+```bash
+cd kobopatch-wasm
+./test-integration.sh
+```
+
+**Playwright E2E test** — drives the full browser UI (manual mode, headless):
+
+```bash
+cd e2e
+./run-e2e.sh
+```
+
+To run the Playwright test with a visible browser window:
+
+```bash
+cd e2e
+./run-e2e-local.sh
+```
+
 ## Output validation
 
 The WASM patcher performs several checks on each patched binary before including it in the output `KoboRoot.tgz`:

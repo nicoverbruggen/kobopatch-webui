@@ -64,8 +64,14 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Full integration test
+      - name: Full integration test (WASM)
         if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           cd kobopatch-wasm
           ./test-integration.sh
+
+      - name: Full integration test (Playwright)
+        if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        run: |
+          cd e2e
+          ./run-e2e.sh
