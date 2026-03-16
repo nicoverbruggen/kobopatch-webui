@@ -20,11 +20,11 @@ echo "WASM binary size: $(du -h kobopatch.wasm | cut -f1)"
 TS=$(date +%s)
 
 echo "Copying artifacts to $PUBLIC_DIR..."
-cp kobopatch.wasm "$PUBLIC_DIR/kobopatch.wasm"
-cp wasm_exec.js "$PUBLIC_DIR/wasm_exec.js"
+cp kobopatch.wasm "$PUBLIC_DIR/wasm/kobopatch.wasm"
+cp wasm_exec.js "$PUBLIC_DIR/js/wasm_exec.js"
 
 # Update cache-busting timestamps
-sed -i "s|kobopatch\.wasm?ts=[0-9]*|kobopatch.wasm?ts=$TS|g" "$PUBLIC_DIR/patch-worker.js"
+sed -i "s|kobopatch\.wasm?ts=[0-9]*|kobopatch.wasm?ts=$TS|g" "$PUBLIC_DIR/js/patch-worker.js"
 sed -i "s|\.js?ts=[0-9]*|.js?ts=$TS|g" "$PUBLIC_DIR/index.html"
 sed -i "s|\.css?ts=[0-9]*|.css?ts=$TS|g" "$PUBLIC_DIR/index.html"
 

@@ -15,8 +15,8 @@ kobopatch-wasm/wasm_exec.js
 web/public/_test_firmware.zip
 
 # WASM artifacts copied to webroot for serving
-web/public/kobopatch.wasm
-web/public/wasm_exec.js
+web/public/wasm/kobopatch.wasm
+web/public/js/wasm_exec.js
 
 # E2E tests
 e2e/node_modules/

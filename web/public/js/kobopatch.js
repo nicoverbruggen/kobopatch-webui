@@ -17,7 +17,7 @@ class KobopatchRunner {
      */
     patchFirmware(configYAML, firmwareZip, patchFiles, onProgress) {
         return new Promise((resolve, reject) => {
-            const worker = new Worker('patch-worker.js');
+            const worker = new Worker('js/patch-worker.js');
             this._worker = worker;
 
             worker.onmessage = (e) => {

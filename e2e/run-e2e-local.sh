@@ -11,7 +11,7 @@ FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update
 FIRMWARE_DIR="../kobopatch-wasm/testdata"
 FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
 
-if [ ! -f "../web/public/kobopatch.wasm" ]; then
+if [ ! -f "../web/public/wasm/kobopatch.wasm" ]; then
     echo "ERROR: kobopatch.wasm not found. Run kobopatch-wasm/build.sh first."
     exit 1
 fi
