@@ -1,3 +1,5 @@
+providers = ["python"]
+
 [phases.setup]
 nixPkgs = ["go", "git", "python3Minimal"]
 cmds = [
