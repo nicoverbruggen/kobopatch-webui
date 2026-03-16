@@ -1,11 +1,9 @@
 [phases.setup]
-nixPkgs = ["go", "git"]
-
-[phases.build]
+nixPkgs = ["go", "git", "python3"]
 cmds = [
     "cd kobopatch-wasm && bash setup.sh",
     "cd kobopatch-wasm && bash build.sh",
 ]
 
-[staticAssets]
-root = "web/public"
+[start]
+cmd = "python3 -m http.server ${PORT:-8080} -d web/public"
