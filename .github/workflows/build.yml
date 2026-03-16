@@ -36,6 +36,12 @@ jobs:
           cd kobopatch-wasm/kobopatch-src
           go test ./...
 
+      - name: Build WASM binary
+        run: |
+          cd kobopatch-wasm
+          ./build.sh
+          test -f kobopatch.wasm || { echo "ERROR: kobopatch.wasm not found after build"; exit 1; }
+
       - name: Run WASM tests
         run: |
           cd kobopatch-wasm/kobopatch-src
@@ -47,7 +53,7 @@ jobs:
           fi
           GOOS=js GOARCH=wasm go test -exec="$EXEC" ./...
 
-      - name: Check if integration test needed
+      - name: Check if integration test is needed
         id: check-wasm
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
@@ -58,22 +64,8 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Integration test (full patching pipeline)
+      - name: Full integration test
         if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           cd kobopatch-wasm
           ./test-integration.sh
-
-      - name: Build WASM binary
-        run: |
-          cd kobopatch-wasm
-          ./build.sh
-
-      - name: Upload WASM artifact
-        if: false
-        uses: actions/upload-artifact@v4
-        with:
-          name: kobopatch-wasm
-          path: |
-            kobopatch-wasm/kobopatch.wasm
-            kobopatch-wasm/wasm_exec.js
