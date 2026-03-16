@@ -20,6 +20,7 @@ echo "WASM binary size: $(du -h kobopatch.wasm | cut -f1)"
 TS=$(date +%s)
 
 echo "Copying artifacts to $PUBLIC_DIR..."
+mkdir -p "$PUBLIC_DIR/wasm"
 cp kobopatch.wasm "$PUBLIC_DIR/wasm/kobopatch.wasm"
 cp wasm_exec.js "$PUBLIC_DIR/js/wasm_exec.js"
 
