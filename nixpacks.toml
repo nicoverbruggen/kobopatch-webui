@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["go", "git"]
+
+[phases.build]
+cmds = [
+    "cd kobopatch-wasm && bash setup.sh",
+    "cd kobopatch-wasm && bash build.sh",
+]
+
+[staticAssets]
+root = "web/public"

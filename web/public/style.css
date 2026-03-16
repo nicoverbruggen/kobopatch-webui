@@ -30,7 +30,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
@@ -618,4 +618,123 @@ select:focus,
 button:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+}
+
+/* Footer */
+.site-footer {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 2rem;
+    border-top: 1px solid var(--border-light);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.site-footer a {
+    color: var(--text-secondary);
+    text-decoration: underline;
+}
+
+.site-footer a:hover {
+    color: var(--text);
+}
+
+/* Modal dialog */
+.modal {
+    border: none;
+    border-radius: 12px;
+    padding: 0;
+    max-width: 560px;
+    width: calc(100% - 2rem);
+    max-height: 80vh;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.modal::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+
+.modal-header h2 {
+    margin-bottom: 0;
+    font-size: 1rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    box-shadow: none;
+}
+
+.modal-close:hover {
+    color: var(--text);
+}
+
+.modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.modal-body h3 {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.modal-body p {
+    margin-bottom: 0.75rem;
+}
+
+.modal-body ol {
+    margin: 0 0 0.75rem 1.25rem;
+}
+
+.modal-body li {
+    margin-bottom: 0.5rem;
+}
+
+.modal-body a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.modal-body a:hover {
+    text-decoration: underline;
+}
+
+.modal-body code {
+    font-size: 0.8rem;
+    background: #f1f5f9;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
 }

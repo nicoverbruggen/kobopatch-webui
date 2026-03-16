@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KoboPatch Web UI</title>
-    <link rel="stylesheet" href="style.css?ts=1773669670">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="style.css?ts=1773670636">
     <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 </head>
 <body>
@@ -109,13 +112,16 @@
             <p id="firmware-auto-info">
                 Firmware <strong id="firmware-version-label"></strong> for
                 <strong id="firmware-device-label"></strong>
-                <span id="firmware-description">will be downloaded automatically from Kobo's servers and will be patched after the download completes:</span><br>
-                <code id="firmware-download-url"></code><br>
-                <span id="firmware-verify-notice">
+                <span id="firmware-description">will be downloaded automatically from Kobo's servers and will be patched after the download completes.</span>
+            </p>
+            <details class="log-details">
+                <summary>Firmware download URL</summary>
+                <code id="firmware-download-url"></code>
+                <p id="firmware-verify-notice" class="fallback-hint">
                     You can verify if this URL matches your Kobo's model on
                     <a href="https://help.kobo.com/hc/en-us/articles/35059171032727" target="_blank">Kobo's support page</a>. The most important bit is that "koboXX" matches, for example "kobo13" for Kobo Libra Color.
-                </span>
-            </p>
+                </p>
+            </details>
             <!--
             <p id="firmware-manual-info" hidden>
                 No automatic download available for your device.
@@ -139,14 +145,14 @@
                 <p id="build-progress">Starting...</p>
             </div>
             <pre id="build-log" class="build-log"></pre>
-            <p class="fallback-hint">Please wait while the patch is being applied...</p>
+            <p id="build-wait-hint" class="fallback-hint">Please wait while the patch is being applied...</p>
         </section>
 
         <!-- Step 5: Install -->
         <section id="step-done" class="step" hidden>
             <p id="build-status" class="install-summary"></p>
             <div id="existing-tgz-warning" class="warning" hidden>
-                An existing KoboRoot.tgz file was found on your Kobo and has not been applied yet. It will be overwritten.
+                An <b>existing</b> KoboRoot.tgz file was found on your Kobo. This means an update has not been applied yet. If you choose to write the new file to your Kobo, the existing one will be overwritten.
             </div>
             <details class="log-details">
                 <summary>Build log</summary>
@@ -181,10 +187,75 @@
         </section>
     </main>
 
+    <footer class="site-footer">
+        <p>
+            <a href="#" id="btn-how-it-works">How does this work?</a><br/>
+            <br/>
+            Built on <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> by pgaskin.
+            Patches and discussion on the <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.
+        </p>
+        <p>
+             Source code available <a href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank">on GitHub</a>. This project is not affiliated with Rakuten Kobo Inc.
+        </p>
+    </footer>
+
+    <dialog id="how-it-works-dialog" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>How does this work?</h2>
+                <button id="btn-close-dialog" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    KoboPatch Web UI is a fully client-side web application for applying custom
+                    <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> patches
+                    to Kobo e-readers. Nothing is uploaded to a server &mdash; everything runs in your browser.
+                </p>
+
+                <h3>The patching process</h3>
+                <ol>
+                    <li><strong>Device selection</strong> &mdash; On Chromium-based browsers (Chrome, Edge), the app can
+                        auto-detect your Kobo via the File System Access API when connected over USB.
+                        On other browsers, you manually select your model and firmware version.</li>
+                    <li><strong>Patch configuration</strong> &mdash; You choose which patches to enable or disable.
+                        Patches in the same group are mutually exclusive (radio buttons).
+                        The patches themselves are community-contributed via the
+                        <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.</li>
+                    <li><strong>Build</strong> &mdash; The correct firmware is downloaded directly from Kobo's servers
+                        (<code>ereaderfiles.kobo.com</code>). The patcher, compiled from Go to WebAssembly, runs
+                        inside a Web Worker so the UI stays responsive. It extracts the firmware's
+                        <code>KoboRoot.tgz</code>, applies your selected patches as in-place byte replacements
+                        to the ELF binaries, validates the results (ELF headers, file sizes, archive consistency),
+                        and produces a new <code>KoboRoot.tgz</code>.</li>
+                    <li><strong>Install</strong> &mdash; On Chromium, the patched file is written directly to the
+                        <code>.kobo</code> folder on the device. On other browsers, you download the file
+                        and copy it manually. After safely ejecting, the Kobo reboots and applies the update.</li>
+                </ol>
+
+                <h3>Restoring original software</h3>
+                <p>
+                    You can also use this tool to restore the original unpatched firmware. In that case,
+                    no patches are applied &mdash; the original <code>KoboRoot.tgz</code> is extracted
+                    from the firmware zip as-is.
+                </p>
+
+                <h3>Safety</h3>
+                <p>
+                    Each patched binary is validated before being included in the output: ELF magic bytes,
+                    32-bit ARM architecture, file size (must match the original), and archive integrity are
+                    all checked. If anything looks wrong, the build fails with an error. That said, patching
+                    modifies system files, so you should know how to
+                    <a href="https://help.kobo.com/hc/en-us/articles/360017605314" target="_blank">manually reset your Kobo</a>
+                    if needed.
+                </p>
+            </div>
+        </div>
+    </dialog>
+
     <!-- wasm_exec.js loaded by patch-worker.js inside the Web Worker -->
-    <script src="kobo-device.js?ts=1773669670"></script>
-    <script src="kobopatch.js?ts=1773669670"></script>
-    <script src="patch-ui.js?ts=1773669670"></script>
-    <script src="app.js?ts=1773669670"></script>
+    <script src="kobo-device.js?ts=1773670636"></script>
+    <script src="kobopatch.js?ts=1773670636"></script>
+    <script src="patch-ui.js?ts=1773670636"></script>
+    <script src="app.js?ts=1773670636"></script>
 </body>
 </html>

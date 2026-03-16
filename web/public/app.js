@@ -274,11 +274,11 @@
     function goToBuild() {
         if (isRestore) {
             firmwareDescription.textContent =
-                'will be downloaded and extracted without modifications to restore the original unpatched software:';
+                'will be downloaded and extracted without modifications to restore the original unpatched software.';
             btnBuild.textContent = 'Restore Original Firmware';
         } else {
             firmwareDescription.textContent =
-                'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes:';
+                'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes.';
             btnBuild.textContent = 'Build Patched Firmware';
         }
         setNavStep(3);
@@ -338,6 +338,9 @@
         showStep(stepBuilding);
         buildLog.textContent = '';
         buildProgress.textContent = 'Starting...';
+        document.getElementById('build-wait-hint').textContent = isRestore
+            ? 'Please wait while the original firmware is being downloaded and extracted...'
+            : 'Please wait while the patch is being applied...';
 
         try {
             if (!firmwareURL) {
@@ -348,20 +351,30 @@
             const firmwareBytes = await downloadFirmware(firmwareURL);
             appendLog('Firmware downloaded: ' + (firmwareBytes.length / 1024 / 1024).toFixed(1) + ' MB');
 
-            buildProgress.textContent = isRestore ? 'Extracting firmware...' : 'Applying patches...';
-            const configYAML = patchUI.generateConfig();
-            const patchFiles = patchUI.getPatchFileBytes();
+            if (isRestore) {
+                buildProgress.textContent = 'Extracting KoboRoot.tgz...';
+                appendLog('Extracting original KoboRoot.tgz from firmware...');
+                const zip = await JSZip.loadAsync(firmwareBytes);
+                const koboRoot = zip.file('KoboRoot.tgz');
+                if (!koboRoot) throw new Error('KoboRoot.tgz not found in firmware zip');
+                resultTgz = new Uint8Array(await koboRoot.async('arraybuffer'));
+                appendLog('Extracted KoboRoot.tgz: ' + (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB');
+            } else {
+                buildProgress.textContent = 'Applying patches...';
+                const configYAML = patchUI.generateConfig();
+                const patchFiles = patchUI.getPatchFileBytes();
 
-            const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
-                appendLog(msg);
-                const trimmed = msg.trimStart();
-                if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
-                    trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
-                    buildProgress.textContent = trimmed;
-                }
-            });
+                const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
+                    appendLog(msg);
+                    const trimmed = msg.trimStart();
+                    if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
+                        trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
+                        buildProgress.textContent = trimmed;
+                    }
+                });
 
-            resultTgz = result.tgz;
+                resultTgz = result.tgz;
+            }
             const sizeTxt = (resultTgz.length / 1024 / 1024).toFixed(1) + ' MB';
             const action = isRestore ? 'Firmware extracted' : 'Patching complete';
             const description = isRestore
@@ -479,5 +492,18 @@
         } else {
             enterManualMode();
         }
+    });
+
+    // --- How it works dialog ---
+    const dialog = document.getElementById('how-it-works-dialog');
+    document.getElementById('btn-how-it-works').addEventListener('click', (e) => {
+        e.preventDefault();
+        dialog.showModal();
+    });
+    document.getElementById('btn-close-dialog').addEventListener('click', () => {
+        dialog.close();
+    });
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) dialog.close();
     });
 })();
