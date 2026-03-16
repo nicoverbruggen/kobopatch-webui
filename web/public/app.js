@@ -41,7 +41,8 @@
     const deviceStatus = document.getElementById('device-status');
     const patchContainer = document.getElementById('patch-container');
     const buildStatus = document.getElementById('build-status');
-    const writeSuccess = document.getElementById('write-success');
+    const writeInstructions = document.getElementById('write-instructions');
+    const downloadInstructions = document.getElementById('download-instructions');
     const firmwareVersionLabel = document.getElementById('firmware-version-label');
     const firmwareDeviceLabel = document.getElementById('firmware-device-label');
     const patchCountHint = document.getElementById('patch-count-hint');
@@ -306,7 +307,6 @@
     }
 
     btnBuild.addEventListener('click', async () => {
-        hideNav();
         showStep(stepBuilding);
         buildLog.textContent = '';
         buildProgress.textContent = 'Starting...';
@@ -337,23 +337,38 @@
             buildStatus.textContent =
                 'Patching complete. KoboRoot.tgz is ' +
                 (resultTgz.length / 1024).toFixed(0) + ' KB.';
-            writeSuccess.hidden = true;
 
             const doneLog = document.getElementById('done-log');
             doneLog.textContent = buildLog.textContent;
-            doneLog.scrollTop = doneLog.scrollHeight;
 
+            // Reset install step state.
             btnWrite.hidden = manualMode;
-            hideNav();
+            btnWrite.disabled = false;
+            btnWrite.className = 'primary';
+            btnWrite.textContent = 'Write to Kobo';
+            btnDownload.disabled = false;
+            writeInstructions.hidden = true;
+            downloadInstructions.hidden = true;
+
+            setNavStep(4);
             showStep(stepDone);
+
+            // Scroll log to bottom after the step becomes visible.
+            requestAnimationFrame(() => {
+                doneLog.scrollTop = doneLog.scrollHeight;
+            });
         } catch (err) {
             showError('Build failed: ' + err.message, buildLog.textContent);
         }
     });
 
-    // --- Done step ---
+    // --- Install step ---
     btnWrite.addEventListener('click', async () => {
         if (!resultTgz || !device.directoryHandle) return;
+
+        btnWrite.disabled = true;
+        btnWrite.textContent = 'Writing...';
+        downloadInstructions.hidden = true;
 
         try {
             const koboDir = await device.directoryHandle.getDirectoryHandle('.kobo');
@@ -361,8 +376,13 @@
             const writable = await fileHandle.createWritable();
             await writable.write(resultTgz);
             await writable.close();
-            writeSuccess.hidden = false;
+
+            btnWrite.textContent = 'Written';
+            btnWrite.className = 'btn-success';
+            writeInstructions.hidden = false;
         } catch (err) {
+            btnWrite.disabled = false;
+            btnWrite.textContent = 'Write to Kobo';
             showError('Failed to write KoboRoot.tgz: ' + err.message);
         }
     });
@@ -376,6 +396,9 @@
         a.download = 'KoboRoot.tgz';
         a.click();
         URL.revokeObjectURL(url);
+
+        writeInstructions.hidden = true;
+        downloadInstructions.hidden = false;
     });
 
     // --- Error / Retry ---
@@ -398,7 +421,6 @@
         manualMode = false;
         selectedPrefix = null;
         patchesLoaded = false;
-        btnWrite.hidden = false;
         btnDeviceNext.hidden = false;
 
         if (hasFileSystemAccess) {

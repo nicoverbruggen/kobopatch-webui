@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KoboPatch Web UI</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?ts=1773666969">
     <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 </head>
 <body>
@@ -20,11 +20,17 @@
                 <li data-step="1" class="active">Device</li>
                 <li data-step="2">Patches</li>
                 <li data-step="3">Build</li>
+                <li data-step="4">Install</li>
             </ol>
         </nav>
 
         <!-- Step 1a: Connect device (automatic, Chromium only) -->
         <section id="step-connect" class="step" hidden>
+            <div class="warning">
+                Patching modifies system files on your Kobo. If something goes wrong,
+                you may need to <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">manually reset your device</a>.
+                Proceed with care.
+            </div>
             <p>
                 Connect your Kobo e-reader via USB. It should appear as a removable drive.
                 Then click the button below and select the root of the Kobo drive.
@@ -38,6 +44,11 @@
 
         <!-- Step 1b (manual): Select device model + firmware -->
         <section id="step-manual" class="step" hidden>
+            <div class="warning">
+                Patching modifies system files on your Kobo. If something goes wrong,
+                you may need to <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">manually reset your device</a>.
+                Proceed with care.
+            </div>
             <p id="manual-chrome-hint" class="info-banner" hidden>
                 Tip: if you use Chrome or Edge, this tool can auto-detect your device
                 and write patched files directly to it. Even easier, but sadly requires a Chromium based browser.
@@ -122,22 +133,31 @@
             <pre id="build-log" class="build-log"></pre>
         </section>
 
-        <!-- Step 5: Done -->
+        <!-- Step 5: Install -->
         <section id="step-done" class="step" hidden>
             <div id="build-status" class="info-banner"></div>
-            <pre id="done-log" class="build-log done-log"></pre>
+            <details class="log-details">
+                <summary>Build log</summary>
+                <pre id="done-log" class="build-log done-log"></pre>
+            </details>
             <div id="build-actions">
                 <button id="btn-write" class="primary">Write to Kobo</button>
                 <button id="btn-download" class="secondary">Download KoboRoot.tgz</button>
             </div>
-            <p class="fallback-hint" id="download-hint">
-                Place the downloaded <strong>KoboRoot.tgz</strong> in the <strong>.kobo</strong> directory
-                on your Kobo's USB drive, then safely eject and reboot the device.
-            </p>
-            <p class="hint" hidden id="write-success">
-                KoboRoot.tgz has been written to your Kobo.
-                Safely eject the device and reboot it to apply the patches.
-            </p>
+            <div id="write-instructions" class="install-instructions" hidden>
+                <p class="hint">
+                    KoboRoot.tgz has been written to your Kobo.
+                    <strong>Safely eject</strong> the device before unplugging the USB cable — it will reboot and apply the patches automatically.
+                </p>
+            </div>
+            <div id="download-instructions" class="install-instructions" hidden>
+                <ol class="install-steps">
+                    <li>Connect your Kobo via USB so it appears as a removable drive.</li>
+                    <li>Copy <strong>KoboRoot.tgz</strong> into the <strong>.kobo</strong> folder on the Kobo drive.</li>
+                    <li><strong>Safely eject</strong> the Kobo — do not just unplug the cable, as this can corrupt data.</li>
+                    <li>The device will reboot and apply the patches automatically.</li>
+                </ol>
+            </div>
         </section>
 
         <!-- Error state -->
@@ -150,9 +170,9 @@
     </main>
 
     <!-- wasm_exec.js loaded by patch-worker.js inside the Web Worker -->
-    <script src="kobo-device.js"></script>
-    <script src="kobopatch.js"></script>
-    <script src="patch-ui.js"></script>
-    <script src="app.js"></script>
+    <script src="kobo-device.js?ts=1773666969"></script>
+    <script src="kobopatch.js?ts=1773666969"></script>
+    <script src="patch-ui.js?ts=1773666969"></script>
+    <script src="app.js?ts=1773666969"></script>
 </body>
 </html>

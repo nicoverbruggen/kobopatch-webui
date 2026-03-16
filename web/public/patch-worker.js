@@ -10,7 +10,7 @@ async function loadWasm() {
 
     const go = new Go();
     const result = await WebAssembly.instantiateStreaming(
-        fetch('kobopatch.wasm?ts=1773611308'),
+        fetch('kobopatch.wasm?ts=1773666969'),
         go.importObject
     );
     go.run(result.instance);

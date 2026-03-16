@@ -213,6 +213,19 @@ button:disabled {
     box-shadow: none;
 }
 
+button.btn-success {
+    background: var(--success-text);
+    border-color: var(--success-text);
+    color: #fff;
+    opacity: 1;
+    cursor: default;
+}
+
+button.btn-success:hover {
+    background: var(--success-text);
+    border-color: var(--success-text);
+}
+
 /* Cards */
 .info-card {
     background: var(--card-bg);
@@ -468,6 +481,23 @@ input[type="file"] {
     line-height: 1.5;
 }
 
+/* Collapsible log on install step */
+.log-details {
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.log-details summary {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem 0;
+}
+
+.log-details summary:hover {
+    color: var(--text);
+}
+
 /* Done screen log is shorter */
 .done-log {
     height: calc(7 * 1.5em + 1.5rem);
@@ -509,6 +539,30 @@ input[type="file"] {
     margin-top: 0.75rem;
     font-size: 0.83rem;
     color: var(--text-secondary);
+}
+
+/* Install instructions */
+.install-instructions {
+    margin-top: 1rem;
+}
+
+.install-instructions .warning {
+    margin-bottom: 0.75rem;
+}
+
+.install-instructions .hint {
+    margin-top: 0;
+}
+
+.install-steps {
+    margin: 0.5rem 0 0 1.25rem;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.install-steps li {
+    padding: 0.1rem 0;
 }
 
 .info-banner {
