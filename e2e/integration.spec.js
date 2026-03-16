@@ -51,6 +51,9 @@ function parseTar(buffer) {
   return entries;
 }
 
+// SHA1 of the original unmodified KoboRoot.tgz inside firmware 4.45.23646.
+const ORIGINAL_TGZ_SHA1 = 'b5c3307e8e7ec036f4601135f0b741c37b899db4';
+
 // Clean up the symlink after the test.
 test.afterEach(() => {
   try { fs.unlinkSync(WEBROOT_FIRMWARE); } catch {}
@@ -145,4 +148,77 @@ test('full manual mode patching pipeline', async ({ page }) => {
     const actualHash = crypto.createHash('sha1').update(data).digest('hex');
     expect(actualHash, `SHA1 mismatch for ${name}`).toBe(expectedHash);
   }
+});
+
+test('restore original firmware pipeline', async ({ page }) => {
+  if (!fs.existsSync(FIRMWARE_PATH)) {
+    test.skip(true, `Firmware not found at ${FIRMWARE_PATH}`);
+  }
+
+  // Symlink the cached firmware into the webroot so the app can fetch it locally.
+  try { fs.unlinkSync(WEBROOT_FIRMWARE); } catch {}
+  fs.symlinkSync(path.resolve(FIRMWARE_PATH), WEBROOT_FIRMWARE);
+
+  await page.goto('/');
+  await expect(page.locator('h1')).toContainText('KoboPatch');
+
+  // Override the firmware download URLs to point at the local server.
+  await page.evaluate(() => {
+    for (const version of Object.keys(FIRMWARE_DOWNLOADS)) {
+      for (const prefix of Object.keys(FIRMWARE_DOWNLOADS[version])) {
+        FIRMWARE_DOWNLOADS[version][prefix] = '/_test_firmware.zip';
+      }
+    }
+  });
+
+  // Step 1: Switch to manual mode.
+  await page.click('#btn-manual-from-auto');
+  await expect(page.locator('#step-manual')).not.toBeHidden();
+
+  // Step 2: Select firmware version.
+  await page.selectOption('#manual-version', '4.45.23646');
+  await expect(page.locator('#manual-model')).not.toBeHidden();
+
+  // Step 3: Select Kobo Libra Colour (N428).
+  await page.selectOption('#manual-model', 'N428');
+  await expect(page.locator('#btn-manual-confirm')).toBeEnabled();
+  await page.click('#btn-manual-confirm');
+
+  // Step 4: Wait for patches to load, then continue with zero patches selected.
+  await expect(page.locator('#step-patches')).not.toBeHidden();
+  await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+  await expect(page.locator('#patch-count-hint')).toContainText('restore the original');
+  await page.click('#btn-patches-next');
+
+  // Step 5: Verify build step shows restore text.
+  await expect(page.locator('#step-firmware')).not.toBeHidden();
+  await expect(page.locator('#firmware-description')).toContainText('without modifications');
+  await expect(page.locator('#btn-build')).toContainText('Restore Original Firmware');
+
+  // Step 6: Build and wait for completion.
+  await page.click('#btn-build');
+
+  const doneOrError = await Promise.race([
+    page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+    page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+  ]);
+
+  if (doneOrError === 'error') {
+    const errorMsg = await page.locator('#error-message').textContent();
+    throw new Error(`Restore failed: ${errorMsg}`);
+  }
+
+  await expect(page.locator('#build-status')).toContainText('Firmware extracted');
+
+  // Step 7: Download KoboRoot.tgz and verify it matches the original.
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#btn-download'),
+  ]);
+
+  expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+  const downloadPath = await download.path();
+  const tgzData = fs.readFileSync(downloadPath);
+  const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
+  expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
 });
