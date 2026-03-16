@@ -47,34 +47,30 @@
         <!-- Step 1b (manual): Select device model + firmware -->
         <section id="step-manual" class="step" hidden>
             <div class="warning">
-                Patching modifies system files on your Kobo. If something goes wrong,
+                <b>Patching modifies system files on your Kobo, and <u>will void your warranty</u>.</b> This process allows for custom modifications to be applied, or undone. If something has gone wrong,
                 you may need to <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">manually reset your device</a>.
-                Proceed with care.
             </div>
-            <p id="manual-chrome-hint" class="info-banner" hidden>
-                <b>Tip</b>: if you use Chrome or Edge, this tool can auto-detect your device
-                and write patched files directly to it, which is even easier to do!
-            </p>
-            <p>
-                Select your software version first, and then the Kobo model.
+            <p class="fallback-hint">
+                <strong>First, select the version number that is currently installed on your device.</strong> If it does not appear in this dropdown list, your software version is not supported for patching via this website.
             </p>
             <select id="manual-version">
                 <option value="">-- Select software version --</option>
             </select>
             <p id="manual-version-hint" class="fallback-hint">
-                You can identify your the version number shown on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> and by checking <strong>Software version</strong>.
+                You can identify the version number shown on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> and by checking <strong>Software version</strong>. You should only apply a patch if the version number is a complete match. Only the listed version numbers are supported by this tool.
             </p>
             <select id="manual-model" hidden>
                 <option value="">-- Select your Kobo model --</option>
             </select>
             <p id="manual-model-hint" class="fallback-hint" hidden>
-                You can identify your model by the serial number prefix shown on your Kobo
-                under <strong>More &gt; Settings &gt; Device information</strong>.
-                Match the first characters (e.g. N428) to the list above.
-                If your device isn't listed, it is not supported by this tool.
+                You can identify your model by the serial number prefix shown on your Kobo under <strong>More &gt; Settings &gt; Device information</strong>. Match the first characters (e.g. N428) to the list above. If your device isn't listed, it is not supported by this tool.
             </p>
-            <div class="step-actions" style="margin-top: 15px">
-                <button id="btn-manual-confirm" class="primary" disabled>Continue &#x203A;</button>
+            <p id="manual-chrome-hint" class="info-banner" hidden>
+                <b>Tip</b>: if you use Chrome or Edge, this tool can auto-detect your device
+                and write patched files directly to it, which makes this a lot easier and less error-prone. Before continuing, make sure you've double checked if the device and model number are correct.
+            </p>
+            <div class="step-actions" style="margin-top: 25px">
+                <button id="btn-manual-confirm" class="primary" disabled>I understand, continue &#x203A;</button>
             </div>
         </section>
 
