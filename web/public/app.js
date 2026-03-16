@@ -405,7 +405,7 @@
                 action + '. <strong>KoboRoot.tgz</strong> (' + sizeTxt + ') is ready. ' +
                 (description ? description + ' ' : '') +
                 (manualMode
-                    ? 'Download the file and copy it to your Kobo.'
+                    ? 'Download the file and copy it to your ' + (KOBO_MODELS[selectedPrefix] || 'Kobo') + '.'
                     : 'Write it directly to your connected Kobo, or download for manual installation.');
 
             const doneLog = document.getElementById('done-log');
@@ -481,6 +481,7 @@
 
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
+        document.getElementById('download-device-name').textContent = KOBO_MODELS[selectedPrefix] || 'Kobo';
     });
 
     // --- Error / Retry ---

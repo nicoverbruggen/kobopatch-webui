@@ -128,6 +128,7 @@ test('full manual mode patching pipeline', async ({ page }) => {
   }
 
   await expect(page.locator('#build-status')).toContainText('Patching complete');
+  await expect(page.locator('#build-status')).toContainText('Kobo Libra Colour');
 
   // Step 8: Download KoboRoot.tgz and verify checksums.
   const [download] = await Promise.all([
@@ -136,6 +137,8 @@ test('full manual mode patching pipeline', async ({ page }) => {
   ]);
 
   expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+  await expect(page.locator('#download-device-name')).toHaveText('Kobo Libra Colour');
+
   const downloadPath = await download.path();
   const tgzData = fs.readFileSync(downloadPath);
 
