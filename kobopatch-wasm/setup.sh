@@ -15,15 +15,23 @@ fi
 
 echo "Copying wasm_exec.js from Go SDK..."
 GOROOT="$(go env GOROOT)"
-WASM_EXEC="$(find "$GOROOT" "$(go env GOPATH 2>/dev/null || echo /root/go)" /usr/local/go -name "wasm_exec.js" 2>/dev/null | head -1)"
+GOPATH="$(go env GOPATH 2>/dev/null || echo "")"
+WASM_EXEC=""
+for dir in "$GOROOT" "$GOPATH" /usr/local/go; do
+    [ -z "$dir" ] && continue
+    [ -d "$dir" ] || continue
+    found="$(find "$dir" -name "wasm_exec.js" 2>/dev/null | head -1)" || true
+    if [ -n "$found" ]; then
+        WASM_EXEC="$found"
+        break
+    fi
+done
 if [ -n "$WASM_EXEC" ]; then
     echo "Found wasm_exec.js at: $WASM_EXEC"
     cp "$WASM_EXEC" "$SCRIPT_DIR/wasm_exec.js"
 else
     echo "Error: could not find wasm_exec.js in Go SDK"
     echo "GOROOT=$GOROOT"
-    echo "Contents of GOROOT:"
-    ls -la "$GOROOT" 2>/dev/null || true
     exit 1
 fi
 
