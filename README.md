@@ -3,9 +3,12 @@
 > [!IMPORTANT]
 > **This is an experiment**, mostly created with the help of Claude and some very precise instructions. It currently only supports the latest version of Kobo's software, and only for the Kobo Libra Color, Kobo Clara Color and Kobo Clara BW models. Further support may be added at a later date.
 
-A web application that provides a GUI for applying custom [kobopatch](https://github.com/pgaskin/kobopatch) patches to Kobo e-readers. It uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection on other browsers.
+A web application for customising Kobo e-readers. It supports two modes:
 
-The app makes it easy to configure which patches to apply, downloads the correct software update from Kobo's servers, runs the patcher (compiled to WebAssembly), and places the resulting `KoboRoot.tgz` on the device. The user then safely ejects and reboots to apply. It can also restore the original unpatched software.
+- **NickelMenu** — installs [NickelMenu](https://pgaskin.net/NickelMenu/) with an optional curated configuration (custom menus, fonts, screensavers, UI tweaks). Works with most Kobo devices regardless of software version. Can also remove NickelMenu from a connected device.
+- **Custom patches** — applies community [kobopatch](https://github.com/pgaskin/kobopatch) patches to your Kobo's system software. Requires a supported software version and device model.
+
+The app uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection with a downloadable ZIP on other browsers.
 
 Fully client-side — no backend needed, can be hosted as a static site. Patches are community-contributed via the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) and need to be manually updated when new Kobo software versions come out.
 
@@ -14,51 +17,57 @@ Fully client-side — no backend needed, can be hosted as a static site. Patches
 
 ## User flow
 
-1. **Select device** — auto-detect via File System Access API on Chromium, or manual dropdowns on any browser
-2. **Configure patches** — enable/disable patches (PatchGroup mutual exclusion via radio buttons), or select none to restore original unpatched software
-3. **Build** — software update is auto-downloaded from Kobo's CDN (`ereaderfiles.kobo.com`, CORS open) and either patched via WASM in a Web Worker, or the original `KoboRoot.tgz` is extracted as-is for restoring
-4. **Install** — write `KoboRoot.tgz` directly to the device (Chromium auto mode) or download for manual installation
+1. **Connect or download** — auto-detect your Kobo via File System Access API on Chromium, or choose manual download mode (any browser)
+2. **Choose mode** — NickelMenu (install/configure/remove) or custom patches
+3. **Configure** — for NickelMenu: select install options (fonts, screensaver, tab/homescreen tweaks) or removal; for patches: enable/disable patches (or select none to restore original software)
+4. **Review** — confirm your selections before proceeding
+5. **Install** — write directly to the device (Chromium auto mode) or download a ZIP/tgz for manual installation
 
 ## File structure
 
 ```
 web/public/                     # Webroot — serve this directory
-  index.html                    # Single-page app, 4-step wizard (Device → Patches → Build → Install)
+  index.html                    # Single-page app, multi-step wizard
   css/
     style.css
   js/
     app.js                      # Step navigation, flow orchestration, firmware download with progress
     kobo-device.js              # KOBO_MODELS (serial prefix → name), FIRMWARE_DOWNLOADS (version+prefix → URL),
                                 #   getDevicesForVersion(), getFirmwareURL(), KoboDevice class (File System Access API)
+    nickelmenu.js               # NickelMenuInstaller: downloads NickelMenu.zip + kobo-config.zip, installs to
+                                #   device or builds download ZIP, handles config file filtering and modification
     patch-ui.js                 # PatchUI class: loads patch zips (JSZip), parses YAML, renders toggle UI,
                                 #   generates kobopatch.yaml config with overrides
     kobopatch.js                # KobopatchRunner: spawns Web Worker per build, handles progress/done/error messages
     patch-worker.js             # Web Worker: loads wasm_exec.js + kobopatch.wasm, runs patchFirmware(),
                                 #   posts progress back, transfers result buffer zero-copy
     wasm_exec.js                # Go WASM support runtime (copied from Go SDK by setup.sh, gitignored)
+    jszip.min.js                # Bundled JSZip library
   wasm/
     kobopatch.wasm              # Compiled WASM binary (built by build.sh, gitignored)
   patches/
     index.json                  # Contains a list of available patches
     patches_*.zip               # Each contains kobopatch.yaml + src/*.yaml patch files
+  nickelmenu/                   # NickelMenu assets (built by nickelmenu/setup.sh, gitignored)
+    NickelMenu.zip              # NickelMenu release
+    kobo-config.zip             # Curated configuration files (fonts, screensaver, menu items)
+
+nickelmenu/
+  setup.sh                      # Downloads NickelMenu.zip and bundles kobo-config.zip from kobo-config repo
 
 kobopatch-wasm/                 # WASM build
   main.go                       # Go entry point: jsPatchFirmware() → patchFirmware() pipeline
-                                #   Accepts configYAML, firmwareZip, patchFiles, optional progressFn
-                                #   Returns { tgz: Uint8Array, log: string }
   go.mod
   setup.sh                      # Clones kobopatch source, copies wasm_exec.js
-  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to web/public/wasm/,
-                                #   sets ?ts= cache-bust timestamp in js/patch-worker.js
+  build.sh                      # GOOS=js GOARCH=wasm go build, copies .wasm to web/public/wasm/
   integration_test.go           # Go integration test: validates SHA1 checksums of patched binaries
   test-integration.sh           # Downloads firmware and runs integration_test.go
 
 tests/
   e2e/                          # Playwright E2E tests
-    integration.spec.js         # Full browser pipeline test (patch + restore)
+    integration.spec.js         # Full browser tests: NickelMenu flows, custom patches, mock device
     playwright.config.js
-    run-e2e.sh                  # Headless E2E runner (downloads firmware, installs browser)
-    run-e2e-local.sh            # Headed E2E runner (visible browser window)
+    run-e2e.sh                  # E2E runner (downloads firmware, sets up NickelMenu assets, installs browser)
 ```
 
 ## Adding a new software version
@@ -77,41 +86,60 @@ cd kobopatch-wasm
 ./build.sh    # compiles WASM, copies to web/public/wasm/
 ```
 
+## Setting up NickelMenu assets
+
+```bash
+nickelmenu/setup.sh
+```
+
+This downloads `NickelMenu.zip` and clones/updates the [kobo-config](https://github.com/nicoverbruggen/kobo-config) repo to bundle `kobo-config.zip` into `web/public/nickelmenu/`.
+
 ## Running locally
 
 ```bash
 ./run-locally.sh
 ```
 
-This serves the app at `http://localhost:8888`. If the WASM binary hasn't been built yet, the script automatically runs `setup.sh` and `build.sh` first.
+This serves the app at `http://localhost:8888`. If the WASM binary or NickelMenu assets haven't been set up yet, the script handles that automatically.
 
 ## Testing
 
-To further validate the patched `KoboRoot.tgz` packages are identical to what a local version of `kobopatch` would generate, two integration tests have been added.
+### E2E tests (Playwright)
 
-Both integration tests run the full patching pipeline with software version 4.45.23646 (Kobo Libra Color), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. The software update zip (~150MB) is downloaded once and cached in `kobopatch-wasm/testdata/`.
+The E2E tests cover all major user flows:
 
-The reason this particular combination is used is simple: the author has actually used that specific version on an actual device before and it's a known, working, patched version of the software. So comparing hashes against it seems like a good idea.
+- **NickelMenu** — install with config (manual download), install NickelMenu only, remove option disabled without device
+- **Custom patches** — full patching pipeline, restore original firmware
+- **With simulated Kobo Libra Color** — install NickelMenu with config, remove NickelMenu, install custom patches, restore firmware
 
-**WASM integration test** — calls `patchFirmware()` directly in Go/WASM via Node.js:
+The simulated device tests mock the File System Access API with an in-memory filesystem that mimics a Kobo Libra Color (serial prefix N428, firmware 4.45.23646).
 
-```bash
-cd kobopatch-wasm
-./test-integration.sh
-```
-
-**Playwright E2E test** — drives the full browser UI (manual mode, headless):
+Custom patches tests download firmware 4.45.23646 (~150MB, cached in `kobopatch-wasm/testdata/`), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. This specific combination is used because the author has tested it on an actual device.
 
 ```bash
 cd tests/e2e
 ./run-e2e.sh
 ```
 
-To run the Playwright test with a visible browser window:
+To run with a visible browser window:
 
 ```bash
-cd tests/e2e
-./run-e2e-local.sh
+./run-e2e.sh --headed
+```
+
+Extra Playwright arguments can be passed after `--`:
+
+```bash
+./run-e2e.sh --headed -- --grep "NickelMenu"
+```
+
+### WASM integration test
+
+Calls `patchFirmware()` directly in Go/WASM via Node.js:
+
+```bash
+cd kobopatch-wasm
+./test-integration.sh
 ```
 
 ## Output validation
@@ -124,8 +152,8 @@ The WASM patcher performs several checks on each patched binary before including
 
 ## Credits
 
-Built on [kobopatch](https://github.com/pgaskin/kobopatch) by pgaskin. Patches and discussion on the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247).
+Built on [kobopatch](https://github.com/pgaskin/kobopatch) and [NickelMenu](https://pgaskin.net/NickelMenu/) by pgaskin. Uses [JSZip](https://stuk.github.io/jszip/) for client-side ZIP handling. Software patches and discussion on the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE).

@@ -52,24 +52,29 @@ jobs:
           GOOS=js GOARCH=wasm go test -exec="$EXEC" ./...
 
       - name: Check if integration test is needed
-        id: check-wasm
+        id: check-e2e
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -q '^kobopatch-wasm/'; then
+          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|nickelmenu/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Full integration test (WASM)
-        if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           cd kobopatch-wasm
           ./test-integration.sh
 
+      - name: Set up NickelMenu assets
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        run: |
+          nickelmenu/setup.sh
+
       - name: Full integration test (Playwright)
-        if: steps.check-wasm.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           cd tests/e2e
           ./run-e2e.sh

@@ -308,19 +308,15 @@ h2 {
 
 /* NickelMenu config checkboxes */
 .nm-config-options {
-    margin-top: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--card-bg);
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
+    padding: 0 0.25rem;
+    margin-left: 1.5rem;
 }
 
 .nm-config-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.6rem;
-    padding: 0.4rem 0;
+    padding: 0.5rem 0;
     font-size: 0.88rem;
     color: var(--text);
     cursor: pointer;
@@ -332,6 +328,7 @@ h2 {
 
 .nm-config-item input[type="checkbox"] {
     flex-shrink: 0;
+    margin-top: 0.15rem;
     accent-color: var(--primary);
 }
 
@@ -339,8 +336,32 @@ h2 {
     opacity: 0.6;
 }
 
-.nm-config-item span {
+.nm-config-text {
     user-select: none;
+    margin-top: -2px;
+}
+
+.nm-config-desc {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-top: 0.1rem;
+}
+
+.nm-config-link {
+    display: block;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-top: 1px solid var(--border-light);
+    font-size: 0.8rem;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.nm-config-link:hover {
+    text-decoration: underline;
 }
 
 .nm-option input[type="radio"] {
@@ -384,6 +405,12 @@ h2 {
 
 .step-actions .primary:first-child,
 .step-actions > [hidden] + .primary {
+    margin-left: auto;
+}
+
+.step-actions-right {
+    display: flex;
+    gap: 0.75rem;
     margin-left: auto;
 }
 

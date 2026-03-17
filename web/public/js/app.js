@@ -401,10 +401,11 @@
     // --- Step 2b: NickelMenu configuration ---
     const nmConfigOptions = $('nm-config-options');
 
-    // Show/hide config checkboxes based on radio selection
+    // Show/hide config checkboxes based on radio selection, enable Continue
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
             nmConfigOptions.hidden = radio.value !== 'sample' || !radio.checked;
+            btnNmNext.disabled = false;
         });
     }
 
@@ -447,9 +448,9 @@
 
     function goToNickelMenuConfig() {
         checkNickelMenuInstalled();
-        // Reset config visibility based on current selection
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmConfigOptions.hidden = !currentOption || currentOption.value !== 'sample';
+        btnNmNext.disabled = !currentOption;
         setNavStep(3);
         showStep(stepNickelMenu);
     }
@@ -478,7 +479,7 @@
         list.innerHTML = '';
 
         if (nickelMenuOption === 'remove') {
-            summary.textContent = 'NickelMenu will be removed from your device.';
+            summary.textContent = 'NickelMenu will be updated and marked for removal. It will uninstall itself when your Kobo reboots.';
             btnNmWrite.hidden = manualMode;
             btnNmWrite.textContent = 'Remove from Kobo';
             btnNmDownload.hidden = true;
@@ -531,7 +532,11 @@
 
         try {
             if (nickelMenuOption === 'remove') {
-                nmProgress.textContent = 'Removing NickelMenu...';
+                await nmInstaller.loadAssets((msg) => { nmProgress.textContent = msg; });
+                nmProgress.textContent = 'Writing KoboRoot.tgz...';
+                const tgz = await nmInstaller.getKoboRootTgz();
+                await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
+                nmProgress.textContent = 'Marking NickelMenu for removal...';
                 await device.writeFile(['.adds', 'nm', 'uninstall'], new Uint8Array(0));
                 showNmDone('remove');
                 return;
@@ -574,6 +579,8 @@
             nmDoneStatus.textContent = 'Your NickelMenu package is ready to download.';
             triggerDownload(resultNmZip, 'NickelMenu-install.zip', 'application/zip');
             $('nm-download-instructions').hidden = false;
+            // Show eReader.conf step only when sample config is included
+            $('nm-download-conf-step').hidden = nickelMenuOption !== 'sample';
         }
 
         setNavStep(5);

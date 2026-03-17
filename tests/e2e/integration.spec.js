@@ -17,7 +17,11 @@ const EXPECTED_SHA1 = {
 const FIRMWARE_PATH = process.env.FIRMWARE_ZIP
   || path.resolve(__dirname, '..', '..', 'kobopatch-wasm', 'testdata', 'kobo-update-4.45.23646.zip');
 
-const WEBROOT_FIRMWARE = path.resolve(__dirname, '..', '..', 'web', 'public', '_test_firmware.zip');
+const WEBROOT = path.resolve(__dirname, '..', '..', 'web', 'public');
+const WEBROOT_FIRMWARE = path.join(WEBROOT, '_test_firmware.zip');
+
+// SHA1 of the original unmodified KoboRoot.tgz inside firmware 4.45.23646.
+const ORIGINAL_TGZ_SHA1 = 'b5c3307e8e7ec036f4601135f0b741c37b899db4';
 
 /**
  * Parse a tar archive (uncompressed) and return a map of entry name -> Buffer.
@@ -51,27 +55,33 @@ function parseTar(buffer) {
   return entries;
 }
 
-// SHA1 of the original unmodified KoboRoot.tgz inside firmware 4.45.23646.
-const ORIGINAL_TGZ_SHA1 = 'b5c3307e8e7ec036f4601135f0b741c37b899db4';
-
-// Clean up the symlink after the test.
+// Clean up the symlink after each test.
 test.afterEach(() => {
   try { fs.unlinkSync(WEBROOT_FIRMWARE); } catch {}
 });
 
-test('full manual mode patching pipeline', async ({ page }) => {
-  if (!fs.existsSync(FIRMWARE_PATH)) {
-    test.skip(true, `Firmware not found at ${FIRMWARE_PATH}`);
-  }
+/**
+ * Check that NickelMenu assets exist in webroot.
+ */
+function hasNickelMenuAssets() {
+  return fs.existsSync(path.join(WEBROOT, 'nickelmenu', 'NickelMenu.zip'))
+    && fs.existsSync(path.join(WEBROOT, 'nickelmenu', 'kobo-config.zip'));
+}
 
-  // Symlink the cached firmware into the webroot so the app can fetch it locally.
-  try { fs.unlinkSync(WEBROOT_FIRMWARE); } catch {}
-  fs.symlinkSync(path.resolve(FIRMWARE_PATH), WEBROOT_FIRMWARE);
-
+/**
+ * Navigate to manual mode: click "Download files manually" on the connect step.
+ */
+async function goToManualMode(page) {
   await page.goto('/');
   await expect(page.locator('h1')).toContainText('KoboPatch');
+  await page.click('#btn-manual');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+}
 
-  // Override the firmware download URLs to point at the local server.
+/**
+ * Override firmware download URLs to point at the local test server.
+ */
+async function overrideFirmwareURLs(page) {
   await page.evaluate(() => {
     for (const version of Object.keys(FIRMWARE_DOWNLOADS)) {
       for (const prefix of Object.keys(FIRMWARE_DOWNLOADS[version])) {
@@ -79,149 +89,630 @@ test('full manual mode patching pipeline', async ({ page }) => {
       }
     }
   });
+}
 
-  // Step 1: Switch to manual mode.
-  await page.click('#btn-manual-from-auto');
-  await expect(page.locator('#step-manual')).not.toBeHidden();
+/**
+ * Set up firmware symlink for tests that need it.
+ */
+function setupFirmwareSymlink() {
+  try { fs.unlinkSync(WEBROOT_FIRMWARE); } catch {}
+  fs.symlinkSync(path.resolve(FIRMWARE_PATH), WEBROOT_FIRMWARE);
+}
 
-  // Step 2: Select firmware version.
-  await page.selectOption('#manual-version', '4.45.23646');
-  await expect(page.locator('#manual-model')).not.toBeHidden();
+// ============================================================
+// NickelMenu tests
+// ============================================================
 
-  // Step 3: Select Kobo Libra Colour (N428).
-  await page.selectOption('#manual-model', 'N428');
-  await expect(page.locator('#btn-manual-confirm')).toBeEnabled();
-  await page.click('#btn-manual-confirm');
+test.describe('NickelMenu', () => {
+  test('no device — install NickelMenu with config via manual download', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
-  // Step 4: Wait for patches to load.
-  await expect(page.locator('#step-patches')).not.toBeHidden();
-  await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    await goToManualMode(page);
 
-  // Step 5: Enable "Remove footer (row3) on new home screen".
-  const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
-  const patchSection = patchName.locator('xpath=ancestor::details');
-  await patchSection.locator('summary').click();
-  await expect(patchName).toBeVisible();
-  await patchName.locator('xpath=ancestor::label').locator('input').check();
+    // Mode selection: NickelMenu should be pre-selected (checked in HTML)
+    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
+    await page.click('#btn-mode-next');
 
-  // Verify patch count updated.
-  await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
-  await expect(page.locator('#btn-patches-next')).toBeEnabled();
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
-  // Step 6: Continue to build step.
-  await page.click('#btn-patches-next');
-  await expect(page.locator('#step-firmware')).not.toBeHidden();
-  await expect(page.locator('#firmware-version-label')).toHaveText('4.45.23646');
-  await expect(page.locator('#firmware-device-label')).toHaveText('Kobo Libra Colour');
+    // No option pre-selected — Continue should be disabled
+    await expect(page.locator('#btn-nm-next')).toBeDisabled();
 
-  // Step 7: Build and wait for completion.
-  await page.click('#btn-build');
+    // Select "Install NickelMenu and configure"
+    await page.click('input[name="nm-option"][value="sample"]');
+    await expect(page.locator('#nm-config-options')).not.toBeHidden();
 
-  const doneOrError = await Promise.race([
-    page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
-    page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
-  ]);
+    // Verify default checkbox states
+    await expect(page.locator('input[name="nm-cfg-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-screensaver"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-simplify-home"]')).not.toBeChecked();
 
-  if (doneOrError === 'error') {
-    const errorMsg = await page.locator('#error-message').textContent();
-    throw new Error(`Build failed: ${errorMsg}`);
-  }
+    await expect(page.locator('#btn-nm-next')).toBeEnabled();
+    await page.click('#btn-nm-next');
 
-  await expect(page.locator('#build-status')).toContainText('Patching complete');
-  await expect(page.locator('#build-status')).toContainText('Kobo Libra Colour');
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
 
-  // Step 8: Download KoboRoot.tgz and verify checksums.
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#btn-download'),
-  ]);
+    // Write button should be hidden in manual mode
+    await expect(page.locator('#btn-nm-write')).toBeHidden();
+    // Download button visible
+    await expect(page.locator('#btn-nm-download')).toBeVisible();
 
-  expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
-  await expect(page.locator('#download-device-name')).toHaveText('Kobo Libra Colour');
+    // Click download and wait for done step
+    await page.click('#btn-nm-download');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('ready to download');
 
-  const downloadPath = await download.path();
-  const tgzData = fs.readFileSync(downloadPath);
+    // Download instructions should be visible, and include eReader.conf step for sample config
+    await expect(page.locator('#nm-download-instructions')).not.toBeHidden();
+    await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
+  });
 
-  const tarData = zlib.gunzipSync(tgzData);
-  const entries = parseTar(tarData);
+  test('no device — install NickelMenu only via manual download', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
-  for (const [name, expectedHash] of Object.entries(EXPECTED_SHA1)) {
-    const data = entries[name];
-    expect(data, `missing binary in output: ${name}`).toBeDefined();
-    const actualHash = crypto.createHash('sha1').update(data).digest('hex');
-    expect(actualHash, `SHA1 mismatch for ${name}`).toBe(expectedHash);
-  }
+    await goToManualMode(page);
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Select "Install NickelMenu only"
+    await page.click('input[name="nm-option"][value="nickelmenu-only"]');
+    await expect(page.locator('#nm-config-options')).toBeHidden();
+
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (KoboRoot.tgz)');
+
+    // Download
+    await page.click('#btn-nm-download');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('ready to download');
+
+    // eReader.conf step should be hidden for nickelmenu-only
+    await expect(page.locator('#nm-download-conf-step')).toBeHidden();
+  });
+
+  test('no device — remove NickelMenu option is disabled in manual mode', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await goToManualMode(page);
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Remove option should be disabled (no device connected)
+    await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
+    await expect(page.locator('input[name="nm-option"][value="remove"]')).toBeDisabled();
+  });
 });
 
-test('restore original firmware pipeline', async ({ page }) => {
-  if (!fs.existsSync(FIRMWARE_PATH)) {
-    test.skip(true, `Firmware not found at ${FIRMWARE_PATH}`);
-  }
+// ============================================================
+// Custom patches tests
+// ============================================================
 
-  // Symlink the cached firmware into the webroot so the app can fetch it locally.
-  try { fs.unlinkSync(WEBROOT_FIRMWARE); } catch {}
-  fs.symlinkSync(path.resolve(FIRMWARE_PATH), WEBROOT_FIRMWARE);
+test.describe('Custom patches', () => {
+  test('no device — full manual mode patching pipeline', async ({ page }) => {
+    test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
 
-  await page.goto('/');
-  await expect(page.locator('h1')).toContainText('KoboPatch');
+    setupFirmwareSymlink();
+    await goToManualMode(page);
 
-  // Override the firmware download URLs to point at the local server.
-  await page.evaluate(() => {
-    for (const version of Object.keys(FIRMWARE_DOWNLOADS)) {
-      for (const prefix of Object.keys(FIRMWARE_DOWNLOADS[version])) {
-        FIRMWARE_DOWNLOADS[version][prefix] = '/_test_firmware.zip';
-      }
+    // Select "Custom Patches" mode
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Manual version/model selection
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+
+    await overrideFirmwareURLs(page);
+
+    // Select firmware version
+    await page.selectOption('#manual-version', '4.45.23646');
+    await expect(page.locator('#manual-model')).not.toBeHidden();
+
+    // Select Kobo Libra Colour (N428)
+    await page.selectOption('#manual-model', 'N428');
+    await expect(page.locator('#btn-manual-confirm')).toBeEnabled();
+    await page.click('#btn-manual-confirm');
+
+    // Wait for patches to load
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Enable "Remove footer (row3) on new home screen"
+    const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
+    const patchSection = patchName.locator('xpath=ancestor::details');
+    await patchSection.locator('summary').click();
+    await expect(patchName).toBeVisible();
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+
+    // Verify patch count
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+    await expect(page.locator('#btn-patches-next')).toBeEnabled();
+
+    // Continue to build step
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await expect(page.locator('#firmware-version-label')).toHaveText('4.45.23646');
+    await expect(page.locator('#firmware-device-label')).toHaveText('Kobo Libra Colour');
+
+    // Build and wait for completion
+    await page.click('#btn-build');
+
+    const doneOrError = await Promise.race([
+      page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+      page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+    ]);
+
+    if (doneOrError === 'error') {
+      const errorMsg = await page.locator('#error-message').textContent();
+      throw new Error(`Build failed: ${errorMsg}`);
+    }
+
+    await expect(page.locator('#build-status')).toContainText('Patching complete');
+    await expect(page.locator('#build-status')).toContainText('Kobo Libra Colour');
+
+    // Download KoboRoot.tgz and verify checksums
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+
+    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+    await expect(page.locator('#download-device-name')).toHaveText('Kobo Libra Colour');
+
+    const downloadPath = await download.path();
+    const tgzData = fs.readFileSync(downloadPath);
+
+    const tarData = zlib.gunzipSync(tgzData);
+    const entries = parseTar(tarData);
+
+    for (const [name, expectedHash] of Object.entries(EXPECTED_SHA1)) {
+      const data = entries[name];
+      expect(data, `missing binary in output: ${name}`).toBeDefined();
+      const actualHash = crypto.createHash('sha1').update(data).digest('hex');
+      expect(actualHash, `SHA1 mismatch for ${name}`).toBe(expectedHash);
     }
   });
 
-  // Step 1: Switch to manual mode.
-  await page.click('#btn-manual-from-auto');
-  await expect(page.locator('#step-manual')).not.toBeHidden();
+  test('no device — restore original firmware pipeline', async ({ page }) => {
+    test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
 
-  // Step 2: Select firmware version.
-  await page.selectOption('#manual-version', '4.45.23646');
-  await expect(page.locator('#manual-model')).not.toBeHidden();
+    setupFirmwareSymlink();
+    await goToManualMode(page);
 
-  // Step 3: Select Kobo Libra Colour (N428).
-  await page.selectOption('#manual-model', 'N428');
-  await expect(page.locator('#btn-manual-confirm')).toBeEnabled();
-  await page.click('#btn-manual-confirm');
+    // Select "Custom Patches" mode
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
 
-  // Step 4: Wait for patches to load, then continue with zero patches selected.
-  await expect(page.locator('#step-patches')).not.toBeHidden();
-  await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
-  await expect(page.locator('#patch-count-hint')).toContainText('restore the original');
-  await page.click('#btn-patches-next');
+    // Manual version/model selection
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
 
-  // Step 5: Verify build step shows restore text.
-  await expect(page.locator('#step-firmware')).not.toBeHidden();
-  await expect(page.locator('#firmware-description')).toContainText('without modifications');
-  await expect(page.locator('#btn-build')).toContainText('Restore Original Software');
+    await overrideFirmwareURLs(page);
 
-  // Step 6: Build and wait for completion.
-  await page.click('#btn-build');
+    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
 
-  const doneOrError = await Promise.race([
-    page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
-    page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
-  ]);
+    // Wait for patches to load, then continue with zero patches
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    await expect(page.locator('#patch-count-hint')).toContainText('restore the original');
+    await page.click('#btn-patches-next');
 
-  if (doneOrError === 'error') {
-    const errorMsg = await page.locator('#error-message').textContent();
-    throw new Error(`Restore failed: ${errorMsg}`);
-  }
+    // Verify build step shows restore text
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await expect(page.locator('#firmware-description')).toContainText('without modifications');
+    await expect(page.locator('#btn-build')).toContainText('Restore Original Software');
 
-  await expect(page.locator('#build-status')).toContainText('Software extracted');
+    // Build and wait for completion
+    await page.click('#btn-build');
 
-  // Step 7: Download KoboRoot.tgz and verify it matches the original.
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#btn-download'),
-  ]);
+    const doneOrError = await Promise.race([
+      page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+      page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+    ]);
 
-  expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
-  const downloadPath = await download.path();
-  const tgzData = fs.readFileSync(downloadPath);
-  const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
-  expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
+    if (doneOrError === 'error') {
+      const errorMsg = await page.locator('#error-message').textContent();
+      throw new Error(`Restore failed: ${errorMsg}`);
+    }
+
+    await expect(page.locator('#build-status')).toContainText('Software extracted');
+
+    // Download KoboRoot.tgz and verify it matches the original
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+
+    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+    const downloadPath = await download.path();
+    const tgzData = fs.readFileSync(downloadPath);
+    const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
+    expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
+  });
+
+  test('no device — custom patches not available disables patches card', async ({ page }) => {
+    await page.goto('/');
+
+    // In manual mode, NickelMenu should always be available,
+    // but custom patches card should be selectable in mode screen
+    await page.click('#btn-manual');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Both modes should be available in manual mode
+    await expect(page.locator('input[name="mode"][value="patches"]')).not.toBeDisabled();
+    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).not.toBeDisabled();
+  });
+});
+
+// ============================================================
+// Simulated device tests (mock File System Access API)
+// ============================================================
+
+/**
+ * Inject a mock File System Access API into the page, simulating a Kobo Libra Color.
+ * The mock provides:
+ *   - .kobo/version file with serial N4280A0000000 and firmware 4.45.23646
+ *   - Optionally a .adds/nm/ directory (to simulate NickelMenu being installed)
+ *   - writeFile tracking to verify what was written
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {object} opts
+ * @param {boolean} [opts.hasNickelMenu=false] - Whether .adds/nm/ exists on device
+ */
+async function injectMockDevice(page, opts = {}) {
+  await page.evaluate(({ hasNickelMenu }) => {
+    // In-memory filesystem for the mock device
+    const filesystem = {
+      '.kobo': {
+        _type: 'dir',
+        'version': {
+          _type: 'file',
+          content: 'N4280A0000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390',
+        },
+        'Kobo': {
+          _type: 'dir',
+          'Kobo eReader.conf': {
+            _type: 'file',
+            content: '[General]\nsome=setting\n',
+          },
+        },
+      },
+    };
+
+    if (hasNickelMenu) {
+      filesystem['.adds'] = {
+        _type: 'dir',
+        'nm': {
+          _type: 'dir',
+          'items': { _type: 'file', content: 'menu_item:main:test:skip:' },
+        },
+      };
+    }
+
+    // Track files written to device
+    window.__mockWrittenFiles = {};
+
+    function getNode(pathParts) {
+      let node = filesystem;
+      for (const part of pathParts) {
+        if (!node[part]) return null;
+        node = node[part];
+      }
+      return node;
+    }
+
+    function ensureDir(pathParts) {
+      let node = filesystem;
+      for (const part of pathParts) {
+        if (!node[part]) {
+          node[part] = { _type: 'dir' };
+        }
+        node = node[part];
+      }
+      return node;
+    }
+
+    function makeFileHandle(dirNode, fileName) {
+      return {
+        getFile: async () => {
+          const fileNode = dirNode[fileName];
+          const content = fileNode ? (fileNode.content || '') : '';
+          return {
+            text: async () => content,
+            arrayBuffer: async () => new TextEncoder().encode(content).buffer,
+          };
+        },
+        createWritable: async () => {
+          const chunks = [];
+          return {
+            write: async (chunk) => { chunks.push(chunk); },
+            close: async () => {
+              const first = chunks[0];
+              const bytes = first instanceof Uint8Array ? first : new TextEncoder().encode(String(first));
+              if (!dirNode[fileName]) dirNode[fileName] = { _type: 'file' };
+              dirNode[fileName].content = new TextDecoder().decode(bytes);
+              window.__mockWrittenFiles[fileName] = true;
+            },
+          };
+        },
+      };
+    }
+
+    function makeDirHandle(node, name) {
+      return {
+        name: name,
+        kind: 'directory',
+        getDirectoryHandle: async (childName, opts2) => {
+          if (node[childName] && node[childName]._type === 'dir') {
+            return makeDirHandle(node[childName], childName);
+          }
+          if (opts2 && opts2.create) {
+            node[childName] = { _type: 'dir' };
+            return makeDirHandle(node[childName], childName);
+          }
+          throw new DOMException('Not found: ' + childName, 'NotFoundError');
+        },
+        getFileHandle: async (childName, opts2) => {
+          if (node[childName] && node[childName]._type === 'file') {
+            return makeFileHandle(node, childName);
+          }
+          if (opts2 && opts2.create) {
+            node[childName] = { _type: 'file', content: '' };
+            return makeFileHandle(node, childName);
+          }
+          throw new DOMException('Not found: ' + childName, 'NotFoundError');
+        },
+      };
+    }
+
+    const rootHandle = makeDirHandle(filesystem, 'KOBOeReader');
+
+    // Override showDirectoryPicker
+    window.showDirectoryPicker = async () => rootHandle;
+  }, { hasNickelMenu: opts.hasNickelMenu || false });
+}
+
+test.describe('With Kobo Libra Color', () => {
+  test('installing NickelMenu with config', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('KoboPatch');
+
+    await injectMockDevice(page, { hasNickelMenu: false });
+
+    // Connect to device
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+    await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');
+    await expect(page.locator('#device-status')).toContainText('recognized');
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // NickelMenu is pre-selected
+    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
+    await page.click('#btn-mode-next');
+
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Remove option should be disabled (no NickelMenu installed)
+    await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
+
+    // Select "Install NickelMenu and configure"
+    await page.click('input[name="nm-option"][value="sample"]');
+    await expect(page.locator('#nm-config-options')).not.toBeHidden();
+
+    // Enable all options for testing
+    await page.check('input[name="nm-cfg-simplify-tabs"]');
+    await page.check('input[name="nm-cfg-simplify-home"]');
+
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('Simplified tab menu');
+    await expect(page.locator('#nm-review-list')).toContainText('Simplified homescreen');
+
+    // Both buttons visible when device is connected
+    await expect(page.locator('#btn-nm-write')).toBeVisible();
+    await expect(page.locator('#btn-nm-download')).toBeVisible();
+
+    // Write to device
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('installed');
+    await expect(page.locator('#nm-write-instructions')).not.toBeHidden();
+  });
+
+  test('removing NickelMenu', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('KoboPatch');
+
+    await injectMockDevice(page, { hasNickelMenu: true });
+
+    // Connect to device
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await page.click('#btn-mode-next');
+
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Remove option should be enabled (NickelMenu is installed)
+    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/nm-option-disabled/);
+    await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
+
+    // Select remove
+    await page.click('input[name="nm-option"][value="remove"]');
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-summary')).toContainText('removal');
+
+    // Download should be hidden for remove
+    await expect(page.locator('#btn-nm-download')).toBeHidden();
+    // Write should show "Remove from Kobo"
+    await expect(page.locator('#btn-nm-write')).toContainText('Remove from Kobo');
+
+    // Execute removal
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('removed');
+    await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
+  });
+
+  test('installing custom patches', async ({ page }) => {
+    test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    setupFirmwareSymlink();
+
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('KoboPatch');
+
+    await injectMockDevice(page, { hasNickelMenu: false });
+    await overrideFirmwareURLs(page);
+
+    // Connect to device
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Both modes should be available (firmware is supported)
+    await expect(page.locator('input[name="mode"][value="patches"]')).not.toBeDisabled();
+
+    // Select Custom Patches
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Patches step (patches should already be loaded from device detection)
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Enable a patch
+    const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
+    const patchSection = patchName.locator('xpath=ancestor::details');
+    await patchSection.locator('summary').click();
+    await expect(patchName).toBeVisible();
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+    await page.click('#btn-patches-next');
+
+    // Build step
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await expect(page.locator('#firmware-version-label')).toHaveText('4.45.23646');
+    await expect(page.locator('#firmware-device-label')).toHaveText('Kobo Libra Colour');
+
+    await page.click('#btn-build');
+
+    const doneOrError = await Promise.race([
+      page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+      page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+    ]);
+
+    if (doneOrError === 'error') {
+      const errorMsg = await page.locator('#error-message').textContent();
+      throw new Error(`Build failed: ${errorMsg}`);
+    }
+
+    await expect(page.locator('#build-status')).toContainText('Patching complete');
+
+    // Both write and download should be visible with device connected
+    await expect(page.locator('#btn-write')).toBeVisible();
+    await expect(page.locator('#btn-download')).toBeVisible();
+
+    // Download and verify checksums
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+
+    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+    const downloadPath = await download.path();
+    const tgzData = fs.readFileSync(downloadPath);
+    const tarData = zlib.gunzipSync(tgzData);
+    const entries = parseTar(tarData);
+
+    for (const [name, expectedHash] of Object.entries(EXPECTED_SHA1)) {
+      const data = entries[name];
+      expect(data, `missing binary in output: ${name}`).toBeDefined();
+      const actualHash = crypto.createHash('sha1').update(data).digest('hex');
+      expect(actualHash, `SHA1 mismatch for ${name}`).toBe(expectedHash);
+    }
+  });
+
+  test('restoring original firmware', async ({ page }) => {
+    test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    setupFirmwareSymlink();
+
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('KoboPatch');
+
+    await injectMockDevice(page, { hasNickelMenu: false });
+    await overrideFirmwareURLs(page);
+
+    // Connect to device
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    // Use the "Restore Unpatched Software" shortcut button on device screen
+    await page.click('#btn-device-restore');
+
+    // Build step should show restore mode
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await expect(page.locator('#firmware-description')).toContainText('without modifications');
+    await expect(page.locator('#btn-build')).toContainText('Restore Original Software');
+
+    await page.click('#btn-build');
+
+    const doneOrError = await Promise.race([
+      page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+      page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+    ]);
+
+    if (doneOrError === 'error') {
+      const errorMsg = await page.locator('#error-message').textContent();
+      throw new Error(`Restore failed: ${errorMsg}`);
+    }
+
+    await expect(page.locator('#build-status')).toContainText('Software extracted');
+
+    // Download and verify original
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+
+    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+    const downloadPath = await download.path();
+    const tgzData = fs.readFileSync(downloadPath);
+    const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
+    expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
+  });
 });
