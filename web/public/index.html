@@ -4,18 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KoboPatch Web UI</title>
+    <meta name="description" content="A website that lets you customize your Kobo e-reader with NickelMenu or custom patches, directly via your browser.">
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/favicon/site.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+
     <!-- Inline critical styles so the hero + loader render before style.css arrives on slow connections -->
     <style>
         body { background: #f5f5f7; color: #111827; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; margin: 0; }
         main { max-width: 640px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
         .hero { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb; }
         h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
-        .hero-accent { color: #2563eb; font-weight: 600; }
-        .beta-pill { font-size: 0.55rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: #991b1b; color: #fff; padding: 0.15rem 0.5rem; border-radius: 10px; vertical-align: middle; position: relative; top: -0.15rem; }
+        .hero-accent { color: #00bedf; font-weight: 600; }
+        .beta-pill { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: #00bedf; color: #fff; padding: 0.35rem 0.7rem; border-radius: 10px; vertical-align: middle; position: relative; top: -0.15rem; margin-left: 5px; }
         .subtitle { color: #6b7280; font-size: 0.95rem; margin-top: 0.25rem; }
         .initial-loader { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 2rem 0; }
         .initial-loader p { margin: 0; font-size: 0.93rem; color: #6b7280; }
-        .spinner { width: 22px; height: 22px; border: 2.5px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+        .spinner { width: 22px; height: 22px; border: 2.5px solid #e5e7eb; border-top-color: #00bedf; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
         [hidden] { display: none !important; }
     </style>
@@ -49,22 +58,27 @@
             <p>How would you like to set up your Kobo?</p>
             <div class="mode-cards">
                 <button id="btn-connect" class="mode-card mode-card-btn">
-                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 16 16" fill="currentColor"><path d="m7.792.312-1.533 2.3A.25.25 0 0 0 6.467 3H7.5v7.319a2.5 2.5 0 0 0-.515-.298L5.909 9.56A1.5 1.5 0 0 1 5 8.18v-.266a1.5 1.5 0 1 0-1 0v.266a2.5 2.5 0 0 0 1.515 2.298l1.076.461a1.5 1.5 0 0 1 .888 1.129 2.001 2.001 0 1 0 1.021-.006v-.902a1.5 1.5 0 0 1 .756-1.303l1.484-.848A2.5 2.5 0 0 0 11.995 7h.755a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h.741a1.5 1.5 0 0 1-.747 1.142L8.76 8.99a2.584 2.584 0 0 0-.26.17V3h1.033a.25.25 0 0 0 .208-.389L8.208.312a.25.25 0 0 0-.416 0Z"/></svg>
+                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 16 16" fill="currentColor"><path d="m7.792.312-1.533 2.3A.25.25 0 0 0 6.467 3H7.5v7.319a2.5 2.5 0 0 0-.515-.298L5.909 9.56A1.5 1.5 0 0 1 5 8.18v-.266a1.5 1.5 0 1 0-1 0v.266a2.5 2.5 0 0 0 1.515 2.298l1.076.461a1.5 1.5 0 0 1 .888 1.129 2.001 2.001 0 1 0 1.021-.006v-.902a1.5 1.5 0 0 1 .756-1.303l1.484-.848A2.5 2.5 0 0 0 11.995 7h.755a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h.741a1.5 1.5 0 0 1-.747 1.142L8.76 8.99a2.584 2.584 0 0 0-.26.17V3h1.033a.25.25 0 0 0 .208-.389L8.208.312a.25.25 0 0 0-.416 0Z"/></svg>
                     <div class="mode-card-body">
-                        <div class="mode-card-title">Connect my Kobo</div>
+                        <div class="mode-card-title">
+                            Connect my Kobo
+                            <span class="recommended-pill">recommended</span>
+                        </div>
                         <div class="mode-card-desc">Connect your Kobo via USB and select its drive. You will have the option to apply these changes directly, or you can download a ZIP.</div>
                     </div>
                 </button>
                 <button id="btn-manual" class="mode-card mode-card-btn">
-                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     <div class="mode-card-body">
-                        <div class="mode-card-title">Download files manually</div>
-                        <div class="mode-card-desc">Download the files and copy them to your Kobo yourself. Works in any browser.</div>
+                        <div class="mode-card-title">
+                            Build downloadable archive
+                        </div>
+                        <div class="mode-card-desc">You may need to identify your device based on model number. Go through the wizard, download the files and copy them to your Kobo yourself. Works in any browser, but a bit more complicated. Recommended for tinkerers.</div>
                     </div>
                 </button>
             </div>
             <p id="connect-unsupported-hint" class="fallback-hint" hidden>
-                Your browser does not support direct device access. Use Chrome or Edge to connect your Kobo directly, or choose the manual download option.
+                <b>Note:</b> Your browser does not support direct device access via the <a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>, which is required for a seamless patching experience. Directly connecting to your Kobo is not available because of this. Use Chrome, Edge or Opera to connect your Kobo directly, or choose the manual download option.
             </p>
         </section>
 
@@ -109,7 +123,7 @@
             </div>
             <p id="device-status"></p>
             <div class="step-actions">
-                <button id="btn-device-restore" class="secondary">Restore Unpatched Software</button>
+                <button id="btn-device-restore" class="secondary">Restore Software</button>
                 <button id="btn-device-next" class="primary">Continue &#x203A;</button>
             </div>
         </section>
@@ -147,44 +161,44 @@
                 <label class="nm-option">
                     <input type="radio" name="nm-option" value="sample">
                     <div class="nm-option-body">
-                        <div class="nm-option-title">Install NickelMenu and configure</div>
-                        <div class="nm-option-desc">Installs NickelMenu with a curated set of menu options.</div>
+                        <div class="nm-option-title">Install NickelMenu & Apply Preset</div>
+                        <div class="nm-option-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
                     </div>
                 </label>
                 <div id="nm-config-options" class="nm-config-options" hidden>
                 <label class="nm-config-item">
                     <input type="checkbox" name="nm-cfg-menu" checked disabled>
                     <div class="nm-config-text">
-                        <span>Set up custom menu</span>
+                        <span>Set up custom menu (required)</span>
                         <span class="nm-config-desc">Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak".</span>
                     </div>
                 </label>
                 <label class="nm-config-item">
                     <input type="checkbox" name="nm-cfg-fonts" checked>
                     <div class="nm-config-text">
-                        <span>Install Readerly fonts</span>
-                        <span class="nm-config-desc">Adds the free Readerly fonts, which are visually similar to Bookerly.</span>
+                        <span>Install Readerly fonts (recommended)</span>
+                        <span class="nm-config-desc">Adds the Readerly font family. These fonts are optically similar to Bookerly. When you are reading a book, you will be able to select this font from the dropdown as "KF Readerly".</span>
                     </div>
                 </label>
                 <label class="nm-config-item">
                     <input type="checkbox" name="nm-cfg-screensaver">
                     <div class="nm-config-text">
-                        <span>Install screensaver</span>
-                        <span class="nm-config-desc">Replaces the default sleep screen with a custom screensaver image.</span>
+                        <span>Copy screensaver (optional)</span>
+                        <span class="nm-config-desc">Replaces the default sleep screen with a custom screensaver image. You can always add your own in the <code>/.kobo/screensaver</code> folder.</span>
                     </div>
                 </label>
                 <label class="nm-config-item">
                     <input type="checkbox" name="nm-cfg-simplify-tabs">
                     <div class="nm-config-text">
-                        <span>Hide Notebook & Store tabs</span>
-                        <span class="nm-config-desc">This will hide the Notebook and Store tabs from the bottom navigation.</span>
+                        <span>Hide certain navigation tabs (minimalist)</span>
+                        <span class="nm-config-desc">This will hide the Notebook and Store tabs from the bottom navigation. For minimalists who want fewer distractions.</span>
                     </div>
                 </label>
                 <label class="nm-config-item">
                     <input type="checkbox" name="nm-cfg-simplify-home">
                     <div class="nm-config-text">
-                        <span>Simpler home screen</span>
-                        <span class="nm-config-desc">If you are reading only one book, no recommendations will appear next to your current read, and third row on your homescreen with advertisements for Kobo Plus and the Kobo Store will be hidden.</span>
+                        <span>Hide certain home screen elements (minimalist)</span>
+                        <span class="nm-config-desc">If you are reading only one book, no recommendations will appear next to your current read, and third row on your homescreen with advertisements for Kobo Plus and the Kobo Store will be hidden. For minimalists who want fewer distractions.</span>
                     </div>
                 </label>
                 <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank" class="nm-config-link">Learn more about these customisations &#x203A;</a>
@@ -214,6 +228,7 @@
         <section id="step-nm-review" class="step" hidden>
             <p id="nm-review-summary"></p>
             <ul id="nm-review-list" class="selected-patches-list"></ul>
+            <p>Before continuing, make sure you these are the changes you want. You can always use the wizard again to uninstall NickelMenu, if you want to.</p>
             <div id="nm-review-actions" class="step-actions">
                 <button id="btn-nm-review-back" class="secondary">&#x2039; Back</button>
                 <div class="step-actions-right">

@@ -13,8 +13,8 @@
     --border-light: #e5e7eb;
     --text: #111827;
     --text-secondary: #6b7280;
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
+    --primary: #01a7c4;
+    --primary-hover: #01a7c4;
     --primary-light: #eff6ff;
     --error-bg: #fef2f2;
     --error-border: #fca5a5;
@@ -30,11 +30,15 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
     background: var(--bg);
     color: var(--text);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+}
+
+button {
+    font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
 }
 
 main {
@@ -56,23 +60,34 @@ h1 {
     letter-spacing: -0.02em;
 }
 
+#connect-unsupported-hint {
+    margin-top: 20px;
+    color: var(--error-text);
+}
+
+#connect-unsupported-hint a {
+    color: var(--error-text);
+    text-decoration: underline;
+}
+
 .hero-accent {
     color: var(--primary);
     font-weight: 600;
 }
 
 .beta-pill {
-    font-size: 0.55rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: var(--error-text);
+    background: var(--primary);
     color: #fff;
-    padding: 0.15rem 0.5rem;
+    padding: 0.35rem 0.7rem;
     border-radius: 10px;
     vertical-align: middle;
     position: relative;
     top: -0.15rem;
+    margin-left: 5px;
 }
 
 .subtitle {
@@ -238,17 +253,25 @@ h2 {
     line-height: 1.5;
 }
 
+.mode-card-title {
+    position: relative;
+}
+
 .recommended-pill {
+    position: absolute;
+    top: -8px;
+    right: -20px;
     margin-left: auto;
     font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    background: var(--success-text);
+    background: var(--primary);
     color: #fff;
-    padding: 0.2rem 0.6rem;
-    border-radius: 8px;
-    white-space: nowrap;
+    padding: 0.25rem 0.6rem;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    line-height: 1.5;
 }
 
 /* NickelMenu option radio cards */
@@ -512,7 +535,8 @@ button.btn-success:hover {
 }
 
 .warning a {
-    color: inherit;
+    color: var(--warning-text) !important;
+    text-decoration: underline !important;
 }
 
 .error {
