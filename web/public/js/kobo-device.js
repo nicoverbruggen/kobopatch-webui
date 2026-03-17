@@ -166,6 +166,52 @@ class KoboDevice {
     }
 
     /**
+     * Get a nested directory handle, creating directories as needed.
+     * pathParts is an array like ['.kobo', 'Kobo'].
+     */
+    async getNestedDirectory(pathParts) {
+        let dir = this.directoryHandle;
+        for (const part of pathParts) {
+            dir = await dir.getDirectoryHandle(part, { create: true });
+        }
+        return dir;
+    }
+
+    /**
+     * Write a file at a nested path relative to the device root.
+     * filePath is like ['.kobo', 'KoboRoot.tgz'] or ['.adds', 'nm', 'items'].
+     */
+    async writeFile(filePath, data) {
+        const dirParts = filePath.slice(0, -1);
+        const fileName = filePath[filePath.length - 1];
+        const dir = dirParts.length > 0
+            ? await this.getNestedDirectory(dirParts)
+            : this.directoryHandle;
+        const fileHandle = await dir.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(data);
+        await writable.close();
+    }
+
+    /**
+     * Read a file at a nested path. Returns the text content, or null if not found.
+     */
+    async readFile(filePath) {
+        try {
+            const dirParts = filePath.slice(0, -1);
+            const fileName = filePath[filePath.length - 1];
+            const dir = dirParts.length > 0
+                ? await this.getNestedDirectory(dirParts)
+                : this.directoryHandle;
+            const fileHandle = await dir.getFileHandle(fileName);
+            const file = await fileHandle.getFile();
+            return await file.text();
+        } catch {
+            return null;
+        }
+    }
+
+    /**
      * Disconnect / release the directory handle.
      */
     disconnect() {

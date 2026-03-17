@@ -23,5 +23,9 @@ tests/e2e/node_modules/
 tests/e2e/test-results/
 tests/e2e/playwright-report/
 
+# NickelMenu build artifacts
+nickelmenu/kobo-config/
+web/public/nickelmenu/
+
 # Claude
 .claude

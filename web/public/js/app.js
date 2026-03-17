@@ -2,19 +2,27 @@
     const device = new KoboDevice();
     const patchUI = new PatchUI();
     const runner = new KobopatchRunner();
+    const nmInstaller = new NickelMenuInstaller();
 
     let firmwareURL = null;
     let resultTgz = null;
+    let resultNmZip = null;
     let manualMode = false;
     let selectedPrefix = null;
     let patchesLoaded = false;
     let isRestore = false;
     let availablePatches = null;
+    let selectedMode = null;        // 'nickelmenu' | 'patches'
+    let nickelMenuOption = null;    // 'sample' | 'nickelmenu-only' | 'remove'
 
     // Fetch patch index immediately so it's ready when needed.
     const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 
     // --- Helpers ---
+
+    const $ = (id) => document.getElementById(id);
+    const $q = (sel, ctx = document) => ctx.querySelector(sel);
+    const $qa = (sel, ctx = document) => ctx.querySelectorAll(sel);
 
     function formatMB(bytes) {
         return (bytes / 1024 / 1024).toFixed(1) + ' MB';
@@ -50,46 +58,81 @@
     }
 
     // --- DOM elements ---
-    const stepNav = document.getElementById('step-nav');
-    const stepConnect = document.getElementById('step-connect');
-    const stepManual = document.getElementById('step-manual');
-    const stepDevice = document.getElementById('step-device');
-    const stepPatches = document.getElementById('step-patches');
-    const stepFirmware = document.getElementById('step-firmware');
-    const stepBuilding = document.getElementById('step-building');
-    const stepDone = document.getElementById('step-done');
-    const stepError = document.getElementById('step-error');
+    const stepNav = $('step-nav');
+    const stepConnect = $('step-connect');
+    const stepManualVersion = $('step-manual-version');
+    const stepDevice = $('step-device');
+    const stepMode = $('step-mode');
+    const stepNickelMenu = $('step-nickelmenu');
+    const stepNmInstalling = $('step-nm-installing');
+    const stepNmDone = $('step-nm-done');
+    const stepPatches = $('step-patches');
+    const stepFirmware = $('step-firmware');
+    const stepBuilding = $('step-building');
+    const stepDone = $('step-done');
+    const stepError = $('step-error');
 
-    const btnConnect = document.getElementById('btn-connect');
-    const btnManualFromAuto = document.getElementById('btn-manual-from-auto');
-    const btnManualConfirm = document.getElementById('btn-manual-confirm');
-    const manualVersion = document.getElementById('manual-version');
-    const manualModel = document.getElementById('manual-model');
-    const manualChromeHint = document.getElementById('manual-chrome-hint');
-    const btnDeviceNext = document.getElementById('btn-device-next');
-    const btnDeviceRestore = document.getElementById('btn-device-restore');
-    const btnPatchesBack = document.getElementById('btn-patches-back');
-    const btnPatchesNext = document.getElementById('btn-patches-next');
-    const btnBuildBack = document.getElementById('btn-build-back');
-    const btnWrite = document.getElementById('btn-write');
-    const btnDownload = document.getElementById('btn-download');
-    const btnRetry = document.getElementById('btn-retry');
+    const btnConnect = $('btn-connect');
+    const btnManual = $('btn-manual');
+    const btnManualConfirm = $('btn-manual-confirm');
+    const btnManualVersionBack = $('btn-manual-version-back');
+    const manualVersion = $('manual-version');
+    const manualModel = $('manual-model');
+    const btnDeviceNext = $('btn-device-next');
+    const btnDeviceRestore = $('btn-device-restore');
+    const btnModeBack = $('btn-mode-back');
+    const btnModeNext = $('btn-mode-next');
+    const btnNmBack = $('btn-nm-back');
+    const btnNmNext = $('btn-nm-next');
+    const btnNmReviewBack = $('btn-nm-review-back');
+    const btnNmWrite = $('btn-nm-write');
+    const btnNmDownload = $('btn-nm-download');
+    const btnPatchesBack = $('btn-patches-back');
+    const btnPatchesNext = $('btn-patches-next');
+    const btnBuildBack = $('btn-build-back');
+    const btnWrite = $('btn-write');
+    const btnDownload = $('btn-download');
+    const btnRetry = $('btn-retry');
 
-    const errorMessage = document.getElementById('error-message');
-    const errorLog = document.getElementById('error-log');
-    const deviceStatus = document.getElementById('device-status');
-    const patchContainer = document.getElementById('patch-container');
-    const buildStatus = document.getElementById('build-status');
-    const existingTgzWarning = document.getElementById('existing-tgz-warning');
-    const writeInstructions = document.getElementById('write-instructions');
-    const downloadInstructions = document.getElementById('download-instructions');
-    const firmwareVersionLabel = document.getElementById('firmware-version-label');
-    const firmwareDeviceLabel = document.getElementById('firmware-device-label');
-    const patchCountHint = document.getElementById('patch-count-hint');
+    const errorMessage = $('error-message');
+    const errorLog = $('error-log');
+    const deviceStatus = $('device-status');
+    const patchContainer = $('patch-container');
+    const buildStatus = $('build-status');
+    const existingTgzWarning = $('existing-tgz-warning');
+    const writeInstructions = $('write-instructions');
+    const downloadInstructions = $('download-instructions');
+    const firmwareVersionLabel = $('firmware-version-label');
+    const firmwareDeviceLabel = $('firmware-device-label');
+    const patchCountHint = $('patch-count-hint');
 
-    const allSteps = [stepConnect, stepManual, stepDevice, stepPatches, stepFirmware, stepBuilding, stepDone, stepError];
+    const stepNmReview = $('step-nm-review');
+
+    const allSteps = [
+        stepConnect, stepManualVersion, stepDevice,
+        stepMode, stepNickelMenu, stepNmReview, stepNmInstalling, stepNmDone,
+        stepPatches, stepFirmware, stepBuilding, stepDone,
+        stepError,
+    ];
 
     // --- Step navigation ---
+    const NAV_NICKELMENU = ['Device', 'Mode', 'Configure', 'Review', 'Install'];
+    const NAV_PATCHES = ['Device', 'Mode', 'Patches', 'Build', 'Install'];
+    const NAV_DEFAULT = ['Device', 'Mode', 'Patches', 'Build', 'Install'];
+
+    let currentNavLabels = NAV_DEFAULT;
+
+    function setNavLabels(labels) {
+        currentNavLabels = labels;
+        const ol = $q('ol', stepNav);
+        ol.innerHTML = '';
+        for (const label of labels) {
+            const li = document.createElement('li');
+            li.textContent = label;
+            ol.appendChild(li);
+        }
+    }
+
     function showStep(step) {
         for (const s of allSteps) {
             s.hidden = (s !== step);
@@ -97,7 +140,7 @@
     }
 
     function setNavStep(num) {
-        const items = stepNav.querySelectorAll('li');
+        const items = $qa('li', stepNav);
         items.forEach((li, i) => {
             const stepNum = i + 1;
             li.classList.remove('active', 'done');
@@ -110,6 +153,24 @@
     function hideNav() {
         stepNav.hidden = true;
     }
+
+    // --- Mode selection card interactivity ---
+    function setupCardRadios(container, selectedClass) {
+        const labels = $qa('label', container);
+        for (const label of labels) {
+            const radio = $q('input[type="radio"]', label);
+            if (!radio) continue;
+            radio.addEventListener('change', () => {
+                for (const l of labels) {
+                    if ($q('input[type="radio"]', l)) l.classList.remove(selectedClass);
+                }
+                if (radio.checked) label.classList.add(selectedClass);
+            });
+        }
+    }
+
+    setupCardRadios(stepMode, 'mode-card-selected');
+    setupCardRadios(stepNickelMenu, 'nm-option-selected');
 
     // --- Patch count ---
     function updatePatchCount() {
@@ -129,48 +190,40 @@
         firmwareURL = prefix ? getFirmwareURL(prefix, version) : null;
         firmwareVersionLabel.textContent = version;
         firmwareDeviceLabel.textContent = KOBO_MODELS[prefix] || prefix;
-        document.getElementById('firmware-download-url').textContent = firmwareURL || '';
+        $('firmware-download-url').textContent = firmwareURL || '';
     }
 
     // --- Initial state ---
-    const loader = document.getElementById('initial-loader');
+    const loader = $('initial-loader');
     if (loader) loader.remove();
 
     const hasFileSystemAccess = KoboDevice.isSupported();
-    if (hasFileSystemAccess) {
-        setNavStep(1);
-        showStep(stepConnect);
-    } else {
-        enterManualMode();
+
+    // Disable "Connect my Kobo" button on unsupported browsers
+    if (!hasFileSystemAccess) {
+        btnConnect.disabled = true;
+        $('connect-unsupported-hint').hidden = false;
     }
 
-    // --- Step 1: Device selection ---
-    async function enterManualMode() {
+    setNavLabels(NAV_DEFAULT);
+    setNavStep(1);
+    showStep(stepConnect);
+
+    // --- Step 1: Connection method ---
+    // "Connect my Kobo" — triggers File System Access API
+    // (click handler is further below where device connection is handled)
+
+    // "Download files manually" — enter manual mode, go to mode selection
+    btnManual.addEventListener('click', () => {
         manualMode = true;
-        manualChromeHint.hidden = false;
-
-        await availablePatchesReady;
-        populateSelect(manualVersion, '-- Select software version --',
-            availablePatches.map(p => ({ value: p.version, text: p.version, data: { filename: p.filename } }))
-        );
-
-        populateSelect(manualModel, '-- Select your Kobo model --', []);
-        manualModel.hidden = true;
-
-        setNavStep(1);
-        showStep(stepManual);
-    }
-
-    btnManualFromAuto.addEventListener('click', (e) => {
-        e.preventDefault();
-        enterManualMode();
+        goToModeSelection();
     });
 
     manualVersion.addEventListener('change', () => {
         const version = manualVersion.value;
         selectedPrefix = null;
 
-        const modelHint = document.getElementById('manual-model-hint');
+        const modelHint = $('manual-model-hint');
         if (!version) {
             manualModel.hidden = true;
             modelHint.hidden = true;
@@ -192,7 +245,7 @@
         btnManualConfirm.disabled = !manualVersion.value || !manualModel.value;
     });
 
-    // Manual confirm -> load patches -> go to step 2
+    // Manual confirm -> load patches -> go to patches step
     btnManualConfirm.addEventListener('click', async () => {
         const version = manualVersion.value;
         if (!version || !selectedPrefix) return;
@@ -215,15 +268,15 @@
         try {
             const info = await device.connect();
 
-            document.getElementById('device-model').textContent = info.model;
-            const serialEl = document.getElementById('device-serial');
+            $('device-model').textContent = info.model;
+            const serialEl = $('device-serial');
             serialEl.textContent = '';
             const prefixLen = info.serialPrefix.length;
             const u = document.createElement('u');
             u.textContent = info.serial.slice(0, prefixLen);
             serialEl.appendChild(u);
             serialEl.appendChild(document.createTextNode(info.serial.slice(prefixLen)));
-            document.getElementById('device-firmware').textContent = info.firmware;
+            $('device-firmware').textContent = info.firmware;
 
             selectedPrefix = info.serialPrefix;
 
@@ -231,42 +284,35 @@
             const match = availablePatches.find(p => p.version === info.firmware);
 
             if (match) {
-                deviceStatus.className = '';
-                deviceStatus.textContent =
-                    'KoboPatch Web UI currently supports this version of the software. ' +
-                    'You can choose to customize it or simply restore the original software.';
-
                 await patchUI.loadFromURL('patches/' + match.filename);
                 patchUI.render(patchContainer);
                 updatePatchCount();
                 patchesLoaded = true;
                 configureFirmwareStep(info.firmware, info.serialPrefix);
-
-                btnDeviceNext.hidden = false;
                 btnDeviceRestore.hidden = false;
-                showStep(stepDevice);
             } else {
-                deviceStatus.className = 'warning';
-                deviceStatus.textContent =
-                    'No patch available for this specific version and model combination. Currently, only Kobo Libra Colour, Kobo Clara Colour and Kobo Clara BW can be patched via this website.';
-                btnDeviceNext.hidden = true;
                 btnDeviceRestore.hidden = true;
-                showStep(stepDevice);
             }
+
+            deviceStatus.textContent = 'Your device has been recognized. You can continue to the next step!';
+            btnDeviceNext.hidden = false;
+            showStep(stepDevice);
         } catch (err) {
             if (err.name === 'AbortError') return;
             showError(err.message);
         }
     });
 
-    // Device info -> patches
+    // Device info -> mode selection
     btnDeviceNext.addEventListener('click', () => {
-        if (patchesLoaded) goToPatches();
+        goToModeSelection();
     });
 
     btnDeviceRestore.addEventListener('click', () => {
         if (!patchesLoaded) return;
+        selectedMode = 'patches';
         isRestore = true;
+        setNavLabels(NAV_PATCHES);
         goToBuild();
     });
 
@@ -281,15 +327,272 @@
         return true;
     }
 
-    // --- Step 2: Patches ---
-    function goToPatches() {
+    // --- Step 2: Mode selection ---
+    function goToModeSelection() {
+        // In auto mode, disable custom patches if firmware isn't supported
+        const patchesRadio = $q('input[value="patches"]', stepMode);
+        const patchesCard = patchesRadio.closest('.mode-card');
+        const autoModeNoPatchesAvailable = !manualMode && !patchesLoaded;
+
+        const patchesHint = $('mode-patches-hint');
+        if (autoModeNoPatchesAvailable) {
+            patchesRadio.disabled = true;
+            patchesCard.style.opacity = '0.5';
+            patchesCard.style.cursor = 'not-allowed';
+            patchesHint.hidden = false;
+            const nmRadio = $q('input[value="nickelmenu"]', stepMode);
+            nmRadio.checked = true;
+            nmRadio.dispatchEvent(new Event('change'));
+        } else {
+            patchesRadio.disabled = false;
+            patchesCard.style.opacity = '';
+            patchesCard.style.cursor = '';
+            patchesHint.hidden = true;
+        }
+
+        setNavLabels(NAV_DEFAULT);
         setNavStep(2);
+        showStep(stepMode);
+    }
+
+    btnModeBack.addEventListener('click', () => {
+        setNavStep(1);
+        if (manualMode) {
+            showStep(stepConnect);
+        } else {
+            showStep(stepDevice);
+        }
+    });
+
+    btnModeNext.addEventListener('click', async () => {
+        const selected = $q('input[name="mode"]:checked', stepMode);
+        if (!selected) return;
+        selectedMode = selected.value;
+
+        if (selectedMode === 'nickelmenu') {
+            setNavLabels(NAV_NICKELMENU);
+            goToNickelMenuConfig();
+        } else if (manualMode && !patchesLoaded) {
+            // Manual mode: need version/model selection before patches
+            setNavLabels(NAV_PATCHES);
+            await enterManualVersionSelection();
+        } else {
+            setNavLabels(NAV_PATCHES);
+            goToPatches();
+        }
+    });
+
+    // --- Manual version/model selection (only for custom patches in manual mode) ---
+    async function enterManualVersionSelection() {
+        await availablePatchesReady;
+        populateSelect(manualVersion, '-- Select software version --',
+            availablePatches.map(p => ({ value: p.version, text: p.version, data: { filename: p.filename } }))
+        );
+        populateSelect(manualModel, '-- Select your Kobo model --', []);
+        manualModel.hidden = true;
+        btnManualConfirm.disabled = true;
+        showStep(stepManualVersion);
+    }
+
+    btnManualVersionBack.addEventListener('click', () => {
+        goToModeSelection();
+    });
+
+    // --- Step 2b: NickelMenu configuration ---
+    const nmConfigOptions = $('nm-config-options');
+
+    // Show/hide config checkboxes based on radio selection
+    for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
+        radio.addEventListener('change', () => {
+            nmConfigOptions.hidden = radio.value !== 'sample' || !radio.checked;
+        });
+    }
+
+    async function checkNickelMenuInstalled() {
+        const removeOption = $('nm-option-remove');
+        const removeRadio = $q('input[value="remove"]', removeOption);
+        const removeDesc = $('nm-remove-desc');
+
+        if (!manualMode && device.directoryHandle) {
+            try {
+                const addsDir = await device.directoryHandle.getDirectoryHandle('.adds');
+                await addsDir.getDirectoryHandle('nm');
+                removeRadio.disabled = false;
+                removeOption.classList.remove('nm-option-disabled');
+                removeDesc.textContent = 'Removes NickelMenu from your device. You must restart your Kobo to complete the uninstall!';
+                return;
+            } catch {
+                // .adds/nm not found
+            }
+        }
+
+        removeRadio.disabled = true;
+        removeOption.classList.add('nm-option-disabled');
+        removeDesc.textContent = 'Removes NickelMenu from your device. Only available when a Kobo with NickelMenu installed is connected.';
+        if (removeRadio.checked) {
+            const sampleRadio = $q('input[value="sample"]', stepNickelMenu);
+            sampleRadio.checked = true;
+            sampleRadio.dispatchEvent(new Event('change'));
+        }
+    }
+
+    function getNmConfig() {
+        return {
+            fonts: $q('input[name="nm-cfg-fonts"]').checked,
+            screensaver: $q('input[name="nm-cfg-screensaver"]').checked,
+            simplifyTabs: $q('input[name="nm-cfg-simplify-tabs"]').checked,
+            simplifyHome: $q('input[name="nm-cfg-simplify-home"]').checked,
+        };
+    }
+
+    function goToNickelMenuConfig() {
+        checkNickelMenuInstalled();
+        // Reset config visibility based on current selection
+        const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
+        nmConfigOptions.hidden = !currentOption || currentOption.value !== 'sample';
+        setNavStep(3);
+        showStep(stepNickelMenu);
+    }
+
+    btnNmBack.addEventListener('click', () => {
+        goToModeSelection();
+    });
+
+    // Continue from configure to review
+    btnNmNext.addEventListener('click', () => {
+        const selected = $q('input[name="nm-option"]:checked', stepNickelMenu);
+        if (!selected) return;
+        nickelMenuOption = selected.value;
+
+        if (nickelMenuOption === 'remove') {
+            goToNmReview();
+            return;
+        }
+
+        goToNmReview();
+    });
+
+    function goToNmReview() {
+        const summary = $('nm-review-summary');
+        const list = $('nm-review-list');
+        list.innerHTML = '';
+
+        if (nickelMenuOption === 'remove') {
+            summary.textContent = 'NickelMenu will be removed from your device.';
+            btnNmWrite.hidden = manualMode;
+            btnNmWrite.textContent = 'Remove from Kobo';
+            btnNmDownload.hidden = true;
+        } else if (nickelMenuOption === 'nickelmenu-only') {
+            summary.textContent = 'The following will be installed on your Kobo:';
+            const li = document.createElement('li');
+            li.textContent = 'NickelMenu (KoboRoot.tgz)';
+            list.appendChild(li);
+            btnNmWrite.hidden = false;
+            btnNmWrite.textContent = 'Write to Kobo';
+            btnNmDownload.hidden = false;
+        } else {
+            summary.textContent = 'The following will be installed on your Kobo:';
+            const items = ['NickelMenu (KoboRoot.tgz)', 'Custom menu configuration'];
+            const cfg = getNmConfig();
+            if (cfg.fonts) items.push('Readerly fonts');
+            if (cfg.screensaver) items.push('Custom screensaver');
+            if (cfg.simplifyTabs) items.push('Simplified tab menu');
+            if (cfg.simplifyHome) items.push('Simplified homescreen');
+            for (const text of items) {
+                const li = document.createElement('li');
+                li.textContent = text;
+                list.appendChild(li);
+            }
+            btnNmWrite.hidden = false;
+            btnNmWrite.textContent = 'Write to Kobo';
+            btnNmDownload.hidden = false;
+        }
+
+        // In manual mode, hide write button
+        if (manualMode || !device.directoryHandle) {
+            btnNmWrite.hidden = true;
+        }
+
+        btnNmWrite.disabled = false;
+        btnNmWrite.className = 'primary';
+        btnNmDownload.disabled = false;
+
+        setNavStep(4);
+        showStep(stepNmReview);
+    }
+
+    btnNmReviewBack.addEventListener('click', () => {
+        goToNickelMenuConfig();
+    });
+
+    async function executeNmInstall(writeToDevice) {
+        const nmProgress = $('nm-progress');
+        showStep(stepNmInstalling);
+
+        try {
+            if (nickelMenuOption === 'remove') {
+                nmProgress.textContent = 'Removing NickelMenu...';
+                await device.writeFile(['.adds', 'nm', 'uninstall'], new Uint8Array(0));
+                showNmDone('remove');
+                return;
+            }
+
+            const cfg = nickelMenuOption === 'sample' ? getNmConfig() : null;
+
+            if (writeToDevice && device.directoryHandle) {
+                await nmInstaller.installToDevice(device, nickelMenuOption, cfg, (msg) => {
+                    nmProgress.textContent = msg;
+                });
+                showNmDone('written');
+            } else {
+                resultNmZip = await nmInstaller.buildDownloadZip(nickelMenuOption, cfg, (msg) => {
+                    nmProgress.textContent = msg;
+                });
+                showNmDone('download');
+            }
+        } catch (err) {
+            showError('NickelMenu installation failed: ' + err.message);
+        }
+    }
+
+    btnNmWrite.addEventListener('click', () => executeNmInstall(true));
+    btnNmDownload.addEventListener('click', () => executeNmInstall(false));
+
+    function showNmDone(mode) {
+        const nmDoneStatus = $('nm-done-status');
+        $('nm-write-instructions').hidden = true;
+        $('nm-download-instructions').hidden = true;
+        $('nm-reboot-instructions').hidden = true;
+
+        if (mode === 'remove') {
+            nmDoneStatus.textContent = 'NickelMenu will be removed on next reboot.';
+            $('nm-reboot-instructions').hidden = false;
+        } else if (mode === 'written') {
+            nmDoneStatus.textContent = 'NickelMenu has been installed on your Kobo.';
+            $('nm-write-instructions').hidden = false;
+        } else {
+            nmDoneStatus.textContent = 'Your NickelMenu package is ready to download.';
+            triggerDownload(resultNmZip, 'NickelMenu-install.zip', 'application/zip');
+            $('nm-download-instructions').hidden = false;
+        }
+
+        setNavStep(5);
+        showStep(stepNmDone);
+    }
+
+    // --- Step 3 (patches path): Configure patches ---
+    function goToPatches() {
+        setNavStep(3);
         showStep(stepPatches);
     }
 
     btnPatchesBack.addEventListener('click', () => {
-        setNavStep(1);
-        showStep(manualMode ? stepManual : stepDevice);
+        if (manualMode) {
+            // Go back to version selection in manual mode
+            showStep(stepManualVersion);
+        } else {
+            goToModeSelection();
+        }
     });
 
     btnPatchesNext.addEventListener('click', () => {
@@ -297,12 +600,12 @@
         goToBuild();
     });
 
-    // --- Step 3: Review & Build ---
-    const btnBuild = document.getElementById('btn-build');
-    const firmwareDescription = document.getElementById('firmware-description');
+    // --- Step 4 (patches path): Review & Build ---
+    const btnBuild = $('btn-build');
+    const firmwareDescription = $('firmware-description');
 
     function populateSelectedPatchesList() {
-        const patchList = document.getElementById('selected-patches-list');
+        const patchList = $('selected-patches-list');
         patchList.innerHTML = '';
         const enabled = patchUI.getEnabledPatches();
         for (const name of enabled) {
@@ -312,7 +615,7 @@
         }
         const hasPatches = enabled.length > 0;
         patchList.hidden = !hasPatches;
-        document.getElementById('selected-patches-heading').hidden = !hasPatches;
+        $('selected-patches-heading').hidden = !hasPatches;
     }
 
     function goToBuild() {
@@ -326,7 +629,7 @@
             btnBuild.textContent = 'Build Patched Software';
         }
         populateSelectedPatchesList();
-        setNavStep(3);
+        setNavStep(4);
         showStep(stepFirmware);
     }
 
@@ -334,8 +637,8 @@
         goToPatches();
     });
 
-    const buildProgress = document.getElementById('build-progress');
-    const buildLog = document.getElementById('build-log');
+    const buildProgress = $('build-progress');
+    const buildLog = $('build-log');
 
     function appendLog(msg) {
         buildLog.textContent += msg + '\n';
@@ -418,7 +721,7 @@
             action + '. <strong>KoboRoot.tgz</strong> (' + formatMB(resultTgz.length) + ') is ready. ' +
             (description ? description + ' ' : '') + installHint;
 
-        const doneLog = document.getElementById('done-log');
+        const doneLog = $('done-log');
         doneLog.textContent = buildLog.textContent;
 
         // Reset install step state.
@@ -431,7 +734,7 @@
         downloadInstructions.hidden = true;
         existingTgzWarning.hidden = true;
 
-        setNavStep(4);
+        setNavStep(5);
         showStep(stepDone);
 
         requestAnimationFrame(() => {
@@ -454,7 +757,7 @@
         showStep(stepBuilding);
         buildLog.textContent = '';
         buildProgress.textContent = 'Starting...';
-        document.getElementById('build-wait-hint').textContent = isRestore
+        $('build-wait-hint').textContent = isRestore
             ? 'Please wait while the original software is being downloaded and extracted...'
             : 'Please wait while the patch is being applied...';
 
@@ -478,7 +781,7 @@
         }
     });
 
-    // --- Install step ---
+    // --- Install step (patches path) ---
     btnWrite.addEventListener('click', async () => {
         if (!resultTgz || !device.directoryHandle) return;
 
@@ -508,7 +811,7 @@
         triggerDownload(resultTgz, 'KoboRoot.tgz', 'application/gzip');
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
-        document.getElementById('download-device-name').textContent = KOBO_MODELS[selectedPrefix] || 'Kobo';
+        $('download-device-name').textContent = KOBO_MODELS[selectedPrefix] || 'Kobo';
     });
 
     // --- Error / Retry ---
@@ -528,28 +831,28 @@
         device.disconnect();
         firmwareURL = null;
         resultTgz = null;
+        resultNmZip = null;
         manualMode = false;
         selectedPrefix = null;
         patchesLoaded = false;
         isRestore = false;
+        selectedMode = null;
+        nickelMenuOption = null;
         btnDeviceNext.hidden = false;
         btnDeviceRestore.hidden = false;
 
-        if (hasFileSystemAccess) {
-            setNavStep(1);
-            showStep(stepConnect);
-        } else {
-            enterManualMode();
-        }
+        setNavLabels(NAV_DEFAULT);
+        setNavStep(1);
+        showStep(stepConnect);
     });
 
     // --- How it works dialog ---
-    const dialog = document.getElementById('how-it-works-dialog');
-    document.getElementById('btn-how-it-works').addEventListener('click', (e) => {
+    const dialog = $('how-it-works-dialog');
+    $('btn-how-it-works').addEventListener('click', (e) => {
         e.preventDefault();
         dialog.showModal();
     });
-    document.getElementById('btn-close-dialog').addEventListener('click', () => {
+    $('btn-close-dialog').addEventListener('click', () => {
         dialog.close();
     });
     dialog.addEventListener('click', (e) => {

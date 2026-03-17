@@ -162,6 +162,206 @@ h2 {
     background: var(--success-text);
 }
 
+/* Mode selection cards */
+.mode-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mode-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--card-bg);
+    border: 2px solid var(--border-light);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow);
+}
+
+#mode-patches-hint {
+    margin-top: 15px;
+}
+
+.mode-card:hover {
+    border-color: var(--border);
+}
+
+.mode-card-selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+}
+
+.mode-card-btn {
+    text-align: left;
+    width: 100%;
+}
+
+.mode-card-btn:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+}
+
+.mode-card-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: var(--shadow);
+}
+
+.mode-card-btn:disabled:hover {
+    border-color: var(--border-light);
+    box-shadow: var(--shadow);
+}
+
+.mode-card input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.mode-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.93rem;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.mode-card-desc {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.recommended-pill {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--success-text);
+    color: #fff;
+    padding: 0.2rem 0.6rem;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+/* NickelMenu option radio cards */
+.nm-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.nm-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--card-bg);
+    border: 2px solid var(--border-light);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow);
+}
+
+.nm-option:hover {
+    border-color: var(--border);
+}
+
+.nm-option-selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+}
+
+.nm-option-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.nm-option-disabled:hover {
+    border-color: var(--border-light);
+}
+
+.nm-option-remove:not(.nm-option-disabled) {
+    border-color: var(--error-border);
+}
+
+.nm-option-remove:not(.nm-option-disabled):hover {
+    border-color: var(--error-text);
+}
+
+.nm-option-remove.nm-option-selected {
+    border-color: var(--error-text);
+    box-shadow: 0 0 0 1px var(--error-text), var(--shadow);
+}
+
+.nm-option-remove input[type="radio"] {
+    accent-color: var(--error-text);
+}
+
+/* NickelMenu config checkboxes */
+.nm-config-options {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.nm-config-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    font-size: 0.88rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.nm-config-item + .nm-config-item {
+    border-top: 1px solid var(--border-light);
+}
+
+.nm-config-item input[type="checkbox"] {
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.nm-config-item input[type="checkbox"]:disabled {
+    opacity: 0.6;
+}
+
+.nm-config-item span {
+    user-select: none;
+}
+
+.nm-option input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.nm-option-title {
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: var(--text);
+    margin-bottom: 0.15rem;
+}
+
+.nm-option-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
 /* Steps */
 .step {
     margin-bottom: 1rem;
@@ -182,7 +382,8 @@ h2 {
     margin-top: 1.25rem;
 }
 
-.step-actions .primary:first-child {
+.step-actions .primary:first-child,
+.step-actions > [hidden] + .primary {
     margin-left: auto;
 }
 
