@@ -80,8 +80,10 @@ cd kobopatch-wasm
 ## Running locally
 
 ```bash
-python3 -m http.server -d web/public/ 8888
+./run-locally.sh
 ```
+
+This serves the app at `http://localhost:8888`. If the WASM binary hasn't been built yet, the script automatically runs `setup.sh` and `build.sh` first.
 
 ## Testing
 

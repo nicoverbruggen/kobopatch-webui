@@ -133,6 +133,9 @@
     }
 
     // --- Initial state ---
+    const loader = document.getElementById('initial-loader');
+    if (loader) loader.remove();
+
     const hasFileSystemAccess = KoboDevice.isSupported();
     if (hasFileSystemAccess) {
         setNavStep(1);
