@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
+const JSZip = require('jszip');
 
 // Expected SHA1 checksums for Kobo Libra Color, firmware 4.45.23646,
 // with only "Remove footer (row3) on new home screen" enabled.
@@ -296,6 +297,9 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-simplify-home"]')).not.toBeChecked();
 
+    // Enable simplifyHome for testing
+    await page.check('input[name="nm-cfg-simplify-home"]');
+
     await expect(page.locator('#btn-nm-next')).toBeEnabled();
     await page.click('#btn-nm-next');
 
@@ -310,13 +314,36 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#btn-nm-download')).toBeVisible();
 
     // Click download and wait for done step
-    await page.click('#btn-nm-download');
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-download'),
+    ]);
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('ready to download');
 
     // Download instructions should be visible, and include eReader.conf step for sample config
     await expect(page.locator('#nm-download-instructions')).not.toBeHidden();
     await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
+
+    // Verify ZIP contents
+    expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
+    const zipData = fs.readFileSync(await download.path());
+    const zip = await JSZip.loadAsync(zipData);
+    const zipFiles = Object.keys(zip.files);
+
+    // Must contain KoboRoot.tgz
+    expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
+    // Must contain NickelMenu items config
+    expect(zipFiles).toContainEqual('.adds/nm/items');
+    // Must contain font files (fonts checkbox is checked by default)
+    expect(zipFiles.some(f => f.startsWith('fonts/'))).toBe(true);
+    // Must NOT contain screensaver (unchecked by default)
+    expect(zipFiles.some(f => f.startsWith('.kobo/screensaver/'))).toBe(false);
+
+    // Verify items file has simplifyHome modifications
+    const itemsContent = await zip.file('.adds/nm/items').async('string');
+    expect(itemsContent).toContain('experimental:hide_home_row1col2_enabled:1');
+    expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
   });
 
   test('no device — install NickelMenu only via manual download', async ({ page }) => {
@@ -337,12 +364,23 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (KoboRoot.tgz)');
 
     // Download
-    await page.click('#btn-nm-download');
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-download'),
+    ]);
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('ready to download');
 
     // eReader.conf step should be hidden for nickelmenu-only
     await expect(page.locator('#nm-download-conf-step')).toBeHidden();
+
+    // Verify ZIP contents — should only contain KoboRoot.tgz
+    expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
+    const zipData = fs.readFileSync(await download.path());
+    const zip = await JSZip.loadAsync(zipData);
+    const zipFiles = Object.keys(zip.files).filter(f => !zip.files[f].dir);
+
+    expect(zipFiles).toEqual(['.kobo/KoboRoot.tgz']);
   });
 
   test('no device — remove option is disabled in manual mode', async ({ page }) => {
@@ -419,6 +457,40 @@ test.describe('NickelMenu', () => {
     // With simplifyHome enabled, the hide lines should be appended
     expect(items).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(items).toContain('experimental:hide_home_row3_enabled:1');
+  });
+
+  test('with device — install NickelMenu only and write to Kobo', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, { hasNickelMenu: false });
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await page.click('#btn-mode-next');
+
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Select "Install NickelMenu only"
+    await page.click('input[name="nm-option"][value="nickelmenu-only"]');
+    await expect(page.locator('#nm-config-options')).toBeHidden();
+
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (KoboRoot.tgz)');
+
+    // Write to device
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+    // Verify only KoboRoot.tgz was written (no config files)
+    const writtenFiles = await getWrittenFiles(page);
+    expect(writtenFiles).toContainEqual(expect.stringContaining('KoboRoot.tgz'));
+    // Should NOT have written items, fonts, etc.
+    expect(writtenFiles.filter(f => !f.includes('KoboRoot.tgz'))).toHaveLength(0);
   });
 
   test('with device — remove NickelMenu', async ({ page }) => {
