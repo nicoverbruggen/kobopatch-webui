@@ -97,7 +97,7 @@ This downloads `NickelMenu.zip` and clones/updates the [kobo-config](https://git
 ## Running locally
 
 ```bash
-./run-locally.sh
+./serve-locally.sh
 ```
 
 This serves the app at `http://localhost:8888`. If the WASM binary or NickelMenu assets haven't been set up yet, the script handles that automatically.
@@ -127,10 +127,16 @@ To run with a visible browser window:
 ./run-e2e.sh --headed
 ```
 
+To slow down each action (500ms delay) for debugging:
+
+```bash
+./run-e2e.sh --headed --slow
+```
+
 Extra Playwright arguments can be passed after `--`:
 
 ```bash
-./run-e2e.sh --headed -- --grep "NickelMenu"
+./run-e2e.sh --headed --slow -- --grep "NickelMenu"
 ```
 
 ### WASM integration test

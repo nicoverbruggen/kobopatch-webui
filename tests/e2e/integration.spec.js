@@ -99,12 +99,179 @@ function setupFirmwareSymlink() {
   fs.symlinkSync(path.resolve(FIRMWARE_PATH), WEBROOT_FIRMWARE);
 }
 
+/**
+ * Inject a mock File System Access API into the page, simulating a Kobo Libra Color.
+ * The mock provides:
+ *   - .kobo/version file with serial N4280A0000000 and firmware 4.45.23646
+ *   - Optionally a .adds/nm/ directory (to simulate NickelMenu being installed)
+ *   - In-memory filesystem that tracks all writes for verification
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {object} opts
+ * @param {boolean} [opts.hasNickelMenu=false] - Whether .adds/nm/ exists on device
+ */
+async function injectMockDevice(page, opts = {}) {
+  await page.evaluate(({ hasNickelMenu }) => {
+    // In-memory filesystem for the mock device
+    const filesystem = {
+      '.kobo': {
+        _type: 'dir',
+        'version': {
+          _type: 'file',
+          content: 'N4280A0000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390',
+        },
+        'Kobo': {
+          _type: 'dir',
+          'Kobo eReader.conf': {
+            _type: 'file',
+            content: '[General]\nsome=setting\n',
+          },
+        },
+      },
+    };
+
+    if (hasNickelMenu) {
+      filesystem['.adds'] = {
+        _type: 'dir',
+        'nm': {
+          _type: 'dir',
+          'items': { _type: 'file', content: 'menu_item:main:test:skip:' },
+        },
+      };
+    }
+
+    // Expose filesystem for verification from tests
+    window.__mockFS = filesystem;
+    // Track written file paths (relative path string -> true)
+    window.__mockWrittenFiles = {};
+
+    function makeFileHandle(dirNode, fileName, pathPrefix) {
+      return {
+        getFile: async () => {
+          const fileNode = dirNode[fileName];
+          const content = fileNode ? (fileNode.content || '') : '';
+          return {
+            text: async () => content,
+            arrayBuffer: async () => new TextEncoder().encode(content).buffer,
+          };
+        },
+        createWritable: async () => {
+          const chunks = [];
+          return {
+            write: async (chunk) => { chunks.push(chunk); },
+            close: async () => {
+              const first = chunks[0];
+              const bytes = first instanceof Uint8Array ? first : new TextEncoder().encode(String(first));
+              if (!dirNode[fileName]) dirNode[fileName] = { _type: 'file' };
+              dirNode[fileName].content = new TextDecoder().decode(bytes);
+              const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
+              window.__mockWrittenFiles[fullPath] = true;
+            },
+          };
+        },
+      };
+    }
+
+    function makeDirHandle(node, name, pathPrefix) {
+      const currentPath = pathPrefix ? pathPrefix + '/' + name : name;
+      return {
+        name: name,
+        kind: 'directory',
+        getDirectoryHandle: async (childName, opts2) => {
+          if (node[childName] && node[childName]._type === 'dir') {
+            return makeDirHandle(node[childName], childName, currentPath);
+          }
+          if (opts2 && opts2.create) {
+            node[childName] = { _type: 'dir' };
+            return makeDirHandle(node[childName], childName, currentPath);
+          }
+          throw new DOMException('Not found: ' + childName, 'NotFoundError');
+        },
+        getFileHandle: async (childName, opts2) => {
+          if (node[childName] && node[childName]._type === 'file') {
+            return makeFileHandle(node, childName, currentPath);
+          }
+          if (opts2 && opts2.create) {
+            node[childName] = { _type: 'file', content: '' };
+            return makeFileHandle(node, childName, currentPath);
+          }
+          throw new DOMException('Not found: ' + childName, 'NotFoundError');
+        },
+      };
+    }
+
+    const rootHandle = makeDirHandle(filesystem, 'KOBOeReader', '');
+
+    // Override showDirectoryPicker
+    window.showDirectoryPicker = async () => rootHandle;
+  }, { hasNickelMenu: opts.hasNickelMenu || false });
+}
+
+/**
+ * Inject mock device, optionally override firmware URLs, and connect.
+ * Firmware URLs must be overridden BEFORE connecting, because the app captures
+ * the firmware URL during device detection (configureFirmwareStep).
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {object} opts
+ * @param {boolean} [opts.hasNickelMenu=false]
+ * @param {boolean} [opts.overrideFirmware=false] - Override firmware URLs before connecting
+ */
+async function connectMockDevice(page, opts = {}) {
+  await page.goto('/');
+  await expect(page.locator('h1')).toContainText('KoboPatch');
+  await injectMockDevice(page, opts);
+  if (opts.overrideFirmware) {
+    await overrideFirmwareURLs(page);
+  }
+  await page.click('#btn-connect');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+  await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+  await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');
+  await expect(page.locator('#device-status')).toContainText('recognized');
+}
+
+/**
+ * Read a file's content from the mock filesystem.
+ */
+async function readMockFile(page, ...pathParts) {
+  return page.evaluate((parts) => {
+    let node = window.__mockFS;
+    for (const part of parts) {
+      if (!node || !node[part]) return null;
+      node = node[part];
+    }
+    return node && node._type === 'file' ? (node.content || '') : null;
+  }, pathParts);
+}
+
+/**
+ * Check whether a path exists in the mock filesystem.
+ */
+async function mockPathExists(page, ...pathParts) {
+  return page.evaluate((parts) => {
+    let node = window.__mockFS;
+    for (const part of parts) {
+      if (!node || !node[part]) return false;
+      node = node[part];
+    }
+    return true;
+  }, pathParts);
+}
+
+/**
+ * Get the list of written file paths from the mock device.
+ */
+async function getWrittenFiles(page) {
+  return page.evaluate(() => Object.keys(window.__mockWrittenFiles));
+}
+
 // ============================================================
-// NickelMenu tests
+// NickelMenu
 // ============================================================
 
 test.describe('NickelMenu', () => {
-  test('no device — install NickelMenu with config via manual download', async ({ page }) => {
+  test('no device — install with config via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await goToManualMode(page);
@@ -178,7 +345,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-download-conf-step')).toBeHidden();
   });
 
-  test('no device — remove NickelMenu option is disabled in manual mode', async ({ page }) => {
+  test('no device — remove option is disabled in manual mode', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await goToManualMode(page);
@@ -189,10 +356,119 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
     await expect(page.locator('input[name="nm-option"][value="remove"]')).toBeDisabled();
   });
+
+  test('with device — install with config and write to Kobo', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, { hasNickelMenu: false });
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // NickelMenu is pre-selected
+    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
+    await page.click('#btn-mode-next');
+
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Remove option should be disabled (no NickelMenu installed)
+    await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
+
+    // Select "Install NickelMenu and configure"
+    await page.click('input[name="nm-option"][value="sample"]');
+    await expect(page.locator('#nm-config-options')).not.toBeHidden();
+
+    // Enable all options for testing
+    await page.check('input[name="nm-cfg-simplify-tabs"]');
+    await page.check('input[name="nm-cfg-simplify-home"]');
+
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('Simplified tab menu');
+    await expect(page.locator('#nm-review-list')).toContainText('Simplified homescreen');
+
+    // Both buttons visible when device is connected
+    await expect(page.locator('#btn-nm-write')).toBeVisible();
+    await expect(page.locator('#btn-nm-download')).toBeVisible();
+
+    // Write to device
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('installed');
+    await expect(page.locator('#nm-write-instructions')).not.toBeHidden();
+
+    // Verify files written to mock device
+    const writtenFiles = await getWrittenFiles(page);
+    expect(writtenFiles, 'KoboRoot.tgz should be written').toContainEqual(expect.stringContaining('KoboRoot.tgz'));
+    expect(writtenFiles, 'NickelMenu items should be written').toContainEqual(expect.stringContaining('items'));
+
+    // Verify eReader.conf was updated with ExcludeSyncFolders
+    const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(conf, 'eReader.conf should contain ExcludeSyncFolders').toContain('ExcludeSyncFolders');
+    expect(conf, 'eReader.conf should preserve existing settings').toContain('[General]');
+
+    // Verify NickelMenu items file exists and has expected modifications
+    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    expect(items, '.adds/nm/items should exist').not.toBeNull();
+    // With simplifyHome enabled, the hide lines should be appended
+    expect(items).toContain('experimental:hide_home_row1col2_enabled:1');
+    expect(items).toContain('experimental:hide_home_row3_enabled:1');
+  });
+
+  test('with device — remove NickelMenu', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, { hasNickelMenu: true });
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await page.click('#btn-mode-next');
+
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Remove option should be enabled (NickelMenu is installed)
+    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/nm-option-disabled/);
+    await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
+
+    // Select remove
+    await page.click('input[name="nm-option"][value="remove"]');
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-summary')).toContainText('removal');
+
+    // Download should be hidden for remove
+    await expect(page.locator('#btn-nm-download')).toBeHidden();
+    // Write should show "Remove from Kobo"
+    await expect(page.locator('#btn-nm-write')).toContainText('Remove from Kobo');
+
+    // Execute removal
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('removed');
+    await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
+
+    // Verify files written to mock device
+    const writtenFiles = await getWrittenFiles(page);
+    expect(writtenFiles, 'KoboRoot.tgz should be written for update').toContainEqual(expect.stringContaining('KoboRoot.tgz'));
+    expect(writtenFiles, 'uninstall marker should be written').toContainEqual(expect.stringContaining('uninstall'));
+
+    // Verify the uninstall marker file exists
+    const uninstallExists = await mockPathExists(page, '.adds', 'nm', 'uninstall');
+    expect(uninstallExists, '.adds/nm/uninstall should exist').toBe(true);
+  });
 });
 
 // ============================================================
-// Custom patches tests
+// Custom patches
 // ============================================================
 
 test.describe('Custom patches', () => {
@@ -280,7 +556,7 @@ test.describe('Custom patches', () => {
     }
   });
 
-  test('no device — restore original firmware pipeline', async ({ page }) => {
+  test('no device — restore original firmware', async ({ page }) => {
     test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
 
     setupFirmwareSymlink();
@@ -338,11 +614,9 @@ test.describe('Custom patches', () => {
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
   });
 
-  test('no device — custom patches not available disables patches card', async ({ page }) => {
+  test('no device — both modes available in manual mode', async ({ page }) => {
     await page.goto('/');
 
-    // In manual mode, NickelMenu should always be available,
-    // but custom patches card should be selectable in mode screen
     await page.click('#btn-manual');
     await expect(page.locator('#step-mode')).not.toBeHidden();
 
@@ -350,253 +624,13 @@ test.describe('Custom patches', () => {
     await expect(page.locator('input[name="mode"][value="patches"]')).not.toBeDisabled();
     await expect(page.locator('input[name="mode"][value="nickelmenu"]')).not.toBeDisabled();
   });
-});
 
-// ============================================================
-// Simulated device tests (mock File System Access API)
-// ============================================================
-
-/**
- * Inject a mock File System Access API into the page, simulating a Kobo Libra Color.
- * The mock provides:
- *   - .kobo/version file with serial N4280A0000000 and firmware 4.45.23646
- *   - Optionally a .adds/nm/ directory (to simulate NickelMenu being installed)
- *   - writeFile tracking to verify what was written
- *
- * @param {import('@playwright/test').Page} page
- * @param {object} opts
- * @param {boolean} [opts.hasNickelMenu=false] - Whether .adds/nm/ exists on device
- */
-async function injectMockDevice(page, opts = {}) {
-  await page.evaluate(({ hasNickelMenu }) => {
-    // In-memory filesystem for the mock device
-    const filesystem = {
-      '.kobo': {
-        _type: 'dir',
-        'version': {
-          _type: 'file',
-          content: 'N4280A0000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390',
-        },
-        'Kobo': {
-          _type: 'dir',
-          'Kobo eReader.conf': {
-            _type: 'file',
-            content: '[General]\nsome=setting\n',
-          },
-        },
-      },
-    };
-
-    if (hasNickelMenu) {
-      filesystem['.adds'] = {
-        _type: 'dir',
-        'nm': {
-          _type: 'dir',
-          'items': { _type: 'file', content: 'menu_item:main:test:skip:' },
-        },
-      };
-    }
-
-    // Track files written to device
-    window.__mockWrittenFiles = {};
-
-    function getNode(pathParts) {
-      let node = filesystem;
-      for (const part of pathParts) {
-        if (!node[part]) return null;
-        node = node[part];
-      }
-      return node;
-    }
-
-    function ensureDir(pathParts) {
-      let node = filesystem;
-      for (const part of pathParts) {
-        if (!node[part]) {
-          node[part] = { _type: 'dir' };
-        }
-        node = node[part];
-      }
-      return node;
-    }
-
-    function makeFileHandle(dirNode, fileName) {
-      return {
-        getFile: async () => {
-          const fileNode = dirNode[fileName];
-          const content = fileNode ? (fileNode.content || '') : '';
-          return {
-            text: async () => content,
-            arrayBuffer: async () => new TextEncoder().encode(content).buffer,
-          };
-        },
-        createWritable: async () => {
-          const chunks = [];
-          return {
-            write: async (chunk) => { chunks.push(chunk); },
-            close: async () => {
-              const first = chunks[0];
-              const bytes = first instanceof Uint8Array ? first : new TextEncoder().encode(String(first));
-              if (!dirNode[fileName]) dirNode[fileName] = { _type: 'file' };
-              dirNode[fileName].content = new TextDecoder().decode(bytes);
-              window.__mockWrittenFiles[fileName] = true;
-            },
-          };
-        },
-      };
-    }
-
-    function makeDirHandle(node, name) {
-      return {
-        name: name,
-        kind: 'directory',
-        getDirectoryHandle: async (childName, opts2) => {
-          if (node[childName] && node[childName]._type === 'dir') {
-            return makeDirHandle(node[childName], childName);
-          }
-          if (opts2 && opts2.create) {
-            node[childName] = { _type: 'dir' };
-            return makeDirHandle(node[childName], childName);
-          }
-          throw new DOMException('Not found: ' + childName, 'NotFoundError');
-        },
-        getFileHandle: async (childName, opts2) => {
-          if (node[childName] && node[childName]._type === 'file') {
-            return makeFileHandle(node, childName);
-          }
-          if (opts2 && opts2.create) {
-            node[childName] = { _type: 'file', content: '' };
-            return makeFileHandle(node, childName);
-          }
-          throw new DOMException('Not found: ' + childName, 'NotFoundError');
-        },
-      };
-    }
-
-    const rootHandle = makeDirHandle(filesystem, 'KOBOeReader');
-
-    // Override showDirectoryPicker
-    window.showDirectoryPicker = async () => rootHandle;
-  }, { hasNickelMenu: opts.hasNickelMenu || false });
-}
-
-test.describe('With Kobo Libra Color', () => {
-  test('installing NickelMenu with config', async ({ page }) => {
-    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-
-    await page.goto('/');
-    await expect(page.locator('h1')).toContainText('KoboPatch');
-
-    await injectMockDevice(page, { hasNickelMenu: false });
-
-    // Connect to device
-    await page.click('#btn-connect');
-    await expect(page.locator('#step-device')).not.toBeHidden();
-    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
-    await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');
-    await expect(page.locator('#device-status')).toContainText('recognized');
-
-    // Continue to mode selection
-    await page.click('#btn-device-next');
-    await expect(page.locator('#step-mode')).not.toBeHidden();
-
-    // NickelMenu is pre-selected
-    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
-    await page.click('#btn-mode-next');
-
-    // NickelMenu configure step
-    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
-
-    // Remove option should be disabled (no NickelMenu installed)
-    await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
-
-    // Select "Install NickelMenu and configure"
-    await page.click('input[name="nm-option"][value="sample"]');
-    await expect(page.locator('#nm-config-options')).not.toBeHidden();
-
-    // Enable all options for testing
-    await page.check('input[name="nm-cfg-simplify-tabs"]');
-    await page.check('input[name="nm-cfg-simplify-home"]');
-
-    await page.click('#btn-nm-next');
-
-    // Review step
-    await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
-    await expect(page.locator('#nm-review-list')).toContainText('Simplified tab menu');
-    await expect(page.locator('#nm-review-list')).toContainText('Simplified homescreen');
-
-    // Both buttons visible when device is connected
-    await expect(page.locator('#btn-nm-write')).toBeVisible();
-    await expect(page.locator('#btn-nm-download')).toBeVisible();
-
-    // Write to device
-    await page.click('#btn-nm-write');
-    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('#nm-done-status')).toContainText('installed');
-    await expect(page.locator('#nm-write-instructions')).not.toBeHidden();
-  });
-
-  test('removing NickelMenu', async ({ page }) => {
-    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-
-    await page.goto('/');
-    await expect(page.locator('h1')).toContainText('KoboPatch');
-
-    await injectMockDevice(page, { hasNickelMenu: true });
-
-    // Connect to device
-    await page.click('#btn-connect');
-    await expect(page.locator('#step-device')).not.toBeHidden();
-    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
-
-    // Continue to mode selection
-    await page.click('#btn-device-next');
-    await page.click('#btn-mode-next');
-
-    // NickelMenu configure step
-    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
-
-    // Remove option should be enabled (NickelMenu is installed)
-    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/nm-option-disabled/);
-    await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
-
-    // Select remove
-    await page.click('input[name="nm-option"][value="remove"]');
-    await page.click('#btn-nm-next');
-
-    // Review step
-    await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-summary')).toContainText('removal');
-
-    // Download should be hidden for remove
-    await expect(page.locator('#btn-nm-download')).toBeHidden();
-    // Write should show "Remove from Kobo"
-    await expect(page.locator('#btn-nm-write')).toContainText('Remove from Kobo');
-
-    // Execute removal
-    await page.click('#btn-nm-write');
-    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('#nm-done-status')).toContainText('removed');
-    await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
-  });
-
-  test('installing custom patches', async ({ page }) => {
+  test('with device — apply patches and verify checksums', async ({ page }) => {
     test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
 
     setupFirmwareSymlink();
-
-    await page.goto('/');
-    await expect(page.locator('h1')).toContainText('KoboPatch');
-
-    await injectMockDevice(page, { hasNickelMenu: false });
-    await overrideFirmwareURLs(page);
-
-    // Connect to device
-    await page.click('#btn-connect');
-    await expect(page.locator('#step-device')).not.toBeHidden();
-    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+    // Override firmware URLs BEFORE connecting so the app captures the local URL
+    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
     // Continue to mode selection
     await page.click('#btn-device-next');
@@ -666,20 +700,12 @@ test.describe('With Kobo Libra Color', () => {
     }
   });
 
-  test('restoring original firmware', async ({ page }) => {
+  test('with device — restore original firmware', async ({ page }) => {
     test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
 
     setupFirmwareSymlink();
-
-    await page.goto('/');
-    await expect(page.locator('h1')).toContainText('KoboPatch');
-
-    await injectMockDevice(page, { hasNickelMenu: false });
-    await overrideFirmwareURLs(page);
-
-    // Connect to device
-    await page.click('#btn-connect');
-    await expect(page.locator('#step-device')).not.toBeHidden();
+    // Override firmware URLs BEFORE connecting so the app captures the local URL
+    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
     // Use the "Restore Unpatched Software" shortcut button on device screen
     await page.click('#btn-device-restore');

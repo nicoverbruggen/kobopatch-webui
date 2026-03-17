@@ -24,6 +24,10 @@ while [[ $# -gt 0 ]]; do
             PLAYWRIGHT_ARGS+=("--headed")
             shift
             ;;
+        --slow)
+            export SLOW_MO=500
+            shift
+            ;;
         --)
             shift
             PLAYWRIGHT_ARGS+=("$@")
@@ -72,7 +76,7 @@ fi
 
 # Install dependencies and browser.
 npm install --silent
-npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
+npx playwright install chromium
 
 # Run the tests.
 echo "Running E2E integration tests..."

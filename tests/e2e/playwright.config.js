@@ -13,6 +13,7 @@ module.exports = defineConfig({
     actionTimeout: 10_000,
     launchOptions: {
       args: ['--disable-dev-shm-usage'],
+      slowMo: parseInt(process.env.SLOW_MO || '0', 10),
     },
   },
   webServer: {
