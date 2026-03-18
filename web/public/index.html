@@ -161,7 +161,7 @@
                 <label class="nm-option">
                     <input type="radio" name="nm-option" value="sample">
                     <div class="nm-option-body">
-                        <div class="nm-option-title">Install NickelMenu & Apply Preset</div>
+                        <div class="nm-option-title">Install NickelMenu with preset</div>
                         <div class="nm-option-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
                     </div>
                 </label>
@@ -191,7 +191,7 @@
                     <input type="checkbox" name="nm-cfg-simplify-tabs">
                     <div class="nm-config-text">
                         <span>Hide certain navigation tabs (minimalist)</span>
-                        <span class="nm-config-desc">This will hide the Notebook and Store tabs from the bottom navigation. For minimalists who want fewer distractions.</span>
+                        <span class="nm-config-desc">This will hide the Notebook and Discover tabs from the bottom navigation. For minimalists who want fewer distractions.</span>
                     </div>
                 </label>
                 <label class="nm-config-item">
@@ -214,7 +214,7 @@
                     <input type="radio" name="nm-option" value="remove" disabled>
                     <div class="nm-option-body">
                         <div class="nm-option-title">Remove NickelMenu</div>
-                        <div class="nm-option-desc" id="nm-remove-desc">Removes NickelMenu from your device. Only available when a Kobo with NickelMenu installed is connected.</div>
+                        <div class="nm-option-desc" id="nm-remove-desc">Removes NickelMenu from your device. (Only available when a Kobo with NickelMenu installed is connected.)</div>
                     </div>
                 </label>
             </div>
@@ -259,9 +259,11 @@
                 <ol class="install-steps">
                     <li>Connect your Kobo via USB so it appears as a removable drive.</li>
                     <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure.</li>
-                    <li id="nm-download-conf-step" hidden>Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor. Find the <code>[FeatureSettings]</code> section (or add it at the end) and add the following line:<br>
+                    <li id="nm-download-conf-step" hidden>
+                        Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor.<br>
+                        Find the <code>[FeatureSettings]</code> section (or add it at the end) and add the following line:<br>
                         <code>ExcludeSyncFolders=(calibre|\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\..+)</code><br>
-                        This prevents the Kobo from removing the custom folders during a sync.</li>
+                        This prevents the Kobo from discovering books in these folders during a sync.</li>
                     <li><strong>Safely eject</strong> the Kobo &mdash; do not just unplug the cable.</li>
                     <li>The device will reboot and install NickelMenu automatically.</li>
                 </ol>
