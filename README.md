@@ -1,4 +1,4 @@
-> **Note**
+> [!NOTE]
 > If this project has been useful to you, I ask that you **please star the repository**, that way I know that the software is being used. Also, please consider [sponsoring](https://nicoverbruggen.be/sponsor) to support my open source projects, as this is something I work on in my free time. **Thank you!** ⭐️
 
 # KoboPatch Web UI
