@@ -1,16 +1,24 @@
-# KoboPatch Web UI
+> **Note**
+> If this project has been useful to you, I ask that you **please star the repository**, that way I know that the software is being used. Also, please consider [sponsoring](https://nicoverbruggen.be/sponsor) to support my open source projects, as this is something I work on in my free time. **Thank you!** ⭐️
 
-> [!IMPORTANT]
-> **This is an experiment**, mostly created with the help of Claude and some very precise instructions. It currently only supports the latest version of Kobo's software, and only for the Kobo Libra Color, Kobo Clara Color and Kobo Clara BW models. Further support may be added at a later date.
+# KoboPatch Web UI
 
 A web application for customising Kobo e-readers. It supports two modes:
 
-- **NickelMenu** — installs [NickelMenu](https://pgaskin.net/NickelMenu/) with an optional curated configuration (custom menus, fonts, screensavers, UI tweaks). Works with most Kobo devices regardless of software version. Can also remove NickelMenu from a connected device.
-- **Custom patches** — applies community [kobopatch](https://github.com/pgaskin/kobopatch) patches to your Kobo's system software. Requires a supported software version and device model.
+- **NickelMenu** — installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config) (custom menus, fonts, screensavers, UI tweaks). Works with most Kobo devices regardless of software version. Can also remove NickelMenu from a connected device. 
+  - <u>The safest patch to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
+  - Will automatically uninstall itself if Kobo releases an incompatible update in the future, which may happen with software v5.x at some point.
 
-The app uses the File System Access API (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection with a downloadable ZIP on other browsers.
+- **Custom patches** — applies community [kobopatch](https://github.com/pgaskin/kobopatch) patches to your Kobo's system software. Requires a supported software version and device model, which is currently limited to Kobo Libra Color, Kobo Clara Color and Kobo Clara BW models. 
+  - A <u>more experimental solution</u> -- you need to choose what tweaks to apply.
+  - These changes are wiped when system updates are released. Requires re-patching when system updates are installed.
+  - Gives you a lot of customization options, but not all of them may work correctly.
 
-Fully client-side — no backend needed, can be hosted as a static site. Patches are community-contributed via the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) and need to be manually updated when new Kobo software versions come out.
+## How it works
+
+The app uses the **Filesystem Access API** (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection with a downloadable ZIP on other browsers.
+
+If you choose to apply custom patches, **patching happens fully client-side** — no backend needed, can be hosted as a static site. Patches are community-contributed via the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) and need to be manually updated when new Kobo software versions come out.
 
 > [!NOTE]
 > This project is not affiliated with Rakuten Kobo Inc. Patching modifies system files on your Kobo and will void your warranty. If something goes wrong, you may need to [manually reset your device](https://help.kobo.com/hc/en-us/articles/360017605314).
