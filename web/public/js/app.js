@@ -97,6 +97,9 @@
     const errorMessage = $('error-message');
     const errorLog = $('error-log');
     const deviceStatus = $('device-status');
+    const deviceUnknownWarning = $('device-unknown-warning');
+    const deviceUnknownAck = $('device-unknown-ack');
+    const deviceUnknownCheckbox = $('device-unknown-checkbox');
     const patchContainer = $('patch-container');
     const buildStatus = $('build-status');
     const existingTgzWarning = $('existing-tgz-warning');
@@ -264,37 +267,66 @@
     });
 
     // Auto connect -> show device info
+    function displayDeviceInfo(info) {
+        $('device-model').textContent = info.model;
+        const serialEl = $('device-serial');
+        serialEl.textContent = '';
+        const prefixLen = info.serialPrefix.length;
+        const u = document.createElement('u');
+        u.textContent = info.serial.slice(0, prefixLen);
+        serialEl.appendChild(u);
+        serialEl.appendChild(document.createTextNode(info.serial.slice(prefixLen)));
+        $('device-firmware').textContent = info.firmware;
+    }
+
     btnConnect.addEventListener('click', async () => {
         try {
             const info = await device.connect();
 
-            $('device-model').textContent = info.model;
-            const serialEl = $('device-serial');
-            serialEl.textContent = '';
-            const prefixLen = info.serialPrefix.length;
-            const u = document.createElement('u');
-            u.textContent = info.serial.slice(0, prefixLen);
-            serialEl.appendChild(u);
-            serialEl.appendChild(document.createTextNode(info.serial.slice(prefixLen)));
-            $('device-firmware').textContent = info.firmware;
+            displayDeviceInfo(info);
+
+            if (info.isIncompatible) {
+                deviceStatus.textContent =
+                    'You seem to have an incompatible Kobo software version installed. ' +
+                    'NickelMenu does not support it, and the custom patches are incompatible with this version.';
+                deviceStatus.classList.add('error');
+                btnDeviceNext.hidden = true;
+                btnDeviceRestore.hidden = true;
+                showStep(stepDevice);
+                return;
+            }
 
             selectedPrefix = info.serialPrefix;
 
             await availablePatchesReady;
             const match = availablePatches.find(p => p.version === info.firmware);
 
+            configureFirmwareStep(info.firmware, info.serialPrefix);
+
             if (match) {
                 await patchUI.loadFromURL('patches/' + match.filename);
                 patchUI.render(patchContainer);
                 updatePatchCount();
                 patchesLoaded = true;
-                configureFirmwareStep(info.firmware, info.serialPrefix);
-                btnDeviceRestore.hidden = false;
-            } else {
-                btnDeviceRestore.hidden = true;
             }
 
-            deviceStatus.textContent = 'Your device has been recognized. You can continue to the next step!';
+            btnDeviceRestore.hidden = !patchesLoaded || !firmwareURL;
+
+            deviceStatus.classList.remove('error');
+            const isUnknownModel = info.model.startsWith('Unknown');
+            if (isUnknownModel) {
+                deviceStatus.textContent = '';
+                deviceUnknownWarning.hidden = false;
+                deviceUnknownAck.hidden = false;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = true;
+            } else {
+                deviceStatus.textContent = 'Your device has been recognized. You can continue to the next step!';
+                deviceUnknownWarning.hidden = true;
+                deviceUnknownAck.hidden = true;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = false;
+            }
             btnDeviceNext.hidden = false;
             showStep(stepDevice);
         } catch (err) {
@@ -306,6 +338,10 @@
     // Device info -> mode selection
     btnDeviceNext.addEventListener('click', () => {
         goToModeSelection();
+    });
+
+    deviceUnknownCheckbox.addEventListener('change', () => {
+        btnDeviceNext.disabled = !deviceUnknownCheckbox.checked;
     });
 
     btnDeviceRestore.addEventListener('click', () => {
@@ -329,10 +365,10 @@
 
     // --- Step 2: Mode selection ---
     function goToModeSelection() {
-        // In auto mode, disable custom patches if firmware isn't supported
+        // In auto mode, disable custom patches if firmware or download URL isn't available
         const patchesRadio = $q('input[value="patches"]', stepMode);
         const patchesCard = patchesRadio.closest('.mode-card');
-        const autoModeNoPatchesAvailable = !manualMode && !patchesLoaded;
+        const autoModeNoPatchesAvailable = !manualMode && (!patchesLoaded || !firmwareURL);
 
         const patchesHint = $('mode-patches-hint');
         if (autoModeNoPatchesAvailable) {

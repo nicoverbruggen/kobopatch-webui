@@ -522,6 +522,22 @@ button.btn-success:hover {
     font-size: 0.88rem;
 }
 
+.device-unknown-ack {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    font-size: 0.83rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.device-unknown-ack input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+    accent-color: var(--primary);
+}
+
 /* Status banners */
 .warning {
     background: var(--warning-bg);

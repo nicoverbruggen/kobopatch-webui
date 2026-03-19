@@ -28,7 +28,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         [hidden] { display: none !important; }
     </style>
-    <link rel="stylesheet" href="css/style.css?ts=1773771588">
+    <link rel="stylesheet" href="css/style.css?ts=1773916731">
     <script src="js/jszip.min.js"></script>
 </head>
 <body>
@@ -122,6 +122,15 @@
                 </div>
             </div>
             <p id="device-status"></p>
+            <p id="device-unknown-warning" class="warning" hidden>
+                You seem to have a Kobo device that isn't currently being detected. While you can continue since a supported software version seems to be installed, please
+                <a href="https://github.com/nicoverbruggen/kobopatch-webui/issues/new" target="_blank">file an issue on GitHub</a>
+                so the developer can add this device to the list.
+            </p>
+            <label id="device-unknown-ack" class="device-unknown-ack" hidden>
+                <input type="checkbox" id="device-unknown-checkbox">
+                <span>I understand that this model is likely not officially supported by NickelMenu yet, but I wish to continue regardless, and I understand it may not work correctly.</span>
+            </label>
             <div class="step-actions">
                 <button id="btn-device-restore" class="secondary">Restore Software</button>
                 <button id="btn-device-next" class="primary">Continue &#x203A;</button>
@@ -434,10 +443,10 @@
     </dialog>
 
     <!-- wasm_exec.js loaded by patch-worker.js inside the Web Worker -->
-    <script src="js/kobo-device.js?ts=1773771588"></script>
-    <script src="js/kobopatch.js?ts=1773771588"></script>
-    <script src="js/patch-ui.js?ts=1773771588"></script>
-    <script src="js/nickelmenu.js?ts=1773771588"></script>
-    <script src="js/app.js?ts=1773771588"></script>
+    <script src="js/kobo-device.js?ts=1773916731"></script>
+    <script src="js/kobopatch.js?ts=1773916731"></script>
+    <script src="js/patch-ui.js?ts=1773916731"></script>
+    <script src="js/nickelmenu.js?ts=1773916731"></script>
+    <script src="js/app.js?ts=1773916731"></script>
 </body>
 </html>

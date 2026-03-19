@@ -154,6 +154,7 @@ class KoboDevice {
             : serial.substring(0, 3);
         const model = KOBO_MODELS[serialPrefix] || 'Unknown Kobo (' + serial.substring(0, 4) + ')';
         const isSupported = SUPPORTED_FIRMWARE.includes(firmware);
+        const isIncompatible = firmware.startsWith('5.');
 
         return {
             serial,
@@ -162,6 +163,7 @@ class KoboDevice {
             hardwareId,
             model,
             isSupported,
+            isIncompatible,
         };
     }
 

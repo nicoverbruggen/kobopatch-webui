@@ -110,16 +110,20 @@ function setupFirmwareSymlink() {
  * @param {import('@playwright/test').Page} page
  * @param {object} opts
  * @param {boolean} [opts.hasNickelMenu=false] - Whether .adds/nm/ exists on device
+ * @param {string} [opts.firmware='4.45.23646'] - Firmware version to report
+ * @param {string} [opts.serial='N4280A0000000'] - Serial number to report
  */
 async function injectMockDevice(page, opts = {}) {
-  await page.evaluate(({ hasNickelMenu }) => {
+  const firmware = opts.firmware || '4.45.23646';
+  const serial = opts.serial || 'N4280A0000000';
+  await page.evaluate(({ hasNickelMenu, firmware, serial }) => {
     // In-memory filesystem for the mock device
     const filesystem = {
       '.kobo': {
         _type: 'dir',
         'version': {
           _type: 'file',
-          content: 'N4280A0000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390',
+          content: serial + ',4.9.77,' + firmware + ',4.9.77,4.9.77,00000000-0000-0000-0000-000000000390',
         },
         'Kobo': {
           _type: 'dir',
@@ -205,7 +209,7 @@ async function injectMockDevice(page, opts = {}) {
 
     // Override showDirectoryPicker
     window.showDirectoryPicker = async () => rootHandle;
-  }, { hasNickelMenu: opts.hasNickelMenu || false });
+  }, { hasNickelMenu: opts.hasNickelMenu || false, firmware: firmware, serial: serial });
 }
 
 /**
@@ -684,6 +688,59 @@ test.describe('Custom patches', () => {
     const tgzData = fs.readFileSync(downloadPath);
     const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
+  });
+
+  test('with device — incompatible version 5.x shows error', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, { firmware: '5.0.0' });
+    await page.click('#btn-connect');
+
+    // Device info should be displayed
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+    await expect(page.locator('#device-firmware')).toHaveText('5.0.0');
+
+    // Status message should show incompatibility warning
+    await expect(page.locator('#device-status')).toContainText('incompatible');
+    await expect(page.locator('#device-status')).toContainText('NickelMenu does not support it');
+    await expect(page.locator('#device-status')).toHaveClass(/error/);
+
+    // Continue and restore buttons should be hidden
+    await expect(page.locator('#btn-device-next')).toBeHidden();
+    await expect(page.locator('#btn-device-restore')).toBeHidden();
+  });
+
+  test('with device — unknown model shows warning and requires checkbox', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, { serial: 'X9990A0000000' });
+    await page.click('#btn-connect');
+
+    // Device info should be displayed with unknown model
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toContainText('Unknown');
+    await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');
+
+    // Warning should be visible with GitHub link
+    await expect(page.locator('#device-unknown-warning')).not.toBeHidden();
+    await expect(page.locator('#device-unknown-warning')).toContainText('file an issue on GitHub');
+    await expect(page.locator('#device-unknown-warning a')).toHaveAttribute('href', 'https://github.com/nicoverbruggen/kobopatch-webui/issues/new');
+
+    // Checkbox should be visible, Continue should be disabled
+    await expect(page.locator('#device-unknown-ack')).not.toBeHidden();
+    await expect(page.locator('#btn-device-next')).toBeVisible();
+    await expect(page.locator('#btn-device-next')).toBeDisabled();
+
+    // Restore Software should be hidden (no firmware URL for unknown model)
+    await expect(page.locator('#btn-device-restore')).toBeHidden();
+
+    // Checking the checkbox enables Continue
+    await page.check('#device-unknown-checkbox');
+    await expect(page.locator('#btn-device-next')).toBeEnabled();
+
+    // Custom patches should be disabled in mode selection (no firmware URL)
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await expect(page.locator('input[name="mode"][value="patches"]')).toBeDisabled();
   });
 
   test('no device — both modes available in manual mode', async ({ page }) => {
