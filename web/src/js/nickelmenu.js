@@ -25,19 +25,23 @@ class NickelMenuInstaller {
 
     /**
      * Download and cache the bundled assets.
+     * @param {function} progressFn
+     * @param {boolean} [needConfig=true] - Whether to also load kobo-config.zip
      */
-    async loadAssets(progressFn) {
-        if (this.nickelMenuZip && this.koboConfigZip) return;
+    async loadAssets(progressFn, needConfig = true) {
+        if (!this.nickelMenuZip) {
+            progressFn('Downloading NickelMenu...');
+            const nmResp = await fetch('nickelmenu/NickelMenu.zip');
+            if (!nmResp.ok) throw new Error('Failed to download NickelMenu.zip: HTTP ' + nmResp.status);
+            this.nickelMenuZip = await JSZip.loadAsync(await nmResp.arrayBuffer());
+        }
 
-        progressFn('Downloading NickelMenu...');
-        const nmResp = await fetch('nickelmenu/NickelMenu.zip');
-        if (!nmResp.ok) throw new Error('Failed to download NickelMenu.zip: HTTP ' + nmResp.status);
-        this.nickelMenuZip = await JSZip.loadAsync(await nmResp.arrayBuffer());
-
-        progressFn('Downloading configuration files...');
-        const cfgResp = await fetch('nickelmenu/kobo-config.zip');
-        if (!cfgResp.ok) throw new Error('Failed to download kobo-config.zip: HTTP ' + cfgResp.status);
-        this.koboConfigZip = await JSZip.loadAsync(await cfgResp.arrayBuffer());
+        if (needConfig && !this.koboConfigZip) {
+            progressFn('Downloading configuration files...');
+            const cfgResp = await fetch('nickelmenu/kobo-config.zip');
+            if (!cfgResp.ok) throw new Error('Failed to download kobo-config.zip: HTTP ' + cfgResp.status);
+            this.koboConfigZip = await JSZip.loadAsync(await cfgResp.arrayBuffer());
+        }
     }
 
     /**
@@ -111,7 +115,8 @@ class NickelMenuInstaller {
      * @param {function} progressFn
      */
     async installToDevice(device, option, cfg, progressFn) {
-        await this.loadAssets(progressFn);
+        const needConfig = option !== 'nickelmenu-only';
+        await this.loadAssets(progressFn, needConfig);
 
         // Always install KoboRoot.tgz
         progressFn('Writing KoboRoot.tgz...');
@@ -172,7 +177,8 @@ class NickelMenuInstaller {
      * @returns {Uint8Array} zip contents
      */
     async buildDownloadZip(option, cfg, progressFn) {
-        await this.loadAssets(progressFn);
+        const needConfig = option !== 'nickelmenu-only';
+        await this.loadAssets(progressFn, needConfig);
 
         progressFn('Building download package...');
         const zip = new JSZip();

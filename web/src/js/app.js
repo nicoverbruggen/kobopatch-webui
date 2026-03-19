@@ -584,7 +584,7 @@ import JSZip from 'jszip';
 
         try {
             if (nickelMenuOption === 'remove') {
-                await nmInstaller.loadAssets((msg) => { nmProgress.textContent = msg; });
+                await nmInstaller.loadAssets((msg) => { nmProgress.textContent = msg; }, false);
                 nmProgress.textContent = 'Writing KoboRoot.tgz...';
                 const tgz = await nmInstaller.getKoboRootTgz();
                 await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);

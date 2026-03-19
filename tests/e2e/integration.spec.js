@@ -903,9 +903,9 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#error-message')).toContainText('Build failed');
     await expect(page.locator('#btn-error-back')).toBeVisible();
 
-    // Go Back should return to patches step
+    // "Select different patches" should return to mode selection (auto mode)
     await page.click('#btn-error-back');
-    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#step-mode')).not.toBeHidden();
   });
 
   test('with device — real patch failure with Go Back (Allow rotation)', async ({ page }) => {
@@ -936,11 +936,11 @@ test.describe('Custom patches', () => {
     ]);
 
     if (doneOrError === 'error') {
-      // Build failed — verify Go Back works
+      // Build failed — "Select different patches" should return to mode selection
       await expect(page.locator('#error-message')).toContainText('Build failed');
       await expect(page.locator('#btn-error-back')).toBeVisible();
       await page.click('#btn-error-back');
-      await expect(page.locator('#step-patches')).not.toBeHidden();
+      await expect(page.locator('#step-mode')).not.toBeHidden();
     } else {
       // Build succeeded — check if the patch was skipped
       const logText = await page.locator('#build-log').textContent();
@@ -948,5 +948,106 @@ test.describe('Custom patches', () => {
       const hasSkip = logText.includes('SKIP') && logText.includes('Allow rotation on all devices');
       expect(hasSkip, 'Expected "Allow rotation" to be skipped or fail').toBe(true);
     }
+  });
+
+  test('with device — back navigation through auto mode flow', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page);
+    await page.click('#btn-connect');
+
+    // Step 1: Device
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    // Device → Mode
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → Patches
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+
+    // Patches → Back → Mode
+    await page.click('#btn-patches-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → NickelMenu config
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // NM config → Back → Mode
+    await page.click('#btn-nm-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → NM config → Continue → NM review
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[value="nickelmenu-only"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+
+    // NM review → Back → NM config
+    await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // NM config → Back → Mode
+    await page.click('#btn-nm-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → Back → Device
+    await page.click('#btn-mode-back');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+  });
+
+  test('no device — back navigation through manual mode flow', async ({ page }) => {
+    await page.goto('/');
+    await goToManualMode(page);
+
+    // Step 1: Mode
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → Patches → Version selection
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+
+    // Version → Back → Mode
+    await page.click('#btn-manual-version-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → NickelMenu config
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // NM config → Back → Mode
+    await page.click('#btn-nm-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → Patches → Version selection
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+
+    // Select version and model, confirm
+    await page.selectOption('#manual-version', '4.45.23646');
+    await page.locator('#manual-model').waitFor({ state: 'visible' });
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+
+    // Patches → Back → Version
+    await page.click('#btn-patches-back');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+
+    // Version → Back → Mode
+    await page.click('#btn-manual-version-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+
+    // Mode → Back → Connect
+    await page.click('#btn-mode-back');
+    await expect(page.locator('#step-connect')).not.toBeHidden();
   });
 });
