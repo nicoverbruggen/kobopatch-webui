@@ -677,7 +677,15 @@
     }
 
     btnBuildBack.addEventListener('click', () => {
-        goToPatches();
+        if (isRestore) {
+            // Restore was triggered directly from the device step
+            isRestore = false;
+            setNavLabels(NAV_DEFAULT);
+            setNavStep(1);
+            showStep(stepDevice);
+        } else {
+            goToPatches();
+        }
     });
 
     const buildProgress = $('build-progress');
