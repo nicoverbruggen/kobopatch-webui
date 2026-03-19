@@ -13,9 +13,8 @@ replace gopkg.in/yaml.v3 => github.com/pgaskin/yaml v0.0.0-20190717135119-db0123
 
 require (
 	github.com/ianlancetaylor/demangle v0.0.0-20250628045327-2d64ad6b7ec5 // indirect
-	github.com/pgaskin/go-libz v0.0.2 // indirect
+	github.com/pgaskin/go-libz v0.1.0 // indirect
 	github.com/riking/cssparse v0.0.0-20180325025645-c37ded0aac89 // indirect
-	github.com/tetratelabs/wazero v1.9.0 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	rsc.io/arm v0.0.0-20150420010332-9c32f2193064 // indirect
 )

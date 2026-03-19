@@ -12,7 +12,7 @@ else
     echo "Cloning kobopatch source..."
     git clone https://github.com/pgaskin/kobopatch.git "$KOBOPATCH_DIR"
     cd "$KOBOPATCH_DIR"
-    git checkout v0.16.0 # update this as updates come out
+    git checkout 6189c54 # update this as updates come out
 fi
 
 echo "Copying wasm_exec.js from Go SDK..."
