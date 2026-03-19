@@ -83,7 +83,7 @@ try {
 
     let tag = '';
     try {
-        tag = String(execSync('git describe --tags --exact-match', { cwd: repoDir })).trim();
+        tag = String(execSync('git describe --tags --exact-match 2>/dev/null', { cwd: repoDir })).trim();
     } catch {}
     if (tag) {
         versionStr = tag;
