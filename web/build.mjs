@@ -77,20 +77,23 @@ if (existsSync(workerSrc)) {
 
 // Get git version string
 let versionStr = 'unknown';
-let versionHash = 'unknown';
+let versionLink = 'https://github.com/nicoverbruggen/kobopatch-webui';
 try {
     const hash = String(execSync('git rev-parse --short HEAD', { cwd: repoDir })).trim();
-    versionHash = hash;
 
     let tag = '';
     try {
-        tag = String(execSync('git describe --tags --exact-match', { cwd: repoDir, stdio: 'ignore' })).trim();
+        tag = String(execSync('git describe --tags --exact-match', { cwd: repoDir })).trim();
     } catch {}
     if (tag) {
         versionStr = tag;
+        const dirty = String(execSync('git status --porcelain', { cwd: repoDir })).trim();
+        if (dirty) versionStr += ' (D)';
+        versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/releases/tag/${tag}`;
     } else {
         const dirty = String(execSync('git status --porcelain', { cwd: repoDir })).trim();
         versionStr = dirty ? `${hash} (D)` : hash;
+        versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/commit/${hash}`;
     }
 } catch {}
 
@@ -121,7 +124,7 @@ html = html.replace(
 html = html.replace('<span id="commit-hash"></span>', `<span id="commit-hash">${versionStr}</span>`);
 html = html.replace(
     'href="https://github.com/nicoverbruggen/kobopatch-webui"',
-    `href="https://github.com/nicoverbruggen/kobopatch-webui/commit/${versionHash}"`
+    `href="${versionLink}"`
 );
 
 writeFileSync(join(distDir, 'index.html'), html);
