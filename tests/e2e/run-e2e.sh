@@ -16,6 +16,11 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+PROJECT_ROOT="$(cd ../.. && pwd)"
+WEB_DIR="$PROJECT_ROOT/web"
+SRC_DIR="$WEB_DIR/src"
+DIST_DIR="$WEB_DIR/dist"
+
 PLAYWRIGHT_ARGS=("--reporter=list")
 
 while [[ $# -gt 0 ]]; do
@@ -42,20 +47,20 @@ done
 
 FIRMWARE_VERSION="4.45.23646"
 FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-${FIRMWARE_VERSION}.zip"
-FIRMWARE_DIR="../../kobopatch-wasm/testdata"
+FIRMWARE_DIR="$PROJECT_ROOT/kobopatch-wasm/testdata"
 FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
 
 # Check WASM is built.
-if [ ! -f "../../web/dist/wasm/kobopatch.wasm" ]; then
+if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
     echo "ERROR: kobopatch.wasm not found. Run kobopatch-wasm/build.sh first."
     exit 1
 fi
 
 # Set up NickelMenu assets if not present.
-NM_DIR="../../web/src/nickelmenu"
+NM_DIR="$SRC_DIR/nickelmenu"
 if [ ! -f "$NM_DIR/NickelMenu.zip" ] || [ ! -f "$NM_DIR/kobo-config.zip" ]; then
     echo "Setting up NickelMenu assets..."
-    ../../nickelmenu/setup.sh
+    "$PROJECT_ROOT/nickelmenu/setup.sh"
 fi
 
 # Download firmware if not cached.
@@ -80,5 +85,5 @@ npx playwright install chromium
 
 # Run the tests.
 echo "Running E2E integration tests..."
-FIRMWARE_ZIP="$(cd ../.. && pwd)/kobopatch-wasm/testdata/kobo-update-${FIRMWARE_VERSION}.zip" \
+FIRMWARE_ZIP="$FIRMWARE_FILE" \
     npx playwright test "${PLAYWRIGHT_ARGS[@]}"

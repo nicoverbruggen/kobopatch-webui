@@ -1,13 +1,14 @@
-import { KoboDevice, KOBO_MODELS, getFirmwareURL, getDevicesForVersion } from './kobo-device.js';
+import { KoboDevice, KoboModels } from './kobo-device.js';
+import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './kobo-software-urls.js';
 import { PatchUI, scanAvailablePatches } from './patch-ui.js';
-import { KobopatchRunner } from './kobopatch.js';
+import { KoboPatchRunner } from './patch-runner.js';
 import { NickelMenuInstaller } from './nickelmenu.js';
 import JSZip from 'jszip';
 
 (() => {
     const device = new KoboDevice();
     const patchUI = new PatchUI();
-    const runner = new KobopatchRunner();
+    const runner = new KoboPatchRunner();
     const nmInstaller = new NickelMenuInstaller();
 
     let firmwareURL = null;
@@ -21,7 +22,8 @@ import JSZip from 'jszip';
     let selectedMode = null;        // 'nickelmenu' | 'patches'
     let nickelMenuOption = null;    // 'sample' | 'nickelmenu-only' | 'remove'
 
-    // Fetch patch index immediately so it's ready when needed.
+    // Fetch data eagerly so it's ready when needed.
+    const softwareUrlsReady = loadSoftwareUrls();
     const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 
     // --- Helpers ---
@@ -196,9 +198,9 @@ import JSZip from 'jszip';
 
     // --- Firmware step config ---
     function configureFirmwareStep(version, prefix) {
-        firmwareURL = prefix ? getFirmwareURL(prefix, version) : null;
+        firmwareURL = prefix ? getSoftwareUrl(prefix, version) : null;
         firmwareVersionLabel.textContent = version;
-        firmwareDeviceLabel.textContent = KOBO_MODELS[prefix] || prefix;
+        firmwareDeviceLabel.textContent = KoboModels[prefix] || prefix;
         $('firmware-download-url').textContent = firmwareURL || '';
     }
 
@@ -304,7 +306,7 @@ import JSZip from 'jszip';
 
             selectedPrefix = info.serialPrefix;
 
-            await availablePatchesReady;
+            await Promise.all([softwareUrlsReady, availablePatchesReady]);
             const match = availablePatches.find(p => p.version === info.firmware);
 
             configureFirmwareStep(info.firmware, info.serialPrefix);
@@ -426,7 +428,7 @@ import JSZip from 'jszip';
 
     // --- Manual version/model selection (only for custom patches in manual mode) ---
     async function enterManualVersionSelection() {
-        await availablePatchesReady;
+        await Promise.all([softwareUrlsReady, availablePatchesReady]);
         populateSelect(manualVersion, '-- Select software version --',
             availablePatches.map(p => ({ value: p.version, text: p.version, data: { filename: p.filename } }))
         );
@@ -769,7 +771,7 @@ import JSZip from 'jszip';
     function showBuildResult() {
         const action = isRestore ? 'Software extracted' : 'Patching complete';
         const description = isRestore ? 'This will restore the original unpatched software.' : '';
-        const deviceName = KOBO_MODELS[selectedPrefix] || 'Kobo';
+        const deviceName = KoboModels[selectedPrefix] || 'Kobo';
         const installHint = manualMode
             ? 'Download the file and copy it to your ' + deviceName + '.'
             : 'Write it directly to your connected Kobo, or download for manual installation.';
@@ -868,7 +870,7 @@ import JSZip from 'jszip';
         triggerDownload(resultTgz, 'KoboRoot.tgz', 'application/gzip');
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
-        $('download-device-name').textContent = KOBO_MODELS[selectedPrefix] || 'Kobo';
+        $('download-device-name').textContent = KoboModels[selectedPrefix] || 'Kobo';
     });
 
     // --- Error / Retry ---

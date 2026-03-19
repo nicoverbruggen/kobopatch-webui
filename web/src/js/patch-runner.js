@@ -1,7 +1,7 @@
 /**
  * Runs kobopatch WASM in a Web Worker for non-blocking UI.
  */
-class KobopatchRunner {
+class KoboPatchRunner {
     constructor() {
         this._worker = null;
     }
@@ -52,4 +52,4 @@ class KobopatchRunner {
     }
 }
 
-export { KobopatchRunner };
+export { KoboPatchRunner };

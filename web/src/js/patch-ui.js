@@ -459,4 +459,4 @@ class PatchUI {
 
 }
 
-export { PATCH_FILE_LABELS, parsePatchYAML, parsePatchConfig, scanAvailablePatches, PatchUI };
+export { PatchUI, scanAvailablePatches };

@@ -2,16 +2,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WEB_DIR="$SCRIPT_DIR/web"
+SRC_DIR="$WEB_DIR/src"
+DIST_DIR="$WEB_DIR/dist"
 WASM_DIR="$SCRIPT_DIR/kobopatch-wasm"
-DIST_DIR="$SCRIPT_DIR/web/dist"
 
-if [ ! -f "$DIST_DIR/nickelmenu/NickelMenu.zip" ]; then
+if [ ! -f "$SRC_DIR/nickelmenu/NickelMenu.zip" ]; then
     echo "NickelMenu assets not found, downloading..."
     "$SCRIPT_DIR/nickelmenu/setup.sh"
 fi
 
 echo "Building JS bundle..."
-cd "$SCRIPT_DIR/web"
+cd "$WEB_DIR"
 npm install --silent
 npm run build
 

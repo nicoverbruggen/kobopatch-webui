@@ -3,7 +3,7 @@
  * Source: https://help.kobo.com/hc/en-us/articles/360019676973
  * The serial number prefix (first 3-4 characters) identifies the model.
  */
-const KOBO_MODELS = {
+const KoboModels = {
     // Current eReaders
     'N428': 'Kobo Libra Colour',
     'N367': 'Kobo Clara Colour',
@@ -35,48 +35,6 @@ const KOBO_MODELS = {
     // Aura HD uses 5-char prefix
     'N204': 'Kobo Aura HD',
 };
-
-/**
- * Firmware download URLs by version and serial prefix.
- * Source: https://help.kobo.com/hc/en-us/articles/35059171032727
- *
- * The kobo prefix (kobo12, kobo13, kobo14) is stable per device family.
- * The date path segment (e.g. Mar2026) changes per release.
- * help.kobo.com may lag behind; verify URLs when adding new versions.
- */
-var FIRMWARE_DOWNLOADS = {
-    '4.45.23646': {
-        'N428': 'https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip',
-        'N365': 'https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip',
-        'N367': 'https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip',
-        'P365': 'https://ereaderfiles.kobo.com/firmwares/kobo14/Mar2026/kobo-update-4.45.23646.zip',
-    },
-};
-
-/**
- * Get the firmware download URL for a given serial prefix and firmware version.
- * Returns null if no URL is available.
- */
-function getFirmwareURL(serialPrefix, version) {
-    const versionMap = FIRMWARE_DOWNLOADS[version];
-    if (!versionMap) return null;
-    return versionMap[serialPrefix] || null;
-}
-
-/**
- * Get all device models that have firmware downloads for a given version.
- * Returns array of { prefix, model } objects.
- */
-function getDevicesForVersion(version) {
-    const versionMap = FIRMWARE_DOWNLOADS[version];
-    if (!versionMap) return [];
-    const devices = [];
-    for (const prefix of Object.keys(versionMap)) {
-        const model = KOBO_MODELS[prefix] || 'Unknown';
-        devices.push({ prefix, model: model + ' (' + prefix + ')' });
-    }
-    return devices;
-}
 
 class KoboDevice {
     constructor() {
@@ -144,10 +102,10 @@ class KoboDevice {
         const hardwareId = parts[5];
 
         // Try matching 4-char prefix first, then 3-char for models like N204B
-        const serialPrefix = KOBO_MODELS[serial.substring(0, 4)]
+        const serialPrefix = KoboModels[serial.substring(0, 4)]
             ? serial.substring(0, 4)
             : serial.substring(0, 3);
-        const model = KOBO_MODELS[serialPrefix] || 'Unknown Kobo (' + serial.substring(0, 4) + ')';
+        const model = KoboModels[serialPrefix] || 'Unknown Kobo (' + serial.substring(0, 4) + ')';
         const fwParts = firmware.split('.');
         const fwMajor = parseInt(fwParts[0], 10) || 0;
         const fwMinor = parseInt(fwParts[1], 10) || 0;
@@ -220,6 +178,5 @@ class KoboDevice {
 
 // Expose on window for E2E test compatibility (tests access these via page.evaluate)
 window.KoboDevice = KoboDevice;
-window.FIRMWARE_DOWNLOADS = FIRMWARE_DOWNLOADS;
 
-export { KOBO_MODELS, FIRMWARE_DOWNLOADS, getFirmwareURL, getDevicesForVersion, KoboDevice };
+export { KoboModels, KoboDevice };
