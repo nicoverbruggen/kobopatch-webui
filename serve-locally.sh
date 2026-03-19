@@ -26,11 +26,4 @@ if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
 fi
 
 echo "Serving at http://localhost:8888"
-if command -v nginx &>/dev/null; then
-    export PORT=8888
-    envsubst '${PORT}' < "$SCRIPT_DIR/nginx.conf.template" > /tmp/kobopatch-nginx.conf
-    nginx -c /tmp/kobopatch-nginx.conf -g 'daemon off;'
-else
-    echo "(nginx not found, using Node.js server)"
-    node serve.mjs
-fi
+node serve.mjs
