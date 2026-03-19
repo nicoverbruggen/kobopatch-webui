@@ -59,7 +59,7 @@ web/
   dist/                         # Build output (gitignored, fully regenerable)
     bundle.js                   # esbuild output (minified, content-hashed)
     index.html                  # Generated with cache-busted references
-    css/ favicon/ patches/ nickelmenu/ wasm/ js/
+    css/ favicon/ patches/ nickelmenu/ wasm/ js/wasm_exec.js
   build.mjs                     # esbuild build script + asset copy
   package.json                  # esbuild, jszip
 
@@ -131,6 +131,14 @@ This serves the app at `http://localhost:8888`. The script automatically:
 You can delete the entire `web/dist/` folder and re-run `serve-locally.sh` to regenerate everything.
 
 ## Testing
+
+Run all tests (WASM integration + E2E):
+
+```bash
+./test.sh
+```
+
+This builds the web app, compiles the WASM binary, runs the WASM integration tests, and then runs the full E2E suite.
 
 ### E2E tests (Playwright)
 
