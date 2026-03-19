@@ -6,7 +6,7 @@
     "dev": "node build.mjs --dev"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.27.4"
   },
   "dependencies": {
     "jszip": "^3.10.1"
