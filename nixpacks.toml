@@ -13,4 +13,4 @@ cmds = [
 ]
 
 [start]
-cmd = "./start.sh"
+cmd = "envsubst '${PORT}' < nginx.conf.template > /tmp/nginx.conf && exec nginx -c /tmp/nginx.conf -g 'daemon off;'"
