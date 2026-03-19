@@ -3,6 +3,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+echo "=== Installing web dependencies ==="
+cd "$SCRIPT_DIR/web" && npm install
+
+echo ""
+echo "=== Building web app ==="
+cd "$SCRIPT_DIR/web" && node build.mjs
+
+echo ""
 echo "=== Building WASM ==="
 "$SCRIPT_DIR/kobopatch-wasm/build.sh"
 

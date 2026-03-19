@@ -138,13 +138,17 @@ import JSZip from 'jszip';
 
     const stepHistory = [stepConnect];
 
-    function pushStep(step) {
-        stepHistory.push(step);
-    }
-
-    function popStep() {
-        stepHistory.pop();
-        return stepHistory[stepHistory.length - 1];
+    function showStep(step, push = true) {
+        for (const s of allSteps) {
+            s.hidden = (s !== step);
+        }
+        if (!push) return;
+        const idx = stepHistory.indexOf(step);
+        if (idx >= 0) {
+            stepHistory.length = idx + 1;
+        } else {
+            stepHistory.push(step);
+        }
     }
 
     function setNavLabels(labels) {
@@ -155,15 +159,6 @@ import JSZip from 'jszip';
             const li = document.createElement('li');
             li.textContent = label;
             ol.appendChild(li);
-        }
-    }
-
-    function showStep(step, updateHistory = true) {
-        for (const s of allSteps) {
-            s.hidden = (s !== step);
-        }
-        if (updateHistory) {
-            stepHistory[stepHistory.length - 1] = step;
         }
     }
 
@@ -704,12 +699,11 @@ import JSZip from 'jszip';
         }
         populateSelectedPatchesList();
         setNavStep(4);
-        showStep(stepFirmware);
+        showStep(stepFirmware, false);
     }
 
     btnBuildBack.addEventListener('click', () => {
         if (isRestore) {
-            // Restore was triggered directly from the device step
             isRestore = false;
             setNavLabels(NAV_DEFAULT);
             setNavStep(1);
@@ -836,7 +830,7 @@ import JSZip from 'jszip';
     }
 
     btnBuild.addEventListener('click', async () => {
-        showStep(stepBuilding);
+        showStep(stepBuilding, false);
         buildLog.textContent = '';
         buildProgress.textContent = 'Starting...';
         $('build-wait-hint').textContent = isRestore
@@ -909,7 +903,7 @@ import JSZip from 'jszip';
             errorLog.hidden = true;
         }
 
-        const hasBackStep = stepHistory[stepHistory.length - 1] === stepPatches;
+        const hasBackStep = stepHistory.includes(stepPatches);
         if (hasBackStep) {
             errorTitle.textContent = 'The patch failed to apply';
             errorHint.hidden = false;
@@ -922,16 +916,18 @@ import JSZip from 'jszip';
             btnRetry.classList.remove('danger');
         }
         hideNav();
-        pushStep(stepError);
-        showStep(stepError, false);
+        showStep(stepError);
     }
 
     btnErrorBack.addEventListener('click', () => {
         btnErrorBack.hidden = true;
         btnRetry.classList.remove('danger');
-        const prev = popStep();
+        stepHistory.pop();
+        while (stepHistory.length > 0 && stepHistory[stepHistory.length - 1] !== stepPatches) {
+            stepHistory.pop();
+        }
         showNav();
-        showStep(prev);
+        showStep(stepPatches);
     });
 
     btnRetry.addEventListener('click', () => {
