@@ -1,7 +1,7 @@
-providers = ["python"]
+providers = ["node"]
 
 [phases.setup]
-nixPkgs = ["git", "curl", "python3Minimal", "zip", "gnutar", "nodejs_22"]
+nixPkgs = ["git", "curl", "zip", "gnutar", "nginx"]
 paths = ["/usr/local/go/bin"]
 cmds = [
     "curl -sSfL https://go.dev/dl/go1.23.12.linux-amd64.tar.gz | tar -xz -C /usr/local",
@@ -16,4 +16,4 @@ cmds = [
 ]
 
 [start]
-cmd = "python3 -m http.server ${PORT:-8080} -d web/dist"
+cmd = "./start.sh"
