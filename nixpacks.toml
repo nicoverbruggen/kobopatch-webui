@@ -1,7 +1,7 @@
 providers = ["node"]
 
 [phases.setup]
-nixPkgs = ["git", "curl", "zip", "gnutar", "nginx"]
+nixPkgs = ["git", "curl", "zip", "gnutar", "nginx", "nodejs", "gettext"]
 paths = ["/usr/local/go/bin"]
 
 [phases.build]
@@ -13,4 +13,5 @@ cmds = [
 ]
 
 [start]
-cmd = "envsubst '${PORT}' < nginx.conf.template > /tmp/nginx.conf && exec nginx -c /tmp/nginx.conf -g 'daemon off;'"
+# TODO: replace simple node server with something better
+cmd = "node web/serve.mjs"
