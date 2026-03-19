@@ -1,3 +1,9 @@
+import { KoboDevice, KOBO_MODELS, getFirmwareURL, getDevicesForVersion } from './kobo-device.js';
+import { PatchUI, scanAvailablePatches } from './patch-ui.js';
+import { KobopatchRunner } from './kobopatch.js';
+import { NickelMenuInstaller } from './nickelmenu.js';
+import JSZip from 'jszip';
+
 (() => {
     const device = new KoboDevice();
     const patchUI = new PatchUI();

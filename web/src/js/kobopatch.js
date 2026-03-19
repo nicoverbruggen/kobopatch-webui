@@ -51,3 +51,5 @@ class KobopatchRunner {
         });
     }
 }
+
+export { KobopatchRunner };

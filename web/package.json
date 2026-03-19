@@ -1,0 +1,14 @@
+{
+  "name": "kobopatch-webui",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --dev"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}

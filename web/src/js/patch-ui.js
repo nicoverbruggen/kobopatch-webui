@@ -1,3 +1,5 @@
+import JSZip from 'jszip';
+
 /**
  * Friendly display names for patch files.
  */
@@ -456,3 +458,5 @@ class PatchUI {
     }
 
 }
+
+export { PATCH_FILE_LABELS, parsePatchYAML, parsePatchConfig, scanAvailablePatches, PatchUI };

@@ -11,21 +11,26 @@ kobopatch-wasm/testdata/
 kobopatch-wasm/kobopatch.wasm
 kobopatch-wasm/wasm_exec.js
 
-# Test artifacts in webroot
-web/public/_test_firmware.zip
+# Generated files in src (written by build scripts, regenerated on demand)
+web/src/wasm/kobopatch.wasm
+web/src/js/wasm_exec.js
+web/src/nickelmenu/NickelMenu.zip
+web/src/nickelmenu/kobo-config.zip
 
-# WASM artifacts copied to webroot for serving
-web/public/wasm/kobopatch.wasm
-web/public/js/wasm_exec.js
+# Build output
+web/dist/
+
+# Node
+web/node_modules/
 
 # E2E tests
 tests/e2e/node_modules/
 tests/e2e/test-results/
 tests/e2e/playwright-report/
+tests/e2e/test_firmware.zip
 
 # NickelMenu build artifacts
 nickelmenu/kobo-config/
-web/public/nickelmenu/
 
 # Claude
 .claude

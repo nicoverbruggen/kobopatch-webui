@@ -12,7 +12,7 @@ set -euo pipefail
 # Prerequisites:
 #   - kobopatch.wasm built (run kobopatch-wasm/build.sh first)
 #   - Firmware zip cached at kobopatch-wasm/testdata/ (downloaded automatically)
-#   - NickelMenu assets in web/public/nickelmenu/ (set up automatically)
+#   - NickelMenu assets in web/src/nickelmenu/ (set up automatically)
 
 cd "$(dirname "$0")"
 
@@ -46,13 +46,13 @@ FIRMWARE_DIR="../../kobopatch-wasm/testdata"
 FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
 
 # Check WASM is built.
-if [ ! -f "../../web/public/wasm/kobopatch.wasm" ]; then
+if [ ! -f "../../web/dist/wasm/kobopatch.wasm" ]; then
     echo "ERROR: kobopatch.wasm not found. Run kobopatch-wasm/build.sh first."
     exit 1
 fi
 
 # Set up NickelMenu assets if not present.
-NM_DIR="../../web/public/nickelmenu"
+NM_DIR="../../web/src/nickelmenu"
 if [ ! -f "$NM_DIR/NickelMenu.zip" ] || [ ! -f "$NM_DIR/kobo-config.zip" ]; then
     echo "Setting up NickelMenu assets..."
     ../../nickelmenu/setup.sh

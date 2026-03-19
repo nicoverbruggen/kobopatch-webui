@@ -217,3 +217,9 @@ class KoboDevice {
         this.deviceInfo = null;
     }
 }
+
+// Expose on window for E2E test compatibility (tests access these via page.evaluate)
+window.KoboDevice = KoboDevice;
+window.FIRMWARE_DOWNLOADS = FIRMWARE_DOWNLOADS;
+
+export { KOBO_MODELS, FIRMWARE_DOWNLOADS, getFirmwareURL, getDevicesForVersion, KoboDevice };

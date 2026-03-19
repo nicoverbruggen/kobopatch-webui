@@ -17,7 +17,7 @@ module.exports = defineConfig({
     },
   },
   webServer: {
-    command: 'python3 -m http.server -d ../../web/public 8889',
+    command: 'cd ../../kobopatch-wasm && bash build.sh && cd ../web && node build.mjs && python3 -m http.server -d dist 8889',
     port: 8889,
     reuseExistingServer: true,
   },

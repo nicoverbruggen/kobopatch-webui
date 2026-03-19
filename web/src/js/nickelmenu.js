@@ -1,3 +1,5 @@
+import JSZip from 'jszip';
+
 /**
  * NickelMenu installer module.
  *
@@ -193,3 +195,5 @@ class NickelMenuInstaller {
         return result;
     }
 }
+
+export { NickelMenuInstaller };

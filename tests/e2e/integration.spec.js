@@ -18,7 +18,7 @@ const EXPECTED_SHA1 = {
 const FIRMWARE_PATH = process.env.FIRMWARE_ZIP
   || path.resolve(__dirname, '..', '..', 'kobopatch-wasm', 'testdata', 'kobo-update-4.45.23646.zip');
 
-const WEBROOT = path.resolve(__dirname, '..', '..', 'web', 'public');
+const WEBROOT = path.resolve(__dirname, '..', '..', 'web', 'dist');
 const WEBROOT_FIRMWARE = path.join(WEBROOT, '_test_firmware.zip');
 
 // SHA1 of the original unmodified KoboRoot.tgz inside firmware 4.45.23646.
