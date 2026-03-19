@@ -364,10 +364,14 @@
 
         <!-- Error state -->
         <section id="step-error" class="step" hidden>
-            <h2>Something went wrong</h2>
-            <p id="error-message" class="error"></p>
+            <h2 id="error-title">Something went wrong</h2>
+            <p id="error-hint" hidden>Some patches may not work correctly with your software version. You can go back and try a different selection.</p>
             <pre id="error-log" class="error-log" hidden></pre>
-            <button id="btn-retry" class="secondary">Start Over</button>
+            <p id="error-message" class="error"></p>
+            <div class="step-actions">
+                <button id="btn-error-back" class="secondary" hidden>&#x2039; Select different patches</button>
+                <button id="btn-retry" class="secondary">Start Over</button>
+            </div>
         </section>
     </main>
 

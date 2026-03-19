@@ -52,4 +52,7 @@ class KoboPatchRunner {
     }
 }
 
+// Expose on window for E2E test compatibility
+window.KoboPatchRunner = KoboPatchRunner;
+
 export { KoboPatchRunner };

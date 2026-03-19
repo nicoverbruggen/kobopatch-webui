@@ -472,6 +472,17 @@ button.secondary:hover {
     border-color: #9ca3af;
 }
 
+button.danger {
+    background: #fff;
+    color: var(--error-text);
+    border-color: var(--error-border);
+}
+
+button.danger:hover {
+    background: var(--error-bg);
+    border-color: var(--error-text);
+}
+
 button:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -562,6 +573,10 @@ button.btn-success:hover {
     padding: 0.75rem 1rem;
     border-radius: 8px;
     font-size: 0.88rem;
+}
+
+#error-message {
+    margin-top: 1rem;
 }
 
 .status-supported {

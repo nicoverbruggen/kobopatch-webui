@@ -870,4 +870,83 @@ test.describe('Custom patches', () => {
     const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
   });
+
+  test('with device — build failure shows Go Back and returns to patches', async ({ page }) => {
+    test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    setupFirmwareSymlink();
+    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+
+    // Select Custom Patches
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Enable "Remove footer (row3) on new home screen"
+    const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
+    const patchSection = patchName.locator('xpath=ancestor::details');
+    await patchSection.locator('summary').click();
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+    await page.click('#btn-patches-next');
+
+    // Mock the WASM patcher to simulate a failure
+    await page.evaluate(() => {
+      KoboPatchRunner.prototype.patchFirmware = async function () {
+        throw new Error('Patch failed to apply: symbol not found');
+      };
+    });
+
+    // Build — should fail due to mock
+    await page.click('#btn-build');
+
+    await expect(page.locator('#step-error')).not.toBeHidden({ timeout: 30_000 });
+    await expect(page.locator('#error-message')).toContainText('Build failed');
+    await expect(page.locator('#btn-error-back')).toBeVisible();
+
+    // Go Back should return to patches step
+    await page.click('#btn-error-back');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+  });
+
+  test('with device — real patch failure with Go Back (Allow rotation)', async ({ page }) => {
+    test.skip(!fs.existsSync(FIRMWARE_PATH), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    setupFirmwareSymlink();
+    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+
+    // Select Custom Patches
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Enable "Allow rotation on all devices" — marked as not working on 4.45.23646
+    const patchName = page.locator('.patch-name', { hasText: 'Allow rotation on all devices' }).first();
+    const patchSection = patchName.locator('xpath=ancestor::details');
+    await patchSection.locator('summary').click();
+    await expect(patchName).toBeVisible();
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+    await page.click('#btn-patches-next');
+
+    // Build
+    await page.click('#btn-build');
+
+    const doneOrError = await Promise.race([
+      page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+      page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+    ]);
+
+    if (doneOrError === 'error') {
+      // Build failed — verify Go Back works
+      await expect(page.locator('#error-message')).toContainText('Build failed');
+      await expect(page.locator('#btn-error-back')).toBeVisible();
+      await page.click('#btn-error-back');
+      await expect(page.locator('#step-patches')).not.toBeHidden();
+    } else {
+      // Build succeeded — check if the patch was skipped
+      const logText = await page.locator('#build-log').textContent();
+      console.log('Build log:', logText);
+      const hasSkip = logText.includes('SKIP') && logText.includes('Allow rotation on all devices');
+      expect(hasSkip, 'Expected "Allow rotation" to be skipped or fail').toBe(true);
+    }
+  });
 });

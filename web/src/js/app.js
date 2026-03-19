@@ -101,9 +101,12 @@ import JSZip from 'jszip';
     const btnWrite = $('btn-write');
     const btnDownload = $('btn-download');
     const btnRetry = $('btn-retry');
+    const btnErrorBack = $('btn-error-back');
 
     const errorMessage = $('error-message');
     const errorLog = $('error-log');
+    const errorTitle = $('error-title');
+    const errorHint = $('error-hint');
     const deviceStatus = $('device-status');
     const deviceUnknownWarning = $('device-unknown-warning');
     const deviceUnknownAck = $('device-unknown-ack');
@@ -163,6 +166,10 @@ import JSZip from 'jszip';
 
     function hideNav() {
         stepNav.hidden = true;
+    }
+
+    function showNav() {
+        stepNav.hidden = false;
     }
 
     // --- Mode selection card interactivity ---
@@ -435,6 +442,7 @@ import JSZip from 'jszip';
         populateSelect(manualModel, '-- Select your Kobo model --', []);
         manualModel.hidden = true;
         btnManualConfirm.disabled = true;
+        setNavStep(2);
         showStep(stepManualVersion);
     }
 
@@ -640,6 +648,7 @@ import JSZip from 'jszip';
     btnPatchesBack.addEventListener('click', () => {
         if (manualMode) {
             // Go back to version selection in manual mode
+            setNavStep(2);
             showStep(stepManualVersion);
         } else {
             goToModeSelection();
@@ -836,7 +845,7 @@ import JSZip from 'jszip';
             showBuildResult();
             await checkExistingTgz();
         } catch (err) {
-            showError('Build failed: ' + err.message, buildLog.textContent);
+            showError('Build failed: ' + err.message, buildLog.textContent, stepPatches);
         }
     });
 
@@ -874,17 +883,45 @@ import JSZip from 'jszip';
     });
 
     // --- Error / Retry ---
-    function showError(message, log) {
+    function showError(message, log, backStep) {
         errorMessage.textContent = message;
         if (log) {
             errorLog.textContent = log;
             errorLog.hidden = false;
+            requestAnimationFrame(() => {
+                errorLog.scrollTop = errorLog.scrollHeight;
+            });
         } else {
             errorLog.hidden = true;
+        }
+        if (backStep) {
+            errorTitle.textContent = 'The patch failed to apply';
+            errorHint.hidden = false;
+            btnErrorBack.hidden = false;
+            btnErrorBack._backStep = backStep;
+            btnRetry.classList.add('danger');
+        } else {
+            errorTitle.textContent = 'Something went wrong';
+            errorHint.hidden = true;
+            btnErrorBack.hidden = true;
+            btnErrorBack._backStep = null;
+            btnRetry.classList.remove('danger');
         }
         hideNav();
         showStep(stepError);
     }
+
+    btnErrorBack.addEventListener('click', () => {
+        btnErrorBack.hidden = true;
+        btnRetry.classList.remove('danger');
+        showNav();
+        if (manualMode) {
+            setNavStep(2);
+            showStep(stepManualVersion);
+        } else {
+            goToModeSelection();
+        }
+    });
 
     btnRetry.addEventListener('click', () => {
         device.disconnect();
