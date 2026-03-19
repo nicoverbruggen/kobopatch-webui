@@ -24,7 +24,7 @@ await esbuild.build({
     logLevel: 'warning',
 });
 
-// Copy all of src/ to dist/, skipping js/ (bundled separately) and index.html (generated)
+// Copy all of src/ to dist/, skipping js/ (bundled separately), css/ (minified), and index.html (generated)
 function copyDir(src, dst, skip = new Set()) {
     mkdirSync(dst, { recursive: true });
     for (const entry of readdirSync(src)) {
@@ -38,7 +38,16 @@ function copyDir(src, dst, skip = new Set()) {
         }
     }
 }
-copyDir(srcDir, distDir, new Set(['js', 'index.html']));
+copyDir(srcDir, distDir, new Set(['js', 'css', 'index.html']));
+
+// Minify CSS
+mkdirSync(join(distDir, 'css'), { recursive: true });
+const cssSrc = readFileSync(join(srcDir, 'css', 'style.css'), 'utf-8');
+const { code: cssMinified } = await esbuild.transform(cssSrc, {
+    loader: 'css',
+    minify: !isDev,
+});
+writeFileSync(join(distDir, 'css', 'style.css'), cssMinified);
 
 // Copy worker files from src/js/ (not bundled, served separately)
 mkdirSync(join(distDir, 'js'), { recursive: true });
