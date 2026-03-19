@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { TL } from './strings.js';
 
 /**
  * Friendly display names for patch files.
@@ -288,7 +289,7 @@ class PatchUI {
                     });
                     const noneName = document.createElement('span');
                     noneName.className = 'patch-name patch-name-none';
-                    noneName.textContent = 'None (do not patch)';
+                    noneName.textContent = TL.PATCH.NONE;
                     noneHeader.appendChild(noneInput);
                     noneHeader.appendChild(noneName);
                     noneItem.appendChild(noneHeader);

@@ -3,6 +3,7 @@ import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './kobo-s
 import { PatchUI, scanAvailablePatches } from './patch-ui.js';
 import { KoboPatchRunner } from './patch-runner.js';
 import { NickelMenuInstaller } from './nickelmenu.js';
+import { TL } from './strings.js';
 import JSZip from 'jszip';
 
 (() => {
@@ -130,11 +131,8 @@ import JSZip from 'jszip';
     ];
 
     // --- Step navigation ---
-    const NAV_NICKELMENU = ['Device', 'Mode', 'Configure', 'Review', 'Install'];
-    const NAV_PATCHES = ['Device', 'Mode', 'Patches', 'Build', 'Install'];
-    const NAV_DEFAULT = ['Device', 'Mode', 'Patches', 'Build', 'Install'];
 
-    let currentNavLabels = NAV_DEFAULT;
+    let currentNavLabels = TL.NAV_DEFAULT;
 
     const stepHistory = [stepConnect];
 
@@ -204,9 +202,9 @@ import JSZip from 'jszip';
         const count = patchUI.getEnabledCount();
         btnPatchesNext.disabled = false;
         if (count === 0) {
-            patchCountHint.textContent = 'No patches selected \u2014 continuing will restore the original unpatched software.';
+            patchCountHint.textContent = TL.STATUS.PATCH_COUNT_ZERO;
         } else {
-            patchCountHint.textContent = count === 1 ? '1 patch selected.' : count + ' patches selected.';
+            patchCountHint.textContent = count === 1 ? TL.STATUS.PATCH_COUNT_ONE : TL.STATUS.PATCH_COUNT_MULTI(count);
         }
     }
 
@@ -232,7 +230,7 @@ import JSZip from 'jszip';
         $('connect-unsupported-hint').hidden = false;
     }
 
-    setNavLabels(NAV_DEFAULT);
+    setNavLabels(TL.NAV_DEFAULT);
     setNavStep(1);
     showStep(stepConnect);
 
@@ -280,7 +278,7 @@ import JSZip from 'jszip';
         try {
             const loaded = await loadPatchesForVersion(version, availablePatches);
             if (!loaded) {
-                showError('Could not load patches for software version ' + version);
+                showError(TL.ERROR.LOAD_PATCHES_FAILED(version));
                 return;
             }
             configureFirmwareStep(version, selectedPrefix);
@@ -345,7 +343,7 @@ import JSZip from 'jszip';
                 deviceUnknownCheckbox.checked = false;
                 btnDeviceNext.disabled = true;
             } else {
-                deviceStatus.textContent = 'Your device has been recognized. You can continue to the next step!';
+                deviceStatus.textContent = TL.STATUS.DEVICE_RECOGNIZED;
                 deviceUnknownWarning.hidden = true;
                 deviceUnknownAck.hidden = true;
                 deviceUnknownCheckbox.checked = false;
@@ -372,7 +370,7 @@ import JSZip from 'jszip';
         if (!patchesLoaded) return;
         selectedMode = 'patches';
         isRestore = true;
-        setNavLabels(NAV_PATCHES);
+        setNavLabels(TL.NAV_PATCHES);
         goToBuild();
     });
 
@@ -410,7 +408,7 @@ import JSZip from 'jszip';
             patchesHint.hidden = true;
         }
 
-        setNavLabels(NAV_DEFAULT);
+        setNavLabels(TL.NAV_DEFAULT);
         setNavStep(2);
         showStep(stepMode);
     }
@@ -430,14 +428,14 @@ import JSZip from 'jszip';
         selectedMode = selected.value;
 
         if (selectedMode === 'nickelmenu') {
-            setNavLabels(NAV_NICKELMENU);
+            setNavLabels(TL.NAV_NICKELMENU);
             goToNickelMenuConfig();
         } else if (manualMode && !patchesLoaded) {
             // Manual mode: need version/model selection before patches
-            setNavLabels(NAV_PATCHES);
+            setNavLabels(TL.NAV_PATCHES);
             await enterManualVersionSelection();
         } else {
-            setNavLabels(NAV_PATCHES);
+            setNavLabels(TL.NAV_PATCHES);
             goToPatches();
         }
     });
@@ -481,7 +479,7 @@ import JSZip from 'jszip';
                 await addsDir.getDirectoryHandle('nm');
                 removeRadio.disabled = false;
                 removeOption.classList.remove('nm-option-disabled');
-                removeDesc.textContent = 'Removes NickelMenu from your device. You must restart your Kobo to complete the uninstall!';
+                removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
                 return;
             } catch {
                 // .adds/nm not found
@@ -490,7 +488,7 @@ import JSZip from 'jszip';
 
         removeRadio.disabled = true;
         removeOption.classList.add('nm-option-disabled');
-        removeDesc.textContent = 'Removes NickelMenu from your device. Only available when a Kobo with NickelMenu installed is connected.';
+        removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
         if (removeRadio.checked) {
             const sampleRadio = $q('input[value="sample"]', stepNickelMenu);
             sampleRadio.checked = true;
@@ -540,33 +538,33 @@ import JSZip from 'jszip';
         list.innerHTML = '';
 
         if (nickelMenuOption === 'remove') {
-            summary.textContent = 'NickelMenu will be updated and marked for removal. It will uninstall itself when your Kobo reboots.';
+            summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
             btnNmWrite.hidden = manualMode;
-            btnNmWrite.textContent = 'Remove from Kobo';
+            btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
         } else if (nickelMenuOption === 'nickelmenu-only') {
-            summary.textContent = 'The following will be installed on your Kobo:';
+            summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
             const li = document.createElement('li');
-            li.textContent = 'NickelMenu (KoboRoot.tgz)';
+            li.textContent = TL.STATUS.NM_NICKEL_ROOT_TGZ;
             list.appendChild(li);
             btnNmWrite.hidden = false;
-            btnNmWrite.textContent = 'Write to Kobo';
+            btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             btnNmDownload.hidden = false;
         } else {
-            summary.textContent = 'The following will be installed on your Kobo:';
-            const items = ['NickelMenu (KoboRoot.tgz)', 'Custom menu configuration'];
+            summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
+            const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ, 'Custom menu configuration'];
             const cfg = getNmConfig();
-            if (cfg.fonts) items.push('Readerly fonts');
-            if (cfg.screensaver) items.push('Custom screensaver');
-            if (cfg.simplifyTabs) items.push('Simplified tab menu');
-            if (cfg.simplifyHome) items.push('Simplified homescreen');
+            if (cfg.fonts) items.push(TL.NICKEL_MENU_ITEMS.FONTS);
+            if (cfg.screensaver) items.push(TL.NICKEL_MENU_ITEMS.SCREENSAVER);
+            if (cfg.simplifyTabs) items.push(TL.NICKEL_MENU_ITEMS.SIMPLIFY_TABS);
+            if (cfg.simplifyHome) items.push(TL.NICKEL_MENU_ITEMS.SIMPLIFY_HOME);
             for (const text of items) {
                 const li = document.createElement('li');
                 li.textContent = text;
                 list.appendChild(li);
             }
             btnNmWrite.hidden = false;
-            btnNmWrite.textContent = 'Write to Kobo';
+            btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             btnNmDownload.hidden = false;
         }
 
@@ -617,7 +615,7 @@ import JSZip from 'jszip';
                 showNmDone('download');
             }
         } catch (err) {
-            showError('NickelMenu installation failed: ' + err.message);
+            showError(TL.STATUS.NM_INSTALL_FAILED + err.message);
         }
     }
 
@@ -631,13 +629,13 @@ import JSZip from 'jszip';
         $('nm-reboot-instructions').hidden = true;
 
         if (mode === 'remove') {
-            nmDoneStatus.textContent = 'NickelMenu will be removed on next reboot.';
+            nmDoneStatus.textContent = TL.STATUS.NM_REMOVED_ON_REBOOT;
             $('nm-reboot-instructions').hidden = false;
         } else if (mode === 'written') {
-            nmDoneStatus.textContent = 'NickelMenu has been installed on your Kobo.';
+            nmDoneStatus.textContent = TL.STATUS.NM_INSTALLED;
             $('nm-write-instructions').hidden = false;
         } else {
-            nmDoneStatus.textContent = 'Your NickelMenu package is ready to download.';
+            nmDoneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
             triggerDownload(resultNmZip, 'NickelMenu-install.zip', 'application/zip');
             $('nm-download-instructions').hidden = false;
             // Show eReader.conf step only when sample config is included
@@ -689,13 +687,11 @@ import JSZip from 'jszip';
 
     function goToBuild() {
         if (isRestore) {
-            firmwareDescription.textContent =
-                'will be downloaded and extracted without modifications to restore the original unpatched software.';
-            btnBuild.textContent = 'Restore Original Software';
+            firmwareDescription.textContent = TL.STATUS.RESTORE_ORIGINAL;
+            btnBuild.textContent = TL.BUTTON.RESTORE_ORIGINAL;
         } else {
-            firmwareDescription.textContent =
-                'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes.';
-            btnBuild.textContent = 'Build Patched Software';
+            firmwareDescription.textContent = TL.STATUS.FIRMWARE_WILL_BE_DOWNLOADED;
+            btnBuild.textContent = TL.BUTTON.BUILD_PATCHED;
         }
         populateSelectedPatchesList();
         setNavStep(4);
@@ -705,7 +701,7 @@ import JSZip from 'jszip';
     btnBuildBack.addEventListener('click', () => {
         if (isRestore) {
             isRestore = false;
-            setNavLabels(NAV_DEFAULT);
+            setNavLabels(TL.NAV_DEFAULT);
             setNavStep(1);
             showStep(stepDevice);
         } else {
@@ -729,7 +725,7 @@ import JSZip from 'jszip';
 
         const contentLength = resp.headers.get('Content-Length');
         if (!contentLength || !resp.body) {
-            buildProgress.textContent = 'Downloading software update...';
+            buildProgress.textContent = TL.STATUS.DOWNLOADING;
             return new Uint8Array(await resp.arrayBuffer());
         }
 
@@ -744,8 +740,7 @@ import JSZip from 'jszip';
             chunks.push(value);
             received += value.length;
             const pct = ((received / total) * 100).toFixed(0);
-            buildProgress.textContent =
-                `Downloading software update... ${formatMB(received)} / ${formatMB(total)} (${pct}%)`;
+            buildProgress.textContent = TL.STATUS.DOWNLOADING_PROGRESS(formatMB(received), formatMB(total), pct);
         }
 
         const result = new Uint8Array(received);
@@ -758,18 +753,18 @@ import JSZip from 'jszip';
     }
 
     async function extractOriginalTgz(firmwareBytes) {
-        buildProgress.textContent = 'Extracting KoboRoot.tgz...';
-        appendLog('Extracting original KoboRoot.tgz from software update...');
+        buildProgress.textContent = TL.STATUS.EXTRACTING;
+        appendLog('Extracting original KoboRoot.tgz from firmware...');
         const zip = await JSZip.loadAsync(firmwareBytes);
         const koboRoot = zip.file('KoboRoot.tgz');
-        if (!koboRoot) throw new Error('KoboRoot.tgz not found in software update');
+        if (!koboRoot) throw new Error(TL.STATUS.EXTRACT_FAILED);
         const tgz = new Uint8Array(await koboRoot.async('arraybuffer'));
         appendLog('Extracted KoboRoot.tgz: ' + formatMB(tgz.length));
         return tgz;
     }
 
     async function runPatcher(firmwareBytes) {
-        buildProgress.textContent = 'Applying patches...';
+        buildProgress.textContent = TL.STATUS.APPLYING_PATCHES;
         const configYAML = patchUI.generateConfig();
         const patchFiles = patchUI.getPatchFileBytes();
 
@@ -804,7 +799,7 @@ import JSZip from 'jszip';
         btnWrite.hidden = manualMode;
         btnWrite.disabled = false;
         btnWrite.className = 'primary';
-        btnWrite.textContent = 'Write to Kobo';
+        btnWrite.textContent = TL.BUTTON.WRITE_TO_DEVICE;
         btnDownload.disabled = false;
         writeInstructions.hidden = true;
         downloadInstructions.hidden = true;
@@ -832,14 +827,14 @@ import JSZip from 'jszip';
     btnBuild.addEventListener('click', async () => {
         showStep(stepBuilding, false);
         buildLog.textContent = '';
-        buildProgress.textContent = 'Starting...';
+        buildProgress.textContent = TL.STATUS.BUILDING_STARTING;
         $('build-wait-hint').textContent = isRestore
             ? 'Please wait while the original software is being downloaded and extracted...'
             : 'Please wait while the patch is being applied...';
 
         try {
             if (!firmwareURL) {
-                showError('No download URL available for this device.');
+                showError(TL.STATUS.NO_FIRMWARE_URL);
                 return;
             }
 
@@ -862,7 +857,7 @@ import JSZip from 'jszip';
         if (!resultTgz || !device.directoryHandle) return;
 
         btnWrite.disabled = true;
-        btnWrite.textContent = 'Writing...';
+        btnWrite.textContent = TL.BUTTON.WRITING;
         downloadInstructions.hidden = true;
 
         try {
@@ -872,13 +867,13 @@ import JSZip from 'jszip';
             await writable.write(resultTgz);
             await writable.close();
 
-            btnWrite.textContent = 'Written';
+            btnWrite.textContent = TL.BUTTON.WRITTEN;
             btnWrite.className = 'btn-success';
             writeInstructions.hidden = false;
         } catch (err) {
             btnWrite.disabled = false;
-            btnWrite.textContent = 'Write to Kobo';
-            showError('Failed to write KoboRoot.tgz: ' + err.message);
+            btnWrite.textContent = TL.BUTTON.WRITE_TO_DEVICE;
+            showError(TL.STATUS.WRITE_FAILED + err.message);
         }
     });
 
@@ -905,12 +900,12 @@ import JSZip from 'jszip';
 
         const hasBackStep = stepHistory.includes(stepPatches);
         if (hasBackStep) {
-            errorTitle.textContent = 'The patch failed to apply';
+            errorTitle.textContent = TL.ERROR.PATCH_FAILED;
             errorHint.hidden = false;
             btnErrorBack.hidden = false;
             btnRetry.classList.add('danger');
         } else {
-            errorTitle.textContent = 'Something went wrong';
+            errorTitle.textContent = TL.ERROR.SOMETHING_WENT_WRONG;
             errorHint.hidden = true;
             btnErrorBack.hidden = true;
             btnRetry.classList.remove('danger');
@@ -944,7 +939,7 @@ import JSZip from 'jszip';
         btnDeviceNext.hidden = false;
         btnDeviceRestore.hidden = false;
 
-        setNavLabels(NAV_DEFAULT);
+        setNavLabels(TL.NAV_DEFAULT);
         setNavStep(1);
         showStep(stepConnect);
     });

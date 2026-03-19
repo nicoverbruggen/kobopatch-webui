@@ -10,9 +10,14 @@ const srcDir = join(webDir, 'src');
 const distDir = join(webDir, 'dist');
 const isDev = process.argv.includes('--dev');
 
-// Clean dist/
-if (existsSync(distDir)) rmSync(distDir, { recursive: true });
-mkdirSync(distDir, { recursive: true });
+// Clean dist/ (preserve wasm/ which is built separately)
+if (existsSync(distDir)) {
+    for (const entry of readdirSync(distDir)) {
+        if (entry !== 'wasm') {
+            rmSync(join(distDir, entry), { recursive: true, force: true });
+        }
+    }
+}
 
 // Build JS bundle
 await esbuild.build({
