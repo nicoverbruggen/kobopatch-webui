@@ -136,6 +136,17 @@ import JSZip from 'jszip';
 
     let currentNavLabels = NAV_DEFAULT;
 
+    const stepHistory = [stepConnect];
+
+    function pushStep(step) {
+        stepHistory.push(step);
+    }
+
+    function popStep() {
+        stepHistory.pop();
+        return stepHistory[stepHistory.length - 1];
+    }
+
     function setNavLabels(labels) {
         currentNavLabels = labels;
         const ol = $q('ol', stepNav);
@@ -147,9 +158,12 @@ import JSZip from 'jszip';
         }
     }
 
-    function showStep(step) {
+    function showStep(step, updateHistory = true) {
         for (const s of allSteps) {
             s.hidden = (s !== step);
+        }
+        if (updateHistory) {
+            stepHistory[stepHistory.length - 1] = step;
         }
     }
 
@@ -845,7 +859,7 @@ import JSZip from 'jszip';
             showBuildResult();
             await checkExistingTgz();
         } catch (err) {
-            showError('Build failed: ' + err.message, buildLog.textContent, stepPatches);
+            showError('Build failed: ' + err.message, buildLog.textContent);
         }
     });
 
@@ -883,7 +897,7 @@ import JSZip from 'jszip';
     });
 
     // --- Error / Retry ---
-    function showError(message, log, backStep) {
+    function showError(message, log) {
         errorMessage.textContent = message;
         if (log) {
             errorLog.textContent = log;
@@ -894,33 +908,30 @@ import JSZip from 'jszip';
         } else {
             errorLog.hidden = true;
         }
-        if (backStep) {
+
+        const hasBackStep = stepHistory[stepHistory.length - 1] === stepPatches;
+        if (hasBackStep) {
             errorTitle.textContent = 'The patch failed to apply';
             errorHint.hidden = false;
             btnErrorBack.hidden = false;
-            btnErrorBack._backStep = backStep;
             btnRetry.classList.add('danger');
         } else {
             errorTitle.textContent = 'Something went wrong';
             errorHint.hidden = true;
             btnErrorBack.hidden = true;
-            btnErrorBack._backStep = null;
             btnRetry.classList.remove('danger');
         }
         hideNav();
-        showStep(stepError);
+        pushStep(stepError);
+        showStep(stepError, false);
     }
 
     btnErrorBack.addEventListener('click', () => {
         btnErrorBack.hidden = true;
         btnRetry.classList.remove('danger');
+        const prev = popStep();
         showNav();
-        if (manualMode) {
-            setNavStep(2);
-            showStep(stepManualVersion);
-        } else {
-            goToModeSelection();
-        }
+        showStep(prev);
     });
 
     btnRetry.addEventListener('click', () => {

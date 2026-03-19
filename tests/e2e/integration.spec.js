@@ -903,9 +903,9 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#error-message')).toContainText('Build failed');
     await expect(page.locator('#btn-error-back')).toBeVisible();
 
-    // "Select different patches" should return to mode selection (auto mode)
+    // "Select different patches" should return to patches step
     await page.click('#btn-error-back');
-    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await expect(page.locator('#step-patches')).not.toBeHidden();
   });
 
   test('with device — real patch failure with Go Back (Allow rotation)', async ({ page }) => {
@@ -936,11 +936,9 @@ test.describe('Custom patches', () => {
     ]);
 
     if (doneOrError === 'error') {
-      // Build failed — "Select different patches" should return to mode selection
-      await expect(page.locator('#error-message')).toContainText('Build failed');
-      await expect(page.locator('#btn-error-back')).toBeVisible();
+      // Build failed — "Select different patches" should return to patches step
       await page.click('#btn-error-back');
-      await expect(page.locator('#step-mode')).not.toBeHidden();
+      await expect(page.locator('#step-patches')).not.toBeHidden();
     } else {
       // Build succeeded — check if the patch was skipped
       const logText = await page.locator('#build-log').textContent();
