@@ -54,11 +54,6 @@ var FIRMWARE_DOWNLOADS = {
 };
 
 /**
- * Supported firmware versions for patching (derived from FIRMWARE_DOWNLOADS).
- */
-const SUPPORTED_FIRMWARE = Object.keys(FIRMWARE_DOWNLOADS);
-
-/**
  * Get the firmware download URL for a given serial prefix and firmware version.
  * Returns null if no URL is available.
  */
@@ -153,8 +148,10 @@ class KoboDevice {
             ? serial.substring(0, 4)
             : serial.substring(0, 3);
         const model = KOBO_MODELS[serialPrefix] || 'Unknown Kobo (' + serial.substring(0, 4) + ')';
-        const isSupported = SUPPORTED_FIRMWARE.includes(firmware);
-        const isIncompatible = firmware.startsWith('5.');
+        const fwParts = firmware.split('.');
+        const fwMajor = parseInt(fwParts[0], 10) || 0;
+        const fwMinor = parseInt(fwParts[1], 10) || 0;
+        const isIncompatible = !(fwMajor === 4 && fwMinor >= 6);
 
         return {
             serial,
@@ -162,7 +159,6 @@ class KoboDevice {
             firmware,
             hardwareId,
             model,
-            isSupported,
             isIncompatible,
         };
     }
