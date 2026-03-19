@@ -6,7 +6,7 @@ export const TL = {
     BUTTON: {
         RESTORE_ORIGINAL: 'Restore Original Software',
         BUILD_PATCHED: 'Build Patched Software',
-        WRITE_TO_DEVICE: 'Write to Kobo',
+        WRITE_TO_KOBO: 'Write to Kobo',
         REMOVE_FROM_KOBO: 'Remove from Kobo',
         WRITING: 'Writing...',
         WRITTEN: 'Written',

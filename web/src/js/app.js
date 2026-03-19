@@ -799,7 +799,7 @@ import JSZip from 'jszip';
         btnWrite.hidden = manualMode;
         btnWrite.disabled = false;
         btnWrite.className = 'primary';
-        btnWrite.textContent = TL.BUTTON.WRITE_TO_DEVICE;
+        btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
         btnDownload.disabled = false;
         writeInstructions.hidden = true;
         downloadInstructions.hidden = true;
@@ -872,7 +872,7 @@ import JSZip from 'jszip';
             writeInstructions.hidden = false;
         } catch (err) {
             btnWrite.disabled = false;
-            btnWrite.textContent = TL.BUTTON.WRITE_TO_DEVICE;
+            btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             showError(TL.STATUS.WRITE_FAILED + err.message);
         }
     });
