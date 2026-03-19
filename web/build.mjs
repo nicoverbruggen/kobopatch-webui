@@ -2,8 +2,10 @@ import esbuild from 'esbuild';
 import { cpSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 import { createHash } from 'crypto';
+import { execSync } from 'child_process';
 
 const webDir = import.meta.dirname;
+const repoDir = join(webDir, '..');
 const srcDir = join(webDir, 'src');
 const distDir = join(webDir, 'dist');
 const isDev = process.argv.includes('--dev');
@@ -73,6 +75,25 @@ if (existsSync(workerSrc)) {
     writeFileSync(join(distDir, 'js', 'patch-worker.js'), workerContent);
 }
 
+// Get git version string
+let versionStr = 'unknown';
+let versionHash = 'unknown';
+try {
+    const hash = String(execSync('git rev-parse --short HEAD', { cwd: repoDir })).trim();
+    versionHash = hash;
+
+    let tag = '';
+    try {
+        tag = String(execSync('git describe --tags --exact-match', { cwd: repoDir, stdio: 'ignore' })).trim();
+    } catch {}
+    if (tag) {
+        versionStr = tag;
+    } else {
+        const dirty = String(execSync('git status --porcelain', { cwd: repoDir })).trim();
+        versionStr = dirty ? `${hash} (D)` : hash;
+    }
+} catch {}
+
 // Generate cache-busted index.html
 const bundleContent = readFileSync(join(distDir, 'bundle.js'));
 const bundleHash = createHash('md5').update(bundleContent).digest('hex').slice(0, 8);
@@ -96,9 +117,16 @@ html = html.replace(
     `css/style.css?h=${cssHash}`
 );
 
+// Inject version string and link
+html = html.replace('<span id="commit-hash"></span>', `<span id="commit-hash">${versionStr}</span>`);
+html = html.replace(
+    'href="https://github.com/nicoverbruggen/kobopatch-webui"',
+    `href="https://github.com/nicoverbruggen/kobopatch-webui/commit/${versionHash}"`
+);
+
 writeFileSync(join(distDir, 'index.html'), html);
 
-console.log(`Built to ${distDir} (bundle: ${bundleHash}, css: ${cssHash})`);
+console.log(`Built to ${distDir} (bundle: ${bundleHash}, css: ${cssHash}, version: ${versionStr})`);
 
 // Dev server mode
 if (isDev) {
