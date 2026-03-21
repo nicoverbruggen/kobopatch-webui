@@ -21,6 +21,7 @@ test.afterEach(() => {
 test.describe('NickelMenu', () => {
   test('no device — install with config via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
 
     await goToManualMode(page);
 
@@ -97,6 +98,7 @@ test.describe('NickelMenu', () => {
 
   test('no device — install with KOReader via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
     test.skip(!hasKoreaderAssets(), 'KOReader assets not found (run koreader/setup.sh)');
 
     await goToManualMode(page);
@@ -143,6 +145,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with KOReader writes files to device', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
     test.skip(!hasKoreaderAssets(), 'KOReader assets not found (run koreader/setup.sh)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
@@ -226,6 +229,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with config and write to Kobo', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
 

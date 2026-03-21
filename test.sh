@@ -26,6 +26,11 @@ if [ ! -f "$SCRIPT_DIR/web/src/koreader/koreader-kobo.zip" ]; then
     "$SCRIPT_DIR/koreader/setup.sh"
 fi
 
+# Set up Readerly assets if not present.
+if [ ! -f "$SCRIPT_DIR/web/src/readerly/KF_Readerly.zip" ]; then
+    "$SCRIPT_DIR/readerly/setup.sh"
+fi
+
 echo "=== Installing web dependencies ==="
 cd "$SCRIPT_DIR/web" && npm install
 

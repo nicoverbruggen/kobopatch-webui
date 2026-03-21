@@ -52,8 +52,7 @@ if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
 fi
 
 # Set up NickelMenu assets if not present.
-NM_DIR="$SRC_DIR/nickelmenu"
-if [ ! -f "$NM_DIR/NickelMenu.zip" ] || [ ! -f "$NM_DIR/kobo-config.zip" ]; then
+if [ ! -f "$SRC_DIR/nickelmenu/NickelMenu.zip" ]; then
     echo "Setting up NickelMenu assets..."
     "$PROJECT_ROOT/nickelmenu/setup.sh"
 fi
@@ -62,6 +61,12 @@ fi
 if [ ! -f "$SRC_DIR/koreader/koreader-kobo.zip" ]; then
     echo "Setting up KOReader assets..."
     "$PROJECT_ROOT/koreader/setup.sh"
+fi
+
+# Set up Readerly assets if not present.
+if [ ! -f "$SRC_DIR/readerly/KF_Readerly.zip" ]; then
+    echo "Setting up Readerly assets..."
+    "$PROJECT_ROOT/readerly/setup.sh"
 fi
 
 # Install dependencies and browser.
