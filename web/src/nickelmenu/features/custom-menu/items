@@ -1,18 +1,5 @@
-# Menu button customization (uncommented by "Hide certain navigation tabs" option)
-#experimental :menu_main_15505_0_enabled: 1
-#experimental :menu_main_15505_1_label: Books
-#experimental :menu_main_15505_2_enabled: 1
-#experimental :menu_main_15505_2_label: Stats
-#experimental :menu_main_15505_3_enabled: 0
-#experimental :menu_main_15505_3_label: Notes
-#experimental :menu_main_15505_4_enabled: 0
-#experimental :menu_main_15505_5_enabled: 1
-#experimental :menu_main_15505_default: 1
-#experimental :menu_main_15505_enabled: 1
-
-# The main NickelMenu item is now called Tweak
-#experimental :menu_main_15505_label :Tweak
-#experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png
+experimental :menu_main_15505_label :Tweak
+experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png
 
 menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver
       chain_failure : skip : 3
