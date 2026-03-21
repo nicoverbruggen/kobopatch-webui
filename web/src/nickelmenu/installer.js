@@ -113,10 +113,12 @@ export class NickelMenuInstaller {
         const tgz = await this.getKoboRootTgz();
         await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
 
-        progressFn('Updating Kobo eReader.conf...');
-        await this.updateEReaderConf(device);
-
         if (features.length > 0) {
+            // Features require the ignore block in the config, write it first
+            progressFn('Updating Kobo eReader.conf...');
+            await this.updateEReaderConf(device);
+
+            // After that, collect all practical files that need to be copied
             const files = await this.collectFiles(features, progressFn);
             progressFn('Writing files to Kobo...');
 
