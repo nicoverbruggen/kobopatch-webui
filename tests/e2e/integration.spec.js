@@ -430,6 +430,49 @@ test.describe('NickelMenu', () => {
     // Screensaver should NOT be removed (unchecked)
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
   });
+
+  test('with device — remove NickelMenu, go back, checklist preserved', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      hasKoreader: true,
+      hasReaderlyFonts: true,
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('#btn-mode-next');
+
+    // NickelMenu configure step
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Select remove
+    await page.click('input[name="nm-option"][value="remove"]');
+
+    // Uninstall checkboxes should appear
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).toBeChecked();
+
+    // Uncheck one option
+    await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
+
+    await page.click('#btn-nm-next');
+
+    // Review step
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-summary')).toContainText('removal');
+
+    // Go back
+    await page.click('#btn-nm-review-back');
+
+    // Checklist should still be visible with preserved state
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
+    // Readerly should still be unchecked (state preserved)
+    await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).not.toBeChecked();
+  });
 });
 
 // ============================================================

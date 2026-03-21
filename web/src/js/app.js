@@ -618,7 +618,6 @@ import JSZip from 'jszip';
     }
 
     function goToNickelMenuConfig() {
-        checkNickelMenuInstalled();
         renderFeatureCheckboxes();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmConfigOptions.hidden = !currentOption || currentOption.value !== 'preset';
@@ -713,6 +712,11 @@ import JSZip from 'jszip';
                 nmProgress.textContent = 'Removing NickelMenu assets...';
                 try {
                     await device.removeEntry(['.adds', 'nm'], { recursive: true });
+                } catch {
+                    // ignore — folder may already be gone
+                }
+                try {
+                    await device.removeEntry(['.adds', 'scripts'], { recursive: true });
                 } catch {
                     // ignore — folder may already be gone
                 }
