@@ -23,5 +23,6 @@ echo "=== Running E2E tests (Playwright) ==="
 cd "$SCRIPT_DIR/tests/e2e"
 if [ ! -d "node_modules" ]; then
     npm install
+    npx playwright install --with-deps
 fi
 npm test
