@@ -537,7 +537,8 @@ import JSZip from 'jszip';
         if (!manualMode && device.directoryHandle) {
             try {
                 const addsDir = await device.directoryHandle.getDirectoryHandle('.adds');
-                await addsDir.getDirectoryHandle('nm');
+                const nmDir = await addsDir.getDirectoryHandle('nm');
+                await nmDir.getFileHandle('items');
                 removeRadio.disabled = false;
                 removeOption.classList.remove('nm-option-disabled');
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
@@ -709,7 +710,13 @@ import JSZip from 'jszip';
                 nmProgress.textContent = 'Writing KoboRoot.tgz...';
                 const tgz = await nmInstaller.getKoboRootTgz();
                 await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
-                nmProgress.textContent = 'Marking NickelMenu for removal...';
+                nmProgress.textContent = 'Removing NickelMenu assets...';
+                try {
+                    await device.removeEntry(['.adds', 'nm'], { recursive: true });
+                } catch {
+                    // ignore — folder may already be gone
+                }
+                nmProgress.textContent = 'Creating uninstall marker...';
                 await device.writeFile(['.adds', 'nm', 'uninstall'], new Uint8Array(0));
 
                 const featuresToRemove = getSelectedUninstallFeatures();
