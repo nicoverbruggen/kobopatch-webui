@@ -229,6 +229,31 @@ The WASM patcher performs several checks on each patched binary before including
 - **ELF header validation** — verifies the magic bytes (`\x7fELF`), 32-bit class, little-endian encoding, and ARM machine type (`0x28`) are intact after patching.
 - **Archive consistency check** — after building the output tar.gz, re-reads the entire archive and verifies the sum of entry sizes matches what was written.
 
+## Analytics (optional)
+
+The app supports optional, privacy-focused analytics via [Umami](https://umami.is). Analytics are disabled by default and only activate when two environment variables are set on the server:
+
+```bash
+UMAMI_WEBSITE_ID=your-website-id
+UMAMI_SCRIPT_URL=https://your-umami-instance/script.js
+```
+
+When enabled, the server injects the Umami tracking script into `index.html` at runtime. A "Privacy" link appears in the footer with a modal explaining what is tracked.
+
+**What is tracked** (no personal identifiers):
+
+- **Flow start** — whether the user connected a Kobo directly (`connect`) or chose manual download (`manual`)
+- **NickelMenu option** — which option was selected (`sample`, `nickelmenu-only`, or `remove`)
+- **Flow end** — how the process completed (`nm-write`, `nm-download`, `nm-remove`, `patches-write`, `patches-download`, `restore-write`, `restore-download`)
+
+**What is not tracked**: device model, serial number, firmware version, IP address, browsing behaviour. Umami is cookie-free and GDPR/CCPA/PECR compliant.
+
+For local installs via `./serve-locally.sh`, analytics is disabled unless the environment variables are set:
+
+```bash
+UMAMI_WEBSITE_ID=... UMAMI_SCRIPT_URL=... ./serve-locally.sh
+```
+
 ## Credits
 
 Built on [kobopatch](https://github.com/pgaskin/kobopatch) and [NickelMenu](https://pgaskin.net/NickelMenu/) by pgaskin. Uses [JSZip](https://stuk.github.io/jszip/) for client-side ZIP handling and [esbuild](https://esbuild.github.io/) for bundling. Software patches and discussion on the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247).

@@ -1,9 +1,35 @@
 import { createServer } from 'node:http';
-import { createReadStream, statSync, existsSync } from 'node:fs';
+import { createReadStream, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const DIST = join(import.meta.dirname, 'dist');
 const PORT = process.env.PORT || 8888;
+
+const UMAMI_WEBSITE_ID = process.env.UMAMI_WEBSITE_ID || '';
+const UMAMI_SCRIPT_URL = process.env.UMAMI_SCRIPT_URL || '';
+const analyticsEnabled = !!(UMAMI_WEBSITE_ID && UMAMI_SCRIPT_URL);
+
+// Pre-build the analytics snippet (injected before </head> in index.html)
+let analyticsSnippet = '';
+if (analyticsEnabled) {
+    analyticsSnippet =
+        `    <script>window.__ANALYTICS_ENABLED=true</script>\n` +
+        `    <script defer src="${UMAMI_SCRIPT_URL}" data-website-id="${UMAMI_WEBSITE_ID}"></script>\n`;
+}
+
+// Cache the processed index.html at startup
+let cachedIndexHtml = null;
+function getIndexHtml() {
+    if (cachedIndexHtml) return cachedIndexHtml;
+    const indexPath = join(DIST, 'index.html');
+    if (!existsSync(indexPath)) return null;
+    let html = readFileSync(indexPath, 'utf-8');
+    if (analyticsSnippet) {
+        html = html.replace('</head>', analyticsSnippet + '</head>');
+    }
+    cachedIndexHtml = html;
+    return cachedIndexHtml;
+}
 
 const MIME = {
     '.html': 'text/html',
@@ -26,6 +52,16 @@ createServer((req, res) => {
     if (filePath.endsWith('/')) filePath = join(filePath, 'index.html');
     if (!extname(filePath) && existsSync(filePath + '/index.html')) filePath += '/index.html';
 
+    // Serve processed index.html with analytics injection
+    if (filePath.endsWith('index.html')) {
+        const html = getIndexHtml();
+        if (html) {
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(html);
+            return;
+        }
+    }
+
     try {
         const stat = statSync(filePath);
         if (!stat.isFile()) throw new Error();
@@ -36,5 +72,5 @@ createServer((req, res) => {
         res.end('Not found');
     }
 }).listen(PORT, () => {
-    console.log(`Serving web/dist on http://localhost:${PORT}`);
+    console.log(`Serving web/dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
 });

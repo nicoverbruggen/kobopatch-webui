@@ -385,6 +385,8 @@
     <footer class="site-footer">
         <p>
             <a href="#" id="btn-how-it-works">How does this work?</a>
+            <span id="privacy-link-separator" hidden>&nbsp;&middot;&nbsp;</span>
+            <a href="#" id="btn-privacy" hidden>Privacy</a>
             &nbsp;&middot;&nbsp;
             <a id="commit-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank">Version <span id="commit-hash"></span></a>
             <br/>
@@ -457,6 +459,42 @@
                     NickelMenu and custom patches modify system files, so you should know how to
                     <a href="https://help.kobo.com/hc/en-us/articles/360017605314" target="_blank">manually reset your Kobo</a>
                     if needed.
+                </p>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="privacy-dialog" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Privacy</h2>
+                <button id="btn-close-privacy" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    This website uses <a href="https://umami.is" target="_blank">Umami</a>, a privacy-focused
+                    analytics tool, to help improve the experience. Analytics are only enabled on the hosted
+                    version of this site, not on local or self-hosted installs.
+                </p>
+
+                <h3>What is tracked</h3>
+                <p>
+                    A small number of anonymous events are collected to understand how the tool is used:
+                </p>
+                <ul>
+                    <li><strong>How the flow was started</strong> &mdash; whether you connected a Kobo
+                        directly or chose the manual download option.</li>
+                    <li><strong>Which NickelMenu option was selected</strong> &mdash; preset installation,
+                        NickelMenu only, or removal.</li>
+                    <li><strong>How the flow ended</strong> &mdash; whether files were written to the
+                        device or downloaded as a ZIP.</li>
+                </ul>
+
+                <h3>What is not tracked</h3>
+                <p>
+                    No personal identifiers are collected. No cookies are used. Your device model, serial
+                    number, firmware version, IP address, and browsing behaviour are never recorded by the
+                    analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
                 </p>
             </div>
         </div>

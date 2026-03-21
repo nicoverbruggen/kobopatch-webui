@@ -1095,7 +1095,8 @@ button:focus-visible {
     margin-bottom: 0.75rem;
 }
 
-.modal-body ol {
+.modal-body ol,
+.modal-body ul {
     margin: 0 0 0.75rem 1.25rem;
 }
 

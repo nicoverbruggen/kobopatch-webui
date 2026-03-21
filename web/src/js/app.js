@@ -4,6 +4,7 @@ import { PatchUI, scanAvailablePatches } from './patch-ui.js';
 import { KoboPatchRunner } from './patch-runner.js';
 import { NickelMenuInstaller } from './nickelmenu.js';
 import { TL } from './strings.js';
+import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import JSZip from 'jszip';
 
 (() => {
@@ -252,6 +253,7 @@ import JSZip from 'jszip';
     // "Download files manually" — enter manual mode, go to mode selection
     btnManual.addEventListener('click', () => {
         manualMode = true;
+        track('flow-start', { method: 'manual' });
         goToModeSelection();
     });
 
@@ -313,6 +315,7 @@ import JSZip from 'jszip';
     }
 
     btnConnect.addEventListener('click', async () => {
+        track('flow-start', { method: 'connect' });
         try {
             const info = await device.connect();
 
@@ -535,11 +538,7 @@ import JSZip from 'jszip';
         const selected = $q('input[name="nm-option"]:checked', stepNickelMenu);
         if (!selected) return;
         nickelMenuOption = selected.value;
-
-        if (nickelMenuOption === 'remove') {
-            goToNmReview();
-            return;
-        }
+        track('nm-option', { option: nickelMenuOption });
 
         goToNmReview();
     });
@@ -644,9 +643,11 @@ import JSZip from 'jszip';
         if (mode === 'remove') {
             nmDoneStatus.textContent = TL.STATUS.NM_REMOVED_ON_REBOOT;
             $('nm-reboot-instructions').hidden = false;
+            track('flow-end', { result: 'nm-remove' });
         } else if (mode === 'written') {
             nmDoneStatus.textContent = TL.STATUS.NM_INSTALLED;
             $('nm-write-instructions').hidden = false;
+            track('flow-end', { result: 'nm-write' });
         } else {
             nmDoneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
             triggerDownload(resultNmZip, 'NickelMenu-install.zip', 'application/zip');
@@ -655,6 +656,7 @@ import JSZip from 'jszip';
             const showConfStep = nickelMenuOption === 'sample';
             $('nm-download-conf-step').hidden = !showConfStep;
             $('nm-download-reboot-step').hidden = !showConfStep;
+            track('flow-end', { result: 'nm-download' });
         }
 
         setNavStep(5);
@@ -885,6 +887,7 @@ import JSZip from 'jszip';
             btnWrite.textContent = TL.BUTTON.WRITTEN;
             btnWrite.className = 'btn-success';
             writeInstructions.hidden = false;
+            track('flow-end', { result: isRestore ? 'restore-write' : 'patches-write' });
         } catch (err) {
             btnWrite.disabled = false;
             btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
@@ -898,6 +901,7 @@ import JSZip from 'jszip';
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
         $('download-device-name').textContent = KoboModels[selectedPrefix] || 'Kobo';
+        track('flow-end', { result: isRestore ? 'restore-download' : 'patches-download' });
     });
 
     // --- Error / Retry ---
@@ -970,5 +974,22 @@ import JSZip from 'jszip';
     });
     dialog.addEventListener('click', (e) => {
         if (e.target === dialog) dialog.close();
+    });
+
+    // --- Privacy dialog (only visible when analytics is enabled) ---
+    if (analyticsEnabled()) {
+        $('btn-privacy').hidden = false;
+        $('privacy-link-separator').hidden = false;
+    }
+    const privacyDialog = $('privacy-dialog');
+    $('btn-privacy').addEventListener('click', (e) => {
+        e.preventDefault();
+        privacyDialog.showModal();
+    });
+    $('btn-close-privacy').addEventListener('click', () => {
+        privacyDialog.close();
+    });
+    privacyDialog.addEventListener('click', (e) => {
+        if (e.target === privacyDialog) privacyDialog.close();
     });
 })();
