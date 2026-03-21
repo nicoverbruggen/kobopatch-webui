@@ -116,10 +116,14 @@ export class NickelMenuInstaller {
         if (features.length > 0) {
             const files = await this.collectFiles(features, progressFn);
             progressFn('Writing files to Kobo...');
-            for (const { path, data } of files) {
+
+            const totalFiles = files.length;
+            for (let i = 0; i < files.length; i++) {
+                const { path, data } = files[i];
                 const pathArray = path.split('/');
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 await device.writeFile(pathArray, fileData);
+                progressFn(`Writing files to Kobo (${i + 1} of ${totalFiles})...`);
             }
 
             progressFn('Updating Kobo eReader.conf...');

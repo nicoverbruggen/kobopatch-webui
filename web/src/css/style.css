@@ -326,7 +326,16 @@ h2 {
 }
 
 .nm-option-remove input[type="radio"] {
-    accent-color: var(--error-text);
+    accent-color: var(--error-text) !important;
+}
+
+#nm-uninstall-options {
+    padding: 0 0.25rem;
+    margin-left: 1.5rem;
+}
+
+#nm-uninstall-options input[type="checkbox"] {
+    accent-color: var(--error-text) !important;
 }
 
 /* NickelMenu config checkboxes */
