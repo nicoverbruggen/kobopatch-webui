@@ -1,17 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Integration test: downloads firmware and runs the full patching pipeline
-# with SHA1 checksum validation.
-#
-# Usage: ./test-integration.sh
-#
-# The firmware zip (~150MB) is cached in testdata/ to avoid re-downloading.
-
-FIRMWARE_VERSION="4.45.23646"
-FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-${FIRMWARE_VERSION}.zip"
-FIRMWARE_DIR="testdata"
-FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
+# Integration test: runs the full WASM patching pipeline with SHA1 checksum
+# validation against a real firmware zip.
 
 cd "$(dirname "$0")"
 
@@ -22,21 +13,11 @@ if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
     export PATH="$LOCAL_GO_DIR/bin:$PATH"
 fi
 
-# Download firmware if not cached.
+FIRMWARE_FILE="${FIRMWARE_ZIP:-$(cd .. && pwd)/tests/cached_assets/kobo-update-4.45.23646.zip}"
 if [ ! -f "$FIRMWARE_FILE" ]; then
-    echo "Downloading firmware ${FIRMWARE_VERSION} (~150MB)..."
-    mkdir -p "$FIRMWARE_DIR"
-    curl -fL --progress-bar -o "$FIRMWARE_FILE.tmp" "$FIRMWARE_URL"
-    # Validate it's actually a zip file.
-    if ! file "$FIRMWARE_FILE.tmp" | grep -q "Zip archive"; then
-        echo "ERROR: downloaded file is not a valid zip"
-        rm -f "$FIRMWARE_FILE.tmp"
-        exit 1
-    fi
-    mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
-    echo "Downloaded to $FIRMWARE_FILE"
-else
-    echo "Using cached firmware: $FIRMWARE_FILE"
+    echo "ERROR: Firmware zip not found at $FIRMWARE_FILE"
+    echo "Run ./test.sh from the project root to download test assets."
+    exit 1
 fi
 
 # Find the WASM test executor.

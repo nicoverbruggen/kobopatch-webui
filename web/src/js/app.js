@@ -23,15 +23,26 @@ import JSZip from 'jszip';
     let selectedMode = null;        // 'nickelmenu' | 'patches'
     let nickelMenuOption = null;    // 'sample' | 'nickelmenu-only' | 'remove'
 
-    // Fetch data eagerly so it's ready when needed.
-    const softwareUrlsReady = loadSoftwareUrls();
-    const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
-
     // --- Helpers ---
 
     const $ = (id) => document.getElementById(id);
     const $q = (sel, ctx = document) => ctx.querySelector(sel);
     const $qa = (sel, ctx = document) => ctx.querySelectorAll(sel);
+
+    // Fetch data eagerly so it's ready when needed.
+    const softwareUrlsReady = loadSoftwareUrls();
+    const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
+
+    // Show KOReader version in the UI (best-effort, non-blocking).
+    fetch('/koreader/release.json').then(r => r.ok ? r.json() : null).then(meta => {
+        if (meta && meta.version) {
+            $('koreader-version').textContent = meta.version;
+        } else {
+            $('nm-cfg-koreader-label').style.display = 'none';
+        }
+    }).catch(() => {
+        $('nm-cfg-koreader-label').style.display = 'none';
+    });
 
     function formatMB(bytes) {
         return (bytes / 1024 / 1024).toFixed(1) + ' MB';
@@ -502,6 +513,7 @@ import JSZip from 'jszip';
             screensaver: $q('input[name="nm-cfg-screensaver"]').checked,
             simplifyTabs: $q('input[name="nm-cfg-simplify-tabs"]').checked,
             simplifyHome: $q('input[name="nm-cfg-simplify-home"]').checked,
+            koreader: $q('input[name="nm-cfg-koreader"]').checked,
         };
     }
 
@@ -558,6 +570,7 @@ import JSZip from 'jszip';
             if (cfg.screensaver) items.push(TL.NICKEL_MENU_ITEMS.SCREENSAVER);
             if (cfg.simplifyTabs) items.push(TL.NICKEL_MENU_ITEMS.SIMPLIFY_TABS);
             if (cfg.simplifyHome) items.push(TL.NICKEL_MENU_ITEMS.SIMPLIFY_HOME);
+            if (cfg.koreader) items.push(TL.NICKEL_MENU_ITEMS.KOREADER);
             for (const text of items) {
                 const li = document.createElement('li');
                 li.textContent = text;
@@ -638,8 +651,10 @@ import JSZip from 'jszip';
             nmDoneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
             triggerDownload(resultNmZip, 'NickelMenu-install.zip', 'application/zip');
             $('nm-download-instructions').hidden = false;
-            // Show eReader.conf step only when sample config is included
-            $('nm-download-conf-step').hidden = nickelMenuOption !== 'sample';
+            // Show eReader.conf + reboot steps only when sample config is included
+            const showConfStep = nickelMenuOption === 'sample';
+            $('nm-download-conf-step').hidden = !showConfStep;
+            $('nm-download-reboot-step').hidden = !showConfStep;
         }
 
         setNavStep(5);

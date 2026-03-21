@@ -2,6 +2,29 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CACHED_ASSETS="$SCRIPT_DIR/tests/cached_assets"
+
+FIRMWARE_FILE="$CACHED_ASSETS/kobo-update-4.45.23646.zip"
+FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip"
+
+# Check if firmware needs to be downloaded.
+if [ ! -f "$FIRMWARE_FILE" ]; then
+    echo "Firmware test asset is not cached locally (~150 MB)."
+    echo ""
+    read -rp "Download it now? Tests that need the firmware will be skipped otherwise. [y/N] " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        mkdir -p "$CACHED_ASSETS"
+        echo "Downloading firmware..."
+        curl -fL --progress-bar -o "$FIRMWARE_FILE.tmp" "$FIRMWARE_URL"
+        mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
+        echo ""
+    fi
+fi
+
+# Set up KOReader assets if not present (served by the app, not a test-only asset).
+if [ ! -f "$SCRIPT_DIR/web/src/koreader/koreader-kobo.zip" ]; then
+    "$SCRIPT_DIR/koreader/setup.sh"
+fi
 
 echo "=== Installing web dependencies ==="
 cd "$SCRIPT_DIR/web" && npm install
@@ -16,7 +39,11 @@ echo "=== Building WASM ==="
 
 echo ""
 echo "=== Running WASM integration test ==="
-"$SCRIPT_DIR/kobopatch-wasm/test-integration.sh"
+if [ -f "$FIRMWARE_FILE" ]; then
+    "$SCRIPT_DIR/kobopatch-wasm/test-integration.sh"
+else
+    echo "Skipped (firmware not downloaded)"
+fi
 
 echo ""
 echo "=== Running E2E tests (Playwright) ==="
@@ -25,4 +52,5 @@ if [ ! -d "node_modules" ]; then
     npm install
     npx playwright install --with-deps
 fi
+
 npm test

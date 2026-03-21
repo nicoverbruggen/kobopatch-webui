@@ -16,11 +16,13 @@ import JSZip from 'jszip';
  *   screensaver: bool    — include custom screensaver
  *   simplifyTabs: bool   — comment out experimental tab items in config
  *   simplifyHome: bool   — append homescreen simplification lines
+ *   koreader: bool       — download and install latest KOReader from GitHub
  */
 class NickelMenuInstaller {
     constructor() {
         this.nickelMenuZip = null;  // JSZip instance
         this.koboConfigZip = null;  // JSZip instance
+        this.koreaderZip = null;    // JSZip instance
     }
 
     /**
@@ -45,12 +47,62 @@ class NickelMenuInstaller {
     }
 
     /**
+     * Download and cache KOReader for Kobo (served from the app's own domain
+     * to avoid CORS issues with GitHub release downloads).
+     * @param {function} progressFn
+     */
+    async loadKoreader(progressFn) {
+        if (this.koreaderZip) return;
+
+        progressFn('Fetching KOReader release info...');
+        const metaResp = await fetch('/koreader/release.json');
+        if (!metaResp.ok) throw new Error('KOReader assets not available (run koreader/setup.sh)');
+        const meta = await metaResp.json();
+
+        progressFn('Downloading KOReader ' + meta.version + '...');
+        const zipResp = await fetch('/koreader/koreader-kobo.zip');
+        if (!zipResp.ok) throw new Error('Failed to download KOReader: HTTP ' + zipResp.status);
+        this.koreaderZip = await JSZip.loadAsync(await zipResp.arrayBuffer());
+    }
+
+    /**
      * Get the KoboRoot.tgz from the NickelMenu zip.
      */
     async getKoboRootTgz() {
         const file = this.nickelMenuZip.file('KoboRoot.tgz');
         if (!file) throw new Error('KoboRoot.tgz not found in NickelMenu.zip');
         return new Uint8Array(await file.async('arraybuffer'));
+    }
+
+    /**
+     * Get KOReader files from the downloaded zip, remapped to .adds/koreader/.
+     * The zip contains a top-level koreader/ directory that needs to be placed
+     * under .adds/ on the device. Also includes a NickelMenu launcher config.
+     * Returns { path: string[], data: Uint8Array } entries.
+     */
+    async getKoreaderFiles() {
+        const files = [];
+        for (const [relativePath, zipEntry] of Object.entries(this.koreaderZip.files)) {
+            if (zipEntry.dir) continue;
+            // Remap koreader/... to .adds/koreader/...
+            const devicePath = relativePath.startsWith('koreader/')
+                ? '.adds/' + relativePath
+                : '.adds/koreader/' + relativePath;
+            const data = new Uint8Array(await zipEntry.async('arraybuffer'));
+            files.push({
+                path: devicePath.split('/'),
+                data,
+            });
+        }
+
+        // Add NickelMenu launcher config
+        const launcherConfig = 'menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh\n';
+        files.push({
+            path: ['.adds', 'nm', 'koreader'],
+            data: new TextEncoder().encode(launcherConfig),
+        });
+
+        return files;
     }
 
     /**
@@ -135,6 +187,16 @@ class NickelMenuInstaller {
             await device.writeFile(path, data);
         }
 
+        // Install KOReader if selected
+        if (cfg.koreader) {
+            await this.loadKoreader(progressFn);
+            progressFn('Writing KOReader files...');
+            const koreaderFiles = await this.getKoreaderFiles();
+            for (const { path, data } of koreaderFiles) {
+                await device.writeFile(path, data);
+            }
+        }
+
         // Modify Kobo eReader.conf
         progressFn('Updating Kobo eReader.conf...');
         await this.updateEReaderConf(device);
@@ -192,6 +254,16 @@ class NickelMenuInstaller {
             const configFiles = await this.getConfigFiles(cfg);
             for (const { path, data } of configFiles) {
                 zip.file(path.join('/'), data);
+            }
+
+            // Include KOReader if selected
+            if (cfg.koreader) {
+                await this.loadKoreader(progressFn);
+                progressFn('Adding KOReader to package...');
+                const koreaderFiles = await this.getKoreaderFiles();
+                for (const { path, data } of koreaderFiles) {
+                    zip.file(path.join('/'), data);
+                }
             }
         }
 

@@ -55,5 +55,6 @@ export const TL = {
         SCREENSAVER: 'Custom screensaver',
         SIMPLIFY_TABS: 'Simplified tab menu',
         SIMPLIFY_HOME: 'Simplified homescreen',
+        KOREADER: 'KOReader',
     },
 };

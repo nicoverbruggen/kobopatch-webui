@@ -11,7 +11,7 @@ set -euo pipefail
 #
 # Prerequisites:
 #   - kobopatch.wasm built (run kobopatch-wasm/build.sh first)
-#   - Firmware zip cached at kobopatch-wasm/testdata/ (downloaded automatically)
+#   - Test assets cached in tests/cached_assets/ (run ./test.sh to download)
 #   - NickelMenu assets in web/src/nickelmenu/ (set up automatically)
 
 cd "$(dirname "$0")"
@@ -45,11 +45,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-FIRMWARE_VERSION="4.45.23646"
-FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-${FIRMWARE_VERSION}.zip"
-FIRMWARE_DIR="$PROJECT_ROOT/kobopatch-wasm/testdata"
-FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
-
 # Check WASM is built.
 if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
     echo "ERROR: kobopatch.wasm not found. Run kobopatch-wasm/build.sh first."
@@ -63,20 +58,10 @@ if [ ! -f "$NM_DIR/NickelMenu.zip" ] || [ ! -f "$NM_DIR/kobo-config.zip" ]; then
     "$PROJECT_ROOT/nickelmenu/setup.sh"
 fi
 
-# Download firmware if not cached.
-if [ ! -f "$FIRMWARE_FILE" ]; then
-    echo "Downloading firmware ${FIRMWARE_VERSION} (~150MB)..."
-    mkdir -p "$FIRMWARE_DIR"
-    curl -fL --progress-bar -o "$FIRMWARE_FILE.tmp" "$FIRMWARE_URL"
-    if ! file "$FIRMWARE_FILE.tmp" | grep -q "Zip archive"; then
-        echo "ERROR: downloaded file is not a valid zip"
-        rm -f "$FIRMWARE_FILE.tmp"
-        exit 1
-    fi
-    mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
-    echo "Downloaded to $FIRMWARE_FILE"
-else
-    echo "Using cached firmware: $FIRMWARE_FILE"
+# Set up KOReader assets if not present.
+if [ ! -f "$SRC_DIR/koreader/koreader-kobo.zip" ]; then
+    echo "Setting up KOReader assets..."
+    "$PROJECT_ROOT/koreader/setup.sh"
 fi
 
 # Install dependencies and browser.
@@ -85,5 +70,4 @@ npx playwright install chromium
 
 # Run the tests.
 echo "Running E2E integration tests..."
-FIRMWARE_ZIP="$FIRMWARE_FILE" \
-    npx playwright test "${PLAYWRIGHT_ARGS[@]}"
+npx playwright test "${PLAYWRIGHT_ARGS[@]}"

@@ -56,22 +56,31 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|nickelmenu/)'; then
+          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|nickelmenu/|koreader/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Full integration test (WASM)
+      - name: Download test firmware
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
-          cd kobopatch-wasm
-          ./test-integration.sh
+          mkdir -p tests/cached_assets
+          echo "Downloading firmware..."
+          curl -fL --progress-bar -o tests/cached_assets/kobo-update-4.45.23646.zip \
+            https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip
+
+      - name: Full integration test (WASM)
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        run: kobopatch-wasm/test-integration.sh
 
       - name: Set up NickelMenu assets
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: |
-          nickelmenu/setup.sh
+        run: nickelmenu/setup.sh
+
+      - name: Set up KOReader assets
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        run: koreader/setup.sh
 
       - name: Full integration test (Playwright)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'

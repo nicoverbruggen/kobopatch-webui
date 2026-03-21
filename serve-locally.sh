@@ -12,6 +12,11 @@ if [ ! -f "$SRC_DIR/nickelmenu/NickelMenu.zip" ]; then
     "$SCRIPT_DIR/nickelmenu/setup.sh"
 fi
 
+if [ ! -f "$SRC_DIR/koreader/koreader-kobo.zip" ]; then
+    echo "KOReader assets not found, downloading..."
+    "$SCRIPT_DIR/koreader/setup.sh"
+fi
+
 echo "Building JS bundle..."
 cd "$WEB_DIR"
 npm install --silent

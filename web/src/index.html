@@ -191,6 +191,13 @@
                         <span class="nm-config-desc">Adds the Readerly font family. These fonts are optically similar to Bookerly. When you are reading a book, you will be able to select this font from the dropdown as "KF Readerly".</span>
                     </div>
                 </label>
+                <label class="nm-config-item" id="nm-cfg-koreader-label">
+                    <input type="checkbox" name="nm-cfg-koreader">
+                    <div class="nm-config-text">
+                        <span>Install KOReader <span id="koreader-version"></span> (optional)</span>
+                        <span class="nm-config-desc">Installs <a href="https://koreader.rocks" target="_blank">KOReader</a>, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more.</span>
+                    </div>
+                </label>
                 <label class="nm-config-item">
                     <input type="checkbox" name="nm-cfg-simplify-tabs">
                     <div class="nm-config-text">
@@ -269,12 +276,12 @@
             <div id="nm-download-instructions" class="install-instructions" hidden>
                 <ol class="install-steps">
                     <li>Connect your Kobo via USB so it appears as a removable drive.</li>
-                    <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure.</li>
-                    <li id="nm-download-conf-step" hidden>
-                        Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor.<br>
+                    <li id="nm-download-conf-step" hidden>Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor.<br>
                         Find the <code>[FeatureSettings]</code> section (or add it at the end) and add the following line:<br>
                         <code>ExcludeSyncFolders=(calibre|\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\..+)</code><br>
-                        This prevents the Kobo from discovering books in these folders during a sync.</li>
+                        This prevents the Kobo from incorrectly identifying certain files as books in your library.</li>
+                    <li id="nm-download-reboot-step" hidden><strong>Safely eject</strong> the Kobo, then power it off by holding the power button until it says "Powered off". Press the power button again to boot it back up. The config change takes effect after reboot. Reconnect the Kobo via USB afterwards.</li>
+                    <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure. Make sure hidden folders like <code>.kobo</code> and <code>.adds</code> are also copied.</li>
                     <li><strong>Safely eject</strong> the Kobo &mdash; do not just unplug the cable.</li>
                     <li>The device will reboot and install NickelMenu automatically.</li>
                 </ol>

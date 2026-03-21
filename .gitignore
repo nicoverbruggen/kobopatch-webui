@@ -8,7 +8,6 @@ kobopatch/
 # Kobopatch WASM build artifacts
 kobopatch-wasm/go/
 kobopatch-wasm/kobopatch-src/
-kobopatch-wasm/testdata/
 kobopatch-wasm/kobopatch.wasm
 kobopatch-wasm/wasm_exec.js
 
@@ -16,12 +15,16 @@ kobopatch-wasm/wasm_exec.js
 web/src/js/wasm_exec.js
 web/src/nickelmenu/NickelMenu.zip
 web/src/nickelmenu/kobo-config.zip
+web/src/koreader/
 
 # Build output
 web/dist/
 
 # Node
 web/node_modules/
+
+# Cached test assets (firmware, KOReader zips)
+tests/cached_assets/
 
 # E2E tests
 tests/e2e/node_modules/
