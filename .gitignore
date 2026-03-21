@@ -6,6 +6,7 @@ firmware/
 kobopatch/
 
 # Kobopatch WASM build artifacts
+kobopatch-wasm/go/
 kobopatch-wasm/kobopatch-src/
 kobopatch-wasm/testdata/
 kobopatch-wasm/kobopatch.wasm

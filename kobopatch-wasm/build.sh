@@ -5,10 +5,17 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WEB_DIR="$SCRIPT_DIR/../web"
 SRC_DIR="$WEB_DIR/src"
 DIST_DIR="$WEB_DIR/dist"
+LOCAL_GO_DIR="$SCRIPT_DIR/go"
 
 if [ ! -d "$SCRIPT_DIR/kobopatch-src" ]; then
     echo "Error: kobopatch source not found. Run ./setup.sh first."
     exit 1
+fi
+
+# Use local Go if available
+if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
+    export GOROOT="$LOCAL_GO_DIR"
+    export PATH="$LOCAL_GO_DIR/bin:$PATH"
 fi
 
 echo "Building kobopatch WASM..."
