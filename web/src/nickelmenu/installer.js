@@ -113,6 +113,9 @@ export class NickelMenuInstaller {
         const tgz = await this.getKoboRootTgz();
         await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
 
+        progressFn('Updating Kobo eReader.conf...');
+        await this.updateEReaderConf(device);
+
         if (features.length > 0) {
             const files = await this.collectFiles(features, progressFn);
             progressFn('Writing files to Kobo...');
@@ -125,9 +128,6 @@ export class NickelMenuInstaller {
                 await device.writeFile(pathArray, fileData);
                 progressFn(`Writing files to Kobo (${i + 1} of ${totalFiles})...`);
             }
-
-            progressFn('Updating Kobo eReader.conf...');
-            await this.updateEReaderConf(device);
         }
 
         progressFn('Done.');
