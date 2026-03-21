@@ -1016,6 +1016,22 @@ button:focus-visible {
     text-decoration: underline;
 }
 
+.site-footer a.site-footer-link {
+    color: var(--primary);
+}
+
+.site-footer p {
+    margin-bottom: 0.75rem;
+}
+
+.site-footer p:last-child {
+    margin-bottom: 0;
+}
+
+.site-footer-attribution {
+    font-size: 0.7rem;
+}
+
 .site-footer a:hover {
     color: var(--text);
 }

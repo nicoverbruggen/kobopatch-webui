@@ -9,9 +9,9 @@ import JSZip from 'jszip';
  *
  * Options:
  *   'nickelmenu-only'  — just NickelMenu (KoboRoot.tgz)
- *   'sample'           — NickelMenu + config based on cfg flags
+ *   'preset'           — NickelMenu + config based on cfg flags
  *
- * Config flags (when option is 'sample'):
+ * Config flags (when option is 'preset'):
  *   fonts: bool          — include Readerly fonts
  *   screensaver: bool    — include custom screensaver
  *   simplifyTabs: bool   — comment out experimental tab items in config
@@ -162,8 +162,8 @@ class NickelMenuInstaller {
     /**
      * Install to a connected Kobo device via File System Access API.
      * @param {KoboDevice} device
-     * @param {string} option - 'sample' or 'nickelmenu-only'
-     * @param {object|null} cfg - config flags (when option is 'sample')
+     * @param {string} option - 'preset' or 'nickelmenu-only'
+     * @param {object|null} cfg - config flags (when option is 'preset')
      * @param {function} progressFn
      */
     async installToDevice(device, option, cfg, progressFn) {
@@ -233,8 +233,8 @@ class NickelMenuInstaller {
 
     /**
      * Build a zip for manual download containing all files to copy to the Kobo.
-     * @param {string} option - 'sample' or 'nickelmenu-only'
-     * @param {object|null} cfg - config flags (when option is 'sample')
+     * @param {string} option - 'preset' or 'nickelmenu-only'
+     * @param {object|null} cfg - config flags (when option is 'preset')
      * @param {function} progressFn
      * @returns {Uint8Array} zip contents
      */

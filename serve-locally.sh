@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${1:-}" == "--fake-analytics" ]]; then
+    export UMAMI_WEBSITE_ID="fake"
+    export UMAMI_SCRIPT_URL="data:,"
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WEB_DIR="$SCRIPT_DIR/web"
 SRC_DIR="$WEB_DIR/src"

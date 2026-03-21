@@ -35,7 +35,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#btn-nm-next')).toBeDisabled();
 
     // Select "Install NickelMenu and configure"
-    await page.click('input[name="nm-option"][value="sample"]');
+    await page.click('input[name="nm-option"][value="preset"]');
     await expect(page.locator('#nm-config-options')).not.toBeHidden();
 
     // Verify default checkbox states
@@ -106,7 +106,7 @@ test.describe('NickelMenu', () => {
 
     // NickelMenu configure step — select "Install NickelMenu with preset"
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
-    await page.click('input[name="nm-option"][value="sample"]');
+    await page.click('input[name="nm-option"][value="preset"]');
     await expect(page.locator('#nm-config-options')).not.toBeHidden();
 
     // KOReader checkbox should be visible and unchecked by default
@@ -150,7 +150,7 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-mode-next');
 
     // Select "Install NickelMenu with preset"
-    await page.click('input[name="nm-option"][value="sample"]');
+    await page.click('input[name="nm-option"][value="preset"]');
 
     // Enable KOReader
     await page.check('input[name="nm-cfg-koreader"]');
@@ -243,7 +243,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
 
     // Select "Install NickelMenu and configure"
-    await page.click('input[name="nm-option"][value="sample"]');
+    await page.click('input[name="nm-option"][value="preset"]');
     await expect(page.locator('#nm-config-options')).not.toBeHidden();
 
     // Enable all options for testing

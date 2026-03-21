@@ -22,7 +22,7 @@ import JSZip from 'jszip';
     let isRestore = false;
     let availablePatches = null;
     let selectedMode = null;        // 'nickelmenu' | 'patches'
-    let nickelMenuOption = null;    // 'sample' | 'nickelmenu-only' | 'remove'
+    let nickelMenuOption = null;    // 'preset' | 'nickelmenu-only' | 'remove'
 
     // --- Helpers ---
 
@@ -477,7 +477,7 @@ import JSZip from 'jszip';
     // Show/hide config checkboxes based on radio selection, enable Continue
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
-            nmConfigOptions.hidden = radio.value !== 'sample' || !radio.checked;
+            nmConfigOptions.hidden = radio.value !== 'preset' || !radio.checked;
             btnNmNext.disabled = false;
         });
     }
@@ -523,7 +523,7 @@ import JSZip from 'jszip';
     function goToNickelMenuConfig() {
         checkNickelMenuInstalled();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
-        nmConfigOptions.hidden = !currentOption || currentOption.value !== 'sample';
+        nmConfigOptions.hidden = !currentOption || currentOption.value !== 'preset';
         btnNmNext.disabled = !currentOption;
         setNavStep(3);
         showStep(stepNickelMenu);
@@ -613,7 +613,7 @@ import JSZip from 'jszip';
                 return;
             }
 
-            const cfg = nickelMenuOption === 'sample' ? getNmConfig() : null;
+            const cfg = nickelMenuOption === 'preset' ? getNmConfig() : null;
 
             if (writeToDevice && device.directoryHandle) {
                 await nmInstaller.installToDevice(device, nickelMenuOption, cfg, (msg) => {
@@ -653,7 +653,7 @@ import JSZip from 'jszip';
             triggerDownload(resultNmZip, 'NickelMenu-install.zip', 'application/zip');
             $('nm-download-instructions').hidden = false;
             // Show eReader.conf + reboot steps only when sample config is included
-            const showConfStep = nickelMenuOption === 'sample';
+            const showConfStep = nickelMenuOption === 'preset';
             $('nm-download-conf-step').hidden = !showConfStep;
             $('nm-download-reboot-step').hidden = !showConfStep;
             track('flow-end', { result: 'nm-download' });

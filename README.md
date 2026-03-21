@@ -231,27 +231,12 @@ The WASM patcher performs several checks on each patched binary before including
 
 ## Analytics (optional)
 
-The app supports optional, privacy-focused analytics via [Umami](https://umami.is). Analytics are disabled by default and only activate when two environment variables are set on the server:
+The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses optional, privacy-focused analytics via [Umami](https://umami.is) to understand how the tool is used. No personal identifiers are collected. See the "Privacy" link in the footer for details.
+
+Analytics are disabled for local and self-hosted installs. They activate only when `UMAMI_WEBSITE_ID` and `UMAMI_SCRIPT_URL` environment variables are set on the server. To test the analytics UI locally without sending any data:
 
 ```bash
-UMAMI_WEBSITE_ID=your-website-id
-UMAMI_SCRIPT_URL=https://your-umami-instance/script.js
-```
-
-When enabled, the server injects the Umami tracking script into `index.html` at runtime. A "Privacy" link appears in the footer with a modal explaining what is tracked.
-
-**What is tracked** (no personal identifiers):
-
-- **Flow start** — whether the user connected a Kobo directly (`connect`) or chose manual download (`manual`)
-- **NickelMenu option** — which option was selected (`sample`, `nickelmenu-only`, or `remove`)
-- **Flow end** — how the process completed (`nm-write`, `nm-download`, `nm-remove`, `patches-write`, `patches-download`, `restore-write`, `restore-download`)
-
-**What is not tracked**: device model, serial number, firmware version, IP address, browsing behaviour. Umami is cookie-free and GDPR/CCPA/PECR compliant.
-
-For local installs via `./serve-locally.sh`, analytics is disabled unless the environment variables are set:
-
-```bash
-UMAMI_WEBSITE_ID=... UMAMI_SCRIPT_URL=... ./serve-locally.sh
+./serve-locally.sh --fake-analytics
 ```
 
 ## Credits

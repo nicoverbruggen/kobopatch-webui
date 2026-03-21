@@ -170,7 +170,7 @@
             <p>Choose what to do with your Kobo.</p>
             <div class="nm-options">
                 <label class="nm-option">
-                    <input type="radio" name="nm-option" value="sample">
+                    <input type="radio" name="nm-option" value="preset">
                     <div class="nm-option-body">
                         <div class="nm-option-title">Install NickelMenu with preset</div>
                         <div class="nm-option-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
@@ -384,27 +384,27 @@
 
     <footer class="site-footer">
         <p>
-            <a href="#" id="btn-how-it-works">How does this work?</a>
+            This project is not affiliated with Rakuten Kobo Inc.
+        </p>
+        <p>
+            <a href="#" id="btn-how-it-works" class="site-footer-link">Disclaimer</a>
             <span id="privacy-link-separator" hidden>&nbsp;&middot;&nbsp;</span>
-            <a href="#" id="btn-privacy" hidden>Privacy</a>
+            <a href="#" id="btn-privacy" class="site-footer-link" hidden>Privacy</a>
             &nbsp;&middot;&nbsp;
-            <a id="commit-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank">Version <span id="commit-hash"></span></a>
-            <br/>
-            <br/>
+            <a id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank"><span id="commit-hash"></span></a>
+        </p>
+        <p class="site-footer-attribution">
             Created by <a href="https://nicoverbruggen.be" target="_blank">Nico Verbruggen</a>.
             Readerly is part of my <a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">curated font collection</a>.
             <br/>
             Built on <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> and <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> by Patrick Gaskin.
-        </p>
-        <p>
-            This project is not affiliated with Rakuten Kobo Inc.
         </p>
     </footer>
 
     <dialog id="how-it-works-dialog" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>How does this work?</h2>
+                <h2>Disclaimer</h2>
                 <button id="btn-close-dialog" class="modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -472,9 +472,8 @@
             </div>
             <div class="modal-body">
                 <p>
-                    This website uses <a href="https://umami.is" target="_blank">Umami</a>, a privacy-focused
-                    analytics tool, to help improve the experience. Analytics are only enabled on the hosted
-                    version of this site, not on local or self-hosted installs.
+                    This hosted version of the website uses <a href="https://umami.is" target="_blank">Umami</a>, a privacy-focused
+                    analytics tool, to help improve the experience. Data is only used to further improve this website, and no personal information is collected.
                 </p>
 
                 <h3>What is tracked</h3>
@@ -483,11 +482,11 @@
                 </p>
                 <ul>
                     <li><strong>How the flow was started</strong> &mdash; whether you connected a Kobo
-                        directly or chose the manual download option.</li>
+                        directly or chose the manual download option. This helps the author decide whether to keep the manual download option, or remove it (if it is barely used).</li>
                     <li><strong>Which NickelMenu option was selected</strong> &mdash; preset installation,
                         NickelMenu only, or removal.</li>
                     <li><strong>How the flow ended</strong> &mdash; whether files were written to the
-                        device or downloaded as a ZIP.</li>
+                        device or downloaded as a ZIP. This helps the author understand how many people have actually used the complete flow successfully.</li>
                 </ul>
 
                 <h3>What is not tracked</h3>
