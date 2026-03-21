@@ -177,49 +177,7 @@
                     </div>
                 </label>
                 <div id="nm-config-options" class="nm-config-options" hidden>
-                <label class="nm-config-item">
-                    <input type="checkbox" name="nm-cfg-menu" checked disabled>
-                    <div class="nm-config-text">
-                        <span>Set up custom menu (required)</span>
-                        <span class="nm-config-desc">Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak".</span>
-                    </div>
-                </label>
-                <label class="nm-config-item">
-                    <input type="checkbox" name="nm-cfg-fonts" checked>
-                    <div class="nm-config-text">
-                        <span>Install Readerly fonts (recommended)</span>
-                        <span class="nm-config-desc">Adds the Readerly font family. These fonts are optically similar to Bookerly. When you are reading a book, you will be able to select this font from the dropdown as "KF Readerly".</span>
-                    </div>
-                </label>
-                <label class="nm-config-item" id="nm-cfg-koreader-label">
-                    <input type="checkbox" name="nm-cfg-koreader">
-                    <div class="nm-config-text">
-                        <span>Install KOReader <span id="koreader-version"></span> (optional)</span>
-                        <span class="nm-config-desc">Installs <a href="https://koreader.rocks" target="_blank">KOReader</a>, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more.</span>
-                    </div>
-                </label>
-                <label class="nm-config-item">
-                    <input type="checkbox" name="nm-cfg-simplify-tabs">
-                    <div class="nm-config-text">
-                        <span>Hide certain navigation tabs (minimalist)</span>
-                        <span class="nm-config-desc">This will hide the Notebook and Discover tabs from the bottom navigation. For minimalists who want fewer distractions.</span>
-                    </div>
-                </label>
-                <label class="nm-config-item">
-                    <input type="checkbox" name="nm-cfg-simplify-home">
-                    <div class="nm-config-text">
-                        <span>Hide certain home screen elements (minimalist)</span>
-                        <span class="nm-config-desc">If you are reading only one book, no recommendations will appear next to your current read, and third row on your homescreen with advertisements for Kobo Plus and the Kobo Store will be hidden. For minimalists who want fewer distractions.</span>
-                    </div>
-                </label>
-                <label class="nm-config-item">
-                    <input type="checkbox" name="nm-cfg-screensaver">
-                    <div class="nm-config-text">
-                        <span>Copy screensaver (optional)</span>
-                        <span class="nm-config-desc">Copies a screensaver to <code>/.kobo/screensaver</code>. Depending on your configuration, it will now be displayed instead of your current read. You can always add your own in the <code>/.kobo/screensaver</code> folder, and choosing Tweak > Screensaver will let you toggle it off.</span>
-                    </div>
-                </label>
-                <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank" class="nm-config-link">Learn more about these customisations &#x203A;</a>
+                <!-- Populated dynamically from feature modules by app.js -->
                 </div>
                 <label class="nm-option">
                     <input type="radio" name="nm-option" value="nickelmenu-only">

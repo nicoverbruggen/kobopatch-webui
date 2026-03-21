@@ -39,7 +39,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-config-options')).not.toBeHidden();
 
     // Verify default checkbox states
-    await expect(page.locator('input[name="nm-cfg-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-screensaver"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-simplify-home"]')).not.toBeChecked();
@@ -256,8 +256,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
-    await expect(page.locator('#nm-review-list')).toContainText('Simplified tab menu');
-    await expect(page.locator('#nm-review-list')).toContainText('Simplified homescreen');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide certain navigation tabs');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide certain home screen elements');
 
     // Both buttons visible when device is connected
     await expect(page.locator('#btn-nm-write')).toBeVisible();

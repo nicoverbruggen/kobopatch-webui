@@ -22,6 +22,11 @@ if [ ! -f "$SRC_DIR/koreader/koreader-kobo.zip" ]; then
     "$SCRIPT_DIR/koreader/setup.sh"
 fi
 
+if [ ! -f "$SRC_DIR/readerly/KF_Readerly.zip" ]; then
+    echo "Readerly font assets not found, downloading..."
+    "$SCRIPT_DIR/readerly/setup.sh"
+fi
+
 echo "Building JS bundle..."
 cd "$WEB_DIR"
 npm install --silent

@@ -2,7 +2,7 @@ import { KoboDevice, KoboModels } from './kobo-device.js';
 import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './kobo-software-urls.js';
 import { PatchUI, scanAvailablePatches } from './patch-ui.js';
 import { KoboPatchRunner } from './patch-runner.js';
-import { NickelMenuInstaller } from './nickelmenu.js';
+import { NickelMenuInstaller, ALL_FEATURES } from '../nickelmenu/installer.js';
 import { TL } from './strings.js';
 import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import JSZip from 'jszip';
@@ -34,16 +34,17 @@ import JSZip from 'jszip';
     const softwareUrlsReady = loadSoftwareUrls();
     const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 
-    // Show KOReader version in the UI (best-effort, non-blocking).
-    fetch('/koreader/release.json').then(r => r.ok ? r.json() : null).then(meta => {
-        if (meta && meta.version) {
-            $('koreader-version').textContent = meta.version;
-        } else {
-            $('nm-cfg-koreader-label').style.display = 'none';
-        }
-    }).catch(() => {
-        $('nm-cfg-koreader-label').style.display = 'none';
-    });
+    // Check KOReader availability and mark the feature (best-effort, non-blocking).
+    const koreaderFeature = ALL_FEATURES.find(f => f.id === 'koreader');
+    const koreaderVersionReady = fetch('/koreader/release.json')
+        .then(r => r.ok ? r.json() : null)
+        .then(meta => {
+            if (meta && meta.version) {
+                koreaderFeature.available = true;
+                koreaderFeature.version = meta.version;
+            }
+        })
+        .catch(() => {});
 
     function formatMB(bytes) {
         return (bytes / 1024 / 1024).toFixed(1) + ' MB';
@@ -474,6 +475,46 @@ import JSZip from 'jszip';
     // --- Step 2b: NickelMenu configuration ---
     const nmConfigOptions = $('nm-config-options');
 
+    // Render feature checkboxes dynamically from ALL_FEATURES
+    function renderFeatureCheckboxes() {
+        nmConfigOptions.innerHTML = '';
+        for (const feature of ALL_FEATURES) {
+            // Hide unavailable features (e.g. KOReader when assets missing)
+            if (feature.available === false) continue;
+
+            const label = document.createElement('label');
+            label.className = 'nm-config-item';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = 'nm-cfg-' + feature.id;
+            input.checked = feature.default;
+            if (feature.required) {
+                input.checked = true;
+                input.disabled = true;
+            }
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'nm-config-text';
+
+            const titleSpan = document.createElement('span');
+            let titleText = feature.title;
+            if (feature.required) titleText += ' (required)';
+            if (feature.version) titleText += ' ' + feature.version;
+            titleSpan.textContent = titleText;
+
+            const descSpan = document.createElement('span');
+            descSpan.className = 'nm-config-desc';
+            descSpan.textContent = feature.description;
+
+            textDiv.appendChild(titleSpan);
+            textDiv.appendChild(descSpan);
+            label.appendChild(input);
+            label.appendChild(textDiv);
+            nmConfigOptions.appendChild(label);
+        }
+    }
+
     // Show/hide config checkboxes based on radio selection, enable Continue
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
@@ -504,24 +545,24 @@ import JSZip from 'jszip';
         removeOption.classList.add('nm-option-disabled');
         removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
         if (removeRadio.checked) {
-            const sampleRadio = $q('input[value="sample"]', stepNickelMenu);
-            sampleRadio.checked = true;
-            sampleRadio.dispatchEvent(new Event('change'));
+            const presetRadio = $q('input[value="preset"]', stepNickelMenu);
+            presetRadio.checked = true;
+            presetRadio.dispatchEvent(new Event('change'));
         }
     }
 
-    function getNmConfig() {
-        return {
-            fonts: $q('input[name="nm-cfg-fonts"]').checked,
-            screensaver: $q('input[name="nm-cfg-screensaver"]').checked,
-            simplifyTabs: $q('input[name="nm-cfg-simplify-tabs"]').checked,
-            simplifyHome: $q('input[name="nm-cfg-simplify-home"]').checked,
-            koreader: $q('input[name="nm-cfg-koreader"]').checked,
-        };
+    function getSelectedFeatures() {
+        return ALL_FEATURES.filter(f => {
+            if (f.available === false) return false;
+            if (f.required) return true;
+            const checkbox = $q(`input[name="nm-cfg-${f.id}"]`);
+            return checkbox && checkbox.checked;
+        });
     }
 
     function goToNickelMenuConfig() {
         checkNickelMenuInstalled();
+        renderFeatureCheckboxes();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmConfigOptions.hidden = !currentOption || currentOption.value !== 'preset';
         btnNmNext.disabled = !currentOption;
@@ -563,13 +604,10 @@ import JSZip from 'jszip';
             btnNmDownload.hidden = false;
         } else {
             summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
-            const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ, 'Custom menu configuration'];
-            const cfg = getNmConfig();
-            if (cfg.fonts) items.push(TL.NICKEL_MENU_ITEMS.FONTS);
-            if (cfg.screensaver) items.push(TL.NICKEL_MENU_ITEMS.SCREENSAVER);
-            if (cfg.simplifyTabs) items.push(TL.NICKEL_MENU_ITEMS.SIMPLIFY_TABS);
-            if (cfg.simplifyHome) items.push(TL.NICKEL_MENU_ITEMS.SIMPLIFY_HOME);
-            if (cfg.koreader) items.push(TL.NICKEL_MENU_ITEMS.KOREADER);
+            const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ];
+            for (const feature of getSelectedFeatures()) {
+                items.push(feature.title);
+            }
             for (const text of items) {
                 const li = document.createElement('li');
                 li.textContent = text;
@@ -599,11 +637,12 @@ import JSZip from 'jszip';
 
     async function executeNmInstall(writeToDevice) {
         const nmProgress = $('nm-progress');
+        const progressFn = (msg) => { nmProgress.textContent = msg; };
         showStep(stepNmInstalling);
 
         try {
             if (nickelMenuOption === 'remove') {
-                await nmInstaller.loadAssets((msg) => { nmProgress.textContent = msg; }, false);
+                await nmInstaller.loadNickelMenu(progressFn);
                 nmProgress.textContent = 'Writing KoboRoot.tgz...';
                 const tgz = await nmInstaller.getKoboRootTgz();
                 await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
@@ -613,17 +652,13 @@ import JSZip from 'jszip';
                 return;
             }
 
-            const cfg = nickelMenuOption === 'preset' ? getNmConfig() : null;
+            const features = nickelMenuOption === 'preset' ? getSelectedFeatures() : [];
 
             if (writeToDevice && device.directoryHandle) {
-                await nmInstaller.installToDevice(device, nickelMenuOption, cfg, (msg) => {
-                    nmProgress.textContent = msg;
-                });
+                await nmInstaller.installToDevice(device, features, progressFn);
                 showNmDone('written');
             } else {
-                resultNmZip = await nmInstaller.buildDownloadZip(nickelMenuOption, cfg, (msg) => {
-                    nmProgress.textContent = msg;
-                });
+                resultNmZip = await nmInstaller.buildDownloadZip(features, progressFn);
                 showNmDone('download');
             }
         } catch (err) {

@@ -50,11 +50,4 @@ export const TL = {
         NONE: 'None (do not patch)',
     },
 
-    NICKEL_MENU_ITEMS: {
-        FONTS: 'Readerly fonts',
-        SCREENSAVER: 'Custom screensaver',
-        SIMPLIFY_TABS: 'Simplified tab menu',
-        SIMPLIFY_HOME: 'Simplified homescreen',
-        KOREADER: 'KOReader',
-    },
 };

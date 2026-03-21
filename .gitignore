@@ -14,8 +14,8 @@ kobopatch-wasm/wasm_exec.js
 # Generated files in src (written by build scripts, regenerated on demand)
 web/src/js/wasm_exec.js
 web/src/nickelmenu/NickelMenu.zip
-web/src/nickelmenu/kobo-config.zip
 web/src/koreader/
+web/src/readerly/
 
 # Build output
 web/dist/

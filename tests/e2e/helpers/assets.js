@@ -4,7 +4,7 @@ const { WEBROOT, WEBROOT_FIRMWARE, FIRMWARE_PATH } = require('./paths');
 
 function hasNickelMenuAssets() {
   return fs.existsSync(path.join(WEBROOT, 'nickelmenu', 'NickelMenu.zip'))
-    && fs.existsSync(path.join(WEBROOT, 'nickelmenu', 'kobo-config.zip'));
+    && fs.existsSync(path.join(WEBROOT, 'nickelmenu', 'features', 'custom-menu', 'items'));
 }
 
 function hasKoreaderAssets() {
