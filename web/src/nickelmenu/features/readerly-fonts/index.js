@@ -6,6 +6,18 @@ export default {
     description: 'Adds the Readerly font family. These fonts are optically similar to Bookerly. When you are reading a book, you will be able to select this font from the dropdown as "KF Readerly".',
     default: true,
 
+    uninstall: {
+        title: 'Readerly fonts',
+        description: 'Removes Readerly font files from fonts/.',
+        detect: [['fonts', 'KF_Readerly-Regular.ttf']],
+        paths: [
+            { path: ['fonts', 'KF_Readerly-Regular.ttf'] },
+            { path: ['fonts', 'KF_Readerly-Italic.ttf'] },
+            { path: ['fonts', 'KF_Readerly-Bold.ttf'] },
+            { path: ['fonts', 'KF_Readerly-BoldItalic.ttf'] },
+        ],
+    },
+
     async install(ctx) {
         ctx.progress('Downloading Readerly fonts...');
         const resp = await fetch('/readerly/KF_Readerly.zip');

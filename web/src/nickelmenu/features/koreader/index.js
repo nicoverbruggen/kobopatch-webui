@@ -7,6 +7,15 @@ export default {
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 
+    uninstall: {
+        title: 'KOReader',
+        description: 'Removes the KOReader app directory (.adds/koreader/).',
+        detect: [['.adds', 'koreader']],
+        paths: [
+            { path: ['.adds', 'koreader'], recursive: true },
+        ],
+    },
+
     async install(ctx) {
         ctx.progress('Fetching KOReader release info...');
         const metaResp = await fetch('/koreader/release.json');

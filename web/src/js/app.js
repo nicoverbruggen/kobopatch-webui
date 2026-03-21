@@ -474,6 +474,8 @@ import JSZip from 'jszip';
 
     // --- Step 2b: NickelMenu configuration ---
     const nmConfigOptions = $('nm-config-options');
+    const nmUninstallOptions = $('nm-uninstall-options');
+    let detectedUninstallFeatures = [];
 
     // Render feature checkboxes dynamically from ALL_FEATURES
     function renderFeatureCheckboxes() {
@@ -519,6 +521,7 @@ import JSZip from 'jszip';
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
             nmConfigOptions.hidden = radio.value !== 'preset' || !radio.checked;
+            nmUninstallOptions.hidden = radio.value !== 'remove' || !radio.checked || detectedUninstallFeatures.length === 0;
             btnNmNext.disabled = false;
         });
     }
@@ -528,6 +531,9 @@ import JSZip from 'jszip';
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
+        detectedUninstallFeatures = [];
+        nmUninstallOptions.hidden = true;
+
         if (!manualMode && device.directoryHandle) {
             try {
                 const addsDir = await device.directoryHandle.getDirectoryHandle('.adds');
@@ -535,6 +541,18 @@ import JSZip from 'jszip';
                 removeRadio.disabled = false;
                 removeOption.classList.remove('nm-option-disabled');
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
+
+                // Detect which removable features are installed on the device
+                for (const feature of ALL_FEATURES) {
+                    if (!feature.uninstall) continue;
+                    for (const detectPath of feature.uninstall.detect) {
+                        if (await device.pathExists(detectPath)) {
+                            detectedUninstallFeatures.push(feature);
+                            break;
+                        }
+                    }
+                }
+                renderUninstallCheckboxes();
                 return;
             } catch {
                 // .adds/nm not found
@@ -551,6 +569,44 @@ import JSZip from 'jszip';
         }
     }
 
+    function renderUninstallCheckboxes() {
+        nmUninstallOptions.innerHTML = '';
+        if (detectedUninstallFeatures.length === 0) return;
+
+        for (const feature of detectedUninstallFeatures) {
+            const label = document.createElement('label');
+            label.className = 'nm-config-item';
+
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = 'nm-uninstall-' + feature.id;
+            input.checked = true;
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'nm-config-text';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = 'Also remove ' + feature.uninstall.title;
+
+            const descSpan = document.createElement('span');
+            descSpan.className = 'nm-config-desc';
+            descSpan.textContent = feature.uninstall.description;
+
+            textDiv.appendChild(titleSpan);
+            textDiv.appendChild(descSpan);
+            label.appendChild(input);
+            label.appendChild(textDiv);
+            nmUninstallOptions.appendChild(label);
+        }
+    }
+
+    function getSelectedUninstallFeatures() {
+        return detectedUninstallFeatures.filter(f => {
+            const cb = $q(`input[name="nm-uninstall-${f.id}"]`);
+            return cb && cb.checked;
+        });
+    }
+
     function getSelectedFeatures() {
         return ALL_FEATURES.filter(f => {
             if (f.available === false) return false;
@@ -565,6 +621,7 @@ import JSZip from 'jszip';
         renderFeatureCheckboxes();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmConfigOptions.hidden = !currentOption || currentOption.value !== 'preset';
+        nmUninstallOptions.hidden = !currentOption || currentOption.value !== 'remove' || detectedUninstallFeatures.length === 0;
         btnNmNext.disabled = !currentOption;
         setNavStep(3);
         showStep(stepNickelMenu);
@@ -591,6 +648,12 @@ import JSZip from 'jszip';
 
         if (nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
+            const featuresToRemove = getSelectedUninstallFeatures();
+            for (const feature of featuresToRemove) {
+                const li = document.createElement('li');
+                li.textContent = feature.uninstall.title + ' will also be removed';
+                list.appendChild(li);
+            }
             btnNmWrite.hidden = manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
@@ -648,6 +711,19 @@ import JSZip from 'jszip';
                 await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
                 nmProgress.textContent = 'Marking NickelMenu for removal...';
                 await device.writeFile(['.adds', 'nm', 'uninstall'], new Uint8Array(0));
+
+                const featuresToRemove = getSelectedUninstallFeatures();
+                for (const feature of featuresToRemove) {
+                    nmProgress.textContent = 'Removing ' + feature.uninstall.title + '...';
+                    for (const entry of feature.uninstall.paths) {
+                        try {
+                            await device.removeEntry(entry.path, { recursive: !!entry.recursive });
+                        } catch {
+                            // ignore — file may already be gone
+                        }
+                    }
+                }
+
                 showNmDone('remove');
                 return;
             }

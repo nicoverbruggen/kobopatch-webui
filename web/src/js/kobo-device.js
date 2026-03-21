@@ -168,6 +168,42 @@ class KoboDevice {
     }
 
     /**
+     * Check if a file or directory exists at the given path.
+     */
+    async pathExists(pathParts) {
+        try {
+            let dir = this.directoryHandle;
+            const dirParts = pathParts.slice(0, -1);
+            const lastPart = pathParts[pathParts.length - 1];
+            for (const part of dirParts) {
+                dir = await dir.getDirectoryHandle(part);
+            }
+            try {
+                await dir.getDirectoryHandle(lastPart);
+                return true;
+            } catch {
+                await dir.getFileHandle(lastPart);
+                return true;
+            }
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Remove a file or directory at the given path.
+     */
+    async removeEntry(pathParts, options = {}) {
+        let dir = this.directoryHandle;
+        const dirParts = pathParts.slice(0, -1);
+        const entryName = pathParts[pathParts.length - 1];
+        for (const part of dirParts) {
+            dir = await dir.getDirectoryHandle(part);
+        }
+        await dir.removeEntry(entryName, options);
+    }
+
+    /**
      * Disconnect / release the directory handle.
      */
     disconnect() {

@@ -348,6 +348,10 @@ test.describe('NickelMenu', () => {
 
     // Select remove
     await page.click('input[name="nm-option"][value="remove"]');
+
+    // No extra features installed — uninstall options should be hidden
+    await expect(page.locator('#nm-uninstall-options')).toBeHidden();
+
     await page.click('#btn-nm-next');
 
     // Review step
@@ -373,6 +377,58 @@ test.describe('NickelMenu', () => {
     // Verify the uninstall marker file exists
     const uninstallExists = await mockPathExists(page, '.adds', 'nm', 'uninstall');
     expect(uninstallExists, '.adds/nm/uninstall should exist').toBe(true);
+  });
+
+  test('with device — remove NickelMenu with feature cleanup', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      hasKoreader: true,
+      hasReaderlyFonts: true,
+      hasScreensaver: true,
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('#btn-mode-next');
+
+    // Select remove
+    await page.click('input[name="nm-option"][value="remove"]');
+
+    // Uninstall checkboxes should appear for all 3 detected features
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-uninstall-screensaver"]')).toBeChecked();
+
+    // Uncheck screensaver (keep it)
+    await page.uncheck('input[name="nm-uninstall-screensaver"]');
+
+    await page.click('#btn-nm-next');
+
+    // Review should list KOReader and Readerly but not Screensaver
+    await expect(page.locator('#nm-review-summary')).toContainText('removal');
+    await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly');
+    await expect(page.locator('#nm-review-list')).not.toContainText('Screensaver');
+
+    // Execute removal
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#nm-done-status')).toContainText('removed');
+
+    // NickelMenu uninstall marker should exist
+    expect(await mockPathExists(page, '.adds', 'nm', 'uninstall')).toBe(true);
+
+    // KOReader directory should be removed
+    expect(await mockPathExists(page, '.adds', 'koreader')).toBe(false);
+
+    // Readerly fonts should be removed
+    expect(await mockPathExists(page, 'fonts', 'KF_Readerly-Regular.ttf')).toBe(false);
+    expect(await mockPathExists(page, 'fonts', 'KF_Readerly-Bold.ttf')).toBe(false);
+
+    // Screensaver should NOT be removed (unchecked)
+    expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
   });
 });
 

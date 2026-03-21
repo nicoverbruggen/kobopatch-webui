@@ -10,7 +10,7 @@ const { expect } = require('@playwright/test');
 async function injectMockDevice(page, opts = {}) {
   const firmware = opts.firmware || '4.45.23646';
   const serial = opts.serial || 'N4280A0000000';
-  await page.evaluate(({ hasNickelMenu, firmware, serial }) => {
+  await page.evaluate(({ hasNickelMenu, hasKoreader, hasReaderlyFonts, hasScreensaver, firmware, serial }) => {
     const filesystem = {
       '.kobo': {
         _type: 'dir',
@@ -36,6 +36,31 @@ async function injectMockDevice(page, opts = {}) {
           'items': { _type: 'file', content: 'menu_item:main:test:skip:' },
         },
       };
+    }
+
+    if (hasKoreader) {
+      if (!filesystem['.adds']) filesystem['.adds'] = { _type: 'dir' };
+      filesystem['.adds']['koreader'] = {
+        _type: 'dir',
+        'koreader.sh': { _type: 'file', content: '#!/bin/sh' },
+      };
+    }
+
+    if (hasReaderlyFonts) {
+      filesystem['fonts'] = {
+        _type: 'dir',
+        'KF_Readerly-Regular.ttf': { _type: 'file', content: '' },
+        'KF_Readerly-Italic.ttf': { _type: 'file', content: '' },
+        'KF_Readerly-Bold.ttf': { _type: 'file', content: '' },
+        'KF_Readerly-BoldItalic.ttf': { _type: 'file', content: '' },
+      };
+    }
+
+    if (hasScreensaver) {
+      if (!filesystem['.kobo']['screensaver']) {
+        filesystem['.kobo']['screensaver'] = { _type: 'dir' };
+      }
+      filesystem['.kobo']['screensaver']['moon.png'] = { _type: 'file', content: '' };
     }
 
     window.__mockFS = filesystem;
@@ -93,12 +118,26 @@ async function injectMockDevice(page, opts = {}) {
           }
           throw new DOMException('Not found: ' + childName, 'NotFoundError');
         },
+        removeEntry: async (childName) => {
+          if (node[childName]) {
+            delete node[childName];
+            return;
+          }
+          throw new DOMException('Not found: ' + childName, 'NotFoundError');
+        },
       };
     }
 
     const rootHandle = makeDirHandle(filesystem, 'KOBOeReader', '');
     window.showDirectoryPicker = async () => rootHandle;
-  }, { hasNickelMenu: opts.hasNickelMenu || false, firmware, serial });
+  }, {
+    hasNickelMenu: opts.hasNickelMenu || false,
+    hasKoreader: opts.hasKoreader || false,
+    hasReaderlyFonts: opts.hasReaderlyFonts || false,
+    hasScreensaver: opts.hasScreensaver || false,
+    firmware,
+    serial,
+  });
 }
 
 /**
