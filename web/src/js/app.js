@@ -402,6 +402,7 @@ import JSZip from 'jszip';
 
     // --- Step 2: Mode selection ---
     function goToModeSelection() {
+        resetNickelMenuState();
         // In auto mode, disable custom patches if firmware or download URL isn't available
         const patchesRadio = $q('input[value="patches"]', stepMode);
         const patchesCard = patchesRadio.closest('.mode-card');
@@ -444,7 +445,7 @@ import JSZip from 'jszip';
 
         if (selectedMode === 'nickelmenu') {
             setNavLabels(TL.NAV_NICKELMENU);
-            goToNickelMenuConfig();
+            await goToNickelMenuConfig();
         } else if (manualMode && !patchesLoaded) {
             // Manual mode: need version/model selection before patches
             setNavLabels(TL.NAV_PATCHES);
@@ -531,9 +532,6 @@ import JSZip from 'jszip';
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
-        detectedUninstallFeatures = [];
-        nmUninstallOptions.hidden = true;
-
         if (!manualMode && device.directoryHandle) {
             try {
                 const addsDir = await device.directoryHandle.getDirectoryHandle('.adds');
@@ -543,17 +541,19 @@ import JSZip from 'jszip';
                 removeOption.classList.remove('nm-option-disabled');
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
 
-                // Detect which removable features are installed on the device
-                for (const feature of ALL_FEATURES) {
-                    if (!feature.uninstall) continue;
-                    for (const detectPath of feature.uninstall.detect) {
-                        if (await device.pathExists(detectPath)) {
-                            detectedUninstallFeatures.push(feature);
-                            break;
+                if (detectedUninstallFeatures.length === 0) {
+                    // Detect which removable features are installed on the device
+                    for (const feature of ALL_FEATURES) {
+                        if (!feature.uninstall) continue;
+                        for (const detectPath of feature.uninstall.detect) {
+                            if (await device.pathExists(detectPath)) {
+                                detectedUninstallFeatures.push(feature);
+                                break;
+                            }
                         }
                     }
+                    renderUninstallCheckboxes();
                 }
-                renderUninstallCheckboxes();
                 return;
             } catch {
                 // .adds/nm not found
@@ -601,6 +601,12 @@ import JSZip from 'jszip';
         }
     }
 
+    function resetNickelMenuState() {
+        detectedUninstallFeatures = [];
+        nmUninstallOptions.hidden = true;
+        nmUninstallOptions.innerHTML = '';
+    }
+
     function getSelectedUninstallFeatures() {
         return detectedUninstallFeatures.filter(f => {
             const cb = $q(`input[name="nm-uninstall-${f.id}"]`);
@@ -617,7 +623,8 @@ import JSZip from 'jszip';
         });
     }
 
-    function goToNickelMenuConfig() {
+    async function goToNickelMenuConfig() {
+        await checkNickelMenuInstalled();
         renderFeatureCheckboxes();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmConfigOptions.hidden = !currentOption || currentOption.value !== 'preset';
@@ -694,8 +701,8 @@ import JSZip from 'jszip';
         showStep(stepNmReview);
     }
 
-    btnNmReviewBack.addEventListener('click', () => {
-        goToNickelMenuConfig();
+    btnNmReviewBack.addEventListener('click', async () => {
+        await goToNickelMenuConfig();
     });
 
     async function executeNmInstall(writeToDevice) {
