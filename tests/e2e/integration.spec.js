@@ -6,7 +6,7 @@ const zlib = require('zlib');
 const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, EXPECTED_SHA1, ORIGINAL_TGZ_SHA1 } = require('./helpers/paths');
-const { hasNickelMenuAssets, hasKoreaderAssets, hasFirmwareZip, setupFirmwareSymlink, cleanupFirmwareSymlink } = require('./helpers/assets');
+const { hasNickelMenuAssets, hasKoreaderAssets, hasReaderlyAssets, hasFirmwareZip, setupFirmwareSymlink, cleanupFirmwareSymlink } = require('./helpers/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('./helpers/mock-device');
 const { parseTar } = require('./helpers/tar');
 
@@ -83,8 +83,9 @@ test.describe('NickelMenu', () => {
     expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
     // Must contain NickelMenu items config
     expect(zipFiles).toContainEqual('.adds/nm/items');
-    // Must contain font files (fonts checkbox is checked by default)
-    expect(zipFiles.some(f => f.startsWith('fonts/'))).toBe(true);
+    // Must contain Readerly .ttf font files (readerly-fonts is checked by default)
+    const fontFiles = zipFiles.filter(f => f.startsWith('fonts/') && f.endsWith('.ttf'));
+    expect(fontFiles.length).toBeGreaterThan(0);
     // Must NOT contain screensaver (unchecked by default)
     expect(zipFiles.some(f => f.startsWith('.kobo/screensaver/'))).toBe(false);
 
@@ -273,6 +274,10 @@ test.describe('NickelMenu', () => {
     const writtenFiles = await getWrittenFiles(page);
     expect(writtenFiles, 'KoboRoot.tgz should be written').toContainEqual(expect.stringContaining('KoboRoot.tgz'));
     expect(writtenFiles, 'NickelMenu items should be written').toContainEqual(expect.stringContaining('items'));
+
+    // Verify Readerly font files were written (readerly-fonts is on by default)
+    const fontFiles = writtenFiles.filter(f => f.includes('fonts/') && f.endsWith('.ttf'));
+    expect(fontFiles.length, 'Readerly .ttf fonts should be written').toBeGreaterThan(0);
 
     // Verify eReader.conf was updated with ExcludeSyncFolders
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');

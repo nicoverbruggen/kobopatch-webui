@@ -12,6 +12,10 @@ function hasKoreaderAssets() {
     && fs.existsSync(path.join(WEBROOT, 'koreader', 'release.json'));
 }
 
+function hasReaderlyAssets() {
+  return fs.existsSync(path.join(WEBROOT, 'readerly', 'KF_Readerly.zip'));
+}
+
 function hasFirmwareZip() {
   return fs.existsSync(FIRMWARE_PATH);
 }
@@ -28,6 +32,7 @@ function cleanupFirmwareSymlink() {
 module.exports = {
   hasNickelMenuAssets,
   hasKoreaderAssets,
+  hasReaderlyAssets,
   hasFirmwareZip,
   setupFirmwareSymlink,
   cleanupFirmwareSymlink,
