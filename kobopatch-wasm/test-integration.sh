@@ -15,6 +15,13 @@ FIRMWARE_FILE="${FIRMWARE_DIR}/kobo-update-${FIRMWARE_VERSION}.zip"
 
 cd "$(dirname "$0")"
 
+# Use local Go if available
+LOCAL_GO_DIR="$(pwd)/go"
+if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
+    export GOROOT="$LOCAL_GO_DIR"
+    export PATH="$LOCAL_GO_DIR/bin:$PATH"
+fi
+
 # Download firmware if not cached.
 if [ ! -f "$FIRMWARE_FILE" ]; then
     echo "Downloading firmware ${FIRMWARE_VERSION} (~150MB)..."
