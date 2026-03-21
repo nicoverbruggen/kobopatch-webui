@@ -17,7 +17,7 @@ if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
 fi
 
 echo "Downloading KF_Readerly.zip..."
-curl -fSL -o "$PUBLIC_DIR/KF_Readerly.zip" "$DOWNLOAD_URL"
+curl -fL --progress-bar -o "$PUBLIC_DIR/KF_Readerly.zip" "$DOWNLOAD_URL"
 echo "  -> $(du -h "$PUBLIC_DIR/KF_Readerly.zip" | cut -f1)"
 
 echo ""

@@ -21,6 +21,11 @@ if [ ! -f "$FIRMWARE_FILE" ]; then
     fi
 fi
 
+# Set up kobopatch WASM build dependencies if not present.
+if [ ! -d "$SCRIPT_DIR/kobopatch-wasm/kobopatch-src" ]; then
+    "$SCRIPT_DIR/kobopatch-wasm/setup.sh"
+fi
+
 # Set up KOReader assets if not present (served by the app, not a test-only asset).
 if [ ! -f "$SCRIPT_DIR/web/src/koreader/koreader-kobo.zip" ]; then
     "$SCRIPT_DIR/koreader/setup.sh"

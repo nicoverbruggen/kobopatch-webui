@@ -27,6 +27,6 @@ echo "WASM binary size: $(du -h kobopatch.wasm | cut -f1)"
 echo "Copying artifacts..."
 mkdir -p "$DIST_DIR/wasm"
 cp kobopatch.wasm "$DIST_DIR/wasm/kobopatch.wasm"
-cp wasm_exec.js "$SRC_DIR/js/wasm_exec.js"
+cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$SRC_DIR/js/wasm_exec.js"
 
 echo "Done."
