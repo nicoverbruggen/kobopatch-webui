@@ -27,6 +27,14 @@ echo "WASM binary size: $(du -h kobopatch.wasm | cut -f1)"
 echo "Copying artifacts..."
 mkdir -p "$DIST_DIR/wasm"
 cp kobopatch.wasm "$DIST_DIR/wasm/kobopatch.wasm"
-cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" "$SRC_DIR/js/wasm_exec.js"
+GOROOT="$(go env GOROOT)"
+if [ -f "$GOROOT/lib/wasm/wasm_exec.js" ]; then
+    cp "$GOROOT/lib/wasm/wasm_exec.js" "$SRC_DIR/js/wasm_exec.js"
+elif [ -f "$GOROOT/misc/wasm/wasm_exec.js" ]; then
+    cp "$GOROOT/misc/wasm/wasm_exec.js" "$SRC_DIR/js/wasm_exec.js"
+else
+    echo "Error: could not find wasm_exec.js in Go SDK (GOROOT=$GOROOT)"
+    exit 1
+fi
 
 echo "Done."
