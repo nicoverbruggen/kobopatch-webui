@@ -37,7 +37,10 @@ test.describe('NickelMenu', () => {
 
     // Select "Install NickelMenu and configure"
     await page.click('input[name="nm-option"][value="preset"]');
-    await expect(page.locator('#nm-config-options')).not.toBeHidden();
+    await page.click('#btn-nm-next');
+
+    // Feature selection step
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
     // Verify default checkbox states
     await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
@@ -51,8 +54,7 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
 
-    await expect(page.locator('#btn-nm-next')).toBeEnabled();
-    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -112,7 +114,10 @@ test.describe('NickelMenu', () => {
     // NickelMenu configure step — select "Install NickelMenu with preset"
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
     await page.click('input[name="nm-option"][value="preset"]');
-    await expect(page.locator('#nm-config-options')).not.toBeHidden();
+    await page.click('#btn-nm-next');
+
+    // Feature selection step
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
     // KOReader checkbox should be visible and unchecked by default
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
@@ -120,7 +125,7 @@ test.describe('NickelMenu', () => {
     // Enable KOReader
     await page.check('input[name="nm-cfg-koreader"]');
 
-    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
 
     // Review step — should list KOReader
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -160,11 +165,15 @@ test.describe('NickelMenu', () => {
 
     // Select "Install NickelMenu with preset"
     await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    // Feature selection step
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
     // Enable KOReader
     await page.check('input[name="nm-cfg-koreader"]');
 
-    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
 
     // Review step
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
@@ -190,10 +199,8 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
-    // Select "Install NickelMenu only"
+    // Select "Install NickelMenu only" — goes directly to review (no features step)
     await page.click('input[name="nm-option"][value="nickelmenu-only"]');
-    await expect(page.locator('#nm-config-options')).toBeHidden();
-
     await page.click('#btn-nm-next');
 
     // Review step
@@ -254,20 +261,23 @@ test.describe('NickelMenu', () => {
 
     // Select "Install NickelMenu and configure"
     await page.click('input[name="nm-option"][value="preset"]');
-    await expect(page.locator('#nm-config-options')).not.toBeHidden();
+    await page.click('#btn-nm-next');
+
+    // Feature selection step
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
     // Enable all options for testing
     await page.check('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
 
-    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
-    await expect(page.locator('#nm-review-list')).toContainText('Hide certain navigation tabs');
+    await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
 
@@ -315,10 +325,8 @@ test.describe('NickelMenu', () => {
     // NickelMenu configure step
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
-    // Select "Install NickelMenu only"
+    // Select "Install NickelMenu only" — goes directly to review (no features step)
     await page.click('input[name="nm-option"][value="nickelmenu-only"]');
-    await expect(page.locator('#nm-config-options')).toBeHidden();
-
     await page.click('#btn-nm-next');
 
     // Review step
@@ -917,7 +925,7 @@ test.describe('Custom patches', () => {
     await page.click('#btn-nm-back');
     await expect(page.locator('#step-mode')).not.toBeHidden();
 
-    // Mode → NM config → Continue → NM review
+    // Mode → NM config → Continue (nickelmenu-only) → NM review
     await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
@@ -925,8 +933,25 @@ test.describe('Custom patches', () => {
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
 
-    // NM review → Back → NM config
+    // NM review → Back → NM config (skips features for nickelmenu-only)
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // NM config → select preset → Continue → Features step
+    await page.click('input[value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+
+    // Features → Continue → NM review
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+
+    // NM review → Back → Features (for preset)
+    await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+
+    // Features → Back → NM config
+    await page.click('#btn-nm-features-back');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     // NM config → Back → Mode

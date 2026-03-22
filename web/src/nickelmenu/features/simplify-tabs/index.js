@@ -13,8 +13,8 @@ const TAB_CONFIG = [
 
 export default {
     id: 'simplify-tabs',
-    title: 'Hide certain navigation tabs',
-    description: 'This will hide the Notebook and Discover tabs from the bottom navigation. For minimalists who want fewer distractions.',
+    title: 'Simplify navigation tabs',
+    description: 'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar.',
     default: false,
 
     postProcess(files) {

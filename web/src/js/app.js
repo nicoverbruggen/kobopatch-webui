@@ -86,6 +86,7 @@ import JSZip from 'jszip';
     const stepDevice = $('step-device');
     const stepMode = $('step-mode');
     const stepNickelMenu = $('step-nickelmenu');
+    const stepNmFeatures = $('step-nm-features');
     const stepNmInstalling = $('step-nm-installing');
     const stepNmDone = $('step-nm-done');
     const stepPatches = $('step-patches');
@@ -106,6 +107,8 @@ import JSZip from 'jszip';
     const btnModeNext = $('btn-mode-next');
     const btnNmBack = $('btn-nm-back');
     const btnNmNext = $('btn-nm-next');
+    const btnNmFeaturesBack = $('btn-nm-features-back');
+    const btnNmFeaturesNext = $('btn-nm-features-next');
     const btnNmReviewBack = $('btn-nm-review-back');
     const btnNmWrite = $('btn-nm-write');
     const btnNmDownload = $('btn-nm-download');
@@ -138,7 +141,7 @@ import JSZip from 'jszip';
 
     const allSteps = [
         stepConnect, stepManualVersion, stepDevice,
-        stepMode, stepNickelMenu, stepNmReview, stepNmInstalling, stepNmDone,
+        stepMode, stepNickelMenu, stepNmFeatures, stepNmReview, stepNmInstalling, stepNmDone,
         stepPatches, stepFirmware, stepBuilding, stepDone,
         stepError,
     ];
@@ -501,6 +504,7 @@ import JSZip from 'jszip';
             textDiv.className = 'nm-config-text';
 
             const titleSpan = document.createElement('span');
+            titleSpan.className = 'nm-config-title';
             let titleText = feature.title;
             if (feature.required) titleText += ' (required)';
             if (feature.version) titleText += ' ' + feature.version;
@@ -518,10 +522,9 @@ import JSZip from 'jszip';
         }
     }
 
-    // Show/hide config checkboxes based on radio selection, enable Continue
+    // Show/hide uninstall options based on radio selection, enable Continue
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
-            nmConfigOptions.hidden = radio.value !== 'preset' || !radio.checked;
             nmUninstallOptions.hidden = radio.value !== 'remove' || !radio.checked || detectedUninstallFeatures.length === 0;
             btnNmNext.disabled = false;
         });
@@ -587,6 +590,7 @@ import JSZip from 'jszip';
             textDiv.className = 'nm-config-text';
 
             const titleSpan = document.createElement('span');
+            titleSpan.className = 'nm-config-title';
             titleSpan.textContent = 'Also remove ' + feature.uninstall.title;
 
             const descSpan = document.createElement('span');
@@ -625,9 +629,7 @@ import JSZip from 'jszip';
 
     async function goToNickelMenuConfig() {
         await checkNickelMenuInstalled();
-        renderFeatureCheckboxes();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
-        nmConfigOptions.hidden = !currentOption || currentOption.value !== 'preset';
         nmUninstallOptions.hidden = !currentOption || currentOption.value !== 'remove' || detectedUninstallFeatures.length === 0;
         btnNmNext.disabled = !currentOption;
         setNavStep(3);
@@ -638,13 +640,34 @@ import JSZip from 'jszip';
         goToModeSelection();
     });
 
-    // Continue from configure to review
+    // Continue from NM option selection
     btnNmNext.addEventListener('click', () => {
         const selected = $q('input[name="nm-option"]:checked', stepNickelMenu);
         if (!selected) return;
         nickelMenuOption = selected.value;
         track('nm-option', { option: nickelMenuOption });
 
+        if (nickelMenuOption === 'preset') {
+            goToNmFeatures();
+        } else {
+            goToNmReview();
+        }
+    });
+
+    function goToNmFeatures() {
+        // Only render checkboxes if they haven't been created yet
+        if (!nmConfigOptions.children.length) {
+            renderFeatureCheckboxes();
+        }
+        setNavStep(3);
+        showStep(stepNmFeatures);
+    }
+
+    btnNmFeaturesBack.addEventListener('click', async () => {
+        await goToNickelMenuConfig();
+    });
+
+    btnNmFeaturesNext.addEventListener('click', () => {
         goToNmReview();
     });
 
@@ -702,7 +725,11 @@ import JSZip from 'jszip';
     }
 
     btnNmReviewBack.addEventListener('click', async () => {
-        await goToNickelMenuConfig();
+        if (nickelMenuOption === 'preset') {
+            goToNmFeatures();
+        } else {
+            await goToNickelMenuConfig();
+        }
     });
 
     async function executeNmInstall(writeToDevice) {

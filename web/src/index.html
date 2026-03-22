@@ -60,7 +60,7 @@
             <p>How would you like to set up your Kobo?</p>
             <div class="mode-cards">
                 <button id="btn-connect" class="mode-card mode-card-btn">
-                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 16 16" fill="currentColor"><path d="m7.792.312-1.533 2.3A.25.25 0 0 0 6.467 3H7.5v7.319a2.5 2.5 0 0 0-.515-.298L5.909 9.56A1.5 1.5 0 0 1 5 8.18v-.266a1.5 1.5 0 1 0-1 0v.266a2.5 2.5 0 0 0 1.515 2.298l1.076.461a1.5 1.5 0 0 1 .888 1.129 2.001 2.001 0 1 0 1.021-.006v-.902a1.5 1.5 0 0 1 .756-1.303l1.484-.848A2.5 2.5 0 0 0 11.995 7h.755a.25.25 0 0 0 .25-.25v-2.5a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25v2.5c0 .138.112.25.25.25h.741a1.5 1.5 0 0 1-.747 1.142L8.76 8.99a2.584 2.584 0 0 0-.26.17V3h1.033a.25.25 0 0 0 .208-.389L8.208.312a.25.25 0 0 0-.416 0Z"/></svg>
+                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15,7V11H16V13H13V5H15L12,1L9,5H11V13H8V10.93C8.66,10.59 9.1,9.87 9.1,9A2.1,2.1 0 0,0 7,6.9C5.84,6.9 4.9,7.84 4.9,9C4.9,9.87 5.34,10.59 6,10.93V13A2,2 0 0,0 8,15H11V18.05C10.29,18.32 9.75,18.93 9.75,19.75A1.75,1.75 0 0,0 11.5,21.5C12.47,21.5 13.25,20.72 13.25,19.75C13.25,18.93 12.71,18.32 12,18.05V15H16A2,2 0 0,0 18,13V11H19V7H15Z"/></svg>
                     <div class="mode-card-body">
                         <div class="mode-card-title">
                             Connect my Kobo
@@ -70,7 +70,7 @@
                     </div>
                 </button>
                 <button id="btn-manual" class="mode-card mode-card-btn">
-                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
                     <div class="mode-card-body">
                         <div class="mode-card-title">
                             Build downloadable archive
@@ -176,9 +176,6 @@
                         <div class="nm-option-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
                     </div>
                 </label>
-                <div id="nm-config-options" class="nm-config-options" hidden>
-                <!-- Populated dynamically from feature modules by app.js -->
-                </div>
                 <label class="nm-option">
                     <input type="radio" name="nm-option" value="nickelmenu-only">
                     <div class="nm-option-body">
@@ -198,6 +195,16 @@
             <div class="step-actions">
                 <button id="btn-nm-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-nm-next" class="primary">Continue &#x203A;</button>
+            </div>
+        </section>
+
+        <!-- Step 2b-2: NickelMenu feature selection (preset only) -->
+        <section id="step-nm-features" class="step" hidden>
+            <p>Select which features you'd like to enable.</p>
+            <div id="nm-config-options" class="nm-config-options"></div>
+            <div class="step-actions">
+                <button id="btn-nm-features-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-nm-features-next" class="primary">Continue &#x203A;</button>
             </div>
         </section>
 

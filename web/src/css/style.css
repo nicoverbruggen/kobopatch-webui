@@ -184,6 +184,13 @@ h2 {
     gap: 0.75rem;
 }
 
+.mode-card-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
 .mode-card {
     display: flex;
     align-items: flex-start;
@@ -278,14 +285,14 @@ h2 {
 .nm-options {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.75rem;
 }
 
 .nm-option {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.85rem 1rem;
+    padding: 1rem 1.25rem;
     background: var(--card-bg);
     border: 2px solid var(--border-light);
     border-radius: 10px;
@@ -330,7 +337,9 @@ h2 {
 }
 
 #nm-uninstall-options {
-    padding: 0 0.25rem;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.5rem;
     margin-left: 1.5rem;
 }
 
@@ -338,18 +347,17 @@ h2 {
     accent-color: var(--error-text) !important;
 }
 
-/* NickelMenu config checkboxes */
+/* NickelMenu feature checkboxes */
 .nm-config-options {
-    padding: 0 0.25rem;
-    margin-left: 1.5rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .nm-config-item {
     display: flex;
     align-items: flex-start;
-    gap: 0.6rem;
-    padding: 0.5rem 0;
-    font-size: 0.88rem;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
     color: var(--text);
     cursor: pointer;
 }
@@ -360,7 +368,7 @@ h2 {
 
 .nm-config-item input[type="checkbox"] {
     flex-shrink: 0;
-    margin-top: 0.15rem;
+    margin-top: 0.2rem;
     accent-color: var(--primary);
 }
 
@@ -370,30 +378,21 @@ h2 {
 
 .nm-config-text {
     user-select: none;
-    margin-top: -2px;
+}
+
+.nm-config-title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.93rem;
+    color: var(--text);
 }
 
 .nm-config-desc {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.83rem;
     color: var(--text-secondary);
-    line-height: 1.4;
+    line-height: 1.5;
     margin-top: 0.1rem;
-}
-
-.nm-config-link {
-    display: block;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-top: 1px solid var(--border-light);
-    font-size: 0.8rem;
-    color: var(--primary);
-    text-decoration: none;
-}
-
-.nm-config-link:hover {
-    text-decoration: underline;
 }
 
 .nm-option input[type="radio"] {
@@ -403,14 +402,14 @@ h2 {
 }
 
 .nm-option-title {
-    font-weight: 500;
-    font-size: 0.88rem;
+    font-weight: 600;
+    font-size: 0.93rem;
     color: var(--text);
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.25rem;
 }
 
 .nm-option-desc {
-    font-size: 0.78rem;
+    font-size: 0.83rem;
     color: var(--text-secondary);
     line-height: 1.5;
 }

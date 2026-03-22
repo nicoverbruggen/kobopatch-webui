@@ -1,7 +1,7 @@
 export default {
     id: 'hide-recommendations',
     title: 'Hide home screen recommendations',
-    description: 'Hides the recommendations column next to your current read on the home screen. Useful if you are only reading one book at a time.',
+    description: 'Hides the recommendations next to your current read on the home screen.',
     default: false,
 
     postProcess(files) {

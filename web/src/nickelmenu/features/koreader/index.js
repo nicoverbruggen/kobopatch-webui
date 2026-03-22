@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 export default {
     id: 'koreader',
     title: 'Install KOReader',
-    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. Installing this requires many files to be copied and that can take a bit, so please be patient when transferring this to your Kobo.',
+    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. Installing this requires many files to be copied and that can take a bit, so please be patient when transferring this to your Kobo. You can start KOReader via the Tweak menu, it does not replace the built-in reader functionality.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 
