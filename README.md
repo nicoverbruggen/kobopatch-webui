@@ -183,6 +183,12 @@ This serves the app at `http://localhost:8888`. The script automatically:
 
 You can delete the entire `web/dist/` folder and re-run `serve-locally.sh` to regenerate everything.
 
+To automatically rebuild when source files change:
+
+```bash
+./serve-locally.sh --dev
+```
+
 ## Testing
 
 Run all tests (WASM integration + E2E):

@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${1:-}" == "--fake-analytics" ]]; then
-    export UMAMI_WEBSITE_ID="fake"
-    export UMAMI_SCRIPT_URL="data:,"
-fi
+DEV_MODE=false
+for arg in "$@"; do
+    case "$arg" in
+        --fake-analytics)
+            export UMAMI_WEBSITE_ID="fake"
+            export UMAMI_SCRIPT_URL="data:,"
+            ;;
+        --dev)
+            DEV_MODE=true
+            ;;
+    esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WEB_DIR="$SCRIPT_DIR/web"
@@ -40,5 +48,13 @@ if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
     "$WASM_DIR/build.sh"
 fi
 
-echo "Serving at http://localhost:8888"
-node serve.mjs
+if [ "$DEV_MODE" = true ]; then
+    echo "Serving at http://localhost:8888 (dev mode, watching for changes)"
+    NO_CACHE=1 node serve.mjs &
+    SERVER_PID=$!
+    trap "kill $SERVER_PID 2>/dev/null" EXIT
+    node build.mjs --watch
+else
+    echo "Serving at http://localhost:8888"
+    node serve.mjs
+fi

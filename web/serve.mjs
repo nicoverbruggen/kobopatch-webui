@@ -17,18 +17,19 @@ if (analyticsEnabled) {
         `    <script defer src="${UMAMI_SCRIPT_URL}" data-website-id="${UMAMI_WEBSITE_ID}"></script>\n`;
 }
 
-// Cache the processed index.html at startup
+// Cache the processed index.html (disabled when NO_CACHE is set, e.g. during --dev)
+const noCache = !!process.env.NO_CACHE;
 let cachedIndexHtml = null;
 function getIndexHtml() {
-    if (cachedIndexHtml) return cachedIndexHtml;
+    if (!noCache && cachedIndexHtml) return cachedIndexHtml;
     const indexPath = join(DIST, 'index.html');
     if (!existsSync(indexPath)) return null;
     let html = readFileSync(indexPath, 'utf-8');
     if (analyticsSnippet) {
         html = html.replace('</head>', analyticsSnippet + '</head>');
     }
-    cachedIndexHtml = html;
-    return cachedIndexHtml;
+    if (!noCache) cachedIndexHtml = html;
+    return html;
 }
 
 const MIME = {
