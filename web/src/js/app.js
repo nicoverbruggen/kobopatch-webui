@@ -181,8 +181,12 @@ import JSZip from 'jszip';
         items.forEach((li, i) => {
             const stepNum = i + 1;
             li.classList.remove('active', 'done');
+            li.removeAttribute('aria-current');
             if (stepNum < num) li.classList.add('done');
-            else if (stepNum === num) li.classList.add('active');
+            else if (stepNum === num) {
+                li.classList.add('active');
+                li.setAttribute('aria-current', 'step');
+            }
         });
         stepNav.hidden = false;
     }
@@ -746,13 +750,13 @@ import JSZip from 'jszip';
                 nmProgress.textContent = 'Removing NickelMenu assets...';
                 try {
                     await device.removeEntry(['.adds', 'nm'], { recursive: true });
-                } catch {
-                    // ignore — folder may already be gone
+                } catch (err) {
+                    console.warn('Could not remove .adds/nm:', err);
                 }
                 try {
                     await device.removeEntry(['.adds', 'scripts'], { recursive: true });
-                } catch {
-                    // ignore — folder may already be gone
+                } catch (err) {
+                    console.warn('Could not remove .adds/scripts:', err);
                 }
                 nmProgress.textContent = 'Creating uninstall marker...';
                 await device.writeFile(['.adds', 'nm', 'uninstall'], new Uint8Array(0));
@@ -763,8 +767,8 @@ import JSZip from 'jszip';
                     for (const entry of feature.uninstall.paths) {
                         try {
                             await device.removeEntry(entry.path, { recursive: !!entry.recursive });
-                        } catch {
-                            // ignore — file may already be gone
+                        } catch (err) {
+                            console.warn(`Could not remove ${entry.path.join('/')}:`, err);
                         }
                     }
                 }

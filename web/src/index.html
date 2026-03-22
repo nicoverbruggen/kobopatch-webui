@@ -41,13 +41,13 @@
         </header>
 
         <!-- Shown until JS initialises -->
-        <div id="initial-loader" class="initial-loader">
-            <div class="spinner"></div>
+        <div id="initial-loader" class="initial-loader" role="status" aria-label="Loading">
+            <div class="spinner" aria-hidden="true"></div>
             <p>Loading&hellip;</p>
         </div>
 
         <!-- Step indicator (populated dynamically by app.js) -->
-        <nav id="step-nav" class="step-nav" hidden>
+        <nav id="step-nav" class="step-nav" aria-label="Progress" hidden>
             <ol></ol>
         </nav>
 
@@ -89,13 +89,13 @@
             <p class="fallback-hint">
                 <strong>Select the version number currently installed on your device.</strong> If it does not appear in this list, your software version is not supported for custom patching. You can go back and choose NickelMenu instead, which works with all versions.
             </p>
-            <select id="manual-version">
+            <select id="manual-version" aria-label="Software version">
                 <option value="">-- Select software version --</option>
             </select>
             <p id="manual-version-hint" class="fallback-hint">
                 You can find the version number on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> &gt; <strong>Software version</strong>.
             </p>
-            <select id="manual-model" hidden>
+            <select id="manual-model" aria-label="Kobo model" hidden>
                 <option value="">-- Select your Kobo model --</option>
             </select>
             <p id="manual-model-hint" class="fallback-hint" hidden>
@@ -142,7 +142,7 @@
         <!-- Step 2: Mode selection -->
         <section id="step-mode" class="step" hidden>
             <p>What would you like to do?</p>
-            <div class="mode-cards">
+            <div class="mode-cards" role="radiogroup" aria-label="Mode selection">
                 <label class="mode-card mode-card-selected">
                     <input type="radio" name="mode" value="nickelmenu" checked>
                     <div class="mode-card-body">
@@ -168,7 +168,7 @@
         <!-- Step 2b: NickelMenu configuration -->
         <section id="step-nickelmenu" class="step" hidden>
             <p>Choose what to do with your Kobo.</p>
-            <div class="nm-options">
+            <div class="nm-options" role="radiogroup" aria-label="NickelMenu options">
                 <label class="nm-option">
                     <input type="radio" name="nm-option" value="preset">
                     <div class="nm-option-body">
@@ -224,8 +224,8 @@
 
         <!-- NickelMenu installing -->
         <section id="step-nm-installing" class="step" hidden>
-            <div class="build-header">
-                <div class="spinner"></div>
+            <div class="build-header" role="status" aria-live="polite">
+                <div class="spinner" aria-hidden="true"></div>
                 <p id="nm-progress">Starting...</p>
             </div>
         </section>
@@ -293,8 +293,8 @@
 
         <!-- Step 4: Building -->
         <section id="step-building" class="step" hidden>
-            <div class="build-header">
-                <div class="spinner"></div>
+            <div class="build-header" role="status" aria-live="polite">
+                <div class="spinner" aria-hidden="true"></div>
                 <p id="build-progress">Starting...</p>
             </div>
             <pre id="build-log" class="build-log"></pre>
@@ -362,10 +362,10 @@
         </p>
     </footer>
 
-    <dialog id="how-it-works-dialog" class="modal">
+    <dialog id="how-it-works-dialog" class="modal" aria-labelledby="how-it-works-title">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Disclaimer</h2>
+                <h2 id="how-it-works-title">Disclaimer</h2>
                 <button id="btn-close-dialog" class="modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
@@ -425,10 +425,10 @@
         </div>
     </dialog>
 
-    <dialog id="privacy-dialog" class="modal">
+    <dialog id="privacy-dialog" class="modal" aria-labelledby="privacy-title">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Privacy</h2>
+                <h2 id="privacy-title">Privacy</h2>
                 <button id="btn-close-privacy" class="modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">

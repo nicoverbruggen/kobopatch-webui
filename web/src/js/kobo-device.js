@@ -62,18 +62,20 @@ class KoboDevice {
         let koboDir;
         try {
             koboDir = await this.directoryHandle.getDirectoryHandle('.kobo');
-        } catch {
+        } catch (err) {
             throw new Error(
-                'This does not appear to be a Kobo device. Could not find the .kobo directory.'
+                'This does not appear to be a Kobo device. Could not find the .kobo directory.',
+                { cause: err }
             );
         }
 
         let versionFile;
         try {
             versionFile = await koboDir.getFileHandle('version');
-        } catch {
+        } catch (err) {
             throw new Error(
-                'Could not find .kobo/version. Is this the root of your Kobo drive?'
+                'Could not find .kobo/version. Is this the root of your Kobo drive?',
+                { cause: err }
             );
         }
 

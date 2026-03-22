@@ -155,7 +155,8 @@ async function scanAvailablePatches() {
             }
         }
         return result;
-    } catch {
+    } catch (err) {
+        console.error('Failed to load patch index:', err);
         return [];
     }
 }
