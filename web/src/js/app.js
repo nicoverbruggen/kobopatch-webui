@@ -36,7 +36,7 @@ import JSZip from 'jszip';
 
     // Check KOReader availability and mark the feature (best-effort, non-blocking).
     const koreaderFeature = ALL_FEATURES.find(f => f.id === 'koreader');
-    const koreaderVersionReady = fetch('/koreader/release.json')
+    const koreaderVersionReady = fetch('/koreader/release.json') // eslint-disable-line no-unused-vars -- fire-and-forget; availability resolves before user reaches features step
         .then(r => r.ok ? r.json() : null)
         .then(meta => {
             if (meta && meta.version) {
@@ -148,7 +148,7 @@ import JSZip from 'jszip';
 
     // --- Step navigation ---
 
-    let currentNavLabels = TL.NAV_DEFAULT;
+    let currentNavLabels = TL.NAV_DEFAULT; // eslint-disable-line no-unused-vars -- kept for debuggability; tracks which label set is active
 
     const stepHistory = [stepConnect];
 

@@ -40,6 +40,10 @@ echo "=== Installing web dependencies ==="
 cd "$SCRIPT_DIR/web" && npm install
 
 echo ""
+echo "=== Linting ==="
+cd "$SCRIPT_DIR/web" && npx eslint .
+
+echo ""
 echo "=== Building web app ==="
 cd "$SCRIPT_DIR/web" && node build.mjs
 

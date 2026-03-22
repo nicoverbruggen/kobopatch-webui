@@ -3,10 +3,12 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs --dev"
+    "dev": "node build.mjs --dev",
+    "lint": "eslint ."
   },
   "devDependencies": {
-    "esbuild": "^0.27.4"
+    "esbuild": "^0.27.4",
+    "eslint": "^9.0.0"
   },
   "dependencies": {
     "jszip": "^3.10.1"
