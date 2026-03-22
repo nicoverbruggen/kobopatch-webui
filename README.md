@@ -267,7 +267,14 @@ The WASM patcher performs several checks on each patched binary before including
 
 ## Analytics (optional)
 
-The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses optional, privacy-focused analytics via [Umami](https://umami.is) to understand how the tool is used. No personal identifiers are collected. See the "Privacy" link in the footer for details.
+The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses optional, privacy-focused analytics via [Umami](https://umami.is) to understand how the tool is used. No personal identifiers are collected. See the "Privacy" link in the footer for details. The following events are tracked:
+
+- **flow-start** — how the user started (manual download or device connection)
+- **nm-option** — which NickelMenu option was selected (preset, NickelMenu only, or removal)
+- **nm-koreader-addon** — whether KOReader was selected for installation
+- **nm-simplified-home** — whether simplified home screen features were selected
+- **nm-basic-tabs** — whether the basic tab bar option was selected
+- **flow-end** — how the flow ended (write to device or download, for both NickelMenu and custom patches)
 
 Analytics are disabled for local and self-hosted installs. They activate only when `UMAMI_WEBSITE_ID` and `UMAMI_SCRIPT_URL` environment variables are set on the server. To test the analytics UI locally without sending any data:
 
