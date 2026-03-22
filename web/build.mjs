@@ -86,29 +86,11 @@ async function build() {
     // Get git version string
     let versionStr = 'unknown';
     let versionLink = 'https://github.com/nicoverbruggen/kobopatch-webui';
-    const nixpacksCommit = process.env.SOURCE_COMMIT;
     try {
-        if (nixpacksCommit) {
-            versionStr = nixpacksCommit.slice(0, 7);
-            versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/commit/${nixpacksCommit}`;
-        } else {
-            const hash = String(execSync('git rev-parse --short HEAD', { cwd: repoDir })).trim();
-
-            let tag = '';
-            try {
-                tag = String(execSync('git describe --tags --exact-match 2>/dev/null', { cwd: repoDir })).trim();
-            } catch {}
-            if (tag) {
-                versionStr = tag;
-                const dirty = String(execSync('git status --porcelain', { cwd: repoDir })).trim();
-                if (dirty) versionStr += ' (D)';
-                versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/releases/tag/${tag}`;
-            } else {
-                const dirty = String(execSync('git status --porcelain', { cwd: repoDir })).trim();
-                versionStr = dirty ? `${hash} (D)` : hash;
-                versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/commit/${hash}`;
-            }
-        }
+        const fullHash = process.env.SOURCE_COMMIT
+            ?? String(execSync('git rev-parse HEAD', { cwd: repoDir })).trim();
+        versionStr = fullHash.slice(0, 7);
+        versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/tree/${fullHash}`;
     } catch {}
 
     // Generate cache-busted index.html
