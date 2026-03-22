@@ -35,8 +35,8 @@ export const TL = {
         EXTRACTING: 'Extracting KoboRoot.tgz...',
         APPLYING_PATCHES: 'Applying patches...',
         NO_FIRMWARE_URL: 'No download URL available for this device.',
-        WRITE_FAILED: 'Failed to write KoboRoot.tgz: ',
-        NM_INSTALL_FAILED: 'NickelMenu installation failed: ',
+        WRITE_FAILED: (msg) => `Failed to write KoboRoot.tgz: ${msg}`,
+        NM_INSTALL_FAILED: (msg) => `NickelMenu installation failed: ${msg}`,
         EXTRACT_FAILED: 'KoboRoot.tgz not found in software update',
     },
 

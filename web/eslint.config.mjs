@@ -21,6 +21,7 @@ export default [
                 HTMLElement: 'readonly',
                 Worker: 'readonly',
                 requestAnimationFrame: 'readonly',
+                location: 'readonly',
                 // JSZip loaded via script tag
                 JSZip: 'readonly',
             },

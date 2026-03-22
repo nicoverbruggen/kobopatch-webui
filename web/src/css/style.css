@@ -212,6 +212,11 @@ h2 {
     border-color: var(--border);
 }
 
+.mode-card-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .mode-card-selected {
     border-color: var(--primary);
     box-shadow: 0 0 0 1px var(--primary), var(--shadow);

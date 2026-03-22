@@ -331,7 +331,7 @@ export function initPatchesFlow(state) {
         } catch (err) {
             btnWrite.disabled = false;
             btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
-            state.showError(TL.STATUS.WRITE_FAILED + err.message);
+            state.showError(TL.STATUS.WRITE_FAILED(err.message));
         }
     });
 

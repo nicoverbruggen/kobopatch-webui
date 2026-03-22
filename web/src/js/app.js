@@ -185,8 +185,7 @@ function goToModeSelection() {
     const patchesHint = $('mode-patches-hint');
     if (autoModeNoPatchesAvailable) {
         patchesRadio.disabled = true;
-        patchesCard.style.opacity = '0.5';
-        patchesCard.style.cursor = 'not-allowed';
+        patchesCard.classList.add('mode-card-disabled');
         patchesHint.hidden = false;
         // Auto-select NickelMenu since it's the only available option.
         const nmRadio = $q('input[value="nickelmenu"]', stepMode);
@@ -194,8 +193,7 @@ function goToModeSelection() {
         nmRadio.dispatchEvent(new Event('change'));
     } else {
         patchesRadio.disabled = false;
-        patchesCard.style.opacity = '';
-        patchesCard.style.cursor = '';
+        patchesCard.classList.remove('mode-card-disabled');
         patchesHint.hidden = true;
     }
 
@@ -468,24 +466,9 @@ btnErrorBack.addEventListener('click', () => {
     showStep(stepPatches);
 });
 
-// "Start Over" — full reset of all state, back to step 1.
+// "Start Over" — reload the page for a guaranteed clean slate.
 btnRetry.addEventListener('click', () => {
-    state.device.disconnect();
-    state.firmwareURL = null;
-    state.resultTgz = null;
-    state.resultNmZip = null;
-    state.manualMode = false;
-    state.selectedPrefix = null;
-    state.patchesLoaded = false;
-    state.isRestore = false;
-    state.selectedMode = null;
-    state.nickelMenuOption = null;
-    btnDeviceNext.hidden = false;
-    btnDeviceRestore.hidden = false;
-
-    setNavLabels(TL.NAV_DEFAULT);
-    setNavStep(1);
-    showStep(stepConnect);
+    location.reload();
 });
 
 // =============================================================================
@@ -494,31 +477,24 @@ btnRetry.addEventListener('click', () => {
 // Modal dialogs for "How It Works" (disclaimer) and "Privacy" (analytics info).
 // Clicking the backdrop (the <dialog> element itself) also closes them.
 
-const dialog = $('how-it-works-dialog');
-$('btn-how-it-works').addEventListener('click', (e) => {
-    e.preventDefault();
-    dialog.showModal();
-});
-$('btn-close-dialog').addEventListener('click', () => {
-    dialog.close();
-});
-dialog.addEventListener('click', (e) => {
-    if (e.target === dialog) dialog.close();
-});
+/** Wire up a <dialog>: open button, close button, and backdrop click to close. */
+function setupDialog(dialogId, openBtnId, closeBtnId) {
+    const dlg = $(dialogId);
+    $(openBtnId).addEventListener('click', (e) => {
+        e.preventDefault();
+        dlg.showModal();
+    });
+    $(closeBtnId).addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => {
+        if (e.target === dlg) dlg.close();
+    });
+}
+
+setupDialog('how-it-works-dialog', 'btn-how-it-works', 'btn-close-dialog');
 
 // Privacy dialog is only shown when analytics are enabled.
 if (analyticsEnabled()) {
     $('btn-privacy').hidden = false;
     $('privacy-link-separator').hidden = false;
 }
-const privacyDialog = $('privacy-dialog');
-$('btn-privacy').addEventListener('click', (e) => {
-    e.preventDefault();
-    privacyDialog.showModal();
-});
-$('btn-close-privacy').addEventListener('click', () => {
-    privacyDialog.close();
-});
-privacyDialog.addEventListener('click', (e) => {
-    if (e.target === privacyDialog) privacyDialog.close();
-});
+setupDialog('privacy-dialog', 'btn-privacy', 'btn-close-privacy');

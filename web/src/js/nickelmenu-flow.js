@@ -383,7 +383,7 @@ export function initNickelMenu(state) {
                 showNmDone('download');
             }
         } catch (err) {
-            state.showError(TL.STATUS.NM_INSTALL_FAILED + err.message);
+            state.showError(TL.STATUS.NM_INSTALL_FAILED(err.message));
         }
     }
 
