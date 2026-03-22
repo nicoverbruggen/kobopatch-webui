@@ -311,6 +311,8 @@ test.describe('NickelMenu', () => {
     // With hide-recommendations and hide-notices enabled, the hide lines should be appended
     expect(items).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(items).toContain('experimental:hide_home_row3_enabled:1');
+    // With simplify-tabs enabled, TAB_CONFIG should be prepended
+    expect(items).toContain('experimental :menu_main_15505_enabled: 1');
   });
 
   test('with device — install NickelMenu only and write to Kobo', async ({ page }) => {
@@ -487,6 +489,106 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
     // Readerly should still be unchecked (state preserved)
     await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).not.toBeChecked();
+  });
+
+  test('no device — feature selections preserved through back navigation', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+
+    await goToManualMode(page);
+    await page.click('#btn-mode-next');
+
+    // Select preset → features
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+
+    // Enable some features, disable readerly-fonts (on by default)
+    await page.check('input[name="nm-cfg-simplify-tabs"]');
+    await page.check('input[name="nm-cfg-hide-notices"]');
+    await page.uncheck('input[name="nm-cfg-readerly-fonts"]');
+
+    // Continue to review
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
+    await expect(page.locator('#nm-review-list')).not.toContainText('Readerly fonts');
+
+    // Back to features — selections must be preserved
+    await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).not.toBeChecked();
+
+    // Back to config and then forward again — still preserved
+    await page.click('#btn-nm-features-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).not.toBeChecked();
+
+    // Now modify selections and verify review updates
+    await page.uncheck('input[name="nm-cfg-simplify-tabs"]');
+    await page.check('input[name="nm-cfg-hide-recommendations"]');
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#nm-review-list')).not.toContainText('Simplify navigation tabs');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
+  });
+
+  test('no device — switching between preset and nickelmenu-only updates review', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+
+    await goToManualMode(page);
+    await page.click('#btn-mode-next');
+
+    // Preset path: enable some features
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.check('input[name="nm-cfg-hide-recommendations"]');
+    await page.click('#btn-nm-features-next');
+
+    // Review should list features
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+
+    // Back to features, back to config
+    await page.click('#btn-nm-review-back');
+    await page.click('#btn-nm-features-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    // Switch to nickelmenu-only
+    await page.click('input[name="nm-option"][value="nickelmenu-only"]');
+    await page.click('#btn-nm-next');
+
+    // Review should skip features step and show only NickelMenu
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (KoboRoot.tgz)');
+    await expect(page.locator('#nm-review-list')).not.toContainText('Readerly');
+    await expect(page.locator('#nm-review-list')).not.toContainText('Hide home screen');
+
+    // Back to config, switch back to preset
+    await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    // Features should still have previous selections
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-cfg-hide-recommendations"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
+
+    // Review should show features again
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
   });
 });
 
