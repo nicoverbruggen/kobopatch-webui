@@ -49,7 +49,11 @@ web/
     css/
       style.css
     js/
-      app.js                    # ES module entry point: step navigation, flow orchestration
+      app.js                    # Orchestrator: shared state, device connection, mode selection, error/retry, dialogs
+      dom.js                    # Shared DOM helpers ($, $q, $qa, formatMB, populateSelect, triggerDownload)
+      nav.js                    # Step navigation, progress bar, step history, card radio interactivity
+      nickelmenu-flow.js        # NickelMenu flow: config, features, review, install, done
+      patches-flow.js           # Custom patches flow: configure, build, install/download
       kobo-device.js            # KoboModels, KoboDevice class
       kobo-software-urls.js     # Fetches download URLs from JSON, getSoftwareUrl, getDevicesForVersion
       nickelmenu/               # NickelMenu feature modules + installer orchestrator
@@ -160,7 +164,15 @@ This downloads the latest release directly into `web/dist/koreader/`, skipping t
 
 ## Building the frontend
 
-The JS source lives in `web/src/js/` as ES modules. esbuild bundles them into a single `web/dist/bundle.js`.
+The JS source lives in `web/src/js/` as ES modules, organized around the two main user flows:
+
+- **`app.js`** — the orchestrator: creates shared state, handles device connection, mode selection, error recovery, and dialogs. Delegates to the two flow modules below.
+- **`nickelmenu-flow.js`** — the entire NickelMenu path (config, features, review, install, done).
+- **`patches-flow.js`** — the entire custom patches path (configure, build, install/download).
+- **`nav.js`** — step navigation, progress bar, and step history (shared by both flows).
+- **`dom.js`** — tiny DOM utility helpers (`$`, `$q`, `$qa`, etc.) used everywhere.
+
+Flow modules receive a shared `state` object by reference and call back into the orchestrator via `state.showError()` and `state.goToModeSelection()` when they need to cross module boundaries. esbuild bundles everything into a single `web/dist/bundle.js`.
 
 ```bash
 cd web
