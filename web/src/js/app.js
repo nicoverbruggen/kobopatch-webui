@@ -212,11 +212,22 @@ state.goToModeSelection = goToModeSelection;
 const loader = $('initial-loader');
 if (loader) loader.remove();
 
+// Detect iOS (Safari/WebKit) — the File System Access API is unavailable on iOS.
+const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 // Disable the "Connect" button if the File System Access API isn't available.
 const hasFileSystemAccess = KoboDevice.isSupported();
 if (!hasFileSystemAccess) {
     btnConnect.disabled = true;
     $('connect-unsupported-hint').hidden = false;
+    if (isAppleMobileDevice) {
+        $('connect-unsupported-text').innerHTML =
+            'Directly connecting your Kobo is not available on iOS because Safari does not support the ' +
+            '<a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>. ' +
+            'For the best experience, use <b>Chrome, Edge, or Opera</b> on a desktop or laptop computer. ' +
+            'You can still use the <b>manual download</b> option below.';
+    }
 }
 
 setNavLabels(TL.NAV_DEFAULT);

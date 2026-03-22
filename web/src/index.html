@@ -34,9 +34,9 @@
     <script src="js/jszip.min.js"></script>
 </head>
 <body>
-    <main>
+        <main>
         <header class="hero">
-            <h1>KoboPatch <span class="hero-accent">Web UI</span> <span class="beta-pill">beta</span></h1>
+            <h1>KoboPatch <span class="hero-accent">Web UI</span> <span class="beta-pill" hidden>beta</span></h1>
             <p class="subtitle">Customise your Kobo e-reader with NickelMenu or custom patches.</p>
         </header>
 
@@ -80,7 +80,7 @@
                 </button>
             </div>
             <p id="connect-unsupported-hint" class="fallback-hint" hidden>
-                <b>Note:</b> Your browser does not support direct device access via the <a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>, which is required for a seamless patching experience. Directly connecting to your Kobo is not available because of this. Use Chrome, Edge or Opera to connect your Kobo directly, or choose the manual download option.
+                <b>Note:</b> <span id="connect-unsupported-text">Your browser does not support direct device access via the <a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>, which is required for a seamless patching experience. Directly connecting to your Kobo is not available because of this. Use Chrome, Edge or Opera to connect your Kobo directly, or choose the manual download option.</span>
             </p>
         </section>
 
