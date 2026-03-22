@@ -352,6 +352,10 @@
             <span id="privacy-link-separator" hidden>&nbsp;&middot;&nbsp;</span>
             <a href="#" id="btn-privacy" class="site-footer-link" hidden>Privacy</a>
             &nbsp;&middot;&nbsp;
+            <a href="https://github.com/nicoverbruggen/kobopatch-webui/discussions/1" class="site-footer-link" target="_blank">Feedback</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://github.com/nicoverbruggen/kobopatch-webui" class="site-footer-link" target="_blank">GitHub</a>
+            &nbsp;&middot;&nbsp;
             <a id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank"><span id="commit-hash"></span></a>
         </p>
         <p class="site-footer-attribution">
@@ -371,56 +375,35 @@
             <div class="modal-body">
                 <p>
                     KoboPatch Web UI is a fully client-side web application for customising
-                    Kobo e-readers. Nothing is uploaded to a server &mdash; everything runs in your browser.
+                    Kobo e-readers. The actual patching and archive creation (or transfer to your device) runs in your browser.
                 </p>
 
                 <h3>NickelMenu</h3>
-                <p>
-                    <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> adds custom menu items
-                    and tweaks to your Kobo. This tool can install NickelMenu along with an optional curated
-                    configuration (custom menus, fonts, screensavers) or remove it. NickelMenu works with
-                    most Kobo devices and includes a failsafe that automatically uninstalls itself if
-                    something goes wrong.
-                </p>
+                <p><a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> is a custom menu that hooks into the existing operating system to add extra features.</p>
+                <ul>
+                    <li>NickelMenu adds custom menu items and tweaks to your Kobo, depending on the configuration file on your device.</li>
+                    <li>This tool can install NickelMenu with an optional curated configuration (custom menus, fonts, screensavers) or remove it.</li>
+                    <li>Works with most Kobo devices, and is generally considered to be safer than custom patches.</li>
+                    <li>Includes a failsafe that ensures NickelMenu automatically uninstalls itself if something goes wrong. This makes it so that future versions of the software that are incompatible with NickelMenu cannot cause problems.</li>
+                </ul>
 
-                <h3>Custom patches</h3>
-                <ol>
-                    <li><strong>Device selection</strong> &mdash; On Chromium-based browsers (Chrome, Edge), the app can
-                        auto-detect your Kobo via the File System Access API when connected over USB.
-                        On other browsers, you manually select your model and software version.</li>
-                    <li><strong>Patch configuration</strong> &mdash; You choose which
-                        <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> patches
-                        to enable or disable. Patches in the same group are mutually exclusive.
-                        The patches themselves are community-contributed via the
-                        <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.</li>
-                    <li><strong>Build</strong> &mdash; The correct software update is downloaded directly from Kobo's servers
-                        (<code>ereaderfiles.kobo.com</code>). The patcher, compiled from Go to WebAssembly, runs
-                        inside a Web Worker so the UI stays responsive. It extracts
-                        <code>KoboRoot.tgz</code>, applies your selected patches as in-place byte replacements
-                        to the ELF binaries, validates the results (ELF headers, file sizes, archive consistency),
-                        and produces a new <code>KoboRoot.tgz</code>.</li>
-                    <li><strong>Install</strong> &mdash; On Chromium, the patched file is written directly to the
-                        <code>.kobo</code> folder on the device. On other browsers, you download the file
-                        and copy it manually. After safely ejecting, the Kobo reboots and applies the update.</li>
-                </ol>
-
-                <h3>Restoring original software</h3>
-                <p>
-                    You can also use this tool to restore the original unpatched software. In that case,
-                    no patches are applied &mdash; the original <code>KoboRoot.tgz</code> is extracted
-                    from the software update as-is.
-                </p>
+                <h3>Custom Patches</h3>
+                <p>The practice of taking the operating system and applying specific known modifications to the prebuilt binaries.</p>
+                <ul>
+                    <li><strong>Device selection</strong> &mdash; auto-detected via the File System Access API on Chromium (Chrome, Edge), or manually selected on other browsers.</li>
+                    <li><strong>Patch configuration</strong> &mdash; enable or disable community-contributed <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> patches from the <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.</li>
+                    <li><strong>Build</strong> &mdash; the software update is downloaded from Kobo's servers and patched client-side using WebAssembly. Patched binaries are validated (ELF headers, file sizes, archive integrity) before output.</li>
+                    <li><strong>Install</strong> &mdash; written directly to the device on Chromium, or downloaded as a file for manual installation on other browsers.</li>
+                    <li><strong>Restore</strong> &mdash; you can also restore the original unpatched software. No patches are applied &mdash; the original <code>KoboRoot.tgz</code> is used as-is.</li>
+                </ul>
 
                 <h3>Safety</h3>
-                <p>
-                    NickelMenu includes a built-in failsafe mechanism. For custom patches, each patched binary
-                    is validated before being included in the output: ELF magic bytes,
-                    32-bit ARM architecture, file size (must match the original), and archive integrity are
-                    all checked. If anything looks wrong, the build fails with an error. That said, both
-                    NickelMenu and custom patches modify system files, so you should know how to
-                    <a href="https://help.kobo.com/hc/en-us/articles/360017605314" target="_blank">manually reset your Kobo</a>
-                    if needed.
-                </p>
+                <ul>
+                    <li>NickelMenu is a very small modification. It also includes a built-in failsafe mechanism, as noted in the section above.</li>
+                    <li>Custom patches are validated in various ways before being included in the output, and patching must succeed before the patch can be downloaded or transferred to your device.</li>
+                    <li>Both methods modify system files. While as many possible precautions are taken to avoid anything goes wrong, you should still know how to <a href="https://help.kobo.com/hc/en-us/articles/360017605314" target="_blank">manually reset your Kobo</a> if needed, as there are always risks involved with these types of modifications. You apply them at your own risk.</li>
+                </ul>
+                <p>If you would like to better understand how these various components work, I recommend reading through the README files of this project, NickelMenu and kobopatch, all of which are linked in the footer.</p>
             </div>
         </div>
     </dialog>
@@ -445,7 +428,9 @@
                     <li><strong>How the flow was started</strong> &mdash; whether you connected a Kobo
                         directly or chose the manual download option. This helps the author decide whether to keep the manual download option, or remove it (if it is barely used).</li>
                     <li><strong>Which NickelMenu option was selected</strong> &mdash; preset installation,
-                        NickelMenu only, or removal.</li>
+                        NickelMenu only, or removal. This helps the author understand which options to improve first.</li>
+                    <li><strong>Which NickelMenu add-ons were selected</strong> &mdash; whether KOReader,
+                        simplified home screen features, or the basic tab bar option were enabled. This helps the author understand which features are popular and worth maintaining.</li>
                     <li><strong>How the flow ended</strong> &mdash; whether files were written to the
                         device or downloaded as a ZIP. This helps the author understand how many people have actually used the complete flow successfully.</li>
                 </ul>

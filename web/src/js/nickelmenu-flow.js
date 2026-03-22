@@ -374,6 +374,12 @@ export function initNickelMenu(state) {
 
             // Install flow: either write directly to device or build a ZIP for download.
             const features = state.nickelMenuOption === 'preset' ? getSelectedFeatures() : [];
+            const hasKOReader = features.some(f => f.id === 'koreader');
+            const hasSimplifiedHome = features.some(f => f.id === 'hide-notices' || f.id === 'hide-recommendations');
+            const hasBasicTabs = features.some(f => f.id === 'simplify-tabs');
+            track('nm-koreader-addon', { enabled: hasKOReader ? 'yes' : 'no' });
+            track('nm-simplified-home', { enabled: hasSimplifiedHome ? 'yes' : 'no' });
+            track('nm-basic-tabs', { enabled: hasBasicTabs ? 'yes' : 'no' });
 
             if (writeToDevice && state.device.directoryHandle) {
                 await state.nmInstaller.installToDevice(state.device, features, progressFn);

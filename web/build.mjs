@@ -135,10 +135,10 @@ async function build() {
     );
 
     // Inject version string and link
-    html = html.replace('<span id="commit-hash"></span>', `<span id="commit-hash">${versionStr}</span>`);
+    html = html.replace('<span id="commit-hash"></span>', `<span id="commit-hash">Version ${versionStr}</span>`);
     html = html.replace(
-        'href="https://github.com/nicoverbruggen/kobopatch-webui"',
-        `href="${versionLink}"`
+        'id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui"',
+        `id="commit-link" class="site-footer-link" href="${versionLink}"`
     );
 
     writeFileSync(join(distDir, 'index.html'), html);
