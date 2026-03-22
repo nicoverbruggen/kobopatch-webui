@@ -43,11 +43,13 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-screensaver"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
-    await expect(page.locator('input[name="nm-cfg-simplify-home"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-hide-recommendations"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-hide-notices"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
 
-    // Enable simplifyHome for testing
-    await page.check('input[name="nm-cfg-simplify-home"]');
+    // Enable both home screen hiding options for testing
+    await page.check('input[name="nm-cfg-hide-recommendations"]');
+    await page.check('input[name="nm-cfg-hide-notices"]');
 
     await expect(page.locator('#btn-nm-next')).toBeEnabled();
     await page.click('#btn-nm-next');
@@ -90,7 +92,7 @@ test.describe('NickelMenu', () => {
     // Must NOT contain screensaver (unchecked by default)
     expect(zipFiles.some(f => f.startsWith('.kobo/screensaver/'))).toBe(false);
 
-    // Verify items file has simplifyHome modifications
+    // Verify items file has hide-recommendations and hide-notices modifications
     const itemsContent = await zip.file('.adds/nm/items').async('string');
     expect(itemsContent).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
@@ -141,6 +143,9 @@ test.describe('NickelMenu', () => {
     expect(zipFiles).toContainEqual('.adds/nm/items');
     // KOReader files should be present under .adds/koreader/
     expect(zipFiles.some(f => f.startsWith('.adds/koreader/'))).toBe(true);
+    // KOReader launcher should be at the top of the items file
+    const itemsContent = await zip.file('.adds/nm/items').async('string');
+    expect(itemsContent.startsWith('menu_item:main:KOReader')).toBe(true);
   });
 
   test('with device — install with KOReader writes files to device', async ({ page }) => {
@@ -253,7 +258,8 @@ test.describe('NickelMenu', () => {
 
     // Enable all options for testing
     await page.check('input[name="nm-cfg-simplify-tabs"]');
-    await page.check('input[name="nm-cfg-simplify-home"]');
+    await page.check('input[name="nm-cfg-hide-recommendations"]');
+    await page.check('input[name="nm-cfg-hide-notices"]');
 
     await page.click('#btn-nm-next');
 
@@ -262,7 +268,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
     await expect(page.locator('#nm-review-list')).toContainText('Hide certain navigation tabs');
-    await expect(page.locator('#nm-review-list')).toContainText('Hide certain home screen elements');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
+    await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
 
     // Both buttons visible when device is connected
     await expect(page.locator('#btn-nm-write')).toBeVisible();
@@ -291,7 +298,7 @@ test.describe('NickelMenu', () => {
     // Verify NickelMenu items file exists and has expected modifications
     const items = await readMockFile(page, '.adds', 'nm', 'items');
     expect(items, '.adds/nm/items should exist').not.toBeNull();
-    // With simplifyHome enabled, the hide lines should be appended
+    // With hide-recommendations and hide-notices enabled, the hide lines should be appended
     expect(items).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(items).toContain('experimental:hide_home_row3_enabled:1');
   });

@@ -4,7 +4,8 @@ import customMenu from './features/custom-menu/index.js';
 import readerlyFonts from './features/readerly-fonts/index.js';
 import koreader from './features/koreader/index.js';
 import simplifyTabs from './features/simplify-tabs/index.js';
-import simplifyHome from './features/simplify-home/index.js';
+import hideRecommendations from './features/hide-recommendations/index.js';
+import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
 
 /**
@@ -15,9 +16,10 @@ import screensaver from './features/screensaver/index.js';
 export const ALL_FEATURES = [
     customMenu,
     readerlyFonts,
-    koreader,
     simplifyTabs,
-    simplifyHome,
+    hideRecommendations,
+    hideNotices,
+    koreader,
     screensaver,
 ];
 

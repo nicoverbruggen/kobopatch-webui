@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 export default {
     id: 'koreader',
     title: 'Install KOReader',
-    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more.',
+    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. Installing this requires many files to be copied and that can take a bit, so please be patient when transferring this to your Kobo.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 
@@ -40,11 +40,14 @@ export default {
             });
         }
 
-        // Add NickelMenu launcher config
-        files.push({
-            path: '.adds/nm/koreader',
-            data: 'menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh\n',
-        });
+        return files;
+    },
+
+    postProcess(files) {
+        const items = files.find(f => f.path === '.adds/nm/items');
+        if (!items || typeof items.data !== 'string') return files;
+
+        items.data = 'menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh\n\n' + items.data;
 
         return files;
     },
