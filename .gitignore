@@ -22,6 +22,11 @@ web/dist/
 
 # Node
 web/node_modules/
+electron/node_modules/
+
+# Electron build artifacts
+electron/dist/
+electron/release/
 
 # Cached test assets (firmware, KOReader zips)
 tests/cached_assets/

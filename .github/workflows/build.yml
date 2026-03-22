@@ -2,7 +2,7 @@ name: Build and test project
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, electron]
     tags: ['v*']
 
 jobs:
@@ -94,3 +94,49 @@ jobs:
         run: |
           cd tests/e2e
           ./run-e2e.sh
+
+  build-electron:
+    needs: build-and-test
+    if: always() && needs.build-and-test.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build frontend
+        run: |
+          cd web
+          npm install
+          npm run build
+
+      - name: Build Electron app
+        run: |
+          cd electron
+          npm install
+          npm run build:${{ matrix.platform }}
+
+      - name: Upload Electron artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-${{ matrix.platform }}
+          path: |
+            electron/release/*.AppImage
+            electron/release/*.dmg
+            electron/release/*.zip
+            electron/release/*.exe
+          if-no-files-found: warn

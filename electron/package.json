@@ -1,0 +1,32 @@
+{
+  "name": "kobopatch-electron",
+  "version": "1.5.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "copy-dist": "node copy-dist.mjs",
+    "start": "npm run copy-dist && electron .",
+    "build": "npm run copy-dist && electron-builder",
+    "build:mac": "npm run copy-dist && electron-builder --mac",
+    "build:win": "npm run copy-dist && electron-builder --win",
+    "build:linux": "npm run copy-dist && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "be.nicoverbruggen.kobopatch-webui",
+    "productName": "KoboPatch Web UI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "dist/**/*"
+    ],
+    "mac": { "target": "dmg", "icon": "dist/favicon/web-app-manifest-512x512.png" },
+    "win": { "target": "portable", "icon": "dist/favicon/web-app-manifest-512x512.png" },
+    "linux": { "target": "AppImage", "icon": "dist/favicon/web-app-manifest-512x512.png" }
+  }
+}

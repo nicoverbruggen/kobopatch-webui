@@ -109,6 +109,11 @@ tests/
     playwright.config.js
     run-e2e.sh
 
+electron/
+  main.js                         # Electron main process (local HTTP server + BrowserWindow)
+  package.json                    # electron, electron-builder, build config
+  dist/                           # Copied web/dist/ + packaged installers (gitignored)
+
 # Root scripts
 test.sh                         # Runs all tests (WASM + E2E)
 serve-locally.sh                # Serves app at localhost:8888
@@ -200,6 +205,21 @@ To automatically rebuild when source files change:
 ```bash
 ./serve-locally.sh --dev
 ```
+
+## Building the Electron app
+
+A standalone desktop app can be built from the `electron/` directory. It packages the built `web/dist/` output into an Electron shell with a local HTTP server (avoids `file://` limitations).
+
+```bash
+cd electron
+npm install
+npm run build:linux    # Linux AppImage
+npm run build:mac      # macOS DMG
+npm run build:win      # Windows NSIS installer
+npm run build          # all platforms
+```
+
+Each platform script first copies `web/dist/` into `electron/dist/`, then runs electron-builder. Output goes to `electron/dist/`.
 
 ## Testing
 
