@@ -16,6 +16,9 @@ elif [ -x "$LOCAL_GO_DIR/bin/go" ] && "$LOCAL_GO_DIR/bin/go" version 2>/dev/null
 else
     # Detect platform and architecture
     OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    case "$OS" in
+        msys*|mingw*) OS="windows" ;;
+    esac
     ARCH="$(uname -m)"
     case "$ARCH" in
         x86_64)  ARCH="amd64" ;;
@@ -28,7 +31,13 @@ else
 
     echo "Downloading Go ${GO_VERSION} for ${OS}/${ARCH}..."
     rm -rf "$LOCAL_GO_DIR"
-    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.${OS}-${ARCH}.tar.gz" | tar -xz -C "$SCRIPT_DIR"
+    if [ "$OS" = "windows" ]; then
+        curl -fsSL "https://go.dev/dl/go${GO_VERSION}.${OS}-${ARCH}.zip" -o "$SCRIPT_DIR/go.zip"
+        unzip -q "$SCRIPT_DIR/go.zip" -d "$SCRIPT_DIR"
+        rm "$SCRIPT_DIR/go.zip"
+    else
+        curl -fsSL "https://go.dev/dl/go${GO_VERSION}.${OS}-${ARCH}.tar.gz" | tar -xz -C "$SCRIPT_DIR"
+    fi
     export GOROOT="$LOCAL_GO_DIR"
     export PATH="$LOCAL_GO_DIR/bin:$PATH"
 fi

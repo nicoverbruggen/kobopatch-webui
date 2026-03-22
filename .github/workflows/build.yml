@@ -104,10 +104,6 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-          - os: macos-latest
-            platform: mac
-          - os: windows-latest
-            platform: win
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -117,6 +113,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Build WASM binary
+        run: |
+          cd kobopatch-wasm
+          ./setup.sh
+          ./build.sh
+
+      - name: Set up NickelMenu assets
+        run: nickelmenu/setup.sh
+
+      - name: Set up KOReader assets
+        run: koreader/setup.sh
+
+      - name: Set up Readerly assets
+        run: readerly/setup.sh
 
       - name: Build frontend
         run: |
