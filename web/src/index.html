@@ -134,7 +134,13 @@
                 <li>In <span id="connect-file-manager">your file manager</span>, you should now see <strong>KOBOeReader</strong> appear as a drive.</li>
                 <li>When you press the button below, your browser will open a folder picker. Select the <strong>KOBOeReader</strong> volume, then click <strong>"Allow"</strong> when your browser asks if you want to give this site permission to write to this folder.</li>
             </ol>
-            <p class="disclaimer"><strong>Anything else I should know?</strong> Information about your device is <b>never</b> collected, it is only displayed on this page, temporarily. This website will <b>only</b> write to your device when you press the "Write to Kobo" button when you're done with the wizard. (You also have the option to download an archive instead of writing everything to your device, when you're done with all steps.)</p>
+            <details class="disclaimer">
+                <summary><strong>Anything else I should know?</strong></summary>
+                <ol>
+                    <li>Information about your device is <b>never</b> collected. It is only displayed on this page, temporarily, and used to determine which options are compatible with your device.</li>
+                    <li>This website will <b>only</b> write to your device when you press the "Write to Kobo" button at the end of the wizard. You also have the option to download an archive instead.</li>
+                </ol>
+            </details>
             <div class="step-actions">
                 <button id="btn-connect-instructions-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-connect-ready" class="primary">Select "KOBOeReader"</button>
@@ -191,8 +197,11 @@
                 <span>I understand that this model is likely not officially supported by NickelMenu yet, but I wish to continue regardless, and I understand it may not work correctly.</span>
             </label>
             <div class="step-actions">
-                <button id="btn-device-restore" class="secondary">Restore Software</button>
-                <button id="btn-device-next" class="primary">Continue &#x203A;</button>
+                <button id="btn-device-back" class="secondary">&#x2039; Back</button>
+                <div class="step-actions-right">
+                    <button id="btn-device-restore" class="secondary">Restore Software</button>
+                    <button id="btn-device-next" class="primary">Continue &#x203A;</button>
+                </div>
             </div>
         </section>
 

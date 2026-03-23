@@ -205,8 +205,28 @@ h2 {
 }
 
 #step-connect-instructions .disclaimer {
-    color: var(--text-secondary);
+    background: var(--primary-light);
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
     font-size: 0.80rem;
+    line-height: 1.55;
+}
+
+#step-connect-instructions .disclaimer summary {
+    cursor: pointer;
+    font-size: 0.83rem;
+}
+
+#step-connect-instructions .disclaimer ol {
+    margin: 0.5rem 0 0 1.25rem;
+    font-size: 0.80rem;
+    color: inherit;
+}
+
+#step-connect-instructions .disclaimer li {
+    margin-bottom: 0.25rem;
 }
 
 #mode-patches-hint {

@@ -1079,6 +1079,20 @@ test.describe('Custom patches', () => {
     // Mode → Back → Device
     await page.click('#btn-mode-back');
     await expect(page.locator('#step-device')).not.toBeHidden();
+
+    // Device → Back → Connect
+    await page.click('#btn-device-back');
+    await expect(page.locator('#step-connect')).not.toBeHidden();
+
+    // After going back from device, switching to manual mode should not
+    // carry stale device state (patches should not appear pre-loaded).
+    await page.click('#btn-manual');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await expect(page.locator('input[name="mode"][value="patches"]')).not.toBeDisabled();
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    // Manual + patches should go to version selection (not straight to patches)
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
   });
 
   test('no device — back navigation through manual mode flow', async ({ page }) => {

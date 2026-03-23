@@ -103,6 +103,7 @@ const btnManualConfirm = $('btn-manual-confirm');
 const btnManualVersionBack = $('btn-manual-version-back');
 const manualVersion = $('manual-version');
 const manualModel = $('manual-model');
+const btnDeviceBack = $('btn-device-back');
 const btnDeviceNext = $('btn-device-next');
 const btnDeviceRestore = $('btn-device-restore');
 const btnModeBack = $('btn-mode-back');
@@ -417,6 +418,17 @@ btnConnectReady.addEventListener('click', async () => {
         if (err.name === 'AbortError') return;
         showError(err.message);
     }
+});
+
+btnDeviceBack.addEventListener('click', () => {
+    // Reset state from the previous connection so it doesn't leak
+    // into a subsequent manual mode or a different device connection.
+    state.selectedPrefix = null;
+    state.patchesLoaded = false;
+    state.firmwareURL = null;
+    state.device = new KoboDevice();
+    setNavStep(1);
+    showStep(stepConnect);
 });
 
 btnDeviceNext.addEventListener('click', () => {
