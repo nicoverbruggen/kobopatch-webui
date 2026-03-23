@@ -756,9 +756,14 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#device-status')).toContainText('NickelMenu does not support it');
     await expect(page.locator('#device-status')).toHaveClass(/error/);
 
-    // Continue and restore buttons should be hidden
+    // Continue and restore buttons should be hidden, but Back should be visible
     await expect(page.locator('#btn-device-next')).toBeHidden();
     await expect(page.locator('#btn-device-restore')).toBeHidden();
+    await expect(page.locator('#btn-device-back')).toBeVisible();
+
+    // Back should return to connect step
+    await page.click('#btn-device-back');
+    await expect(page.locator('#step-connect')).not.toBeHidden();
   });
 
   test('with device — unknown model shows warning and requires checkbox', async ({ page }) => {

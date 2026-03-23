@@ -19,6 +19,7 @@ web/src/readerly/
 
 # Build output
 web/dist/
+web/test-results/
 
 # Node
 web/node_modules/
