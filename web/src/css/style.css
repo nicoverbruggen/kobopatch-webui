@@ -311,6 +311,13 @@ h2 {
     line-height: 1.5;
 }
 
+@media (max-width: 500px) {
+    .recommended-pill {
+        position: static;
+        border-radius: 8px;
+    }
+}
+
 /* NickelMenu option radio cards */
 .nm-options {
     display: flex;
@@ -473,6 +480,17 @@ h2 {
     display: flex;
     gap: 0.75rem;
     margin-left: auto;
+}
+
+@media (max-width: 500px) {
+    .step-actions:has(.step-actions-right) {
+        flex-wrap: wrap;
+    }
+
+    .step-actions-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
 }
 
 /* Buttons */
@@ -1019,14 +1037,19 @@ select + .fallback-hint {
 
 /* Selected patches summary on build step */
 .selected-patches-list {
-    margin: 0 0 0.75rem 1.25rem;
+    margin: 0 0 0.75rem;
+    padding: 0.6rem 1rem 0.6rem 2rem;
     font-size: 0.85rem;
     color: var(--text-secondary);
     line-height: 1.7;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
 }
 
 .selected-patches-list li {
-    padding: 0.05rem 0;
+    padding: 0.1rem 0;
 }
 
 #firmware-download-url {
