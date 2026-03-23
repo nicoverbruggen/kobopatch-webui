@@ -124,6 +124,23 @@
             </p>
         </section>
 
+        <!-- Step 1a (auto): Connection instructions -->
+        <section id="step-connect-instructions" class="step" hidden>
+            <h2>Connect your Kobo</h2>
+            <p>Your Kobo's model and version number can be automatically identified. Based on this information, certain options will be presented to you as part of the next step.</p>
+            <ol class="connect-steps">
+                <li>Connect your Kobo to this computer using a USB cable.</li>
+                <li>Your Kobo will show a <strong>"Computer detected"</strong> screen. Tap <strong>Connect</strong> to continue.</li>
+                <li>In <span id="connect-file-manager">your file manager</span>, you should now see <strong>KOBOeReader</strong> appear as a drive.</li>
+                <li>When you press the button below, your browser will open a folder picker. Select the <strong>KOBOeReader</strong> volume, then click <strong>"Allow"</strong> when your browser asks if you want to give this site permission to write to this folder.</li>
+            </ol>
+            <p class="disclaimer"><strong>Anything else I should know?</strong> Information about your device is <b>never</b> collected, it is only displayed on this page, temporarily. This website will <b>only</b> write to your device when you press the "Write to Kobo" button when you're done with the wizard. (You also have the option to download an archive instead of writing everything to your device, when you're done with all steps.)</p>
+            <div class="step-actions">
+                <button id="btn-connect-instructions-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-connect-ready" class="primary">Select "KOBOeReader"</button>
+            </div>
+        </section>
+
         <!-- Step 1b (manual): Select device model + firmware for custom patches -->
         <section id="step-manual-version" class="step" hidden>
             <p class="fallback-hint">

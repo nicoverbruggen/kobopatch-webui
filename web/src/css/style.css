@@ -204,6 +204,11 @@ h2 {
     box-shadow: var(--shadow);
 }
 
+#step-connect-instructions .disclaimer {
+    color: var(--text-secondary);
+    font-size: 0.80rem;
+}
+
 #mode-patches-hint {
     margin-top: 15px;
 }
@@ -923,6 +928,41 @@ select + .fallback-hint {
 
 .step .install-instructions .hint {
     margin-top: 0;
+}
+
+/* Connection instruction steps with numbered accent circles */
+.connect-steps {
+    list-style: none;
+    margin: 0.5rem 0 1rem;
+    padding-left: 2.35rem;
+    counter-reset: connect-step;
+}
+
+.connect-steps li {
+    padding: 0.4rem 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    counter-increment: connect-step;
+    position: relative;
+}
+
+.connect-steps li::before {
+    content: counter(connect-step);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    position: absolute;
+    left: -2.35rem;
+    top: calc(0.55rem - 4px);
 }
 
 .install-steps {

@@ -16,7 +16,7 @@ const stepNav = $('step-nav');
 // Every step <div> in the app, in DOM order.
 // Used by showStep() to hide all steps except the active one.
 const allSteps = [
-    $('step-connect'), $('step-manual-version'), $('step-device'),
+    $('step-connect'), $('step-connect-instructions'), $('step-manual-version'), $('step-device'),
     $('step-mode'), $('step-nickelmenu'), $('step-nm-features'),
     $('step-nm-review'), $('step-nm-installing'), $('step-nm-done'),
     $('step-patches'), $('step-firmware'), $('step-building'), $('step-done'),

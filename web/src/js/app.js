@@ -88,6 +88,7 @@ fetch('/koreader/release.json')
 // =============================================================================
 
 const stepConnect = $('step-connect');
+const stepConnectInstructions = $('step-connect-instructions');
 const stepManualVersion = $('step-manual-version');
 const stepDevice = $('step-device');
 const stepMode = $('step-mode');
@@ -95,6 +96,8 @@ const stepPatches = $('step-patches');
 const stepError = $('step-error');
 
 const btnConnect = $('btn-connect');
+const btnConnectReady = $('btn-connect-ready');
+const btnConnectInstructionsBack = $('btn-connect-instructions-back');
 const btnManual = $('btn-manual');
 const btnManualConfirm = $('btn-manual-confirm');
 const btnManualVersionBack = $('btn-manual-version-back');
@@ -334,8 +337,28 @@ function displayDeviceInfo(info) {
     $('device-firmware').textContent = info.firmware;
 }
 
-btnConnect.addEventListener('click', async () => {
+// Detect the platform-specific file manager name for the connection instructions.
+{
+    const fileManagerEl = $('connect-file-manager');
+    const ua = navigator.userAgent;
+    if (/Windows/.test(ua)) fileManagerEl.textContent = 'File Explorer';
+    else if (/Mac/.test(ua)) fileManagerEl.textContent = 'Finder';
+    else fileManagerEl.textContent = 'your file manager';
+}
+
+// "Connect my Kobo" shows the instructions step first (not the file picker).
+btnConnect.addEventListener('click', () => {
     track('flow-start', { method: 'connect' });
+    showStep(stepConnectInstructions);
+});
+
+// Back from instructions → connect step.
+btnConnectInstructionsBack.addEventListener('click', () => {
+    showStep(stepConnect);
+});
+
+// "Select KOBOeReader folder" opens the file picker and proceeds.
+btnConnectReady.addEventListener('click', async () => {
     try {
         const info = await state.device.connect();
 

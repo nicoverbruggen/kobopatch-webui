@@ -151,6 +151,8 @@ async function connectMockDevice(page, opts = {}) {
     await overrideFirmwareURLs(page);
   }
   await page.click('#btn-connect');
+  await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+  await page.click('#btn-connect-ready');
   await expect(page.locator('#step-device')).not.toBeHidden();
   await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
   await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');

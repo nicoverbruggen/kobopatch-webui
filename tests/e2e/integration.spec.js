@@ -743,6 +743,8 @@ test.describe('Custom patches', () => {
     await page.goto('/');
     await injectMockDevice(page, { firmware: '5.0.0' });
     await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
 
     // Device info should be displayed
     await expect(page.locator('#step-device')).not.toBeHidden();
@@ -763,6 +765,8 @@ test.describe('Custom patches', () => {
     await page.goto('/');
     await injectMockDevice(page, { serial: 'X9990A0000000' });
     await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
 
     // Device info should be displayed with unknown model
     await expect(page.locator('#step-device')).not.toBeHidden();
@@ -1001,6 +1005,18 @@ test.describe('Custom patches', () => {
     await page.goto('/');
     await injectMockDevice(page);
     await page.click('#btn-connect');
+
+    // Step 1a: Connection instructions
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+
+    // Back from instructions returns to connect step
+    await page.click('#btn-connect-instructions-back');
+    await expect(page.locator('#step-connect')).not.toBeHidden();
+
+    // Forward again through instructions
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
 
     // Step 1: Device
     await expect(page.locator('#step-device')).not.toBeHidden();
