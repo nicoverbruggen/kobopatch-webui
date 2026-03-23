@@ -77,7 +77,7 @@
         <main>
         <header class="hero">
             <h1>KoboPatch <span class="hero-accent">Web UI</span> <span class="beta-pill" hidden>beta</span></h1>
-            <p class="subtitle">A browser-based tool for installing NickelMenu or applying custom patches on your Kobo e-reader.</p>
+            <p class="subtitle">Customize your Kobo e-reader with NickelMenu or community patches.</p>
         </header>
 
         <!-- Shown until JS initialises -->
@@ -99,13 +99,11 @@
             </div>
             <p>How would you like to set up your Kobo?</p>
             <div class="mode-cards">
-                <button id="btn-connect" class="mode-card mode-card-btn">
+                <button id="btn-connect" class="mode-card mode-card-btn mode-card-recommended">
                     <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15,7V11H16V13H13V5H15L12,1L9,5H11V13H8V10.93C8.66,10.59 9.1,9.87 9.1,9A2.1,2.1 0 0,0 7,6.9C5.84,6.9 4.9,7.84 4.9,9C4.9,9.87 5.34,10.59 6,10.93V13A2,2 0 0,0 8,15H11V18.05C10.29,18.32 9.75,18.93 9.75,19.75A1.75,1.75 0 0,0 11.5,21.5C12.47,21.5 13.25,20.72 13.25,19.75C13.25,18.93 12.71,18.32 12,18.05V15H16A2,2 0 0,0 18,13V11H19V7H15Z"/></svg>
                     <div class="mode-card-body">
-                        <div class="mode-card-title">
-                            Connect my Kobo
-                            <span class="recommended-pill">recommended</span>
-                        </div>
+                        <div class="mode-card-title">Connect my Kobo</div>
+                        <div class="recommended-label">Recommended</div>
                         <div class="mode-card-desc">Connect your device via USB. Your device will be automatically identified, and this is the easiest way to apply customizations. You will have the option to apply these changes directly, or you can download a ZIP.</div>
                     </div>
                 </button>
@@ -209,10 +207,11 @@
         <section id="step-mode" class="step" hidden>
             <p>What would you like to do?</p>
             <div class="mode-cards" role="radiogroup" aria-label="Mode selection">
-                <label class="mode-card mode-card-selected">
+                <label class="mode-card mode-card-selected mode-card-recommended">
                     <input type="radio" name="mode" value="nickelmenu" checked>
                     <div class="mode-card-body">
-                        <div class="mode-card-title">Install or remove NickelMenu <span class="recommended-pill">recommended</span></div>
+                        <div class="mode-card-title">Install or remove NickelMenu</div>
+                        <div class="recommended-label">Recommended</div>
                         <div class="mode-card-desc">Installs a custom menu and various tweaks for your device. Works with most Kobo devices. The safest solution, as it has a lot of error checking and a failsafe mechanism which will automatically uninstall it as a last resort. </div>
                     </div>
                 </label>
@@ -421,6 +420,8 @@
             <a href="https://github.com/nicoverbruggen/kobopatch-webui/discussions/1" class="site-footer-link" target="_blank">Feedback</a>
             &nbsp;&middot;&nbsp;
             <a href="https://github.com/nicoverbruggen/kobopatch-webui" class="site-footer-link" target="_blank">GitHub</a>
+            &nbsp;&middot;&nbsp;
+            <a href="https://nicoverbruggen.be/blog/kobopatch-webui" class="site-footer-link" target="_blank">About</a>
             &nbsp;&middot;&nbsp;
             <a id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank"><span id="commit-hash"></span></a>
         </p>

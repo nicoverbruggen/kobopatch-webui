@@ -96,6 +96,8 @@ h1 {
     margin-top: 0.25rem;
 }
 
+
+
 h2 {
     font-size: 1.1rem;
     font-weight: 600;
@@ -290,32 +292,17 @@ h2 {
     line-height: 1.5;
 }
 
-.mode-card-title {
-    position: relative;
+.mode-card-recommended {
+    border-left-color: var(--primary);
 }
 
-.recommended-pill {
-    position: absolute;
-    top: -8px;
-    right: -20px;
-    margin-left: auto;
-    font-size: 10px;
+.recommended-label {
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    background: var(--primary);
-    color: #fff;
-    padding: 0.25rem 0.6rem;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
-    line-height: 1.5;
-}
-
-@media (max-width: 500px) {
-    .recommended-pill {
-        position: static;
-        border-radius: 8px;
-    }
+    color: var(--primary);
+    margin-bottom: 0.35rem;
 }
 
 /* NickelMenu option radio cards */
