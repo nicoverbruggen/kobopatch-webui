@@ -17,7 +17,7 @@ module.exports = defineConfig({
     },
     {
       name: 'desktop',
-      use: { ...base.use, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 },
+      use: { ...base.use, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 3 },
     },
   ],
 });

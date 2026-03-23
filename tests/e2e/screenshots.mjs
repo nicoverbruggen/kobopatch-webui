@@ -94,9 +94,17 @@ test('unknown model', async ({ page }, testInfo) => {
   await shot(page, '12-device-unknown', testInfo);
 });
 
-test('manual mode', async ({ page }, testInfo) => {
+test('unsupported browser', async ({ page }, testInfo) => {
+  await page.addInitScript(() => { delete window.showDirectoryPicker; });
   await page.goto('/');
-  await page.click('#btn-manual');
-  await expect(page.locator('#step-mode')).not.toBeHidden();
-  await shot(page, '13-manual-mode-selection', testInfo);
+  await expect(page.locator('#connect-unsupported-hint')).toBeVisible();
+  await shot(page, '13-connect-unsupported', testInfo);
+});
+
+test('disclaimer dialog', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await page.click('#btn-how-it-works');
+  await expect(page.locator('#how-it-works-dialog')).toBeVisible();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `screenshots/${testInfo.project.name}/14-disclaimer-dialog.png` });
 });
