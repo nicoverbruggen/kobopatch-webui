@@ -93,9 +93,9 @@
 
         <!-- Step 1: Choose connection method -->
         <section id="step-connect" class="step" hidden>
-            <div class="warning">
-                <b>Patching modifies system files on your Kobo, and <u>will void your warranty</u>.</b> This process allows for custom modifications to be applied, or undone. If something has gone wrong,
-                you may need to <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">manually reset your device</a>.
+            <div class="notice">
+                <div class="notice-heading">Important information</div>
+                If you choose to modify your Kobo's system files via this tool, your warranty may be affected. A backup of any extra books is recommended. If something goes wrong, follow the official instructions on <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">how to manually reset your device</a>.
             </div>
             <p>How would you like to set up your Kobo?</p>
             <div class="mode-cards">
@@ -106,7 +106,7 @@
                             Connect my Kobo
                             <span class="recommended-pill">recommended</span>
                         </div>
-                        <div class="mode-card-desc">Connect your Kobo via USB and select its drive. You will have the option to apply these changes directly, or you can download a ZIP.</div>
+                        <div class="mode-card-desc">Connect your device via USB. Your device will be automatically identified, and this is the easiest way to apply customizations. You will have the option to apply these changes directly, or you can download a ZIP.</div>
                     </div>
                 </button>
                 <button id="btn-manual" class="mode-card mode-card-btn">
@@ -507,6 +507,21 @@
                     number, firmware version, IP address, and browsing behaviour are never recorded by the
                     analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
                 </p>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="mobile-dialog" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="mobile-dialog-title">Heads up!</h2>
+            </div>
+            <div class="modal-body">
+                <p>This tool works best on a <b>desktop or laptop computer</b>. The interface is optimized for larger screens, and connecting your Kobo via USB is more straightforward from a computer.</p>
+                <p>For the best experience, open this page on a computer using <b>Google Chrome</b>. It supports copying directly to your Kobo device.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-mobile-continue" class="secondary">Continue anyway</button>
             </div>
         </div>
     </dialog>

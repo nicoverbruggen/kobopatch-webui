@@ -14,9 +14,26 @@ const shot = async (page, name, testInfo) => {
   await page.screenshot({ path: `screenshots/${project}/${name}.png`, fullPage: true });
 };
 
+/** Dismiss the mobile warning modal if it's open. */
+const dismissMobileModal = async (page) => {
+  const dialog = page.locator('#mobile-dialog');
+  if (await dialog.evaluate(el => el.open).catch(() => false)) {
+    await page.click('#btn-mobile-continue');
+    await expect(dialog).not.toBeVisible();
+  }
+};
+
 test('capture all steps', async ({ page }, testInfo) => {
-  // 1. Connect step
+  const isMobile = testInfo.project.name === 'mobile';
+
+  // 1. Connect step (with mobile modal if applicable)
   await page.goto('/');
+  if (isMobile) {
+    // Capture the mobile warning modal
+    await expect(page.locator('#mobile-dialog')).toBeVisible();
+    await page.screenshot({ path: `screenshots/mobile/00-mobile-warning.png` });
+    await page.click('#btn-mobile-continue');
+  }
   await expect(page.locator('#step-connect')).not.toBeHidden();
   await injectMockDevice(page);
   await shot(page, '01-connect', testInfo);
@@ -78,6 +95,7 @@ test('capture all steps', async ({ page }, testInfo) => {
 
 test('incompatible firmware', async ({ page }, testInfo) => {
   await page.goto('/');
+  await dismissMobileModal(page);
   await injectMockDevice(page, { firmware: '5.0.0' });
   await page.click('#btn-connect');
   await page.click('#btn-connect-ready');
@@ -87,6 +105,7 @@ test('incompatible firmware', async ({ page }, testInfo) => {
 
 test('unknown model', async ({ page }, testInfo) => {
   await page.goto('/');
+  await dismissMobileModal(page);
   await injectMockDevice(page, { serial: 'X9990A0000000' });
   await page.click('#btn-connect');
   await page.click('#btn-connect-ready');
@@ -97,12 +116,14 @@ test('unknown model', async ({ page }, testInfo) => {
 test('unsupported browser', async ({ page }, testInfo) => {
   await page.addInitScript(() => { delete window.showDirectoryPicker; });
   await page.goto('/');
+  await dismissMobileModal(page);
   await expect(page.locator('#connect-unsupported-hint')).toBeVisible();
   await shot(page, '13-connect-unsupported', testInfo);
 });
 
 test('disclaimer dialog', async ({ page }, testInfo) => {
   await page.goto('/');
+  await dismissMobileModal(page);
   await page.click('#btn-how-it-works');
   await expect(page.locator('#how-it-works-dialog')).toBeVisible();
   await page.waitForTimeout(200);

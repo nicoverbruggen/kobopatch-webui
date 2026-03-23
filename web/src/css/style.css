@@ -606,6 +606,30 @@ button.btn-success:hover {
 }
 
 /* Status banners */
+.notice {
+    background: #e8f7fa;
+    border: 1px solid #b2e4ed;
+    color: #0b6e80;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.notice-heading {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+}
+
+.notice a {
+    color: #0b6e80;
+    text-decoration: underline;
+}
+
 .warning {
     background: var(--warning-bg);
     border: 1px solid var(--warning-border);
@@ -1214,6 +1238,13 @@ button:focus-visible {
 
 .modal-body li {
     margin-bottom: 0.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: flex-end;
 }
 
 .modal-body a {

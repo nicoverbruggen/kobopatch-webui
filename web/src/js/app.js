@@ -216,6 +216,15 @@ state.goToModeSelection = goToModeSelection;
 const loader = $('initial-loader');
 if (loader) loader.remove();
 
+// Show a warning modal on mobile/tablet devices. Patching requires a USB connection
+// to a computer, so mobile use is inherently limited.
+const isMobileDevice = navigator.maxTouchPoints > 0 && window.innerWidth < 820;
+if (isMobileDevice) {
+    const mobileDialog = $('mobile-dialog');
+    mobileDialog.showModal();
+    $('btn-mobile-continue').addEventListener('click', () => mobileDialog.close());
+}
+
 // Detect iOS (Safari/WebKit) — the File System Access API is unavailable on iOS.
 const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
