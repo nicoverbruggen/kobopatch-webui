@@ -1,0 +1,37 @@
+.hero {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.hero-accent {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.beta-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--primary);
+    color: #fff;
+    padding: 0.35rem 0.7rem;
+    border-radius: 10px;
+    vertical-align: middle;
+    position: relative;
+    top: -0.15rem; /* optical alignment with heading baseline */
+    margin-left: 5px;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}

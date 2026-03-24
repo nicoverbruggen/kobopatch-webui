@@ -1,0 +1,157 @@
+/* Scrollable patch container */
+.patch-container-scroll {
+    max-height: 50vh; /* ~15 visible lines before scrolling */
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+
+/* Patch file sections */
+.patch-file-section {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-light);
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    & summary {
+        padding: 0.6rem 0.75rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+        font-size: 0.93rem;
+        user-select: none;
+        transition: background 0.1s;
+        list-style: none;
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+
+        &::before {
+            content: "\203A";
+            display: inline-block;
+            width: 1rem;
+            margin-right: 0.35rem;
+            flex-shrink: 0;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: transform 0.15s ease;
+        }
+
+        & .patch-count {
+            margin-left: auto;
+        }
+
+        &:hover {
+            background: #f9fafb;
+        }
+    }
+
+    &[open] summary {
+        border-bottom: 1px solid var(--border-light);
+
+        &::before {
+            transform: rotate(90deg) translateX(0.1rem);
+        }
+    }
+}
+
+.patch-count {
+    font-weight: 400;
+    font-size: 0.8rem;
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 0.15rem 0.6rem;
+    border-radius: 10px;
+}
+
+.patch-list {
+    padding: 0.25rem 0;
+}
+
+.patch-item {
+    padding: 0.4rem 1rem;
+
+    & + .patch-item {
+        border-top: 1px solid var(--border-light);
+    }
+}
+
+.patch-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+
+    & input {
+        flex-shrink: 0;
+        accent-color: var(--primary);
+    }
+}
+
+.patch-name {
+    font-weight: 500;
+}
+
+.patch-name-none {
+    color: var(--text-secondary);
+}
+
+.patch-desc-toggle {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 0 0.3rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    box-shadow: none;
+    opacity: 0.6;
+    transition: opacity 0.1s;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+/* Visual grouping for mutually exclusive patches */
+.patch-group {
+    background: #f8fafc;
+    border-left: 3px solid var(--primary);
+    margin: 0.35rem 0.5rem;
+    border-radius: 0 6px 6px 0;
+
+    & .patch-item {
+        padding: 0.4rem 0.75rem;
+    }
+}
+
+.patch-group-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--primary);
+    padding: 0.45rem 0.75rem 0;
+}
+
+.step .patch-description {
+    margin-top: 0.3rem;
+    margin-left: 1.6rem;
+    margin-bottom: 0;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    white-space: pre-line;
+    line-height: 1.4;
+    padding: 0.25rem 0;
+}
+
+.patch-description[hidden] {
+    display: none;
+}

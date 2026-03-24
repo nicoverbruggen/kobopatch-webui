@@ -50,14 +50,15 @@ async function build() {
     // Copy all of src/ to dist/, skipping js/ (bundled separately), css/ (minified), and index.html (generated)
     copyDir(srcDir, distDir, new Set(['js', 'css', 'index.html']));
 
-    // Minify CSS
+    // Bundle and minify CSS (@import statements are resolved by esbuild)
     mkdirSync(join(distDir, 'css'), { recursive: true });
-    const cssSrc = readFileSync(join(srcDir, 'css', 'style.css'), 'utf-8');
-    const { code: cssMinified } = await esbuild.transform(cssSrc, {
-        loader: 'css',
+    await esbuild.build({
+        entryPoints: [join(srcDir, 'css', 'style.css')],
+        bundle: true,
+        outfile: join(distDir, 'css', 'style.css'),
         minify: !isDev && !isWatch,
+        logLevel: 'warning',
     });
-    writeFileSync(join(distDir, 'css', 'style.css'), cssMinified);
 
     // Copy worker files from src/js/ (not bundled, served separately)
     mkdirSync(join(distDir, 'js'), { recursive: true });

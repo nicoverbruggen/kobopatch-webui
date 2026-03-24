@@ -131,8 +131,8 @@ const nm = initNickelMenu(state);
 const patches = initPatchesFlow(state);
 
 // Wire up card-radio interactivity for mode selection and NM option cards.
-setupCardRadios(stepMode, 'mode-card-selected');
-setupCardRadios($('step-nickelmenu'), 'nm-option-selected');
+setupCardRadios(stepMode, 'selection-card--selected');
+setupCardRadios($('step-nickelmenu'), 'selection-card--selected');
 
 // =============================================================================
 // Error handling
@@ -182,14 +182,14 @@ state.showError = showError;
 function goToModeSelection() {
     nm.resetNickelMenuState();
     const patchesRadio = $q('input[value="patches"]', stepMode);
-    const patchesCard = patchesRadio.closest('.mode-card');
+    const patchesCard = patchesRadio.closest('.selection-card');
     const autoModeNoPatchesAvailable = !state.manualMode && (!state.patchesLoaded || !state.firmwareURL);
 
     // Disable the patches card if firmware patches aren't available.
     const patchesHint = $('mode-patches-hint');
     if (autoModeNoPatchesAvailable) {
         patchesRadio.disabled = true;
-        patchesCard.classList.add('mode-card-disabled');
+        patchesCard.classList.add('selection-card--disabled');
         patchesHint.hidden = false;
         // Auto-select NickelMenu since it's the only available option.
         const nmRadio = $q('input[value="nickelmenu"]', stepMode);
@@ -197,7 +197,7 @@ function goToModeSelection() {
         nmRadio.dispatchEvent(new Event('change'));
     } else {
         patchesRadio.disabled = false;
-        patchesCard.classList.remove('mode-card-disabled');
+        patchesCard.classList.remove('selection-card--disabled');
         patchesHint.hidden = true;
     }
 
@@ -379,7 +379,7 @@ btnConnectReady.addEventListener('click', async () => {
             deviceStatus.textContent =
                 'You seem to have an incompatible Kobo software version installed. ' +
                 'NickelMenu does not support it, and the custom patches are incompatible with this version.';
-            deviceStatus.classList.add('error');
+            deviceStatus.classList.add('banner', 'banner--error');
             btnDeviceNext.hidden = true;
             btnDeviceRestore.hidden = true;
             showStep(stepDevice);
@@ -405,7 +405,7 @@ btnConnectReady.addEventListener('click', async () => {
         btnDeviceRestore.hidden = !state.patchesLoaded || !state.firmwareURL;
 
         // Handle unknown models — require explicit acknowledgment before continuing.
-        deviceStatus.classList.remove('error');
+        deviceStatus.classList.remove('banner', 'banner--error');
         const isUnknownModel = info.model.startsWith('Unknown');
         if (isUnknownModel) {
             deviceStatus.textContent = '';

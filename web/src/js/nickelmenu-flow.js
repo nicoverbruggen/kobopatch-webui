@@ -164,7 +164,7 @@ export function initNickelMenu(state) {
                 await nmDir.getFileHandle('items');
                 // NickelMenu is installed — enable removal option.
                 removeRadio.disabled = false;
-                removeOption.classList.remove('nm-option-disabled');
+                removeOption.classList.remove('selection-card--disabled');
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
 
                 // Scan for removable extras (only once per session).
@@ -188,7 +188,7 @@ export function initNickelMenu(state) {
 
         // No device or NickelMenu not found — disable removal.
         removeRadio.disabled = true;
-        removeOption.classList.add('nm-option-disabled');
+        removeOption.classList.add('selection-card--disabled');
         removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
         if (removeRadio.checked) {
             const presetRadio = $q('input[value="preset"]', stepNickelMenu);

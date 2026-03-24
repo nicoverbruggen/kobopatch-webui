@@ -1,0 +1,34 @@
+.site-footer {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 2rem;
+    border-top: 1px solid var(--border-light);
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+
+    & a {
+        color: var(--text-secondary);
+        text-decoration: underline;
+
+        &.site-footer-link {
+            color: var(--primary);
+        }
+
+        &:hover {
+            color: var(--text);
+        }
+    }
+
+    & p {
+        margin-bottom: 0.75rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}
+
+.site-footer-attribution {
+    font-size: 0.7rem;
+}

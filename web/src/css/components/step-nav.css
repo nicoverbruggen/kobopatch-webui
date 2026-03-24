@@ -1,0 +1,73 @@
+.step-nav {
+    margin-bottom: 1.5rem;
+
+    & ol {
+        display: flex;
+        list-style: none;
+        gap: 0;
+        counter-reset: step;
+    }
+
+    & li {
+        flex: 1;
+        text-align: center;
+        padding: 0.5rem 0;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        position: relative;
+        counter-increment: step;
+
+        /* Step number circles (1.6rem diameter to fit two-digit numbers) */
+        &::before {
+            content: counter(step);
+            display: block;
+            width: 1.6rem;
+            height: 1.6rem;
+            line-height: 1.6rem;
+            margin: 0 auto 0.3rem;
+            border-radius: 50%;
+            background: var(--border-light);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        &.active {
+            color: var(--primary);
+            font-weight: 600;
+
+            &::before {
+                background: var(--primary);
+                color: #fff;
+            }
+        }
+
+        &.done {
+            color: var(--success-text);
+
+            &::before {
+                background: var(--success-text);
+                color: #fff;
+                content: "\2713";
+            }
+        }
+
+        /* Connector lines between steps (vertically centered on the 1.6rem circle) */
+        & + li::after {
+            content: '';
+            position: absolute;
+            top: 1.3rem;
+            right: 50%;
+            width: 100%;
+            height: 2px;
+            background: var(--border-light);
+            z-index: -1;
+        }
+
+        &.done + li::after,
+        &.done + li.active::after {
+            background: var(--success-text);
+        }
+    }
+}

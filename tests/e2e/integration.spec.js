@@ -235,7 +235,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     // Remove option should be disabled (no device connected)
-    await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
+    await expect(page.locator('#nm-option-remove')).toHaveClass(/selection-card--disabled/);
     await expect(page.locator('input[name="nm-option"][value="remove"]')).toBeDisabled();
   });
 
@@ -257,7 +257,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     // Remove option should be disabled (no NickelMenu installed)
-    await expect(page.locator('#nm-option-remove')).toHaveClass(/nm-option-disabled/);
+    await expect(page.locator('#nm-option-remove')).toHaveClass(/selection-card--disabled/);
 
     // Select "Install NickelMenu and configure"
     await page.click('input[name="nm-option"][value="preset"]');
@@ -360,7 +360,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     // Remove option should be enabled (NickelMenu is installed)
-    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/nm-option-disabled/);
+    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--disabled/);
     await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
 
     // Select remove

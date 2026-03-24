@@ -1,0 +1,144 @@
+/* Unified selection card component.
+   Replaces the old .mode-card and .nm-option classes with a single base + modifiers. */
+
+.selection-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.selection-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--card-bg);
+    border: 2px solid var(--border-light);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow);
+
+    &:hover {
+        border-color: var(--border);
+    }
+
+    & input[type="radio"] {
+        margin-top: 0.2rem;
+        flex-shrink: 0;
+        accent-color: var(--primary);
+    }
+}
+
+.selection-card-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+.selection-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.93rem;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.selection-card-desc {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.recommended-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--primary);
+    margin-bottom: 0.35rem;
+}
+
+/* --- State modifiers --- */
+
+.selection-card--selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+}
+
+.selection-card--disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+
+    &:hover {
+        border-color: var(--border-light);
+    }
+}
+
+.selection-card--recommended {
+    border-left-color: var(--primary);
+}
+
+/* --- Button variant (connect step cards with SVG icons) --- */
+
+.selection-card--btn {
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: var(--shadow);
+
+        &:hover {
+            border-color: var(--border-light);
+            box-shadow: var(--shadow);
+        }
+    }
+}
+
+/* --- Danger variant (remove NickelMenu) --- */
+
+.selection-card--danger {
+    &:not(.selection-card--disabled) {
+        border-color: var(--error-border);
+
+        &:hover {
+            border-color: var(--error-text);
+        }
+    }
+
+    &.selection-card--selected {
+        border-color: var(--error-text);
+        box-shadow: 0 0 0 1px var(--error-text), var(--shadow);
+    }
+
+    & input[type="radio"] {
+        accent-color: var(--error-text);
+    }
+}
+
+/* --- Uninstall options nested inside selection cards --- */
+
+#nm-uninstall-options {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
+
+    & input[type="checkbox"] {
+        accent-color: var(--error-text);
+    }
+}
+
+#mode-patches-hint {
+    margin-top: 15px;
+}

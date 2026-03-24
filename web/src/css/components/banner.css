@@ -1,0 +1,95 @@
+/* Unified banner component.
+   Replaces the old .notice, .warning, .error, .hint, .info-banner, .disclaimer
+   classes with a single base + color modifiers. */
+
+.banner {
+    padding: 0.75rem 1rem;
+    border: 1px solid;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.banner-heading {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+}
+
+/* --- Color modifiers --- */
+
+.banner--info {
+    background: var(--info-bg);
+    border-color: var(--info-border);
+    color: var(--info-text);
+
+    & a {
+        color: var(--info-text);
+        text-decoration: underline;
+    }
+}
+
+.banner--warning {
+    background: var(--warning-bg);
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+
+    & a {
+        color: var(--warning-text);
+        text-decoration: underline;
+    }
+}
+
+.banner--error {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--error-text);
+}
+
+.banner--success {
+    background: var(--success-bg);
+    border-color: var(--success-border);
+    color: var(--success-text);
+}
+
+.banner--accent {
+    background: var(--primary-light);
+    border-color: var(--accent-border);
+    color: var(--accent-text);
+}
+
+/* --- Context-specific margins --- */
+
+#step-connect > .banner { margin-bottom: 1.5rem; }
+#device-unknown-warning { margin-bottom: 1.5rem; }
+#existing-tgz-warning { margin-bottom: 1.5rem; }
+#error-message { margin-top: 1rem; }
+
+.install-instructions .banner--warning { margin-bottom: 0.75rem; }
+.install-instructions .banner--success { margin-top: 0; }
+
+.step .banner--success { margin-top: 1rem; }
+
+/* --- Disclaimer (details/summary variant) --- */
+
+details.banner--accent {
+    font-size: 0.80rem;
+    line-height: 1.55;
+
+    & summary {
+        cursor: pointer;
+        font-size: 0.83rem;
+    }
+
+    & ol {
+        margin: 0.5rem 0 0 1.25rem;
+        font-size: 0.80rem;
+        color: inherit;
+    }
+
+    & li {
+        margin-bottom: 0.25rem;
+    }
+}

@@ -79,27 +79,27 @@
 
         <!-- Step 1: Choose connection method -->
         <section id="step-connect" class="step" hidden>
-            <div class="notice">
-                <div class="notice-heading">Important information</div>
+            <div class="banner banner--info">
+                <div class="banner-heading">Important information</div>
                 If you choose to modify your Kobo's system files via this tool, your warranty may be affected. A backup of any extra books is recommended. If something goes wrong, follow the official instructions on <a href="https://help.kobo.com/hc/en-us/articles/360017605314-Manual-reset-your-Kobo-Clara-HD-Kobo-Nia-Kobo-Elipsa-Kobo-Clara-2E-Kobo-Elipsa-2E" target="_blank">how to manually reset your device</a>.
             </div>
             <p>How would you like to set up your Kobo?</p>
-            <div class="mode-cards">
-                <button id="btn-connect" class="mode-card mode-card-btn mode-card-recommended">
-                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15,7V11H16V13H13V5H15L12,1L9,5H11V13H8V10.93C8.66,10.59 9.1,9.87 9.1,9A2.1,2.1 0 0,0 7,6.9C5.84,6.9 4.9,7.84 4.9,9C4.9,9.87 5.34,10.59 6,10.93V13A2,2 0 0,0 8,15H11V18.05C10.29,18.32 9.75,18.93 9.75,19.75A1.75,1.75 0 0,0 11.5,21.5C12.47,21.5 13.25,20.72 13.25,19.75C13.25,18.93 12.71,18.32 12,18.05V15H16A2,2 0 0,0 18,13V11H19V7H15Z"/></svg>
-                    <div class="mode-card-body">
-                        <div class="mode-card-title">Connect my Kobo</div>
+            <div class="selection-cards">
+                <button id="btn-connect" class="selection-card selection-card--btn selection-card--recommended">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15,7V11H16V13H13V5H15L12,1L9,5H11V13H8V10.93C8.66,10.59 9.1,9.87 9.1,9A2.1,2.1 0 0,0 7,6.9C5.84,6.9 4.9,7.84 4.9,9C4.9,9.87 5.34,10.59 6,10.93V13A2,2 0 0,0 8,15H11V18.05C10.29,18.32 9.75,18.93 9.75,19.75A1.75,1.75 0 0,0 11.5,21.5C12.47,21.5 13.25,20.72 13.25,19.75C13.25,18.93 12.71,18.32 12,18.05V15H16A2,2 0 0,0 18,13V11H19V7H15Z"/></svg>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Connect my Kobo</div>
                         <div class="recommended-label">Recommended</div>
-                        <div class="mode-card-desc">Connect your device via USB. Your device will be automatically identified, and this is the easiest way to apply customizations. You will have the option to apply these changes directly, or you can download a ZIP.</div>
+                        <div class="selection-card-desc">Connect your device via USB. Your device will be automatically identified, and this is the easiest way to apply customizations. You will have the option to apply these changes directly, or you can download a ZIP.</div>
                     </div>
                 </button>
-                <button id="btn-manual" class="mode-card mode-card-btn">
-                    <svg class="mode-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
-                    <div class="mode-card-body">
-                        <div class="mode-card-title">
+                <button id="btn-manual" class="selection-card selection-card--btn">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">
                             Build downloadable archive
                         </div>
-                        <div class="mode-card-desc">You may need to identify your device based on model number. Go through the wizard, download the files and copy them to your Kobo yourself. Works in any browser, but a bit more complicated. Recommended for tinkerers.</div>
+                        <div class="selection-card-desc">You may need to identify your device based on model number. Go through the wizard, download the files and copy them to your Kobo yourself. Works in any browser, but a bit more complicated. Recommended for tinkerers.</div>
                     </div>
                 </button>
             </div>
@@ -118,7 +118,7 @@
                 <li>In <span id="connect-file-manager">your file manager</span>, you should now see <strong>KOBOeReader</strong> appear as a drive.</li>
                 <li>When you press the button below, your browser will open a folder picker. Select the <strong>KOBOeReader</strong> volume, then click <strong>"Allow"</strong> when your browser asks if you want to give this site permission to write to this folder.</li>
             </ol>
-            <details class="disclaimer">
+            <details class="banner banner--accent">
                 <summary><strong>Anything else I should know?</strong></summary>
                 <ol>
                     <li>Information about your device is <b>never</b> collected. It is only displayed on this page, temporarily, and used to determine which options are compatible with your device.</li>
@@ -171,7 +171,7 @@
                 </div>
             </div>
             <p id="device-status"></p>
-            <p id="device-unknown-warning" class="warning" hidden>
+            <p id="device-unknown-warning" class="banner banner--warning" hidden>
                 You seem to have a Kobo device that cannot be identified. While you can continue since a supported software version seems to be installed, please
                 <a href="https://github.com/nicoverbruggen/kobopatch-webui/issues/new" target="_blank">file an issue on GitHub</a>
                 so the developer can add this device to the list.
@@ -192,20 +192,20 @@
         <!-- Step 2: Mode selection -->
         <section id="step-mode" class="step" hidden>
             <p>What would you like to do?</p>
-            <div class="mode-cards" role="radiogroup" aria-label="Mode selection">
-                <label class="mode-card mode-card-selected mode-card-recommended">
+            <div class="selection-cards" role="radiogroup" aria-label="Mode selection">
+                <label class="selection-card selection-card--selected selection-card--recommended">
                     <input type="radio" name="mode" value="nickelmenu" checked>
-                    <div class="mode-card-body">
-                        <div class="mode-card-title">Install or remove NickelMenu</div>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Install or remove NickelMenu</div>
                         <div class="recommended-label">Recommended</div>
-                        <div class="mode-card-desc">Installs a custom menu and various tweaks for your device. Works with most Kobo devices. The safest solution, as it has a lot of error checking and a failsafe mechanism which will automatically uninstall it as a last resort. </div>
+                        <div class="selection-card-desc">Installs a custom menu and various tweaks for your device. Works with most Kobo devices. The safest solution, as it has a lot of error checking and a failsafe mechanism which will automatically uninstall it as a last resort. </div>
                     </div>
                 </label>
-                <label class="mode-card">
+                <label class="selection-card">
                     <input type="radio" name="mode" value="patches">
-                    <div class="mode-card-body">
-                        <div class="mode-card-title">Custom Patches</div>
-                        <div class="mode-card-desc">Apply community patches to your Kobo's system software. Requires a supported software version and supported device.</div>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Custom Patches</div>
+                        <div class="selection-card-desc">Apply community patches to your Kobo's system software. Requires a supported software version and supported device.</div>
                     </div>
                 </label>
             </div>
@@ -219,26 +219,26 @@
         <!-- Step 2b: NickelMenu configuration -->
         <section id="step-nickelmenu" class="step" hidden>
             <p>Choose what to do with your Kobo.</p>
-            <div class="nm-options" role="radiogroup" aria-label="NickelMenu options">
-                <label class="nm-option">
+            <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
+                <label class="selection-card">
                     <input type="radio" name="nm-option" value="preset">
-                    <div class="nm-option-body">
-                        <div class="nm-option-title">Install NickelMenu with preset</div>
-                        <div class="nm-option-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Install NickelMenu with preset</div>
+                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
                     </div>
                 </label>
-                <label class="nm-option">
+                <label class="selection-card">
                     <input type="radio" name="nm-option" value="nickelmenu-only">
-                    <div class="nm-option-body">
-                        <div class="nm-option-title">Install NickelMenu only</div>
-                        <div class="nm-option-desc">Installs just NickelMenu without any configuration. You can set it up yourself later.</div>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Install NickelMenu only</div>
+                        <div class="selection-card-desc">Installs just NickelMenu without any configuration. You can set it up yourself later.</div>
                     </div>
                 </label>
-                <label id="nm-option-remove" class="nm-option nm-option-disabled nm-option-remove">
+                <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">
                     <input type="radio" name="nm-option" value="remove" disabled>
-                    <div class="nm-option-body">
-                        <div class="nm-option-title">Remove NickelMenu</div>
-                        <div class="nm-option-desc" id="nm-remove-desc">Removes NickelMenu from your device. (Only available when a Kobo with NickelMenu installed is connected.)</div>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Remove NickelMenu</div>
+                        <div class="selection-card-desc" id="nm-remove-desc">Removes NickelMenu from your device. (Only available when a Kobo with NickelMenu installed is connected.)</div>
                     </div>
                 </label>
                 <div id="nm-uninstall-options" hidden></div>
@@ -284,7 +284,7 @@
         <!-- NickelMenu done -->
         <section id="step-nm-done" class="step" hidden>
             <p id="nm-done-status" class="install-summary"></p>
-            <p id="nm-write-instructions" class="hint" hidden>
+            <p id="nm-write-instructions" class="banner banner--success" hidden>
                 Files have been written to your Kobo.
                 <strong>Safely eject</strong> the device before unplugging the USB cable &mdash; it will reboot and install NickelMenu automatically.
             </p>
@@ -301,7 +301,7 @@
                     <li>The device will reboot and install NickelMenu automatically.</li>
                 </ol>
             </div>
-            <p id="nm-reboot-instructions" class="hint" hidden>
+            <p id="nm-reboot-instructions" class="banner banner--success" hidden>
                 <strong>Safely eject your Kobo and let it reboot.</strong> Please be patient, NickelMenu will be automatically removed during the reboot.
                 A "glitchy" horizontal line may briefly appear on screen after restarting — this is normal, as NickelMenu removes itself.
             </p>
@@ -355,7 +355,7 @@
         <!-- Step 5: Install -->
         <section id="step-done" class="step" hidden>
             <p id="build-status" class="install-summary"></p>
-            <div id="existing-tgz-warning" class="warning" hidden>
+            <div id="existing-tgz-warning" class="banner banner--warning" hidden>
                 An <b>existing</b> KoboRoot.tgz file was found on your Kobo. This means an update has not been applied yet. If you choose to write the new file to your Kobo, the existing one will be overwritten.
             </div>
             <details class="log-details">
@@ -366,7 +366,7 @@
                 <button id="btn-write" class="primary">Write to Kobo</button>
                 <button id="btn-download" class="secondary">Download KoboRoot.tgz</button>
             </div>
-            <p id="write-instructions" class="hint" hidden>
+            <p id="write-instructions" class="banner banner--success" hidden>
                 KoboRoot.tgz has been written to your Kobo.
                 <strong>Safely eject</strong> the device before unplugging the USB cable — it will reboot and apply the patches automatically.
             </p>
@@ -386,7 +386,7 @@
             <h2 id="error-title">Something went wrong</h2>
             <p id="error-hint" hidden>Some patches may not work correctly with your software version. You can go back and try a different selection.</p>
             <pre id="error-log" class="error-log" hidden></pre>
-            <p id="error-message" class="error"></p>
+            <p id="error-message" class="banner banner--error"></p>
             <div class="step-actions">
                 <button id="btn-error-back" class="secondary" hidden>&#x2039; Select different patches</button>
                 <button id="btn-retry" class="secondary">Start Over</button>

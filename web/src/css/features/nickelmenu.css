@@ -1,0 +1,47 @@
+/* NickelMenu feature checkboxes */
+.nm-config-options {
+    display: flex;
+    flex-direction: column;
+}
+
+.nm-config-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    color: var(--text);
+    cursor: pointer;
+
+    & + .nm-config-item {
+        border-top: 1px solid var(--border-light);
+    }
+
+    & input[type="checkbox"] {
+        flex-shrink: 0;
+        margin-top: 0.2rem;
+        accent-color: var(--primary);
+
+        &:disabled {
+            opacity: 0.6;
+        }
+    }
+}
+
+.nm-config-text {
+    user-select: none;
+}
+
+.nm-config-title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.93rem;
+    color: var(--text);
+}
+
+.nm-config-desc {
+    display: block;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 0.1rem;
+}

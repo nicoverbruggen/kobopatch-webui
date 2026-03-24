@@ -44,7 +44,7 @@ test('capture all steps', async ({ page }, testInfo) => {
   await shot(page, '02-connect-instructions', testInfo);
 
   // 2b. Connection instructions with disclaimer open
-  await page.click('.disclaimer summary');
+  await page.click('details.banner--accent summary');
   await page.waitForTimeout(100);
   await shot(page, '03-connect-instructions-disclaimer', testInfo);
 

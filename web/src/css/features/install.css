@@ -1,0 +1,66 @@
+/* Install instructions card */
+.install-instructions {
+    margin-top: 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+}
+
+/* Connection instruction steps with numbered accent circles */
+.connect-steps {
+    list-style: none;
+    margin: 0.5rem 0 1rem;
+    padding-left: 2.35rem;
+    counter-reset: connect-step;
+
+    & li {
+        padding: 0.4rem 0;
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        counter-increment: connect-step;
+        position: relative;
+
+        /* Numbered circle: vertically centered relative to the first text line */
+        &::before {
+            content: counter(connect-step);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1;
+            position: absolute;
+            left: -2.35rem;
+            top: calc(0.55rem - 4px);
+        }
+    }
+}
+
+.install-steps {
+    margin: 0.25rem 0 0 1.25rem;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+
+    & li {
+        padding: 0.15rem 0;
+    }
+
+    & code {
+        display: inline-block;
+        background: var(--bg);
+        border: 1px solid var(--border-light);
+        border-radius: 4px;
+        padding: 0.15rem 0.4rem;
+        font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+        font-size: 0.82rem;
+        word-break: break-all;
+    }
+}

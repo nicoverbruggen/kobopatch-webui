@@ -1,0 +1,75 @@
+.step {
+    margin-bottom: 1rem;
+
+    & p {
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        font-size: 0.93rem;
+        line-height: 1.6;
+    }
+
+    & a {
+        color: var(--primary);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    & .fallback-hint {
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    & .install-summary {
+        font-size: 0.93rem;
+        color: var(--text);
+        line-height: 1.6;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Step action buttons (back/next) */
+.step-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+
+    & .primary:first-child,
+    & > [hidden] + .primary {
+        margin-left: auto;
+    }
+}
+
+.step-actions-right {
+    display: flex;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+@media (max-width: 500px) {
+    .step-actions:has(.step-actions-right) {
+        flex-wrap: wrap;
+    }
+
+    .step-actions-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* Pulls fallback hint up to compensate for select's margin-bottom */
+select + .fallback-hint {
+    margin-top: -0.5rem;
+}
+
+.restart-hint {
+    margin-top: 1.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}

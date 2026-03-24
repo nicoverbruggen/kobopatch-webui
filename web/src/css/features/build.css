@@ -1,0 +1,119 @@
+#build-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+/* Build header (spinner + progress text) */
+.build-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+
+    & p {
+        margin-bottom: 0;
+        font-weight: 500;
+        color: var(--text);
+    }
+}
+
+/* Spinner */
+.spinner {
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid var(--border-light);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+/* Also defined in critical.css (inlined into <head>) for the pre-CSS loading spinner */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Build log terminal */
+.build-log {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: 6px;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.73rem;
+    white-space: pre-wrap;
+    height: calc(10 * 1.5em + 1.5rem); /* 10 visible lines at line-height 1.5 + padding */
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+/* Collapsible log on install step */
+.log-details {
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+
+    & summary {
+        font-size: 0.83rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0.25rem 0;
+
+        &:hover {
+            color: var(--text);
+        }
+    }
+}
+
+/* Done screen log is shorter */
+.done-log {
+    height: calc(7 * 1.5em + 1.5rem); /* 7 visible lines */
+}
+
+.error-log {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    max-height: 300px; /* ~15 lines visible before scrolling */
+    overflow-y: auto;
+}
+
+/* Selected patches summary on build step */
+.selected-patches-list {
+    margin: 0 0 1rem;
+    padding: 0.5rem 1rem 0.5rem 1.75rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+
+    & li {
+        padding: 0.05rem 0;
+    }
+}
+
+#firmware-download-url {
+    display: inline-block;
+    margin: 0.4rem 0;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+    word-break: break-all;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+#firmware-verify-notice {
+    font-size: 12px;
+}
