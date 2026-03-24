@@ -102,6 +102,18 @@ async function build() {
 
     let html = readFileSync(join(srcDir, 'index.html'), 'utf-8');
 
+    // Inline critical.css into the <head> so :root tokens and loading styles
+    // are available before style.css arrives on slow connections.
+    const criticalCss = readFileSync(join(srcDir, 'css', 'critical.css'), 'utf-8');
+    const { code: criticalMinified } = await esbuild.transform(criticalCss, {
+        loader: 'css',
+        minify: !isDev && !isWatch,
+    });
+    html = html.replace(
+        '<!-- @critical-css -->',
+        `<style>${criticalMinified.trimEnd()}</style>`
+    );
+
     // Remove all <script src="js/..."> tags
     html = html.replace(/\s*<script src="js\/[^"]*"><\/script>\n/g, '');
     // Add the bundle script before </body>
@@ -112,7 +124,7 @@ async function build() {
 
     // Update CSS cache bust
     html = html.replace(
-        /css\/style\.css\?[^"]*/,
+        /css\/style\.css(?:\?[^"]*)?/,
         `css/style.css?h=${cssHash}`
     );
 

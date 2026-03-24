@@ -42,5 +42,8 @@ tests/e2e/test_firmware.zip
 # NickelMenu build artifacts
 nickelmenu/kobo-config/
 
+# Proposals
+proposals/
+
 # Claude
 .claude
