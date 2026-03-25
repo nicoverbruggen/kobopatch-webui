@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Usage: ./run-screenshots.sh
 #
-# Output: screenshots/*.png (gitignored)
+# Output: screenshots/{mobile,desktop}/{manual-nickelmenu,manual-patches,connected-nickelmenu,connected-patches,edge-cases}/*.png (gitignored)
 
 cd "$(dirname "$0")"
 

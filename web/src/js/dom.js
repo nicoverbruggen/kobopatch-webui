@@ -98,6 +98,33 @@ export async function fetchOrThrow(url, errorPrefix = 'Fetch failed') {
 }
 
 /**
+ * Wire up a .feedback banner inside a container element.
+ * Shows text + vote buttons; clicking one replaces all with a thank-you message.
+ * @param {HTMLElement} container - element containing the .feedback widget
+ * @param {function} onVote - callback receiving 'up' or 'down'
+ */
+export function setupFeedback(container, onVote) {
+    const widget = container.querySelector('.feedback');
+    if (!widget) return;
+    widget.hidden = false;
+    const text = widget.querySelector('.feedback-text');
+    const buttons = widget.querySelectorAll('.feedback-btn');
+    const thanks = widget.querySelector('.feedback-thanks');
+    text.hidden = false;
+    thanks.hidden = true;
+    buttons.forEach((btn) => {
+        btn.hidden = false;
+        btn.disabled = false;
+        btn.addEventListener('click', () => {
+            text.hidden = true;
+            buttons.forEach((b) => { b.hidden = true; });
+            thanks.hidden = false;
+            onVote(btn.dataset.vote);
+        }, { once: true });
+    });
+}
+
+/**
  * Trigger a browser download of in-memory data.
  * Creates a temporary object URL, clicks a hidden <a>, then revokes it.
  */

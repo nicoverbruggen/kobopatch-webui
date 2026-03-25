@@ -69,7 +69,7 @@ select + .fallback-hint {
 }
 
 .restart-hint {
-    margin-top: 1.5rem;
+    margin-top: 1rem;
     font-size: 0.78rem;
     color: var(--text-muted);
 }

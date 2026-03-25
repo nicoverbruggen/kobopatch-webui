@@ -13,11 +13,11 @@
  * `resetNickelMenuState`.
  */
 
-import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList } from '../dom.js';
+import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavStep } from '../nav.js';
 import { ALL_FEATURES } from '../../nickelmenu/installer.js';
 import { TL } from '../strings.js';
-import { track } from '../analytics.js';
+import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 
 export function initNickelMenu(state) {
 
@@ -364,6 +364,12 @@ export function initNickelMenu(state) {
             $('nm-download-conf-step').hidden = !showConfStep;
             $('nm-download-reboot-step').hidden = !showConfStep;
             track('flow-end', { result: 'nm-download' });
+        }
+
+        if (analyticsEnabled()) {
+            setupFeedback(stepNmDone, (vote) => {
+                track('feedback', { vote });
+            });
         }
 
         setNavStep(5);

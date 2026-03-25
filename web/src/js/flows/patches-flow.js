@@ -14,11 +14,11 @@
  * `updatePatchCount`, and `configureFirmwareStep`.
  */
 
-import { $, formatMB, triggerDownload, populateList } from '../dom.js';
+import { $, formatMB, triggerDownload, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavLabels, setNavStep } from '../nav.js';
 import { KoboModels } from '../services/kobo-device.js';
 import { TL } from '../strings.js';
-import { track } from '../analytics.js';
+import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 import JSZip from 'jszip';
 
 export function initPatchesFlow(state) {
@@ -248,6 +248,12 @@ export function initPatchesFlow(state) {
         writeInstructions.hidden = true;
         downloadInstructions.hidden = true;
         existingTgzWarning.hidden = true;
+
+        if (analyticsEnabled()) {
+            setupFeedback(stepDone, (vote) => {
+                track('feedback', { vote });
+            });
+        }
 
         setNavStep(5);
         showStep(stepDone);
