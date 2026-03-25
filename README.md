@@ -50,18 +50,33 @@ web/
       style.css
     js/
       app.js                    # Orchestrator: shared state, device connection, mode selection, error/retry, dialogs
-      dom.js                    # Shared DOM helpers ($, $q, $qa, formatMB, populateSelect, triggerDownload)
+      dom.js                    # Shared DOM/utility helpers ($, $q, populateSelect, renderNmCheckboxList, populateList, fetchOrThrow, triggerDownload)
       nav.js                    # Step navigation, progress bar, step history, card radio interactivity
-      nickelmenu-flow.js        # NickelMenu flow: config, features, review, install, done
-      patches-flow.js           # Custom patches flow: configure, build, install/download
-      kobo-device.js            # KoboModels, KoboDevice class
-      kobo-software-urls.js     # Fetches download URLs from JSON, getSoftwareUrl, getDevicesForVersion
-      nickelmenu/               # NickelMenu feature modules + installer orchestrator
-      patch-ui.js               # PatchUI: loads patches, parses YAML, renders toggle UI
-      patch-runner.js           # KoboPatchRunner: spawns Web Worker per build
-      patch-worker.js           # Web Worker: loads WASM, runs patchFirmware()
       strings.js                # Localized UI strings
+      analytics.js              # Privacy-focused analytics wrapper (Umami)
+      flows/
+        nickelmenu-flow.js      # NickelMenu flow: config, features, review, install, done
+        patches-flow.js         # Custom patches flow: configure, build, install/download
+      services/
+        kobo-device.js          # KoboModels, KoboDevice class (File System Access API)
+        kobo-software-urls.js   # Fetches download URLs from JSON, getSoftwareUrl, getDevicesForVersion
+        patch-runner.js         # KoboPatchRunner: spawns Web Worker per build
+      ui/
+        patch-ui.js             # PatchUI: loads patches, parses YAML, renders toggle UI
+      workers/
+        patch-worker.js         # Web Worker: loads WASM, runs patchFirmware()
       wasm_exec.js              # Go WASM runtime (copied from Go SDK by build.sh, gitignored)
+    nickelmenu/
+      installer.js              # NickelMenu installer orchestrator: collects files, writes to device or builds ZIP
+      features/
+        helpers.js              # Shared postProcess helpers (appendToNmConfig, prependToNmConfig)
+        custom-menu/            # Required preset menu items
+        readerly-fonts/         # Font installation
+        koreader/               # KOReader e-reader installation
+        simplify-tabs/          # Navigation tab configuration
+        hide-recommendations/   # Home screen recommendations toggle
+        hide-notices/           # Home screen notices toggle
+        screensaver/            # Screensaver image installation
     patches/
       index.json                # Available patch manifest
       downloads.json            # Firmware download URLs by version/serial (may be auto-generated)
@@ -75,7 +90,7 @@ web/
   dist/                         # Build output (gitignored, fully regenerable)
     bundle.js                   # esbuild output (minified, content-hashed)
     index.html                  # Generated with cache-busted references
-    css/ favicon/ patches/ nickelmenu/ readerly/ koreader/ wasm/ js/wasm_exec.js
+    css/ favicon/ patches/ nickelmenu/ readerly/ koreader/ wasm/ js/workers/
   build.mjs                     # esbuild build script + asset copy
   package.json                  # esbuild, jszip
 
@@ -106,7 +121,8 @@ tests/
       paths.js                    # Test asset paths, expected checksums
       tar.js                      # Tar archive parser for output verification
     integration.spec.js           # Playwright E2E tests
-    playwright.config.js
+    playwright.config.js          # Parallel by default; serial when --headed or --slow
+    global-setup.js               # Creates firmware symlink once before all tests
     run-e2e.sh
 
 # Root scripts
@@ -164,13 +180,15 @@ This downloads the latest release directly into `web/dist/koreader/`, skipping t
 
 ## Building the frontend
 
-The JS source lives in `web/src/js/` as ES modules, organized around the two main user flows:
+The JS source lives in `web/src/js/` as ES modules, organized by role:
 
 - **`app.js`** — the orchestrator: creates shared state, handles device connection, mode selection, error recovery, and dialogs. Delegates to the two flow modules below.
-- **`nickelmenu-flow.js`** — the entire NickelMenu path (config, features, review, install, done).
-- **`patches-flow.js`** — the entire custom patches path (configure, build, install/download).
+- **`flows/`** — the two main user journeys: `nickelmenu-flow.js` (install/configure/remove NickelMenu) and `patches-flow.js` (configure/build/install custom patches).
+- **`services/`** — modules that wrap external APIs with no DOM dependencies: `kobo-device.js` (File System Access API), `kobo-software-urls.js` (firmware URL lookup), `patch-runner.js` (Web Worker manager).
+- **`ui/`** — UI rendering: `patch-ui.js` (patch list rendering and toggle UI).
+- **`workers/`** — Web Worker files (not bundled, loaded at runtime): `patch-worker.js` (loads WASM, runs patcher).
+- **`dom.js`** — shared DOM/utility helpers (`$`, `$q`, `renderNmCheckboxList`, `populateList`, `fetchOrThrow`, etc.) used across modules.
 - **`nav.js`** — step navigation, progress bar, and step history (shared by both flows).
-- **`dom.js`** — tiny DOM utility helpers (`$`, `$q`, `$qa`, etc.) used everywhere.
 
 Flow modules receive a shared `state` object by reference and call back into the orchestrator via `state.showError()` and `state.goToModeSelection()` when they need to cross module boundaries. esbuild bundles everything into a single `web/dist/bundle.js`.
 
@@ -229,6 +247,8 @@ Custom patches tests use firmware 4.45.23646 (~150 MB, cached in `tests/cached_a
 cd tests/e2e
 ./run-e2e.sh
 ```
+
+By default, tests run in parallel across 4 workers. When `--headed` or `--slow` is passed, tests run serially with a single worker so you can follow along in the browser.
 
 To run with a visible browser window:
 

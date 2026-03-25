@@ -6,13 +6,10 @@ const zlib = require('zlib');
 const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, EXPECTED_SHA1, ORIGINAL_TGZ_SHA1 } = require('./helpers/paths');
-const { hasNickelMenuAssets, hasKoreaderAssets, hasReaderlyAssets, hasFirmwareZip, setupFirmwareSymlink, cleanupFirmwareSymlink } = require('./helpers/assets');
+const { hasNickelMenuAssets, hasKoreaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('./helpers/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('./helpers/mock-device');
 const { parseTar } = require('./helpers/tar');
 
-test.afterEach(() => {
-  cleanupFirmwareSymlink();
-});
 
 // ============================================================
 // NickelMenu
@@ -600,7 +597,7 @@ test.describe('Custom patches', () => {
   test('no device — full manual mode patching pipeline', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    setupFirmwareSymlink();
+
     await goToManualMode(page);
 
     // Select "Custom Patches" mode
@@ -684,7 +681,7 @@ test.describe('Custom patches', () => {
   test('no device — restore original firmware', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    setupFirmwareSymlink();
+
     await goToManualMode(page);
 
     // Select "Custom Patches" mode
@@ -815,7 +812,7 @@ test.describe('Custom patches', () => {
   test('with device — apply patches and verify checksums', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    setupFirmwareSymlink();
+
     // Override firmware URLs BEFORE connecting so the app captures the local URL
     await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
@@ -890,7 +887,7 @@ test.describe('Custom patches', () => {
   test('with device — restore original firmware', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    setupFirmwareSymlink();
+
     // Override firmware URLs BEFORE connecting so the app captures the local URL
     await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
@@ -932,7 +929,7 @@ test.describe('Custom patches', () => {
   test('with device — build failure shows Go Back and returns to patches', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    setupFirmwareSymlink();
+
     await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
     // Select Custom Patches
@@ -969,7 +966,7 @@ test.describe('Custom patches', () => {
   test('with device — real patch failure with Go Back (Allow rotation)', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    setupFirmwareSymlink();
+
     await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
     // Select Custom Patches
