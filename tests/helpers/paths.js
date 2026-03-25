@@ -1,10 +1,10 @@
 const path = require('path');
 
-const CACHED_ASSETS = path.resolve(__dirname, '..', '..', 'cached_assets');
+const CACHED_ASSETS = path.resolve(__dirname, '..', 'cached_assets');
 
 const FIRMWARE_PATH = path.join(CACHED_ASSETS, 'kobo-update-4.45.23646.zip');
 
-const WEBROOT = path.resolve(__dirname, '..', '..', '..', 'web', 'dist');
+const WEBROOT = path.resolve(__dirname, '..', '..', 'web', 'dist');
 const WEBROOT_FIRMWARE = path.join(WEBROOT, '_test_firmware.zip');
 
 // Expected SHA1 checksums for Kobo Libra Color, firmware 4.45.23646,

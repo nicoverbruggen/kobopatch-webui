@@ -22,7 +22,7 @@ module.exports = defineConfig({
     },
   },
   webServer: {
-    command: 'cd ../../web && npm install && node build.mjs && cd ../kobopatch-wasm && bash build.sh && cd ../web && PORT=8889 node serve.mjs',
+    command: 'cd ../web && npm install && node build.mjs && cd ../kobopatch-wasm && bash build.sh && cd ../web && PORT=8889 node serve.mjs',
     port: 8889,
     reuseExistingServer: true,
   },

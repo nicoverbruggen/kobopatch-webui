@@ -114,19 +114,19 @@ kobopatch-wasm/
 
 tests/
   cached_assets/                  # Downloaded test assets (gitignored)
-  e2e/
-    helpers/                      # Shared test utilities
-      assets.js                   # Asset availability checks, firmware symlink helpers
-      mock-device.js              # Mock File System Access API (simulated Kobo device)
-      paths.js                    # Test asset paths, expected checksums
-      tar.js                      # Tar archive parser for output verification
-    integration.spec.js           # Playwright E2E tests
-    playwright.config.js          # Parallel by default; serial when --headed or --slow
-    global-setup.js               # Creates firmware symlink once before all tests
-    run-e2e.sh
-    screenshots.mjs               # Captures screenshots of every wizard step
-    screenshots.config.js         # Mobile + desktop project config for screenshots
-    run-screenshots.sh            # Runs screenshot capture
+  helpers/                        # Shared test utilities
+    assets.js                     # Asset availability checks, firmware symlink helpers
+    mock-device.js                # Mock File System Access API (simulated Kobo device)
+    paths.js                      # Test asset paths, expected checksums
+    tar.js                        # Tar archive parser for output verification
+  build.spec.js                   # Build output verification tests
+  integration.spec.js             # Playwright E2E tests
+  playwright.config.js            # Parallel by default; serial when --headed or --slow
+  global-setup.js                 # Creates firmware symlink once before all tests
+  run-e2e.sh
+  screenshots.mjs                 # Captures screenshots of every wizard step
+  screenshots.config.js           # Mobile + desktop project config for screenshots
+  run-screenshots.sh              # Runs screenshot capture
 
 # Root scripts
 test.sh                         # Runs all tests (WASM + E2E)
@@ -262,7 +262,7 @@ The simulated device tests mock the File System Access API with an in-memory fil
 Custom patches tests use firmware 4.45.23646 (~150 MB, cached in `tests/cached_assets/`), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. This specific combination is used because the author has tested it on an actual device. KOReader tests use a real KOReader zip (~39 MB, also cached) to verify the full installation flow.
 
 ```bash
-cd tests/e2e
+cd tests
 ./run-e2e.sh
 ```
 
@@ -291,11 +291,11 @@ Extra Playwright arguments can be passed after `--`:
 Capture screenshots of every wizard step for visual review (mobile + desktop):
 
 ```bash
-cd tests/e2e
+cd tests
 ./run-screenshots.sh
 ```
 
-Output is saved to `tests/e2e/screenshots/mobile/` and `tests/e2e/screenshots/desktop/` (gitignored). The script uses a separate Playwright config (`screenshots.config.js`) with two projects: mobile (393×852, 3× DPI) and desktop (1280×900, 3× DPI). Screenshots cover the full wizard flow including device connection, mode selection, NickelMenu configuration, custom patches, error states, dialogs, and the feedback widget.
+Output is saved to `tests/screenshots/mobile/` and `tests/screenshots/desktop/` (gitignored). The script uses a separate Playwright config (`screenshots.config.js`) with two projects: mobile (393×852, 3× DPI) and desktop (1280×900, 3× DPI). Screenshots cover the full wizard flow including device connection, mode selection, NickelMenu configuration, custom patches, error states, dialogs, and the feedback widget.
 
 ### WASM integration test
 

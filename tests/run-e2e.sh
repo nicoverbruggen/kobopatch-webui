@@ -16,7 +16,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-PROJECT_ROOT="$(cd ../.. && pwd)"
+PROJECT_ROOT="$(cd .. && pwd)"
 WEB_DIR="$PROJECT_ROOT/web"
 SRC_DIR="$WEB_DIR/src"
 DIST_DIR="$WEB_DIR/dist"

@@ -92,5 +92,5 @@ jobs:
       - name: Full integration test (Playwright)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
-          cd tests/e2e
+          cd tests
           ./run-e2e.sh

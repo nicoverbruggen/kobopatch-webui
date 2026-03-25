@@ -33,11 +33,11 @@ electron/release/
 tests/cached_assets/
 
 # E2E tests
-tests/e2e/node_modules/
-tests/e2e/test-results/
-tests/e2e/playwright-report/
-tests/e2e/screenshots/
-tests/e2e/test_firmware.zip
+tests/node_modules/
+tests/test-results/
+tests/playwright-report/
+tests/screenshots/
+tests/test_firmware.zip
 
 # NickelMenu build artifacts
 nickelmenu/kobo-config/

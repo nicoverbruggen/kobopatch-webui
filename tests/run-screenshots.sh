@@ -14,4 +14,4 @@ rm -rf screenshots
 npx playwright test --config screenshots.config.js --reporter=list "$@"
 
 echo ""
-echo "Screenshots saved to tests/e2e/screenshots/"
+echo "Screenshots saved to tests/screenshots/"
