@@ -45,6 +45,59 @@ export function populateSelect(selectEl, placeholder, items) {
 }
 
 /**
+ * Render a list of checkbox items into a container.
+ * @param {HTMLElement} container
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean}>} items
+ */
+export function renderNmCheckboxList(container, items) {
+    container.innerHTML = '';
+    for (const item of items) {
+        const label = document.createElement('label');
+        label.className = 'nm-config-item';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.name = item.name;
+        input.checked = item.checked;
+        if (item.disabled) input.disabled = true;
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'nm-config-text';
+
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'nm-config-title';
+        titleSpan.textContent = item.title;
+
+        const descSpan = document.createElement('span');
+        descSpan.className = 'nm-config-desc';
+        descSpan.textContent = item.description;
+
+        textDiv.appendChild(titleSpan);
+        textDiv.appendChild(descSpan);
+        label.appendChild(input);
+        label.appendChild(textDiv);
+        container.appendChild(label);
+    }
+}
+
+/** Populate a <ul>/<ol> with text items, clearing existing content. */
+export function populateList(listEl, items) {
+    listEl.innerHTML = '';
+    for (const text of items) {
+        const li = document.createElement('li');
+        li.textContent = text;
+        listEl.appendChild(li);
+    }
+}
+
+/** Fetch with automatic error throwing on non-OK responses. */
+export async function fetchOrThrow(url, errorPrefix = 'Fetch failed') {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`${errorPrefix}: HTTP ${resp.status}`);
+    return resp;
+}
+
+/**
  * Trigger a browser download of in-memory data.
  * Creates a temporary object URL, clicks a hidden <a>, then revokes it.
  */

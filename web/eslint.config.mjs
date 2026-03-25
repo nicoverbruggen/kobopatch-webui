@@ -38,7 +38,7 @@ export default [
     },
     {
         // Worker script uses importScripts, self, Go, globalThis, WebAssembly
-        files: ['src/js/patch-worker.js'],
+        files: ['src/js/workers/patch-worker.js'],
         languageOptions: {
             globals: {
                 self: 'readonly',

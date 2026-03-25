@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { fetchOrThrow } from '../js/dom.js';
 
 import customMenu from './features/custom-menu/index.js';
 import readerlyFonts from './features/readerly-fonts/index.js';
@@ -32,8 +33,7 @@ function createContext(feature, progressFn) {
     return {
         async asset(relativePath) {
             const url = basePath + relativePath;
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`Failed to load asset ${url}: HTTP ${resp.status}`);
+            const resp = await fetchOrThrow(url, `Failed to load asset ${url}`);
             return new Uint8Array(await resp.arrayBuffer());
         },
         progress(msg) {
@@ -53,8 +53,7 @@ export class NickelMenuInstaller {
     async loadNickelMenu(progressFn) {
         if (this.nickelMenuZip) return;
         progressFn('Downloading NickelMenu...');
-        const resp = await fetch('nickelmenu/NickelMenu.zip');
-        if (!resp.ok) throw new Error('Failed to download NickelMenu.zip: HTTP ' + resp.status);
+        const resp = await fetchOrThrow('nickelmenu/NickelMenu.zip', 'Failed to download NickelMenu.zip');
         this.nickelMenuZip = await JSZip.loadAsync(await resp.arrayBuffer());
     }
 

@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { prependToNmConfig } from '../helpers.js';
 
 export default {
     id: 'koreader',
@@ -43,12 +44,5 @@ export default {
         return files;
     },
 
-    postProcess(files) {
-        const items = files.find(f => f.path === '.adds/nm/items');
-        if (!items || typeof items.data !== 'string') return files;
-
-        items.data = 'menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh\n\n' + items.data;
-
-        return files;
-    },
+    postProcess: prependToNmConfig('menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'),
 };

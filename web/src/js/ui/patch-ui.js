@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
-import { TL } from './strings.js';
+import { TL } from '../strings.js';
+import { fetchOrThrow } from '../dom.js';
 
 /**
  * Friendly display names for patch files.
@@ -208,10 +209,7 @@ class PatchUI {
      * Load patches from a URL pointing to a zip file.
      */
     async loadFromURL(url) {
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error('Failed to fetch patch zip: ' + resp.statusText);
-        }
+        const resp = await fetchOrThrow(url, 'Failed to fetch patch zip');
         const data = await resp.arrayBuffer();
         await this.loadFromZip(data);
     }

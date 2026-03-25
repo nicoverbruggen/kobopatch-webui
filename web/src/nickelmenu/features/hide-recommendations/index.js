@@ -1,15 +1,10 @@
+import { appendToNmConfig } from '../helpers.js';
+
 export default {
     id: 'hide-recommendations',
     title: 'Hide home screen recommendations',
     description: 'Hides the recommendations next to your current read on the home screen.',
     default: false,
 
-    postProcess(files) {
-        const items = files.find(f => f.path === '.adds/nm/items');
-        if (!items || typeof items.data !== 'string') return files;
-
-        items.data += '\nexperimental:hide_home_row1col2_enabled:1\n';
-
-        return files;
-    },
+    postProcess: appendToNmConfig('experimental:hide_home_row1col2_enabled:1'),
 };

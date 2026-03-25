@@ -1,3 +1,5 @@
+import { prependToNmConfig } from '../helpers.js';
+
 const TAB_CONFIG = [
     'experimental :menu_main_15505_0_enabled: 1',
     'experimental :menu_main_15505_1_label: Books',
@@ -17,12 +19,5 @@ export default {
     description: 'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar.',
     default: false,
 
-    postProcess(files) {
-        const items = files.find(f => f.path === '.adds/nm/items');
-        if (!items || typeof items.data !== 'string') return files;
-
-        items.data = TAB_CONFIG + '\n\n' + items.data;
-
-        return files;
-    },
+    postProcess: prependToNmConfig(TAB_CONFIG),
 };

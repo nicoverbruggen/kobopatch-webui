@@ -1,4 +1,5 @@
 import { KoboModels } from './kobo-device.js';
+import { fetchOrThrow } from '../dom.js';
 
 let _data = null;
 
@@ -8,8 +9,7 @@ let _data = null;
  */
 async function loadSoftwareUrls() {
     if (_data) return _data;
-    const resp = await fetch('/patches/downloads.json');
-    if (!resp.ok) throw new Error('Failed to load download URLs');
+    const resp = await fetchOrThrow('/patches/downloads.json', 'Failed to load download URLs');
     _data = await resp.json();
     window.FIRMWARE_DOWNLOADS = _data;
     return _data;

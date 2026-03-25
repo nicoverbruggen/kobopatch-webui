@@ -18,17 +18,17 @@
  * `state.showError()` when they need to cross module boundaries.
  */
 
-import { KoboDevice } from './kobo-device.js';
-import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './kobo-software-urls.js';
-import { PatchUI, scanAvailablePatches } from './patch-ui.js';
-import { KoboPatchRunner } from './patch-runner.js';
+import { KoboDevice } from './services/kobo-device.js';
+import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './services/kobo-software-urls.js';
+import { PatchUI, scanAvailablePatches } from './ui/patch-ui.js';
+import { KoboPatchRunner } from './services/patch-runner.js';
 import { NickelMenuInstaller, ALL_FEATURES } from '../nickelmenu/installer.js';
 import { TL } from './strings.js';
 import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import { $, $q, populateSelect } from './dom.js';
 import { showStep, setNavLabels, setNavStep, hideNav, showNav, stepHistory, setupCardRadios } from './nav.js';
-import { initNickelMenu } from './nickelmenu-flow.js';
-import { initPatchesFlow } from './patches-flow.js';
+import { initNickelMenu } from './flows/nickelmenu-flow.js';
+import { initPatchesFlow } from './flows/patches-flow.js';
 
 // =============================================================================
 // Shared state

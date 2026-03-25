@@ -14,11 +14,11 @@
  * `updatePatchCount`, and `configureFirmwareStep`.
  */
 
-import { $, formatMB, triggerDownload } from './dom.js';
-import { showStep, setNavLabels, setNavStep } from './nav.js';
-import { KoboModels } from './kobo-device.js';
-import { TL } from './strings.js';
-import { track } from './analytics.js';
+import { $, formatMB, triggerDownload, populateList } from '../dom.js';
+import { showStep, setNavLabels, setNavStep } from '../nav.js';
+import { KoboModels } from '../services/kobo-device.js';
+import { TL } from '../strings.js';
+import { track } from '../analytics.js';
 import JSZip from 'jszip';
 
 export function initPatchesFlow(state) {
@@ -99,13 +99,8 @@ export function initPatchesFlow(state) {
 
     function populateSelectedPatchesList() {
         const patchList = $('selected-patches-list');
-        patchList.innerHTML = '';
         const enabled = state.patchUI.getEnabledPatches();
-        for (const name of enabled) {
-            const li = document.createElement('li');
-            li.textContent = name;
-            patchList.appendChild(li);
-        }
+        populateList(patchList, enabled);
         const hasPatches = enabled.length > 0;
         patchList.hidden = !hasPatches;
         $('selected-patches-heading').hidden = !hasPatches;

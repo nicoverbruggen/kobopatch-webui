@@ -60,17 +60,17 @@ async function build() {
         logLevel: 'warning',
     });
 
-    // Copy worker files from src/js/ (not bundled, served separately)
-    mkdirSync(join(distDir, 'js'), { recursive: true });
+    // Copy worker files from src/js/workers/ (not bundled, served separately)
+    mkdirSync(join(distDir, 'js', 'workers'), { recursive: true });
 
     // Copy wasm_exec.js as-is
     const wasmExecSrc = join(srcDir, 'js', 'wasm_exec.js');
     if (existsSync(wasmExecSrc)) {
-        cpSync(wasmExecSrc, join(distDir, 'js', 'wasm_exec.js'));
+        cpSync(wasmExecSrc, join(distDir, 'js', 'workers', 'wasm_exec.js'));
     }
 
     // Copy patch-worker.js with WASM hash injected
-    const workerSrc = join(srcDir, 'js', 'patch-worker.js');
+    const workerSrc = join(srcDir, 'js', 'workers', 'patch-worker.js');
     if (existsSync(workerSrc)) {
         let workerContent = readFileSync(workerSrc, 'utf-8');
         const wasmFile = join(distDir, 'wasm', 'kobopatch.wasm');
@@ -81,7 +81,7 @@ async function build() {
                 `kobopatch.wasm?h=${wasmHash}'`
             );
         }
-        writeFileSync(join(distDir, 'js', 'patch-worker.js'), workerContent);
+        writeFileSync(join(distDir, 'js', 'workers', 'patch-worker.js'), workerContent);
     }
 
     // Get git version string

@@ -13,11 +13,11 @@
  * `resetNickelMenuState`.
  */
 
-import { $, $q, $qa, triggerDownload } from './dom.js';
-import { showStep, setNavStep } from './nav.js';
-import { ALL_FEATURES } from '../nickelmenu/installer.js';
-import { TL } from './strings.js';
-import { track } from './analytics.js';
+import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList } from '../dom.js';
+import { showStep, setNavStep } from '../nav.js';
+import { ALL_FEATURES } from '../../nickelmenu/installer.js';
+import { TL } from '../strings.js';
+import { track } from '../analytics.js';
 
 export function initNickelMenu(state) {
 
@@ -47,42 +47,16 @@ export function initNickelMenu(state) {
     // Required features are checked and disabled; others use their default.
 
     function renderFeatureCheckboxes() {
-        nmConfigOptions.innerHTML = '';
-        for (const feature of ALL_FEATURES) {
-            if (feature.available === false) continue;
-
-            const label = document.createElement('label');
-            label.className = 'nm-config-item';
-
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.name = 'nm-cfg-' + feature.id;
-            input.checked = feature.default;
-            if (feature.required) {
-                input.checked = true;
-                input.disabled = true;
-            }
-
-            const textDiv = document.createElement('div');
-            textDiv.className = 'nm-config-text';
-
-            const titleSpan = document.createElement('span');
-            titleSpan.className = 'nm-config-title';
-            let titleText = feature.title;
-            if (feature.required) titleText += ' (required)';
-            if (feature.version) titleText += ' ' + feature.version;
-            titleSpan.textContent = titleText;
-
-            const descSpan = document.createElement('span');
-            descSpan.className = 'nm-config-desc';
-            descSpan.textContent = feature.description;
-
-            textDiv.appendChild(titleSpan);
-            textDiv.appendChild(descSpan);
-            label.appendChild(input);
-            label.appendChild(textDiv);
-            nmConfigOptions.appendChild(label);
-        }
+        const items = ALL_FEATURES
+            .filter(f => f.available !== false)
+            .map(f => ({
+                name: 'nm-cfg-' + f.id,
+                title: f.title + (f.required ? ' (required)' : '') + (f.version ? ' ' + f.version : ''),
+                description: f.description,
+                checked: f.required || f.default,
+                disabled: f.required,
+            }));
+        renderNmCheckboxList(nmConfigOptions, items);
     }
 
     // --- Uninstall checkboxes ---
@@ -90,35 +64,17 @@ export function initNickelMenu(state) {
     // (like KOReader) so the user can opt into cleaning those up too.
 
     function renderUninstallCheckboxes() {
-        nmUninstallOptions.innerHTML = '';
-        if (detectedUninstallFeatures.length === 0) return;
-
-        for (const feature of detectedUninstallFeatures) {
-            const label = document.createElement('label');
-            label.className = 'nm-config-item';
-
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.name = 'nm-uninstall-' + feature.id;
-            input.checked = true;
-
-            const textDiv = document.createElement('div');
-            textDiv.className = 'nm-config-text';
-
-            const titleSpan = document.createElement('span');
-            titleSpan.className = 'nm-config-title';
-            titleSpan.textContent = 'Also remove ' + feature.uninstall.title;
-
-            const descSpan = document.createElement('span');
-            descSpan.className = 'nm-config-desc';
-            descSpan.textContent = feature.uninstall.description;
-
-            textDiv.appendChild(titleSpan);
-            textDiv.appendChild(descSpan);
-            label.appendChild(input);
-            label.appendChild(textDiv);
-            nmUninstallOptions.appendChild(label);
+        if (detectedUninstallFeatures.length === 0) {
+            nmUninstallOptions.innerHTML = '';
+            return;
         }
+        const items = detectedUninstallFeatures.map(f => ({
+            name: 'nm-uninstall-' + f.id,
+            title: 'Also remove ' + f.uninstall.title,
+            description: f.uninstall.description,
+            checked: true,
+        }));
+        renderNmCheckboxList(nmUninstallOptions, items);
     }
 
     /** Clear removal state when returning to mode selection. */
@@ -263,39 +219,24 @@ export function initNickelMenu(state) {
     function goToNmReview() {
         const summary = $('nm-review-summary');
         const list = $('nm-review-list');
-        list.innerHTML = '';
 
         if (state.nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
             const featuresToRemove = getSelectedUninstallFeatures();
-            for (const feature of featuresToRemove) {
-                const li = document.createElement('li');
-                li.textContent = feature.uninstall.title + ' will also be removed';
-                list.appendChild(li);
-            }
+            populateList(list, featuresToRemove.map(f => f.uninstall.title + ' will also be removed'));
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
-        } else if (state.nickelMenuOption === 'nickelmenu-only') {
-            summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
-            const li = document.createElement('li');
-            li.textContent = TL.STATUS.NM_NICKEL_ROOT_TGZ;
-            list.appendChild(li);
-            btnNmWrite.hidden = false;
-            btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
-            btnNmDownload.hidden = false;
         } else {
-            // "preset" — list NickelMenu plus all selected features.
+            // "nickelmenu-only" or "preset" — both install NickelMenu.
             summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
             const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ];
-            for (const feature of getSelectedFeatures()) {
-                items.push(feature.title);
+            if (state.nickelMenuOption === 'preset') {
+                for (const feature of getSelectedFeatures()) {
+                    items.push(feature.title);
+                }
             }
-            for (const text of items) {
-                const li = document.createElement('li');
-                li.textContent = text;
-                list.appendChild(li);
-            }
+            populateList(list, items);
             btnNmWrite.hidden = false;
             btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             btnNmDownload.hidden = false;
