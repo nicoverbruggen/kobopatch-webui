@@ -17,7 +17,7 @@ export const TL = {
     STATUS: {
         DEVICE_RECOGNIZED: 'Your device has been recognized. You can continue to the next step!',
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
-        NM_INSTALLED: 'NickelMenu has been prepared for your Kobo. To complete the installation, follow the instructions below.',
+        NM_INSTALLED: 'NickelMenu has been installed on your Kobo. To complete the installation, follow the instructions below.',
         NM_DOWNLOAD_READY: 'Your NickelMenu package is ready to download. After downloading, a list of installation steps will be displayed.',
         NM_WILL_BE_REMOVED: 'NickelMenu will be updated and marked for removal. It will uninstall itself when your Kobo reboots.',
         NM_WILL_BE_INSTALLED: 'The following will be installed on your Kobo:',

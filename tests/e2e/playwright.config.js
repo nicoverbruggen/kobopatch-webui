@@ -18,7 +18,7 @@ module.exports = defineConfig({
     actionTimeout: 10_000,
     launchOptions: {
       args: ['--disable-dev-shm-usage'],
-      serialMo: parseInt(process.env.SLOW_MO || '0', 10),
+      slowMo: parseInt(process.env.SLOW_MO || '0', 10),
     },
   },
   webServer: {

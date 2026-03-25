@@ -22,8 +22,8 @@ test.describe('NickelMenu', () => {
 
     await goToManualMode(page);
 
-    // Mode selection: NickelMenu should be pre-selected (checked in HTML)
-    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
+    // Select NickelMenu and continue
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // NickelMenu configure step
@@ -104,8 +104,8 @@ test.describe('NickelMenu', () => {
 
     await goToManualMode(page);
 
-    // Mode selection
-    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
+    // Select NickelMenu and continue
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // NickelMenu configure step — select "Install NickelMenu with preset"
@@ -158,6 +158,7 @@ test.describe('NickelMenu', () => {
     await connectMockDevice(page, { hasNickelMenu: false });
 
     await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // Select "Install NickelMenu with preset"
@@ -193,6 +194,7 @@ test.describe('NickelMenu', () => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await goToManualMode(page);
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
@@ -228,6 +230,7 @@ test.describe('NickelMenu', () => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await goToManualMode(page);
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
@@ -246,8 +249,8 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-device-next');
     await expect(page.locator('#step-mode')).not.toBeHidden();
 
-    // NickelMenu is pre-selected
-    await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
+    // Select NickelMenu and continue
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // NickelMenu configure step
@@ -317,8 +320,9 @@ test.describe('NickelMenu', () => {
 
     await connectMockDevice(page, { hasNickelMenu: false });
 
-    // Continue to mode selection
+    // Continue to mode selection → select NickelMenu
     await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // NickelMenu configure step
@@ -349,8 +353,9 @@ test.describe('NickelMenu', () => {
 
     await connectMockDevice(page, { hasNickelMenu: true });
 
-    // Continue to mode selection
+    // Continue to mode selection → select NickelMenu
     await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // NickelMenu configure step
@@ -404,6 +409,7 @@ test.describe('NickelMenu', () => {
     });
 
     await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // Select remove
@@ -455,6 +461,7 @@ test.describe('NickelMenu', () => {
     });
 
     await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // NickelMenu configure step
@@ -493,6 +500,7 @@ test.describe('NickelMenu', () => {
     test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
 
     await goToManualMode(page);
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // Select preset → features
@@ -542,6 +550,7 @@ test.describe('NickelMenu', () => {
     test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
 
     await goToManualMode(page);
+    await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
 
     // Preset path: enable some features

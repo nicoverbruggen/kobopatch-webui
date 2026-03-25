@@ -41,10 +41,10 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
   // Click "Build downloadable archive" to enter manual mode
   await page.click('#btn-manual');
   await expect(page.locator('#step-mode')).not.toBeHidden();
-  await shot(page, dir, '01-mode-selection', testInfo);
 
-  // Select NickelMenu → config
+  // Select NickelMenu, screenshot, then proceed
   await page.click('input[name="mode"][value="nickelmenu"]');
+  await shot(page, dir, '01-mode-selection', testInfo);
   await page.click('#btn-mode-next');
   await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
   await shot(page, dir, '02-nickelmenu-config', testInfo);
@@ -90,10 +90,10 @@ test('manual patches', async ({ page }, testInfo) => {
   // Click "Build downloadable archive" to enter manual mode
   await page.click('#btn-manual');
   await expect(page.locator('#step-mode')).not.toBeHidden();
-  await shot(page, dir, '01-mode-selection', testInfo);
 
-  // Select Patches → version selection
+  // Select Patches, then screenshot mode selection before proceeding
   await page.click('input[name="mode"][value="patches"]');
+  await shot(page, dir, '01-mode-selection', testInfo);
   await page.click('#btn-mode-next');
   await expect(page.locator('#step-manual-version')).not.toBeHidden();
   await shot(page, dir, '02-version-selection', testInfo);
@@ -160,13 +160,11 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
   await expect(page.locator('#step-device')).not.toBeHidden();
   await shot(page, dir, '03-device', testInfo);
 
-  // Mode selection
+  // Mode selection — select NickelMenu, screenshot, then proceed
   await page.click('#btn-device-next');
   await expect(page.locator('#step-mode')).not.toBeHidden();
-  await shot(page, dir, '04-mode-selection', testInfo);
-
-  // NickelMenu config
   await page.click('input[name="mode"][value="nickelmenu"]');
+  await shot(page, dir, '04-mode-selection', testInfo);
   await page.click('#btn-mode-next');
   await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
   await shot(page, dir, '05-nickelmenu-config', testInfo);
@@ -222,13 +220,11 @@ test('connected patches', async ({ page }, testInfo) => {
   await expect(page.locator('#step-device')).not.toBeHidden();
   await shot(page, dir, '03-device', testInfo);
 
-  // Mode selection
+  // Mode selection — select Patches, screenshot, then proceed
   await page.click('#btn-device-next');
   await expect(page.locator('#step-mode')).not.toBeHidden();
-  await shot(page, dir, '04-mode-selection', testInfo);
-
-  // Patches config
   await page.click('input[name="mode"][value="patches"]');
+  await shot(page, dir, '04-mode-selection', testInfo);
   await page.click('#btn-mode-next');
   await expect(page.locator('#step-patches')).not.toBeHidden();
   await shot(page, dir, '05-patches-config', testInfo);

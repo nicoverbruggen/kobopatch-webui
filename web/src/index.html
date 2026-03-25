@@ -193,8 +193,8 @@
         <section id="step-mode" class="step" hidden>
             <p>What would you like to do?</p>
             <div class="selection-cards" role="radiogroup" aria-label="Mode selection">
-                <label class="selection-card selection-card--selected selection-card--recommended">
-                    <input type="radio" name="mode" value="nickelmenu" checked>
+                <label class="selection-card selection-card--recommended">
+                    <input type="radio" name="mode" value="nickelmenu">
                     <div class="selection-card-body">
                         <div class="selection-card-title">Install or remove NickelMenu</div>
                         <div class="recommended-label">Recommended</div>
@@ -212,7 +212,7 @@
             <p id="mode-patches-hint" class="fallback-hint" hidden>Custom patches are not available for your software version. You can still install NickelMenu and choose what you want to do with your Kobo.</p>
             <div class="step-actions">
                 <button id="btn-mode-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-mode-next" class="primary">Continue &#x203A;</button>
+                <button id="btn-mode-next" class="primary" disabled>Continue &#x203A;</button>
             </div>
         </section>
 

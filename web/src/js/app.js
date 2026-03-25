@@ -25,7 +25,7 @@ import { KoboPatchRunner } from './services/patch-runner.js';
 import { NickelMenuInstaller, ALL_FEATURES } from '../nickelmenu/installer.js';
 import { TL } from './strings.js';
 import { isEnabled as analyticsEnabled, track } from './analytics.js';
-import { $, $q, populateSelect } from './dom.js';
+import { $, $q, $qa, populateSelect } from './dom.js';
 import { showStep, setNavLabels, setNavStep, hideNav, showNav, stepHistory, setupCardRadios } from './nav.js';
 import { initNickelMenu } from './flows/nickelmenu-flow.js';
 import { initPatchesFlow } from './flows/patches-flow.js';
@@ -131,7 +131,7 @@ const nm = initNickelMenu(state);
 const patches = initPatchesFlow(state);
 
 // Wire up card-radio interactivity for mode selection and NM option cards.
-setupCardRadios(stepMode, 'selection-card--selected');
+setupCardRadios(stepMode, 'selection-card--selected', () => { btnModeNext.disabled = false; });
 setupCardRadios($('step-nickelmenu'), 'selection-card--selected');
 
 // =============================================================================
@@ -181,6 +181,14 @@ state.showError = showError;
 
 function goToModeSelection() {
     nm.resetNickelMenuState();
+    btnModeNext.disabled = true;
+
+    // Clear any previous mode selection so the user must pick again.
+    for (const radio of $qa('input[name="mode"]', stepMode)) {
+        radio.checked = false;
+        radio.closest('.selection-card')?.classList.remove('selection-card--selected');
+    }
+
     const patchesRadio = $q('input[value="patches"]', stepMode);
     const patchesCard = patchesRadio.closest('.selection-card');
     const autoModeNoPatchesAvailable = !state.manualMode && (!state.patchesLoaded || !state.firmwareURL);

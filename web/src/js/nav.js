@@ -99,7 +99,7 @@ export function showNav() {
  * When a radio inside a <label> is checked, the label gets `selectedClass`;
  * all sibling labels lose it.
  */
-export function setupCardRadios(container, selectedClass) {
+export function setupCardRadios(container, selectedClass, onChange) {
     const labels = $qa('label', container);
     for (const label of labels) {
         const radio = $q('input[type="radio"]', label);
@@ -109,6 +109,7 @@ export function setupCardRadios(container, selectedClass) {
                 if ($q('input[type="radio"]', l)) l.classList.remove(selectedClass);
             }
             if (radio.checked) label.classList.add(selectedClass);
+            if (onChange) onChange(radio);
         });
     }
 }

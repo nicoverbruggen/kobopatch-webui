@@ -232,6 +232,21 @@ Run all tests (WASM integration + E2E):
 
 This builds the web app, compiles the WASM binary, runs the WASM integration tests, and then runs the full E2E suite. On first run it will prompt to download test assets (~190 MB total) to `tests/cached_assets/`. Tests that require missing assets are skipped.
 
+Available flags:
+
+- `--headed` — run with a visible browser window (also sets `SLOW_MO=1000` for 1s delay between actions)
+- `--test <pattern>` — filter E2E tests by name (maps to Playwright `--grep`)
+
+Examples:
+
+```bash
+./test.sh --headed
+./test.sh --test "NickelMenu"
+./test.sh --headed --test "back navigation"
+```
+
+Additional Playwright arguments can be appended after the flags.
+
 ### E2E tests (Playwright)
 
 The E2E tests cover all major user flows:

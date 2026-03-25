@@ -1,6 +1,33 @@
 #!/bin/bash
 set -euo pipefail
 
+# Parse flags
+HEADED=""
+GREP=""
+EXTRA_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --headed)
+            HEADED="--headed"
+            export SLOW_MO=1000
+            shift
+            ;;
+        --test)
+            GREP="--grep"
+            shift
+            ;;
+        *)
+            if [[ "$GREP" == "--grep" ]]; then
+                GREP="--grep $1"
+                shift
+            else
+                EXTRA_ARGS+=("$1")
+                shift
+            fi
+            ;;
+    esac
+done
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CACHED_ASSETS="$SCRIPT_DIR/tests/cached_assets"
 
@@ -67,4 +94,4 @@ if [ ! -d "node_modules" ]; then
     npx playwright install --with-deps
 fi
 
-npm test
+npx playwright test $HEADED $GREP "${EXTRA_ARGS[@]}"
