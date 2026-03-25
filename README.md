@@ -124,6 +124,9 @@ tests/
     playwright.config.js          # Parallel by default; serial when --headed or --slow
     global-setup.js               # Creates firmware symlink once before all tests
     run-e2e.sh
+    screenshots.mjs               # Captures screenshots of every wizard step
+    screenshots.config.js         # Mobile + desktop project config for screenshots
+    run-screenshots.sh            # Runs screenshot capture
 
 # Root scripts
 test.sh                         # Runs all tests (WASM + E2E)
@@ -268,6 +271,17 @@ Extra Playwright arguments can be passed after `--`:
 ./run-e2e.sh --headed --slow -- --grep "NickelMenu"
 ```
 
+### Screenshots
+
+Capture screenshots of every wizard step for visual review (mobile + desktop):
+
+```bash
+cd tests/e2e
+./run-screenshots.sh
+```
+
+Output is saved to `tests/e2e/screenshots/mobile/` and `tests/e2e/screenshots/desktop/` (gitignored). The script uses a separate Playwright config (`screenshots.config.js`) with two projects: mobile (393×852, 3× DPI) and desktop (1280×900, 3× DPI). Screenshots cover the full wizard flow including device connection, mode selection, NickelMenu configuration, custom patches, error states, dialogs, and the feedback widget.
+
 ### WASM integration test
 
 Calls `patchFirmware()` directly in Go/WASM via Node.js:
@@ -295,6 +309,7 @@ The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses 
 - **nm-simplified-home** — whether simplified home screen features were selected
 - **nm-basic-tabs** — whether the basic tab bar option was selected
 - **flow-end** — how the flow ended (write to device or download, for both NickelMenu and custom patches)
+- **feedback** — thumbs up/down response to "Did you find it easy to use this wizard?" shown on done screens
 
 Analytics are disabled for local and self-hosted installs. They activate only when `UMAMI_WEBSITE_ID` and `UMAMI_SCRIPT_URL` environment variables are set on the server. To test the analytics UI locally without sending any data:
 

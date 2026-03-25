@@ -93,6 +93,40 @@ test('capture all steps', async ({ page }, testInfo) => {
   await shot(page, '10-patches-selected', testInfo);
 });
 
+test('nickelmenu done with feedback', async ({ page }, testInfo) => {
+  // Enable analytics so the feedback widget appears
+  await page.addInitScript(() => { window.__ANALYTICS_ENABLED = true; });
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page);
+
+  // Connect device → mode selection → NickelMenu
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+  await page.click('#btn-device-next');
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+
+  // NickelMenu-only → review → write to device
+  await page.click('input[value="nickelmenu-only"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await page.click('#btn-nm-write');
+
+  // Wait for done step
+  const nmDone = page.locator('#step-nm-done');
+  await expect(nmDone).not.toBeHidden();
+  await expect(nmDone.locator('.feedback')).toBeVisible();
+  await shot(page, '15-done-feedback', testInfo);
+
+  // Click thumbs up and capture the thank-you state
+  await nmDone.locator('.feedback-btn[data-vote="up"]').click();
+  await expect(nmDone.locator('.feedback-thanks')).toBeVisible();
+  await shot(page, '16-done-feedback-voted', testInfo);
+});
+
 test('incompatible firmware', async ({ page }, testInfo) => {
   await page.goto('/');
   await dismissMobileModal(page);
