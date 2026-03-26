@@ -1170,13 +1170,23 @@ test.describe('Custom patches', () => {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
 
+    // Confirm version/model (sets patchesLoaded = true), then back out
+    await overrideFirmwareURLs(page);
+    await page.selectOption('#manual-version', '4.45.23646');
+    await expect(page.locator('#manual-model')).not.toBeHidden();
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+
     // Go back all the way to the connect step
+    await page.click('#btn-patches-back');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
     await page.click('#btn-manual-version-back');
     await expect(page.locator('#step-mode')).not.toBeHidden();
     await page.click('#btn-mode-back');
     await expect(page.locator('#step-connect')).not.toBeHidden();
 
-    // Change mind: click "Connect to Kobo" — manualMode must be reset
+    // Change mind: click "Connect to Kobo" — manualMode and patchesLoaded must be reset
     await injectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
     await page.click('#btn-connect');
     await expect(page.locator('#step-connect-instructions')).not.toBeHidden();

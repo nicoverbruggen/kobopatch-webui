@@ -369,8 +369,10 @@ function displayDeviceInfo(info) {
 btnConnect.addEventListener('click', () => {
     // Reset any state from a previous manual-mode attempt so it does not
     // leak into the device-connected flow (e.g. back navigation would
-    // otherwise land on the manual version picker).
+    // otherwise land on the manual version picker, or stale patches from
+    // a manual selection would be used instead of the device's firmware).
     state.manualMode = false;
+    state.patchesLoaded = false;
     track('flow-start', { method: 'connect' });
     showStep(stepConnectInstructions);
 });
