@@ -1,0 +1,21 @@
+{
+  "4.45": {
+    "src/libadobe.so.yaml": [
+      "Remove PDF map widget shown during panning"
+    ],
+    "src/libnickel.so.1.0.0.yaml": [
+      "Allow rotation on all devices",
+      "Allow showing info panel on random screensaver",
+      "Both page turn buttons go next",
+      "Customize ComfortLight settings",
+      "Hide browser from beta features",
+      "My 24 line spacing values",
+      "Replace adobe page numbers toggle with invert screen",
+      "Set KePub hyphenation"
+    ],
+    "src/librmsdk.so.1.0.0.yaml": [
+      "Default ePub sans-serif font (Gill Sans)",
+      "Default ePub serif font (Amasis)"
+    ]
+  }
+}

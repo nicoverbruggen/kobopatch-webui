@@ -2,10 +2,8 @@
 kobo_usb_root/
 firmware/
 
-# Pre-built kobopatch tool (reference only)
-kobopatch/
-
 # Kobopatch WASM build artifacts
+kobopatch-wasm/kobopatch
 kobopatch-wasm/go/
 kobopatch-wasm/kobopatch-src/
 kobopatch-wasm/kobopatch.wasm
