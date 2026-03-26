@@ -367,6 +367,10 @@ function displayDeviceInfo(info) {
 
 // "Connect my Kobo" shows the instructions step first (not the file picker).
 btnConnect.addEventListener('click', () => {
+    // Reset any state from a previous manual-mode attempt so it does not
+    // leak into the device-connected flow (e.g. back navigation would
+    // otherwise land on the manual version picker).
+    state.manualMode = false;
     track('flow-start', { method: 'connect' });
     showStep(stepConnectInstructions);
 });

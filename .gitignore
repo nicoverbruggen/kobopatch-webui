@@ -31,6 +31,7 @@ electron/release/
 tests/cached_assets/
 
 # E2E tests
+test-results/
 tests/node_modules/
 tests/test-results/
 tests/playwright-report/

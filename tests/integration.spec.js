@@ -1157,6 +1157,48 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
   });
 
+  test('switching from manual to connect resets manual state', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('KoboPatch');
+
+    // Start in manual mode, select patches, reach version picker
+    await page.click('#btn-manual');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+
+    // Go back all the way to the connect step
+    await page.click('#btn-manual-version-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('#btn-mode-back');
+    await expect(page.locator('#step-connect')).not.toBeHidden();
+
+    // Change mind: click "Connect to Kobo" — manualMode must be reset
+    await injectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    // Continue to mode selection, pick patches
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Should go to the device-aware patches step, NOT the manual version picker
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#step-manual-version')).toBeHidden();
+
+    // Back from patches should return to mode selection, not manual version
+    await page.click('#btn-patches-back');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await expect(page.locator('#step-manual-version')).toBeHidden();
+  });
+
   test('no device — back navigation through manual mode flow', async ({ page }) => {
     await page.goto('/');
     await goToManualMode(page);
