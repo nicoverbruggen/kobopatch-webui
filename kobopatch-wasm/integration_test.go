@@ -33,7 +33,7 @@ func TestIntegrationPatch(t *testing.T) {
 	}
 
 	// Read patch files from the patches zip.
-	patchesZipPath := "../web/src/patches/patches_4.45.23646.zip"
+	patchesZipPath := "../web/src/patches/patches_4.45.zip"
 	patchesZip, err := os.ReadFile(patchesZipPath)
 	if err != nil {
 		t.Fatalf("could not read patches zip: %v", err)

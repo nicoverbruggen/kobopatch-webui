@@ -1,8 +1,9 @@
 {
+  "_source": "https://help.kobo.com/hc/en-us/articles/35059171032727-Manually-Updating-your-Kobo-eReader-device-Firmware",
   "4.45.23646": {
-    "N428": "https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip",
-    "N365": "https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip",
-    "N367": "https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip",
+    "N428": "https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip",
+    "N365": "https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip",
+    "N367": "https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip",
     "P365": "https://ereaderfiles.kobo.com/firmwares/kobo14/Mar2026/kobo-update-4.45.23646.zip"
   }
 }
