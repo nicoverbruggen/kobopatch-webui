@@ -17,11 +17,9 @@ A web application for customising Kobo e-readers. It supports two modes:
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (includes npm)
-- [jq](https://jqlang.github.io/jq/) â€” `brew install jq` / `apt install jq`
-- [Git](https://git-scm.com/)
+Required dependencies: `nodejs`,`jq`, `git`
 
-Go is required for the WASM build but downloaded automatically if not installed.
+**Note**: Go is required for the WASM build, but downloaded automatically if not installed.
 
 ## How it works
 
@@ -31,6 +29,20 @@ If you choose to apply custom patches, **patching happens fully client-side** â€
 
 > [!NOTE]
 > This project is not affiliated with Rakuten Kobo Inc. Patching modifies system files on your Kobo and will void your warranty. If something goes wrong, you may need to [manually reset your device](https://help.kobo.com/hc/en-us/articles/360017605314).
+
+## Device support
+
+If you want to install **NickelMenu**:
+
+- Any Kobo released in 2025 or earlier, running software version >=4.6 and <5.0.
+
+If you want to apply **custom patches**:
+
+- Software **4.45.x**: Kobo Libra Colour, Kobo Clara Colour, Kobo Clara BW
+- Software **4.38.x**: Kobo Clara 2E, Kobo Libra 2, Kobo Elipsa 2E, Kobo Sage, Kobo Elipsa
+
+> [!WARNING]
+> **Software 5.x is currently not supported.** On the latest devices, it is possible to install an accessibility preview, which upgrades the software to version 5.0.
 
 ## User flow
 
