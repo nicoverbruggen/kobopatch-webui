@@ -18,13 +18,12 @@ import (
 // TestIntegrationPatch runs the full patching pipeline with real patch files
 // and validates SHA1 checksums of the patched binaries.
 //
-// Requires the firmware zip to be present at testdata/kobo-update-4.45.23646.zip
-// (or the path set via FIRMWARE_ZIP env var). Run test-integration.sh to download
-// the firmware and execute this test.
+// All values are provided via environment variables by test-integration.sh,
+// which reads from tests/firmware-config.js.
 func TestIntegrationPatch(t *testing.T) {
 	firmwarePath := os.Getenv("FIRMWARE_ZIP")
 	if firmwarePath == "" {
-		firmwarePath = "testdata/kobo-update-4.45.23646.zip"
+		t.Skip("FIRMWARE_ZIP not set (run test-integration.sh)")
 	}
 
 	firmwareZip, err := os.ReadFile(firmwarePath)
@@ -33,32 +32,26 @@ func TestIntegrationPatch(t *testing.T) {
 	}
 
 	// Read patch files from the patches zip.
-	patchesZipPath := "../web/src/patches/patches_4.45.zip"
+	patchesZipPath := os.Getenv("PATCHES_ZIP")
+	if patchesZipPath == "" {
+		t.Fatal("PATCHES_ZIP not set (run test-integration.sh)")
+	}
 	patchesZip, err := os.ReadFile(patchesZipPath)
 	if err != nil {
 		t.Fatalf("could not read patches zip: %v", err)
 	}
 
-	patchFiles, err := extractPatchFiles(patchesZip)
+	patchFiles, configYAML, err := extractPatchFilesAndConfig(patchesZip)
 	if err != nil {
 		t.Fatalf("could not extract patch files: %v", err)
 	}
 
-	// Config: all patches at their defaults, with one override enabled.
-	configYAML := `
-version: 4.45.23646
-in: unused
-out: unused
-log: unused
-
-patches:
-  src/nickel.yaml: usr/local/Kobo/nickel
-  src/nickel_custom.yaml: usr/local/Kobo/nickel
-  src/libadobe.so.yaml: usr/local/Kobo/libadobe.so
-  src/libnickel.so.1.0.0.yaml: usr/local/Kobo/libnickel.so.1.0.0
-  src/librmsdk.so.1.0.0.yaml: usr/local/Kobo/librmsdk.so.1.0.0
-  src/cloud_sync.yaml: usr/local/Kobo/libnickel.so.1.0.0
-
+	// Replace the existing overrides section with our test override.
+	// The config from the zip has all patches disabled; we enable one to verify patching works.
+	if idx := strings.Index(configYAML, "\noverrides:"); idx != -1 {
+		configYAML = configYAML[:idx]
+	}
+	configYAML += `
 overrides:
   src/nickel.yaml:
     "Remove footer (row3) on new home screen": yes
@@ -78,13 +71,18 @@ overrides:
 		t.Fatal("patchFirmware returned empty tgz")
 	}
 
-	// Expected SHA1 checksums for Kobo Libra Color, firmware 4.45.23646,
-	// with only "Remove footer (row3) on new home screen" enabled.
-	expectedSHA1 := map[string]string{
-		"usr/local/Kobo/libnickel.so.1.0.0": "ef64782895a47ac85f0829f06fffa4816d23512d",
-		"usr/local/Kobo/nickel":             "80a607bac515457a6864be8be831df631a01005c",
-		"usr/local/Kobo/libadobe.so":        "02dc99c71c4fef75401cd49ddc2e63f928a126e1",
-		"usr/local/Kobo/librmsdk.so.1.0.0":  "e3819260c9fc539a53db47e9d3fe600ec11633d5",
+	// Parse expected checksums from EXPECTED_CHECKSUMS env var.
+	// Format: "path1=hash1,path2=hash2,..."
+	checksumEnv := os.Getenv("EXPECTED_CHECKSUMS")
+	if checksumEnv == "" {
+		t.Fatal("EXPECTED_CHECKSUMS not set (run test-integration.sh)")
+	}
+	expectedSHA1 := map[string]string{}
+	for _, entry := range strings.Split(checksumEnv, ",") {
+		parts := strings.SplitN(entry, "=", 2)
+		if len(parts) == 2 {
+			expectedSHA1[parts[0]] = parts[1]
+		}
 	}
 
 	// Extract the output tgz and check SHA1 of each patched binary.
@@ -114,31 +112,37 @@ overrides:
 	t.Logf("log output:\n%s", result.log)
 }
 
-// extractPatchFiles reads a patches zip and returns a map of filename -> contents
-// for all src/*.yaml files.
-func extractPatchFiles(zipData []byte) (map[string][]byte, error) {
+// extractPatchFilesAndConfig reads a patches zip and returns the src/*.yaml
+// patch files and the kobopatch.yaml config content.
+func extractPatchFilesAndConfig(zipData []byte) (map[string][]byte, string, error) {
 	r, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	files := make(map[string][]byte)
+	var configYAML string
 	for _, f := range r.File {
-		if !strings.HasPrefix(f.Name, "src/") || !strings.HasSuffix(f.Name, ".yaml") {
-			continue
-		}
 		rc, err := f.Open()
 		if err != nil {
-			return nil, fmt.Errorf("open %s: %w", f.Name, err)
+			return nil, "", fmt.Errorf("open %s: %w", f.Name, err)
 		}
 		data, err := io.ReadAll(rc)
 		rc.Close()
 		if err != nil {
-			return nil, fmt.Errorf("read %s: %w", f.Name, err)
+			return nil, "", fmt.Errorf("read %s: %w", f.Name, err)
 		}
-		files[f.Name] = data
+
+		if f.Name == "kobopatch.yaml" {
+			configYAML = string(data)
+		} else if strings.HasPrefix(f.Name, "src/") && strings.HasSuffix(f.Name, ".yaml") {
+			files[f.Name] = data
+		}
 	}
-	return files, nil
+	if configYAML == "" {
+		return nil, "", fmt.Errorf("kobopatch.yaml not found in patches zip")
+	}
+	return files, configYAML, nil
 }
 
 // extractTgzSHA1 reads a tgz and returns a map of entry name -> SHA1 hex string.

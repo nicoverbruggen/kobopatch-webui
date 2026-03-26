@@ -13,7 +13,16 @@ if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
     export PATH="$LOCAL_GO_DIR/bin:$PATH"
 fi
 
-FIRMWARE_FILE="${FIRMWARE_ZIP:-$(cd .. && pwd)/tests/cached_assets/kobo-update-4.45.23646.zip}"
+FIRMWARE_CONFIG="$(cd .. && pwd)/tests/firmware-config.js"
+PRIMARY=$(node -e "
+  const c = require('$FIRMWARE_CONFIG')[0];
+  console.log(JSON.stringify(c));
+")
+PRIMARY_VERSION=$(echo "$PRIMARY" | jq -r '.version')
+PATCHES_ZIP="$(cd .. && pwd)/web/src/patches/$(echo "$PRIMARY" | jq -r '.patches')"
+CHECKSUMS=$(echo "$PRIMARY" | jq -r '.checksums | to_entries | map("\(.key)=\(.value)") | join(",")')
+ORIGINAL_TGZ_SHA1=$(echo "$PRIMARY" | jq -r '.originalTgzChecksum')
+FIRMWARE_FILE="${FIRMWARE_ZIP:-$(cd .. && pwd)/tests/cached_assets/kobo-update-${PRIMARY_VERSION}.zip}"
 if [ ! -f "$FIRMWARE_FILE" ]; then
     echo "ERROR: Firmware zip not found at $FIRMWARE_FILE"
     echo "Run ./test.sh from the project root to download test assets."
@@ -32,4 +41,8 @@ else
 fi
 
 echo "Running integration test..."
-FIRMWARE_ZIP="$FIRMWARE_FILE" GOOS=js GOARCH=wasm go test -v -run TestIntegrationPatch -timeout 300s -exec="$EXEC" .
+FIRMWARE_ZIP="$FIRMWARE_FILE" \
+  PATCHES_ZIP="$PATCHES_ZIP" \
+  EXPECTED_CHECKSUMS="$CHECKSUMS" \
+  ORIGINAL_TGZ_SHA1="$ORIGINAL_TGZ_SHA1" \
+  GOOS=js GOARCH=wasm go test -v -run TestIntegrationPatch -timeout 300s -exec="$EXEC" .

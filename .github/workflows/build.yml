@@ -69,9 +69,15 @@ jobs:
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           mkdir -p tests/cached_assets
-          echo "Downloading firmware..."
-          curl -fL --progress-bar -o tests/cached_assets/kobo-update-4.45.23646.zip \
-            https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip
+          node -e "console.log(JSON.stringify(require('./tests/firmware-config')))" | jq -c '.[]' | while IFS= read -r entry; do
+            version=$(echo "$entry" | jq -r '.version')
+            url=$(echo "$entry" | jq -r '.url')
+            file="tests/cached_assets/kobo-update-${version}.zip"
+            if [ ! -f "$file" ]; then
+              echo "Downloading firmware $version..."
+              curl -fL --progress-bar -o "$file" "$url"
+            fi
+          done
 
       - name: Full integration test (WASM)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'

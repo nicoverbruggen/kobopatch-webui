@@ -30,21 +30,35 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CACHED_ASSETS="$SCRIPT_DIR/tests/cached_assets"
+FIRMWARE_CONFIG="$SCRIPT_DIR/tests/firmware-config.js"
 
-FIRMWARE_FILE="$CACHED_ASSETS/kobo-update-4.45.23646.zip"
-FIRMWARE_URL="https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip"
+# Check if any firmware files need to be downloaded.
+MISSING=()
+while IFS= read -r line; do
+    version=$(echo "$line" | jq -r '.version')
+    url=$(echo "$line" | jq -r '.url')
+    file="$CACHED_ASSETS/kobo-update-${version}.zip"
+    if [ ! -f "$file" ]; then
+        MISSING+=("$version|$url|$file")
+    fi
+done < <(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG')))" | jq -c '.[]')
 
-# Check if firmware needs to be downloaded.
-if [ ! -f "$FIRMWARE_FILE" ]; then
-    echo "Firmware test asset is not cached locally (~150 MB)."
+if [ ${#MISSING[@]} -gt 0 ]; then
+    echo "The following firmware test assets are not cached locally (~150 MB each):"
+    for entry in "${MISSING[@]}"; do
+        echo "  - $(echo "$entry" | cut -d'|' -f1)"
+    done
     echo ""
-    read -rp "Download it now? Tests that need the firmware will be skipped otherwise. [y/N] " answer
+    read -rp "Download them now? Tests that need firmware will be skipped otherwise. [y/N] " answer
     if [[ "$answer" =~ ^[Yy]$ ]]; then
         mkdir -p "$CACHED_ASSETS"
-        echo "Downloading firmware..."
-        curl -fL --progress-bar -o "$FIRMWARE_FILE.tmp" "$FIRMWARE_URL"
-        mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
-        echo ""
+        for entry in "${MISSING[@]}"; do
+            IFS='|' read -r version url file <<< "$entry"
+            echo "Downloading firmware $version..."
+            curl -fL --progress-bar -o "$file.tmp" "$url"
+            mv "$file.tmp" "$file"
+            echo ""
+        done
     fi
 fi
 
@@ -80,7 +94,8 @@ echo "=== Building WASM ==="
 
 echo ""
 echo "=== Running WASM integration test ==="
-if [ -f "$FIRMWARE_FILE" ]; then
+PRIMARY_FW="$CACHED_ASSETS/kobo-update-$(node -e "console.log(require('$FIRMWARE_CONFIG')[0].version)").zip"
+if [ -f "$PRIMARY_FW" ]; then
     "$SCRIPT_DIR/kobopatch-wasm/test-integration.sh"
 else
     echo "Skipped (firmware not downloaded)"
