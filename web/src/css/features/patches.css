@@ -103,8 +103,20 @@
     color: var(--text-secondary);
 }
 
+.patch-disabled {
+    opacity: 0.55;
+}
+
+.patch-incompatible {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--error, #c0392b);
+    flex-shrink: 0;
+}
+
 .patch-desc-toggle {
     flex-shrink: 0;
+    margin-left: auto;
     background: none;
     border: none;
     padding: 0 0.3rem;

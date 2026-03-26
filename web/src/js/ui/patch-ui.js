@@ -170,8 +170,33 @@ class PatchUI {
         this.patchConfig = {};
         this.firmwareVersion = null;
         this.configYAML = null;
+        // Blacklisted patches keyed by short version -> filename -> [names]
+        this.blacklist = null;
         // Called when patch selection changes
         this.onChange = null;
+    }
+
+    /** Load the blacklist of incompatible patches. */
+    async loadBlacklist() {
+        try {
+            const resp = await fetch('patches/blacklist.json');
+            if (resp.ok) this.blacklist = await resp.json();
+        } catch {
+            // No blacklist available — all patches are allowed.
+        }
+    }
+
+    /** Check if a patch is blacklisted for the current firmware version. */
+    isBlacklisted(filename, patchName) {
+        if (!this.blacklist || !this.firmwareVersion) return false;
+        // Match against short version (e.g. "4.45" from "4.45.23646")
+        const parts = this.firmwareVersion.split('.');
+        const shortVersion = parts[0] + '.' + parts[1];
+        const versionBlacklist = this.blacklist[shortVersion];
+        if (!versionBlacklist) return false;
+        const fileBlacklist = versionBlacklist[filename];
+        if (!fileBlacklist) return false;
+        return fileBlacklist.includes(patchName);
     }
 
     /**
@@ -246,11 +271,14 @@ class PatchUI {
                 }
             }
 
-            // Sort: grouped (radio) patches first, then standalone (checkbox) patches.
+            // Sort: grouped patches first, then compatible standalone, then incompatible standalone.
             const sorted = [...patches].sort((a, b) => {
-                const aGrouped = a.patchGroup && patchGroups[a.patchGroup].length > 1 ? 0 : 1;
-                const bGrouped = b.patchGroup && patchGroups[b.patchGroup].length > 1 ? 0 : 1;
-                return aGrouped - bGrouped;
+                const rank = (p) => {
+                    if (p.patchGroup) return 0;
+                    if (this.isBlacklisted(filename, p.name)) return 2;
+                    return 1;
+                };
+                return rank(a) - rank(b);
             });
 
             const renderedGroupNone = {};
@@ -258,7 +286,11 @@ class PatchUI {
             const groupWrappers = {};
 
             for (const patch of sorted) {
-                const isGrouped = patch.patchGroup && patchGroups[patch.patchGroup].length > 1;
+                const isGrouped = !!patch.patchGroup;
+                const blacklisted = this.isBlacklisted(filename, patch.name);
+
+                // Force-disable blacklisted patches.
+                if (blacklisted) patch.enabled = false;
 
                 // Create a group wrapper and "None" option before the first patch in each group.
                 if (isGrouped && !renderedGroupNone[patch.patchGroup]) {
@@ -299,7 +331,7 @@ class PatchUI {
                 }
 
                 const item = document.createElement('div');
-                item.className = 'patch-item';
+                item.className = 'patch-item' + (blacklisted ? ' patch-disabled' : '');
 
                 const header = document.createElement('label');
                 header.className = 'patch-header';
@@ -325,12 +357,23 @@ class PatchUI {
                     });
                 }
 
+                if (blacklisted) {
+                    input.disabled = true;
+                }
+
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'patch-name';
                 nameSpan.textContent = patch.name;
 
                 header.appendChild(input);
                 header.appendChild(nameSpan);
+
+                if (blacklisted) {
+                    const badge = document.createElement('span');
+                    badge.className = 'patch-incompatible';
+                    badge.textContent = 'not compatible';
+                    header.appendChild(badge);
+                }
 
                 if (patch.description) {
                     const toggle = document.createElement('button');

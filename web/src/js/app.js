@@ -68,6 +68,7 @@ const state = {
 let availablePatches = null;
 const softwareUrlsReady = loadSoftwareUrls();
 const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
+const blacklistReady = state.patchUI.loadBlacklist();
 
 // Best-effort KOReader availability check. If the server has KOReader assets,
 // mark the feature as available so it shows up in the NickelMenu features list.
@@ -471,7 +472,7 @@ async function loadPatchesForVersion(version, available) {
     const match = available.find(p => p.version === version);
     if (!match) return false;
 
-    await state.patchUI.loadFromURL('patches/' + match.filename);
+    await Promise.all([state.patchUI.loadFromURL('patches/' + match.filename), blacklistReady]);
     state.patchUI.render(patchContainer);
     patches.updatePatchCount();
     state.patchesLoaded = true;
