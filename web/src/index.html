@@ -133,6 +133,7 @@
 
         <!-- Step 1b (manual): Select device model + firmware for custom patches -->
         <section id="step-manual-version" class="step" hidden>
+            <p>Since you have chosen not to connect your device, you will need to look up some information related to the device you want to patch.</p>
             <p class="fallback-hint">
                 <strong>Select the version number currently installed on your device.</strong> If it does not appear in this list, your software version is not supported for custom patching. You can go back and choose NickelMenu instead, which works with all versions.
             </p>
@@ -140,13 +141,13 @@
                 <option value="">-- Select software version --</option>
             </select>
             <p id="manual-version-hint" class="fallback-hint">
-                You can find the version number on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> &gt; <strong>Software version</strong>.
+                You can find the version number on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> &gt; <strong>Software version</strong>. Make sure it's a complete match, or you may encounter issues!
             </p>
             <select id="manual-model" aria-label="Kobo model" hidden>
                 <option value="">-- Select your Kobo model --</option>
             </select>
             <p id="manual-model-hint" class="fallback-hint" hidden>
-                Match the first characters of your serial number (e.g. N428) to the list above. You can find it under <strong>More &gt; Settings &gt; Device information</strong>.
+                Match the first characters of your serial number (e.g. N428) to the list above. You can find it under <strong>More &gt; Settings &gt; Device information</strong>. Keep in mind that older devices (released prior to Kobo Libra 2) are not supported by this website at this time, but you may be able to patch them manually.
             </p>
             <div class="step-actions" style="margin-top: 25px">
                 <button id="btn-manual-version-back" class="secondary">&#x2039; Back</button>

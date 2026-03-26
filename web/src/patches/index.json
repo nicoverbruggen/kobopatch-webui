@@ -1,12 +1,16 @@
 [
     {
         "filename": "patches_4.45.zip",
-        "versions": ["4.45.23646"],
-        "date": "03-2026"
+        "versions": [
+            "4.45.23646"
+        ]
     },
     {
         "filename": "patches_4.38.zip",
-        "versions": [],
-        "date": "08-2025"
+        "versions": [
+            "4.38.23648", 
+            "4.38.23552", 
+            "4.38.23429"
+        ]
     }
 ]

@@ -1,9 +1,29 @@
 {
-  "_source": "https://help.kobo.com/hc/en-us/articles/35059171032727-Manually-Updating-your-Kobo-eReader-device-Firmware",
+  "_sources": [
+    "https://pgaskin.net/KoboStuff/kobofirmware.html",
+    "https://help.kobo.com/hc/en-us/articles/35059171032727-Manually-Updating-your-Kobo-eReader-device-Firmware"
+  ],
   "4.45.23646": {
     "N428": "https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip",
     "N365": "https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip",
     "N367": "https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip",
     "P365": "https://ereaderfiles.kobo.com/firmwares/kobo14/Mar2026/kobo-update-4.45.23646.zip"
+  },
+  "4.38.23648": {
+    "N418": "https://ereaderfiles.kobo.com/firmwares/kobo9/Mar2026/kobo-update-4.38.23648.zip"
+  },
+  "4.38.23552": {
+    "N778": "https://ereaderfiles.kobo.com/firmwares/kobo8/Nov2025/kobo-update-4.38.23552.zip",
+    "N604": "https://ereaderfiles.kobo.com/firmwares/kobo8/Nov2025/kobo-update-4.38.23552.zip",
+    "N418": "https://ereaderfiles.kobo.com/firmwares/kobo9/Nov2025/kobo-update-4.38.23552.zip",
+    "N506": "https://ereaderfiles.kobo.com/firmwares/kobo10/Nov2025/kobo-update-4.38.23552.zip",
+    "N605": "https://ereaderfiles.kobo.com/firmwares/kobo11/Nov2025/kobo-update-4.38.23552.zip"
+  },
+  "4.38.23429": {
+    "N778": "https://ereaderfiles.kobo.com/firmwares/kobo8/Aug2025/kobo-update-4.38.23429.zip",
+    "N604": "https://ereaderfiles.kobo.com/firmwares/kobo8/Aug2025/kobo-update-4.38.23429.zip",
+    "N418": "https://ereaderfiles.kobo.com/firmwares/kobo9/Aug2025/kobo-update-4.38.23429.zip",
+    "N506": "https://ereaderfiles.kobo.com/firmwares/kobo10/Aug2025/kobo-update-4.38.23429.zip",
+    "N605": "https://ereaderfiles.kobo.com/firmwares/kobo11/Aug2025/kobo-update-4.38.23429.zip"
   }
 }

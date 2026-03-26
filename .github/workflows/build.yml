@@ -95,6 +95,12 @@ jobs:
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: readerly/setup.sh
 
+      - name: Validate download URLs
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        run: |
+          cd tests
+          ./validate-dl-urls.sh
+
       - name: Full integration test (Playwright)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
