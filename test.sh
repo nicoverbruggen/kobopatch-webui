@@ -41,7 +41,7 @@ while IFS= read -r line; do
     if [ ! -f "$file" ]; then
         MISSING+=("$version|$url|$file")
     fi
-done < <(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG')))" | jq -c '.[]')
+done < <(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, ...c.others]))" | jq -c '.[]')
 
 if [ ${#MISSING[@]} -gt 0 ]; then
     echo "The following firmware test assets are not cached locally (~150 MB each):"
@@ -94,7 +94,7 @@ echo "=== Building WASM ==="
 
 echo ""
 echo "=== Running WASM integration test ==="
-PRIMARY_FW="$CACHED_ASSETS/kobo-update-$(node -e "console.log(require('$FIRMWARE_CONFIG')[0].version)").zip"
+PRIMARY_FW="$CACHED_ASSETS/kobo-update-$(node -e "console.log(require('$FIRMWARE_CONFIG').primary.version)").zip"
 if [ -f "$PRIMARY_FW" ]; then
     "$SCRIPT_DIR/kobopatch-wasm/test-integration.sh"
 else

@@ -29,8 +29,8 @@ echo "Built kobopatch successfully."
 # Start with an empty blacklist.
 echo "{}" > "$BLACKLIST_FILE"
 
-# Iterate over all firmware versions in the config.
-CONFIGS=$(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG')))")
+# Iterate over all firmware versions in the config (primary + others).
+CONFIGS=$(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, ...c.others]))")
 COUNT=$(echo "$CONFIGS" | jq 'length')
 
 for i in $(seq 0 $((COUNT - 1))); do
@@ -39,13 +39,16 @@ for i in $(seq 0 $((COUNT - 1))); do
     SHORT_VERSION=$(echo "$ENTRY" | jq -r '.shortVersion')
     PATCHES=$(echo "$ENTRY" | jq -r '.patches')
 
+    URL=$(echo "$ENTRY" | jq -r '.url')
     FIRMWARE_FILE="$CACHED_ASSETS/kobo-update-${VERSION}.zip"
     PATCHES_ZIP="$PATCHES_DIR/$PATCHES"
 
     if [ ! -f "$FIRMWARE_FILE" ]; then
         echo ""
-        echo "=== Skipping $VERSION (firmware not downloaded) ==="
-        continue
+        echo "=== Downloading firmware $VERSION ==="
+        mkdir -p "$CACHED_ASSETS"
+        curl -fL --progress-bar -o "$FIRMWARE_FILE.tmp" "$URL"
+        mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
     fi
 
     if [ ! -f "$PATCHES_ZIP" ]; then

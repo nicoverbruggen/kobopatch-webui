@@ -1,12 +1,16 @@
 // Firmware versions used for testing. Shell scripts read this via jq-compatible
 // JSON output from: node -e "console.log(JSON.stringify(require('./tests/firmware-config')))"
-module.exports = [
-  {
+//
+// The primary version is used for WASM integration tests (checksum validation)
+// and E2E tests. All versions (primary + others) are used for patch testing.
+module.exports = {
+  primary: {
     version: '4.45.23646',
     shortVersion: '4.45',
     url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip',
     patches: 'patches_4.45.zip',
     checksums: {
+      // Modified checksums if the "hide row3" patch is applied.
       'usr/local/Kobo/libnickel.so.1.0.0': 'ef64782895a47ac85f0829f06fffa4816d23512d',
       'usr/local/Kobo/nickel': '80a607bac515457a6864be8be831df631a01005c',
       'usr/local/Kobo/libadobe.so': '02dc99c71c4fef75401cd49ddc2e63f928a126e1',
@@ -16,4 +20,12 @@ module.exports = [
     // Used to verify the "restore original firmware" flow extracts correctly.
     originalTgzChecksum: 'b5c3307e8e7ec036f4601135f0b741c37b899db4',
   },
-];
+  others: [
+    {
+      version: '4.38.23648',
+      shortVersion: '4.38',
+      url: 'https://ereaderfiles.kobo.com/firmwares/kobo9/Mar2026/kobo-update-4.38.23648.zip',
+      patches: 'patches_4.38.zip',
+    },
+  ],
+};

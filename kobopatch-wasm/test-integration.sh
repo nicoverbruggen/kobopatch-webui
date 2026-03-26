@@ -14,10 +14,7 @@ if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
 fi
 
 FIRMWARE_CONFIG="$(cd .. && pwd)/tests/firmware-config.js"
-PRIMARY=$(node -e "
-  const c = require('$FIRMWARE_CONFIG')[0];
-  console.log(JSON.stringify(c));
-")
+PRIMARY=$(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG').primary))")
 PRIMARY_VERSION=$(echo "$PRIMARY" | jq -r '.version')
 PATCHES_ZIP="$(cd .. && pwd)/web/src/patches/$(echo "$PRIMARY" | jq -r '.patches')"
 CHECKSUMS=$(echo "$PRIMARY" | jq -r '.checksums | to_entries | map("\(.key)=\(.value)") | join(",")')

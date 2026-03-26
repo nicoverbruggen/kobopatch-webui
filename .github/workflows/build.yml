@@ -69,7 +69,7 @@ jobs:
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           mkdir -p tests/cached_assets
-          node -e "console.log(JSON.stringify(require('./tests/firmware-config')))" | jq -c '.[]' | while IFS= read -r entry; do
+          node -e "var c=require('./tests/firmware-config'); console.log(JSON.stringify([c.primary, ...c.others]))" | jq -c '.[]' | while IFS= read -r entry; do
             version=$(echo "$entry" | jq -r '.version')
             url=$(echo "$entry" | jq -r '.url')
             file="tests/cached_assets/kobo-update-${version}.zip"

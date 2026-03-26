@@ -17,5 +17,17 @@
       "Default ePub sans-serif font (Gill Sans)",
       "Default ePub serif font (Amasis)"
     ]
+  },
+  "4.38": {
+    "src/libadobe.so.yaml": [
+      "Remove PDF map widget shown during panning"
+    ],
+    "src/libnickel.so.1.0.0.yaml": [
+      "Both page turn buttons go next",
+      "Customize ComfortLight settings"
+    ],
+    "src/nickel.yaml": [
+      "Remove forgot pin button from lock screen"
+    ]
   }
 }
