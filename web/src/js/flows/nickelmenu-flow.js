@@ -223,7 +223,10 @@ export function initNickelMenu(state) {
         if (state.nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
             const featuresToRemove = getSelectedUninstallFeatures();
-            populateList(list, featuresToRemove.map(f => f.uninstall.title + ' will also be removed'));
+            populateList(list, [
+                TL.STATUS.NM_REMOVE_NICKELMENU,
+                ...featuresToRemove.map(f => f.uninstall.title + ' will also be removed'),
+            ]);
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
