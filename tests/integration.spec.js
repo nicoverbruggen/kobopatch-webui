@@ -76,6 +76,9 @@ test.describe('NickelMenu', () => {
     // Download instructions should be visible, and include eReader.conf step for sample config
     await expect(page.locator('#nm-download-instructions')).not.toBeHidden();
     await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
+    // Verify the correct pattern and description are shown (exclude-calibre is enabled)
+    await expect(page.locator('#nm-download-conf-line')).toHaveText('ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)');
+    await expect(page.locator('#nm-download-conf-desc')).toHaveText('This prevents new books in the calibre folder from showing up in Kobo\'s list of books.');
 
     // Verify ZIP contents
     expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
@@ -342,18 +345,28 @@ test.describe('NickelMenu', () => {
 
     await page.click('#btn-nm-features-next');
 
-    // Review and write to device
+    // Review and download (not write) to test download instructions
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await page.click('#btn-nm-write');
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-download'),
+    ]);
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
 
-    // Verify eReader.conf was written WITHOUT calibre in the pattern
+    // Download instructions should show the non-calibre pattern
+    await expect(page.locator('#nm-download-instructions')).not.toBeHidden();
+    await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
+    await expect(page.locator('#nm-download-conf-line')).toHaveText('ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)');
+    await expect(page.locator('#nm-download-conf-desc')).toHaveText('This prevents the Kobo from incorrectly identifying certain files as books in your library.');
+
+    // Verify ZIP does NOT contain eReader.conf
+    const zipData = fs.readFileSync(await download.path());
+    const zip = await JSZip.loadAsync(zipData);
+    expect(Object.keys(zip.files)).not.toContain('.kobo/Kobo/Kobo eReader.conf');
+
+    // Verify eReader.conf on device was NOT modified (download mode doesn't write to device)
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
-    expect(conf, 'eReader.conf should contain ExcludeSyncFolders').toContain('ExcludeSyncFolders');
-    // Pattern should NOT start with calibre
-    expect(conf).not.toContain('ExcludeSyncFolders=(calibre|');
-    // But should still have the general hidden-folder exclusion
-    expect(conf).toContain('\\.(?!kobo|adobe).+');
+    expect(conf).not.toContain('ExcludeSyncFolders');
   });
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {

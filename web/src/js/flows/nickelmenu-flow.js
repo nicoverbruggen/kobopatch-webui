@@ -362,14 +362,17 @@ export function initNickelMenu(state) {
             nmDoneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
             triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
             $('nm-download-instructions').hidden = false;
-            // Only show config/reboot steps when exclude-calibre feature is selected
+            // Show config step for preset installs (ExcludeSyncFolders is always written)
             const features = state.nickelMenuOption === 'preset' ? getSelectedFeatures() : [];
             const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
-            $('nm-download-conf-step').hidden = !hasExcludeCalibre;
-            $('nm-download-reboot-step').hidden = !hasExcludeCalibre;
-            if (hasExcludeCalibre) {
-                $('nm-download-conf-line').textContent = 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)';
-            }
+            $('nm-download-conf-step').hidden = state.nickelMenuOption !== 'preset';
+            $('nm-download-reboot-step').hidden = state.nickelMenuOption !== 'preset';
+            $('nm-download-conf-line').textContent = hasExcludeCalibre
+                ? 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)'
+                : 'ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)';
+            $('nm-download-conf-desc').textContent = hasExcludeCalibre
+                ? 'This prevents new books in the calibre folder from showing up in Kobo\'s list of books.'
+                : 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
             track('flow-end', { result: 'nm-download' });
         }
 
