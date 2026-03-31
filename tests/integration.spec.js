@@ -46,10 +46,12 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-hide-recommendations"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-notices"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
-    // Enable both home screen hiding options for testing
+    // Enable both home screen hiding options and exclude-calibre for testing
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
+    await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
 
@@ -270,6 +272,7 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
+    await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
 
@@ -300,10 +303,12 @@ test.describe('NickelMenu', () => {
     const fontFiles = writtenFiles.filter(f => f.includes('fonts/') && f.endsWith('.ttf'));
     expect(fontFiles.length, 'Readerly .ttf fonts should be written').toBeGreaterThan(0);
 
-    // Verify eReader.conf was updated with ExcludeSyncFolders
+    // Verify eReader.conf was updated with ExcludeSyncFolders including calibre exclusion
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
     expect(conf, 'eReader.conf should contain ExcludeSyncFolders').toContain('ExcludeSyncFolders');
     expect(conf, 'eReader.conf should preserve existing settings').toContain('[General]');
+    // exclude-calibre is enabled — calibre folder should be in the pattern
+    expect(conf).toContain('ExcludeSyncFolders=(calibre|');
 
     // Verify NickelMenu items file exists and has expected modifications
     const items = await readMockFile(page, '.adds', 'nm', 'items');
@@ -313,6 +318,42 @@ test.describe('NickelMenu', () => {
     expect(items).toContain('experimental:hide_home_row3_enabled:1');
     // With simplify-tabs enabled, TAB_CONFIG should be prepended
     expect(items).toContain('experimental :menu_main_15505_enabled: 1');
+  });
+
+  test('with device — install with config without exclude-calibre omits calibre from pattern', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+
+    await connectMockDevice(page, { hasNickelMenu: false });
+
+    // Continue to mode selection
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    // Select "Install NickelMenu and configure"
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    // Feature selection step — leave exclude-calibre unchecked (default)
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    // Verify exclude-calibre is unchecked by default
+    await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
+
+    await page.click('#btn-nm-features-next');
+
+    // Review and write to device
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    // Verify eReader.conf was written WITHOUT calibre in the pattern
+    const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(conf, 'eReader.conf should contain ExcludeSyncFolders').toContain('ExcludeSyncFolders');
+    // Pattern should NOT start with calibre
+    expect(conf).not.toContain('ExcludeSyncFolders=(calibre|');
+    // But should still have the general hidden-folder exclusion
+    expect(conf).toContain('\\.(?!kobo|adobe).+');
   });
 
   test('with device — install NickelMenu only and write to Kobo', async ({ page }) => {

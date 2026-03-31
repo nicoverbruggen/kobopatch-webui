@@ -8,6 +8,7 @@ import simplifyTabs from './features/simplify-tabs/index.js';
 import hideRecommendations from './features/hide-recommendations/index.js';
 import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
+import excludeCalibre from './features/exclude-calibre/index.js';
 
 /**
  * All available NickelMenu features in display order.
@@ -21,6 +22,7 @@ export const ALL_FEATURES = [
     hideRecommendations,
     hideNotices,
     koreader,
+    excludeCalibre,
     screensaver,
 ];
 
@@ -115,9 +117,9 @@ export class NickelMenuInstaller {
         await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
 
         if (features.length > 0) {
-            // Features require the ignore block in the config, write it first
+            // Features may require the ignore block in the config, write it first
             progressFn('Updating Kobo eReader.conf...');
-            await this.updateEReaderConf(device);
+            await this.updateEReaderConf(device, features);
 
             // After that, collect all practical files that need to be copied
             const files = await this.collectFiles(features, progressFn);
@@ -164,12 +166,16 @@ export class NickelMenuInstaller {
 
     /**
      * Add ExcludeSyncFolders to Kobo eReader.conf if not already present.
+     * @param {object[]} features - selected features; if 'exclude-calibre' is included, the calibre folder is excluded.
      */
-    async updateEReaderConf(device) {
+    async updateEReaderConf(device, features = []) {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
         let content = await device.readFile(confPath) || '';
 
-        const settingLine = 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)';
+        const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
+        const settingLine = hasExcludeCalibre
+            ? 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)'
+            : 'ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)';
 
         if (content.includes('ExcludeSyncFolders')) return;
 

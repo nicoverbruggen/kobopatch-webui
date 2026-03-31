@@ -362,10 +362,14 @@ export function initNickelMenu(state) {
             nmDoneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
             triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
             $('nm-download-instructions').hidden = false;
-            // Only show config/reboot steps for preset installs (NM-only has nothing to configure).
-            const showConfStep = state.nickelMenuOption === 'preset';
-            $('nm-download-conf-step').hidden = !showConfStep;
-            $('nm-download-reboot-step').hidden = !showConfStep;
+            // Only show config/reboot steps when exclude-calibre feature is selected
+            const features = state.nickelMenuOption === 'preset' ? getSelectedFeatures() : [];
+            const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
+            $('nm-download-conf-step').hidden = !hasExcludeCalibre;
+            $('nm-download-reboot-step').hidden = !hasExcludeCalibre;
+            if (hasExcludeCalibre) {
+                $('nm-download-conf-line').textContent = 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)';
+            }
             track('flow-end', { result: 'nm-download' });
         }
 
