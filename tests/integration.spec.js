@@ -356,6 +356,41 @@ test.describe('NickelMenu', () => {
     expect(conf).toContain('\\.(?!kobo|adobe).+');
   });
 
+  test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+
+    // Start with a config that already has the calibre exclusion
+    await connectMockDevice(page, { hasNickelMenu: false, hasExistingExcludeCalibre: true });
+
+    // Verify initial state
+    const confBefore = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confBefore).toContain('ExcludeSyncFolders=(calibre|');
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    // Feature selection — leave exclude-calibre unchecked
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
+
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    // Verify the old calibre pattern was replaced with the non-calibre version
+    const confAfter = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confAfter).not.toContain('ExcludeSyncFolders=(calibre|');
+    expect(confAfter).toContain('\\.(?!kobo|adobe).+');
+    // Existing settings should be preserved
+    expect(confAfter).toContain('some=setting');
+  });
+
   test('with device — install NickelMenu only and write to Kobo', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

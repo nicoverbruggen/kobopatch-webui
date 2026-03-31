@@ -10,7 +10,7 @@ const { expect } = require('@playwright/test');
 async function injectMockDevice(page, opts = {}) {
   const firmware = opts.firmware || '4.45.23646';
   const serial = opts.serial || 'N4280A0000000';
-  await page.evaluate(({ hasNickelMenu, hasKoreader, hasReaderlyFonts, hasScreensaver, firmware, serial }) => {
+  await page.evaluate(({ hasNickelMenu, hasKoreader, hasReaderlyFonts, hasScreensaver, hasExistingExcludeCalibre, firmware, serial }) => {
     const filesystem = {
       '.kobo': {
         _type: 'dir',
@@ -22,7 +22,9 @@ async function injectMockDevice(page, opts = {}) {
           _type: 'dir',
           'Kobo eReader.conf': {
             _type: 'file',
-            content: '[General]\nsome=setting\n',
+            content: hasExistingExcludeCalibre
+              ? '[General]\nsome=setting\n[FeatureSettings]\nExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)\n'
+              : '[General]\nsome=setting\n',
           },
         },
       },
@@ -135,6 +137,7 @@ async function injectMockDevice(page, opts = {}) {
     hasKoreader: opts.hasKoreader || false,
     hasReaderlyFonts: opts.hasReaderlyFonts || false,
     hasScreensaver: opts.hasScreensaver || false,
+    hasExistingExcludeCalibre: opts.hasExistingExcludeCalibre || false,
     firmware,
     serial,
   });

@@ -165,7 +165,7 @@ export class NickelMenuInstaller {
     }
 
     /**
-     * Add ExcludeSyncFolders to Kobo eReader.conf if not already present.
+     * Add or update ExcludeSyncFolders in Kobo eReader.conf.
      * @param {object[]} features - selected features; if 'exclude-calibre' is included, the calibre folder is excluded.
      */
     async updateEReaderConf(device, features = []) {
@@ -177,9 +177,10 @@ export class NickelMenuInstaller {
             ? 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)'
             : 'ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)';
 
-        if (content.includes('ExcludeSyncFolders')) return;
-
-        if (content.includes('[FeatureSettings]')) {
+        if (content.includes('ExcludeSyncFolders')) {
+            // Replace existing line so switching between modes takes effect.
+            content = content.replace(/^ExcludeSyncFolders=.+$/m, settingLine);
+        } else if (content.includes('[FeatureSettings]')) {
             content = content.replace(
                 '[FeatureSettings]',
                 '[FeatureSettings]\n' + settingLine
