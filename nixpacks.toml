@@ -12,6 +12,7 @@ cmds = [
     "cd koreader && bash setup.sh",
     "cd readerly && bash setup.sh",
     "cd web && npm install && npm run build",
+    "bash validate-dist.sh",
 ]
 
 [start]

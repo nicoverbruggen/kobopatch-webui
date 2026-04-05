@@ -12,7 +12,7 @@
       "My 24 line spacing values",
       "Replace adobe page numbers toggle with invert screen",
       "Set KePub hyphenation"
-    ],
+    ]
   },
   "4.38": {
     "src/libadobe.so.yaml": [

@@ -93,6 +93,10 @@ echo "=== Building WASM ==="
 "$SCRIPT_DIR/kobopatch-wasm/build.sh"
 
 echo ""
+echo "=== Validating dist resources ==="
+"$SCRIPT_DIR/validate-dist.sh"
+
+echo ""
 echo "=== Running WASM integration test ==="
 PRIMARY_FW="$CACHED_ASSETS/kobo-update-$(node -e "console.log(require('$FIRMWARE_CONFIG').primary.version)").zip"
 if [ -f "$PRIMARY_FW" ]; then
