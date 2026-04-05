@@ -49,6 +49,11 @@ const MIME = {
 createServer((req, res) => {
     const url = new URL(req.url, `http://localhost`);
     let filePath = join(DIST, decodeURIComponent(url.pathname));
+    if (!filePath.startsWith(DIST + '/') && filePath !== DIST) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not found');
+        return;
+    }
 
     if (filePath.endsWith('/')) filePath = join(filePath, 'index.html');
     if (!extname(filePath) && existsSync(filePath + '/index.html')) filePath += '/index.html';
