@@ -9,6 +9,7 @@ module.exports = {
     shortVersion: '4.45',
     url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip',
     patches: 'patches_4.45.zip',
+    patchesSource: '4.45',
     checksums: {
       // Modified checksums if the "hide row3" patch is applied.
       'usr/local/Kobo/libnickel.so.1.0.0': 'ef64782895a47ac85f0829f06fffa4816d23512d',
@@ -26,6 +27,7 @@ module.exports = {
       shortVersion: '4.38',
       url: 'https://ereaderfiles.kobo.com/firmwares/kobo9/Mar2026/kobo-update-4.38.23648.zip',
       patches: 'patches_4.38.zip',
+      patchesSource: '4.38',
     },
   ],
 };

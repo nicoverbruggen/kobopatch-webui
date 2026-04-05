@@ -16,7 +16,7 @@ fi
 
 FIRMWARE_CONFIG="$(cd .. && pwd)/tests/firmware-config.js"
 CACHED_ASSETS="$(cd .. && pwd)/tests/cached_assets"
-PATCHES_DIR="$(cd .. && pwd)/web/src/patches"
+PATCHES_DIR="$(cd .. && pwd)/patches"
 BLACKLIST_FILE="$PATCHES_DIR/blacklist.json"
 
 # Build the native kobopatch binary.
@@ -37,11 +37,11 @@ for i in $(seq 0 $((COUNT - 1))); do
     ENTRY=$(echo "$CONFIGS" | jq -c ".[$i]")
     VERSION=$(echo "$ENTRY" | jq -r '.version')
     SHORT_VERSION=$(echo "$ENTRY" | jq -r '.shortVersion')
-    PATCHES=$(echo "$ENTRY" | jq -r '.patches')
+    PATCHES_SOURCE=$(echo "$ENTRY" | jq -r '.patchesSource')
 
     URL=$(echo "$ENTRY" | jq -r '.url')
     FIRMWARE_FILE="$CACHED_ASSETS/kobo-update-${VERSION}.zip"
-    PATCHES_ZIP="$PATCHES_DIR/$PATCHES"
+    PATCHES_SRC_DIR="$PATCHES_DIR/$PATCHES_SOURCE"
 
     if [ ! -f "$FIRMWARE_FILE" ]; then
         echo ""
@@ -51,19 +51,19 @@ for i in $(seq 0 $((COUNT - 1))); do
         mv "$FIRMWARE_FILE.tmp" "$FIRMWARE_FILE"
     fi
 
-    if [ ! -f "$PATCHES_ZIP" ]; then
+    if [ ! -d "$PATCHES_SRC_DIR" ]; then
         echo ""
-        echo "=== Skipping $VERSION (patches zip $PATCHES not found) ==="
+        echo "=== Skipping $VERSION (patches source $PATCHES_SOURCE not found) ==="
         continue
     fi
 
-    # Extract patches to a temp directory.
+    # Copy patches to a temp directory.
     TMPDIR="$(mktemp -d)"
     trap 'rm -rf "$TMPDIR"' EXIT
 
     echo ""
-    echo "=== Extracting $PATCHES ==="
-    unzip -q "$PATCHES_ZIP" -d "$TMPDIR"
+    echo "=== Copying patches from $PATCHES_SOURCE ==="
+    cp -r "$PATCHES_SRC_DIR"/* "$TMPDIR/"
 
     # Rewrite the config to point at the cached firmware and create output dir.
     sed -i "s|^in:.*|in: $FIRMWARE_FILE|" "$TMPDIR/kobopatch.yaml"

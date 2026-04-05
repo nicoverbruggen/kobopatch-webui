@@ -3,6 +3,7 @@ import { cpSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, rea
 import { join, relative } from 'path';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
+import JSZip from 'jszip';
 
 const webDir = import.meta.dirname;
 const repoDir = join(webDir, '..');
@@ -22,6 +23,51 @@ function copyDir(src, dst, skip = new Set()) {
         } else {
             cpSync(srcPath, dstPath);
         }
+    }
+}
+
+/**
+ * Build patch zip files from source directories and copy metadata JSON files.
+ * Reads patches/index.json from the repo root, zips each source directory,
+ * and writes the results to dist/patches/.
+ */
+async function buildPatchZips() {
+    const patchesSrcDir = join(repoDir, 'patches');
+    const patchesDistDir = join(distDir, 'patches');
+    mkdirSync(patchesDistDir, { recursive: true });
+
+    const index = JSON.parse(readFileSync(join(patchesSrcDir, 'index.json'), 'utf-8'));
+
+    // Build a zip for each entry
+    for (const entry of index) {
+        const sourceDir = join(patchesSrcDir, entry.source);
+        const zip = new JSZip();
+
+        function addDirToZip(dirPath, zipPath) {
+            for (const name of readdirSync(dirPath)) {
+                const fullPath = join(dirPath, name);
+                const entryPath = zipPath ? `${zipPath}/${name}` : name;
+                if (statSync(fullPath).isDirectory()) {
+                    zip.folder(entryPath);
+                    addDirToZip(fullPath, entryPath);
+                } else {
+                    zip.file(entryPath, readFileSync(fullPath));
+                }
+            }
+        }
+
+        addDirToZip(sourceDir, '');
+        const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+        writeFileSync(join(patchesDistDir, entry.filename), zipBuffer);
+    }
+
+    // Copy JSON metadata files (index.json without the source field, blacklist, downloads)
+    const distIndex = index.map(({ source, ...rest }) => rest);
+    writeFileSync(join(patchesDistDir, 'index.json'), JSON.stringify(distIndex, null, 4) + '\n');
+
+    for (const jsonFile of ['blacklist.json', 'downloads.json']) {
+        const src = join(patchesSrcDir, jsonFile);
+        if (existsSync(src)) cpSync(src, join(patchesDistDir, jsonFile));
     }
 }
 
@@ -49,6 +95,9 @@ async function build() {
 
     // Copy all of src/ to dist/, skipping js/ (bundled separately), css/ (minified), and index.html (generated)
     copyDir(srcDir, distDir, new Set(['js', 'css', 'index.html']));
+
+    // Build patch zips from source directories in patches/
+    await buildPatchZips();
 
     // Bundle and minify CSS (@import statements are resolved by esbuild)
     mkdirSync(join(distDir, 'css'), { recursive: true });

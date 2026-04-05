@@ -1,0 +1,157 @@
+## Works with kobopatch v0.15.0 and later.
+## You can update kobopatch by downloading the latest release from https://github.com/pgaskin/kobopatch/releases. 
+version: 4.45.23646
+in: src/kobo-update-4.45.23646.zip
+out: out/KoboRoot.tgz
+log: out/log.txt
+
+patchFormat: kobopatch
+
+patches:
+  src/nickel.yaml: usr/local/Kobo/nickel
+  src/nickel_custom.yaml: usr/local/Kobo/nickel
+  src/libadobe.so.yaml: usr/local/Kobo/libadobe.so
+  src/libnickel.so.1.0.0.yaml: usr/local/Kobo/libnickel.so.1.0.0
+  src/librmsdk.so.1.0.0.yaml: usr/local/Kobo/librmsdk.so.1.0.0
+  src/cloud_sync.yaml: usr/local/Kobo/libnickel.so.1.0.0
+  
+## You can put lines in the following section to override the enabled state of patches.
+## The indentation matters! Each override should be indented by 4 spaces. Add to the 
+## section below. This section can be copy and pasted into newer patch versions to
+## keep your selections.
+##
+## Example of how it should look:
+## overrides:
+##   src/nickel.yaml:
+##     Custom synopsis/details line spacing: no
+##     Whatever the yaml is called: no
+##   src/libadobe.so.yaml:
+##     You get the idea: no
+overrides: 
+   src/libadobe.so.yaml:
+     Remove PDF map widget shown during panning: no
+   src/libnickel.so.1.0.0.yaml:
+     test Pop-up footnote main text font-size: no
+     My 10 line spacing values: no
+## Does not work
+     My 24 line spacing values: no
+     Custom left & right margins: no
+     Custom font sizes: no
+     ePub fixed top/bottom margins: no
+     ePub disable built-in body padding-bottom: no
+     Custom kepub default margins: no
+     Block WiFi firmware upgrade: no
+     Custom Sleep/Power-off timeouts: no
+## Does not work
+     Set KePub hyphenation: no
+     Force user line spacing in KePubs: no
+     Force user line spacing in ePubs (part 1 of 2): no
+     Un-force font-family override p tags (std epubs): no
+     Force user font-family in ePubs (Part 1 of 2): no
+     ePub constant font sharpness: no
+     Un-Force user text-align in div,p tags in KePubs: no
+     Un-Force user font-family in KePubs: no
+     Un-force link decoration in KePubs: no
+     Dictionary text font-family/font-size/line-height: no
+     Custom navigation menu page number text: no
+     KePub stylesheet additions - text justify: no
+     KePub stylesheet additions - word-spacing: no
+     Shorten dictionary entry not found message: no
+     Change Wikipedia search language: no
+     Cyrillic Keyboard (GloHD/ClaraHD/AuraOne/H2O2): no
+     Greek Keyboard (GloHD/ClaraHD/AuraOne/H2O2): no
+     Bulgarian Phonetic Keyboard (GloHD/ClaraHD/AuraOne/H2O2/Forma/Libra): no
+     Don't grab exclusive access to event0: no
+## Does not work
+     Both page turn buttons go next: no
+     Both page turn sides go next: no
+     Increase page navigation history: no
+## Does not work
+     Replace adobe page numbers toggle with invert screen: no
+     Always show confirmation dialog before upgrading: no
+     Allow USB storage even when device locked: no
+     Hide browser from beta features: no
+     Remove beta features not supported text: no
+     Disable all tutorial dialogs: no
+     Remove recommendations (row1col2) from home screen: no
+     Rename new home screen footer: no
+     Change Browse Kobo home screen link target - Activity: no
+     Set visible SmartLink: no
+     Only show Pocket SmartLink: no
+     Only show stats SmartLink: no
+     Never show Kobo Plus, wishlist, and points SmartLinks: no
+     Allow showing info panel on random screensaver: no
+     Remove title from reading header/footer: no
+     Larger Sleep/Power-off timeouts: no
+## Does not work
+     Allow rotation on all devices: no
+     Don't uppercase header/footer text: no
+     Custom header/footer page number text: no
+     Don't uppercase header/footer text and change page number text: no
+     Swap reading header/footer: no
+     Customize ComfortLight settings: no
+     FeatureSettings - BookSpecificStats: no
+     FeatureSettings - ShowFacebookShare: no
+     FeatureSettings - FullScreenBrowser: no
+     FeatureSettings - MyWords: no
+     FeatureSettings - ExportHighlights: no
+     DeveloperSettings - AutoUsbGadget: no
+     PowerSettings - UnlockEnabled: no
+## This now works
+     Unify font sizes: no
+   src/librmsdk.so.1.0.0.yaml:
+     Disable orphans/widows avoidance: no
+     Default ePub serif font (Amasis): no
+     Default ePub sans-serif font (Gill Sans): no
+     Default ePub symbol font (Symbol): no
+     Force user line spacing in ePubs (Part 2 of 2): no
+     Force user font-family in ePubs (Part 2 of 2): no
+     Ignore ePub book Adobe XPGT stylesheet (page-template.xpgt): no
+     Ignore ePub book CSS and Adobe XPGT stylesheets: no
+     Ignore ePub TOC navpoints: no
+     Default ePub monospace font: no
+   src/nickel.yaml:
+     Reduce top/bottom page spacer: no
+     Custom synopsis details line spacing: no
+     Custom synopsis font size: no
+     Increase home screen cover size: no
+     Dictionary pop-up - increase available text area: no
+     Increase Book Details synopsis area: no
+     Increase library cover size: no
+     Custom collection/author header title font: no
+     Reduce new header/footer height: no
+     Custom header/footer captions: no
+     Custom page navigation scrubber: no
+     Customise Header back button: no
+     Series list increase cover thumbnails: no
+     Increase headlines font: no
+     New home screen subtitle custom font: no
+     Remove footer (row3) and increase cover size on new home screen: no
+     Remove footer (row3) on new home screen: no
+     Show all games: no
+## This now works
+     Remove forgot pin button from lock screen: no
+     Increase size of kepub/audio chapter progress chart: no
+     Change TOC level indentation: no
+   src/nickel_custom.yaml:
+     jackie_w Screensaver full: no
+     beta Increase width available for book Title in Booklists - Storm only: no
+   src/cloud_sync.yaml:
+     Unlock Dropbox and Google Drive support: no
+
+## TRANSLATIONS ##
+# Optional, use only if lrelease is not in PATH and if translations are needed
+# lrelease: /path/to/lrelease
+
+# Uncomment the following to add translations (replace lc with the language code)
+# translations:
+#   src/whatever.ts: usr/local/Kobo/translations/trans_lc.qm
+## ADDITIONAL FILES ##
+# Uncomment the following to add additional files to the tgz (like init scripts or hyphen dicts)
+# The files will be root-owned, and world readable, writable, and executable (0777)
+# files:
+#   src/whatever.txt: usr/local/Kobo/whatever.txt
+#   src/whateverToPutInMultiplePlaces.txt:
+#     - usr/local/Kobo/location1.txt
+#     - usr/local/Kobo/location2.txt
+files:

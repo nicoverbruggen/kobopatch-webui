@@ -1,0 +1,88 @@
+jackie_w Screensaver full:
+  - Enabled: no
+  - Description: |
+      FullScreenDragonPowerView.qss
+      On fullscreen sleep screensaver reduce size of infoWidget
+      Make infoWidget invisible when Sleeping, visible when Powered Off
+      N.B: Not suitable for Japanese/Chinese locale users
+  - FindZlib: "#infoFrame"
+  - ReplaceZlibGroup:
+      Replacements:
+        # free some space
+        - {Find: "#batteryStatus[localeName=\"ja\"] {\n  font-family: Sans-SerifJP, sans-serif;\n  font-style: normal;\n}\n", Replace: "\n"}
+        - {Find: "#batteryStatus[localeName=\"zh\"] {\n  font-family: Sans-SerifZH-Simplified, sans-serif;\n  font-style: normal;\n}\n", Replace: "\n"}
+        - {Find: "#batteryStatus[localeName=\"zh-HK\"] {\n  font-family: Sans-SerifZH-Traditional, sans-serif;\n  font-style: normal;\n}\n", Replace: "\n"}
+        - {Find: "#batteryStatus[localeName=\"zh-TW\"] {\n  font-family: Sans-SerifZH-Traditional, sans-serif;\n  font-style: normal;\n}\n", Replace: "\n"}
+        # #infoWidget reduce width
+        - {Find: "width: 470px;", Replace: "width: 320px;"} #Dragon
+        - {Find: "width: 611px;", Replace: "width: 390px;"} #Daylight
+        # #infoWidget, #infoFrame: reduce top/bottom/right margins
+        - {Find: "Margin: 22px;", Replace: "Margin: 5px;"}  #Dragon
+        - {Find: "Margin: 28px;", Replace: "Margin: 7px;"}  #Daylight
+        - {Find: "Margin: 25px;", Replace: "Margin: 6px;"}  #Storm
+        # #infoFrame: remove Sleeping borders
+        - {Find: "#infoFrame {\n  border-top: 1px solid black;\n  border-bottom: 1px solid black;\n  border-right: 1px solid black;\n}\n", Replace: "\n"}
+        # #infoFrame: reduce left margin
+        - {Find: "leftMargin: 44px;", Replace: "leftMargin: 5px;"}  # Dragon
+        - {Find: "leftMargin: 56px;", Replace: "leftMargin: 7px;"}  # Daylight
+        - {Find: "leftMargin: 50px;", Replace: "leftMargin: 6px;"}  # Storm
+
+beta Increase width available for book Title in Booklists - Storm only:
+  - Enabled: no
+  - PatchGroup: Booklist layout tweaks
+  - Description: |
+        'Storm' devices only (LibraH2O/Libra2)
+        Increase width available for book Title in GUI Booklists.
+          - Part 1:     Customise font-size of book Title
+          - Part 2:     (optional) Customise font-size of book Author(s) & Subtitle
+          - Part 3:     Customise font-size of book Series and book (time remaining, filetype, filesize)
+          - Part 4a/4b: Reduce large left/right margins in Booklists
+        To get an idea of what effect this patch has, see screenshots at
+            https://www.mobileread.com/forums/showpost.php?p=4239375&postcount=844
+        N.B. Not suitable for users of Chinese-HK locale
+        
+  # Part 1: Customise font-size of book Title
+  - FindZlib: "HeaderSmallElidedLabel[localeName=\"zh-HK\"]," # default.qss (HeaderSmallElidedLabel)
+  - ReplaceZlibGroup:
+      Replacements:
+        # Customise Title font-size from default 42px
+        # add Storm-specific code by commandeering some code used only by Chinese-HK locale users
+        - Find:    "HeaderSmallElidedLabel[localeName=\"zh-HK\"],\nHeaderSmallItalicLabel[localeName=\"zh-HK\"] {\n  font-family: Sans-SerifZH-Traditional, sans-serif;\n  font-style: normal;\n  qproperty-forceLeading: 5;\n}"
+          Replace: "HeaderSmallElidedLabel[qApp_deviceIsStorm=true] {font-size:35px;}"
+        
+  # Part 2: Customise font-size of book Author(s) and Subtitle (optional)
+  #         This is an extra option for patchers who would like more control over the
+  #         Booklist font-size for both Author & Subtitle. Same value is used for both.
+  - FindZlib: "PageLabel[localeName=\"zh-HK\"]," # default.qss (SmallElidedLabel)
+  - ReplaceZlibGroup:
+      Replacements:
+        # Change Author & Subtitle font-size from default 30px
+        # add Storm-specific code by commandeering some code used only by Chinese-HK locale users
+        - Find:    "PageLabel[localeName=\"zh-HK\"],\nSmallElidedLabel[localeName=\"zh-HK\"],\nSmallTouchLabel[localeName=\"zh-HK\"],\nSmallLabel[localeName=\"zh-HK\"] {\n  font-family: Sans-SerifZH-Traditional, sans-serif;\n  font-style: normal;\n}"
+          Replace: "SmallElidedLabel[qApp_deviceIsStorm=true] {font-size:30px;}"
+
+  # Part 3: Customise font-size of book Series and book (time remaining, filetype, filesize)
+  - FindZlib: "MetaDataElidedLabel[localeName=\"zh-HK\"]," # default.qss (MetaDataElidedLabel, MetaDataLabel)
+  - ReplaceZlibGroup:
+      Replacements:
+        # Customise font-sizes for:
+        # - book Series                               (MetaDataElidedLabel) - default 29px
+        # - book (time remaining, filetype, filesize) (MetaDataLabel)       - default 29px
+        # add Storm-specific code by commandeering some code used only by Chinese-HK locale users
+        - Find:    "MetaDataElidedLabel[localeName=\"zh-HK\"],\nMetaDataLabel[localeName=\"zh-HK\"],\nMetaDataAdjustingLabel[localeName=\"zh-HK\"] {\n  font-family: Sans-SerifZH-Traditional, sans-serif;\n  font-style: normal;\n  text-transform: none;\n}"
+          Replace: "MetaDataElidedLabel[qApp_deviceIsStorm=true] {font-size:30px;}\nMetaDataLabel[qApp_deviceIsStorm=true] {font-size:23px;}"
+          
+  # Part 4: Reduce large left/right margins in Booklists
+  - FindZlib: "ScrollableContentWidgetBase[qApp_deviceIsStorm=true] {\n  qproperty-leftMargin:" # default.qss
+  - ReplaceZlibGroup:
+      Replacements:
+        # 4a: Reduce left margin gap between edge of screen and bookcover thumbnails
+        # L-margin reduction approx. 6mm -> 2mm
+        - Find:    "ScrollableContentWidgetBase[qApp_deviceIsStorm=true] {\n  qproperty-leftMargin: 67;\n}"
+          Replace: "ScrollableContentWidgetBase[qApp_deviceIsStorm=true] {\n  qproperty-leftMargin:23;\n}"
+        
+        # 4b: Reduce right margin gap between edge of screen and book metadata when no vertical scrollbar present
+        #     i.e. when Booklist page contains <=5 Book/Series titles or <=10 Author/Collection titles
+        # R-margin reduction approx. 6mm -> 2mm
+        - Find:    "ScrollableContentWidgetBase[noScrollBar=true][qApp_deviceIsStorm=true] {\n  qproperty-rightMargin: 67;\n}"
+          Replace: "ScrollableContentWidgetBase[noScrollBar=true][qApp_deviceIsStorm=true] {\n  qproperty-rightMargin:23;\n}"
