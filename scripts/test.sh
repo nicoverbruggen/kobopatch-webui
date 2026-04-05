@@ -28,9 +28,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CACHED_ASSETS="$SCRIPT_DIR/tests/cached_assets"
-FIRMWARE_CONFIG="$SCRIPT_DIR/tests/firmware-config.js"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CACHED_ASSETS="$PROJECT_DIR/tests/cached_assets"
+FIRMWARE_CONFIG="$PROJECT_DIR/tests/firmware-config.js"
 
 # Check if any firmware files need to be downloaded.
 MISSING=()
@@ -63,47 +63,45 @@ if [ ${#MISSING[@]} -gt 0 ]; then
 fi
 
 # Set up kobopatch WASM build dependencies if not present.
-if [ ! -d "$SCRIPT_DIR/kobopatch-wasm/kobopatch-src" ]; then
-    "$SCRIPT_DIR/kobopatch-wasm/setup.sh"
+if [ ! -d "$PROJECT_DIR/kobopatch-wasm/kobopatch-src" ]; then
+    "$PROJECT_DIR/kobopatch-wasm/setup.sh"
 fi
 
 # Set up installable assets if not present.
-"$SCRIPT_DIR/installables/setup.sh"
+"$PROJECT_DIR/installables/setup.sh"
 
 echo "=== Installing web dependencies ==="
-cd "$SCRIPT_DIR/web" && npm install
+cd "$PROJECT_DIR/web" && npm install
 
 echo ""
 echo "=== Linting ==="
-cd "$SCRIPT_DIR/web" && npx eslint .
+cd "$PROJECT_DIR/web" && npx eslint .
 
 echo ""
 echo "=== Building web app ==="
-cd "$SCRIPT_DIR/web" && node build.mjs
+cd "$PROJECT_DIR/web" && node build.mjs
 
 echo ""
 echo "=== Building WASM ==="
-"$SCRIPT_DIR/kobopatch-wasm/build.sh"
+"$PROJECT_DIR/kobopatch-wasm/build.sh"
 
 echo ""
 echo "=== Validating dist resources ==="
-"$SCRIPT_DIR/validate-dist.sh"
+"$PROJECT_DIR/web/validate-dist.sh"
 
 echo ""
 echo "=== Running WASM integration test ==="
 PRIMARY_FW="$CACHED_ASSETS/kobo-update-$(node -e "console.log(require('$FIRMWARE_CONFIG').primary.version)").zip"
 if [ -f "$PRIMARY_FW" ]; then
-    "$SCRIPT_DIR/kobopatch-wasm/test-integration.sh"
+    "$PROJECT_DIR/kobopatch-wasm/test-integration.sh"
 else
     echo "Skipped (firmware not downloaded)"
 fi
 
 echo ""
 echo "=== Running E2E tests (Playwright) ==="
-cd "$SCRIPT_DIR/tests"
-if [ ! -d "node_modules" ]; then
-    npm install
-    npx playwright install --with-deps
-fi
-
-npx playwright test $HEADED $GREP "${EXTRA_ARGS[@]}"
+E2E_ARGS=()
+if [ -n "$HEADED" ]; then E2E_ARGS+=("--headed"); fi
+if [ -n "$GREP" ]; then E2E_ARGS+=("--" $GREP); fi
+if [ ${#EXTRA_ARGS[@]} -gt 0 ]; then E2E_ARGS+=("${EXTRA_ARGS[@]}"); fi
+"$PROJECT_DIR/tests/run-e2e.sh" "${E2E_ARGS[@]}"

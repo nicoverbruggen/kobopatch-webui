@@ -10,7 +10,7 @@ cmds = [
     "cd kobopatch-wasm && bash build.sh",
     "bash installables/setup.sh",
     "cd web && npm install && npm run build",
-    "bash validate-dist.sh",
+    "bash web/validate-dist.sh",
 ]
 
 [start]

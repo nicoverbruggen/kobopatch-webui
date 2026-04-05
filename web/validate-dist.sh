@@ -4,7 +4,7 @@ set -euo pipefail
 # Validate that all required dist resources exist after a full build.
 # Called during deployment (nixpacks) to catch missing assets early.
 
-DIST="$(cd "$(dirname "$0")" && pwd)/web/dist"
+DIST="$(cd "$(dirname "$0")" && pwd)/dist"
 
 REQUIRED=(
     "index.html"

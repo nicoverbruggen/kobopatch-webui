@@ -28,9 +28,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Clone kobopatch source
-        run: |
-          cd kobopatch-wasm
-          ./setup.sh
+        run: make setup-wasm
 
       - name: Run native tests
         run: |
@@ -39,9 +37,8 @@ jobs:
 
       - name: Build WASM binary
         run: |
-          cd kobopatch-wasm
-          ./build.sh
-          test -f kobopatch.wasm || { echo "ERROR: kobopatch.wasm not found after build"; exit 1; }
+          make build-wasm
+          test -f kobopatch-wasm/kobopatch.wasm || { echo "ERROR: kobopatch.wasm not found after build"; exit 1; }
 
       - name: Run WASM tests
         run: |
@@ -59,7 +56,7 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|installables/)'; then
+          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|installables/|scripts/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -85,11 +82,11 @@ jobs:
 
       - name: Full integration test (WASM)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: kobopatch-wasm/test-integration.sh
+        run: make test-wasm
 
       - name: Set up installable assets
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: installables/setup.sh
+        run: make setup-installables
 
       - name: Validate download URLs
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
@@ -99,6 +96,4 @@ jobs:
 
       - name: Full integration test (Playwright)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: |
-          cd tests
-          ./run-e2e.sh
+        run: make test-e2e

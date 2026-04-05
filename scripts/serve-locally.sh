@@ -14,13 +14,13 @@ for arg in "$@"; do
     esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-WEB_DIR="$SCRIPT_DIR/web"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+WEB_DIR="$PROJECT_DIR/web"
 SRC_DIR="$WEB_DIR/src"
 DIST_DIR="$WEB_DIR/dist"
-WASM_DIR="$SCRIPT_DIR/kobopatch-wasm"
+WASM_DIR="$PROJECT_DIR/kobopatch-wasm"
 
-"$SCRIPT_DIR/installables/setup.sh"
+"$PROJECT_DIR/installables/setup.sh"
 
 echo "Building JS bundle..."
 cd "$WEB_DIR"

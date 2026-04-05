@@ -11,7 +11,7 @@ set -euo pipefail
 #
 # Prerequisites:
 #   - kobopatch.wasm built (run kobopatch-wasm/build.sh first)
-#   - Test assets cached in tests/cached_assets/ (run ./test.sh to download)
+#   - Test assets cached in tests/cached_assets/ (run 'make test' to download)
 #   - NickelMenu assets in web/src/nickelmenu/ (set up automatically)
 
 cd "$(dirname "$0")"

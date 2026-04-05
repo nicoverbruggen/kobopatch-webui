@@ -22,7 +22,7 @@ ORIGINAL_TGZ_SHA1=$(echo "$PRIMARY" | jq -r '.originalTgzChecksum')
 FIRMWARE_FILE="${FIRMWARE_ZIP:-$(cd .. && pwd)/tests/cached_assets/kobo-update-${PRIMARY_VERSION}.zip}"
 if [ ! -f "$FIRMWARE_FILE" ]; then
     echo "ERROR: Firmware zip not found at $FIRMWARE_FILE"
-    echo "Run ./test.sh from the project root to download test assets."
+    echo "Run 'make test' from the project root to download test assets."
     exit 1
 fi
 if [ ! -f "$PATCHES_ZIP" ]; then
