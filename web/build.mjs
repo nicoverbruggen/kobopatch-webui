@@ -40,7 +40,8 @@ async function buildPatchZips() {
 
     // Build a zip for each entry
     for (const entry of index) {
-        const sourceDir = join(patchesSrcDir, entry.source);
+        const source = entry.filename.replace(/^patches_/, '').replace(/\.zip$/, '');
+        const sourceDir = join(patchesSrcDir, source);
         const zip = new JSZip();
 
         function addDirToZip(dirPath, zipPath) {
@@ -61,9 +62,8 @@ async function buildPatchZips() {
         writeFileSync(join(patchesDistDir, entry.filename), zipBuffer);
     }
 
-    // Copy JSON metadata files (index.json without the source field, blacklist, downloads)
-    const distIndex = index.map(({ source, ...rest }) => rest);
-    writeFileSync(join(patchesDistDir, 'index.json'), JSON.stringify(distIndex, null, 4) + '\n');
+    // Copy JSON metadata files
+    cpSync(join(patchesSrcDir, 'index.json'), join(patchesDistDir, 'index.json'));
 
     for (const jsonFile of ['blacklist.json', 'downloads.json']) {
         const src = join(patchesSrcDir, jsonFile);

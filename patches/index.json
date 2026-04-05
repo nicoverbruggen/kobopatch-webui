@@ -1,14 +1,12 @@
 [
     {
         "filename": "patches_4.45.zip",
-        "source": "4.45",
         "versions": [
             "4.45.23646"
         ]
     },
     {
         "filename": "patches_4.38.zip",
-        "source": "4.38",
         "versions": [
             "4.38.23648",
             "4.38.23552",
