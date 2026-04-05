@@ -4,7 +4,7 @@ set -euo pipefail
 # Validate all firmware download URLs in downloads.json via HEAD requests.
 # Exits with code 1 if any URL is invalid.
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)/../web/src/patches"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)/../patches"
 DOWNLOADS="$SCRIPT_DIR/downloads.json"
 
 # Extract unique URLs (skip keys starting with _).

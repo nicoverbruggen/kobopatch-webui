@@ -1068,7 +1068,7 @@ test.describe('Custom patches', () => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
     const blacklist = JSON.parse(fs.readFileSync(
-      require('path').join(__dirname, '..', 'web', 'src', 'patches', 'blacklist.json'), 'utf-8'
+      require('path').join(__dirname, '..', 'patches', 'blacklist.json'), 'utf-8'
     ));
     const version45 = blacklist['4.45'];
     test.skip(!version45, 'No 4.45 blacklist entries found');
