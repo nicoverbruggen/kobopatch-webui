@@ -79,6 +79,10 @@ jobs:
             fi
           done
 
+      - name: Build web app
+        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
+        run: cd web && npm install && npm run build
+
       - name: Full integration test (WASM)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: kobopatch-wasm/test-integration.sh

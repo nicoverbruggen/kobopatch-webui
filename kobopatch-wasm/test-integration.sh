@@ -25,6 +25,11 @@ if [ ! -f "$FIRMWARE_FILE" ]; then
     echo "Run ./test.sh from the project root to download test assets."
     exit 1
 fi
+if [ ! -f "$PATCHES_ZIP" ]; then
+    echo "ERROR: Patches zip not found at $PATCHES_ZIP"
+    echo "Run 'cd web && npm run build' first to build patch zips."
+    exit 1
+fi
 
 # Find the WASM test executor.
 GOROOT="$(go env GOROOT)"
