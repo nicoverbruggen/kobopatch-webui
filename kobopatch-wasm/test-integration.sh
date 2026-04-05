@@ -16,7 +16,7 @@ fi
 FIRMWARE_CONFIG="$(cd .. && pwd)/tests/firmware-config.js"
 PRIMARY=$(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG').primary))")
 PRIMARY_VERSION=$(echo "$PRIMARY" | jq -r '.version')
-PATCHES_ZIP="$(cd .. && pwd)/web/src/patches/$(echo "$PRIMARY" | jq -r '.patches')"
+PATCHES_ZIP="$(cd .. && pwd)/web/dist/patches/$(echo "$PRIMARY" | jq -r '.patches')"
 CHECKSUMS=$(echo "$PRIMARY" | jq -r '.checksums | to_entries | map("\(.key)=\(.value)") | join(",")')
 ORIGINAL_TGZ_SHA1=$(echo "$PRIMARY" | jq -r '.originalTgzChecksum')
 FIRMWARE_FILE="${FIRMWARE_ZIP:-$(cd .. && pwd)/tests/cached_assets/kobo-update-${PRIMARY_VERSION}.zip}"
