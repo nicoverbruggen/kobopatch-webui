@@ -6,7 +6,7 @@ const zlib = require('zlib');
 const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, EXPECTED_SHA1, ORIGINAL_TGZ_SHA1 } = require('./helpers/paths');
-const { hasNickelMenuAssets, hasKoreaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('./helpers/assets');
+const { hasNickelMenuAssets, hasKOReaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('./helpers/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('./helpers/mock-device');
 const { parseTar } = require('./helpers/tar');
 
@@ -18,7 +18,7 @@ const { parseTar } = require('./helpers/tar');
 test.describe('NickelMenu', () => {
   test('no device — install with config via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
     await goToManualMode(page);
 
@@ -104,8 +104,8 @@ test.describe('NickelMenu', () => {
 
   test('no device — install with KOReader via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
-    test.skip(!hasKoreaderAssets(), 'KOReader assets not found (run koreader/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
+    test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run installables/setup.sh)');
 
     await goToManualMode(page);
 
@@ -157,8 +157,8 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with KOReader writes files to device', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
-    test.skip(!hasKoreaderAssets(), 'KOReader assets not found (run koreader/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
+    test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run installables/setup.sh)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
 
@@ -246,7 +246,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with config and write to Kobo', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
 
@@ -325,7 +325,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with config without exclude-calibre omits calibre from pattern', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
 
@@ -371,10 +371,10 @@ test.describe('NickelMenu', () => {
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
     // Start with a config that already has the calibre exclusion
-    await connectMockDevice(page, { hasNickelMenu: false, hasExistingExcludeCalibre: true });
+    await connectMockDevice(page, { hasNickelMenu: false, hasCalibreExclude: true });
 
     // Verify initial state
     const confBefore = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
@@ -495,7 +495,7 @@ test.describe('NickelMenu', () => {
 
     await connectMockDevice(page, {
       hasNickelMenu: true,
-      hasKoreader: true,
+      hasKOReader: true,
       hasReaderlyFonts: true,
       hasScreensaver: true,
     });
@@ -548,7 +548,7 @@ test.describe('NickelMenu', () => {
 
     await connectMockDevice(page, {
       hasNickelMenu: true,
-      hasKoreader: true,
+      hasKOReader: true,
       hasReaderlyFonts: true,
     });
 
@@ -589,7 +589,7 @@ test.describe('NickelMenu', () => {
 
   test('no device — feature selections preserved through back navigation', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
     await goToManualMode(page);
     await page.click('input[name="mode"][value="nickelmenu"]');
@@ -639,7 +639,7 @@ test.describe('NickelMenu', () => {
 
   test('no device — switching between preset and nickelmenu-only updates review', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run readerly/setup.sh)');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
     await goToManualMode(page);
     await page.click('input[name="mode"][value="nickelmenu"]');

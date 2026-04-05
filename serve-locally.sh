@@ -20,20 +20,7 @@ SRC_DIR="$WEB_DIR/src"
 DIST_DIR="$WEB_DIR/dist"
 WASM_DIR="$SCRIPT_DIR/kobopatch-wasm"
 
-if [ ! -f "$SRC_DIR/nickelmenu/NickelMenu.zip" ]; then
-    echo "NickelMenu assets not found, downloading..."
-    "$SCRIPT_DIR/nickelmenu/setup.sh"
-fi
-
-if [ ! -f "$SRC_DIR/koreader/koreader-kobo.zip" ]; then
-    echo "KOReader assets not found, downloading..."
-    "$SCRIPT_DIR/koreader/setup.sh"
-fi
-
-if [ ! -f "$SRC_DIR/readerly/KF_Readerly.zip" ]; then
-    echo "Readerly font assets not found, downloading..."
-    "$SCRIPT_DIR/readerly/setup.sh"
-fi
+"$SCRIPT_DIR/installables/setup.sh"
 
 echo "Building JS bundle..."
 cd "$WEB_DIR"

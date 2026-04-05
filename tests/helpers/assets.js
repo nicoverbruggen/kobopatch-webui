@@ -7,7 +7,7 @@ function hasNickelMenuAssets() {
     && fs.existsSync(path.join(WEBROOT, 'nickelmenu', 'features', 'custom-menu', 'items'));
 }
 
-function hasKoreaderAssets() {
+function hasKOReaderAssets() {
   return fs.existsSync(path.join(WEBROOT, 'koreader', 'koreader-kobo.zip'))
     && fs.existsSync(path.join(WEBROOT, 'koreader', 'release.json'));
 }
@@ -31,7 +31,7 @@ function cleanupFirmwareSymlink() {
 
 module.exports = {
   hasNickelMenuAssets,
-  hasKoreaderAssets,
+  hasKOReaderAssets,
   hasReaderlyAssets,
   hasFirmwareZip,
   setupFirmwareSymlink,

@@ -51,23 +51,8 @@ if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
     exit 1
 fi
 
-# Set up NickelMenu assets if not present.
-if [ ! -f "$SRC_DIR/nickelmenu/NickelMenu.zip" ]; then
-    echo "Setting up NickelMenu assets..."
-    "$PROJECT_ROOT/nickelmenu/setup.sh"
-fi
-
-# Set up KOReader assets if not present.
-if [ ! -f "$SRC_DIR/koreader/koreader-kobo.zip" ]; then
-    echo "Setting up KOReader assets..."
-    "$PROJECT_ROOT/koreader/setup.sh"
-fi
-
-# Set up Readerly assets if not present.
-if [ ! -f "$SRC_DIR/readerly/KF_Readerly.zip" ]; then
-    echo "Setting up Readerly assets..."
-    "$PROJECT_ROOT/readerly/setup.sh"
-fi
+# Set up installable assets if not present.
+"$PROJECT_ROOT/installables/setup.sh"
 
 # Install dependencies and browser.
 npm install --silent

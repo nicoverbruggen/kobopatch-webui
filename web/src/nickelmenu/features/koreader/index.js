@@ -20,7 +20,7 @@ export default {
     async install(ctx) {
         ctx.progress('Fetching KOReader release info...');
         const metaResp = await fetch('/koreader/release.json');
-        if (!metaResp.ok) throw new Error('KOReader assets not available (run koreader/setup.sh)');
+        if (!metaResp.ok) throw new Error('KOReader assets not available (run installables/setup.sh)');
         const meta = await metaResp.json();
 
         ctx.progress('Downloading KOReader ' + meta.version + '...');

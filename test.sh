@@ -67,15 +67,8 @@ if [ ! -d "$SCRIPT_DIR/kobopatch-wasm/kobopatch-src" ]; then
     "$SCRIPT_DIR/kobopatch-wasm/setup.sh"
 fi
 
-# Set up KOReader assets if not present (served by the app, not a test-only asset).
-if [ ! -f "$SCRIPT_DIR/web/src/koreader/koreader-kobo.zip" ]; then
-    "$SCRIPT_DIR/koreader/setup.sh"
-fi
-
-# Set up Readerly assets if not present.
-if [ ! -f "$SCRIPT_DIR/web/src/readerly/KF_Readerly.zip" ]; then
-    "$SCRIPT_DIR/readerly/setup.sh"
-fi
+# Set up installable assets if not present.
+"$SCRIPT_DIR/installables/setup.sh"
 
 echo "=== Installing web dependencies ==="
 cd "$SCRIPT_DIR/web" && npm install

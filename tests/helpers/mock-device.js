@@ -7,62 +7,58 @@ const { expect } = require('@playwright/test');
  *   - Optionally a .adds/nm/ directory (to simulate NickelMenu being installed)
  *   - In-memory filesystem that tracks all writes for verification
  */
+const defaultConfig = {
+  firmware: '4.45.23646',
+  serial: 'N4280A0000000',
+  hasNickelMenu: false,
+  hasKOReader: false,
+  hasReaderlyFonts: false,
+  hasScreensaver: false,
+  hasCalibreExclude: false,
+};
+
 async function injectMockDevice(page, opts = {}) {
-  const firmware = opts.firmware || '4.45.23646';
-  const serial = opts.serial || 'N4280A0000000';
-  await page.evaluate(({ hasNickelMenu, hasKoreader, hasReaderlyFonts, hasScreensaver, hasExistingExcludeCalibre, firmware, serial }) => {
-    const filesystem = {
-      '.kobo': {
-        _type: 'dir',
-        'version': {
-          _type: 'file',
-          content: serial + ',4.9.77,' + firmware + ',4.9.77,4.9.77,00000000-0000-0000-0000-000000000390',
-        },
-        'Kobo': {
-          _type: 'dir',
-          'Kobo eReader.conf': {
-            _type: 'file',
-            content: hasExistingExcludeCalibre
-              ? '[General]\nsome=setting\n[FeatureSettings]\nExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)\n'
-              : '[General]\nsome=setting\n',
-          },
-        },
-      },
-    };
+  const config = { ...defaultConfig, ...opts };
+  await page.evaluate((config) => {
+    const file = (content = '') => ({ _type: 'file', content });
+    const dir = (children = {}) => ({ _type: 'dir', ...children });
 
-    if (hasNickelMenu) {
-      filesystem['.adds'] = {
-        _type: 'dir',
-        'nm': {
-          _type: 'dir',
-          'items': { _type: 'file', content: 'menu_item:main:test:skip:' },
-        },
-      };
+    const filesystem = dir({
+      '.kobo': dir({
+        'version': file(config.serial + ',4.9.77,' + config.firmware + ',4.9.77,4.9.77,00000000-0000-0000-0000-000000000390'),
+        'Kobo': dir({
+          'Kobo eReader.conf': file(config.hasCalibreExclude
+            ? '[General]\nsome=setting\n[FeatureSettings]\nExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)\n'
+            : '[General]\nsome=setting\n'),
+        }),
+      }),
+    });
+
+    if (config.hasNickelMenu) {
+      filesystem['.adds'] = dir({
+        'nm': dir({ 'items': file('menu_item:main:test:skip:') }),
+      });
     }
 
-    if (hasKoreader) {
-      if (!filesystem['.adds']) filesystem['.adds'] = { _type: 'dir' };
-      filesystem['.adds']['koreader'] = {
-        _type: 'dir',
-        'koreader.sh': { _type: 'file', content: '#!/bin/sh' },
-      };
+    if (config.hasKOReader) {
+      if (!filesystem['.adds']) filesystem['.adds'] = dir();
+      filesystem['.adds']['koreader'] = dir({ 'koreader.sh': file('#!/bin/sh') });
     }
 
-    if (hasReaderlyFonts) {
-      filesystem['fonts'] = {
-        _type: 'dir',
-        'KF_Readerly-Regular.ttf': { _type: 'file', content: '' },
-        'KF_Readerly-Italic.ttf': { _type: 'file', content: '' },
-        'KF_Readerly-Bold.ttf': { _type: 'file', content: '' },
-        'KF_Readerly-BoldItalic.ttf': { _type: 'file', content: '' },
-      };
+    if (config.hasReaderlyFonts) {
+      filesystem['fonts'] = dir({
+        'KF_Readerly-Regular.ttf': file(),
+        'KF_Readerly-Italic.ttf': file(),
+        'KF_Readerly-Bold.ttf': file(),
+        'KF_Readerly-BoldItalic.ttf': file(),
+      });
     }
 
-    if (hasScreensaver) {
+    if (config.hasScreensaver) {
       if (!filesystem['.kobo']['screensaver']) {
-        filesystem['.kobo']['screensaver'] = { _type: 'dir' };
+        filesystem['.kobo']['screensaver'] = dir();
       }
-      filesystem['.kobo']['screensaver']['moon.png'] = { _type: 'file', content: '' };
+      filesystem['.kobo']['screensaver']['moon.png'] = file();
     }
 
     window.__mockFS = filesystem;
@@ -132,15 +128,7 @@ async function injectMockDevice(page, opts = {}) {
 
     const rootHandle = makeDirHandle(filesystem, 'KOBOeReader', '');
     window.showDirectoryPicker = async () => rootHandle;
-  }, {
-    hasNickelMenu: opts.hasNickelMenu || false,
-    hasKoreader: opts.hasKoreader || false,
-    hasReaderlyFonts: opts.hasReaderlyFonts || false,
-    hasScreensaver: opts.hasScreensaver || false,
-    hasExistingExcludeCalibre: opts.hasExistingExcludeCalibre || false,
-    firmware,
-    serial,
-  });
+  }, config);
 }
 
 /**

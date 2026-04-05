@@ -59,7 +59,7 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|nickelmenu/|koreader/|readerly/)'; then
+          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|installables/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -87,17 +87,9 @@ jobs:
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: kobopatch-wasm/test-integration.sh
 
-      - name: Set up NickelMenu assets
+      - name: Set up installable assets
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: nickelmenu/setup.sh
-
-      - name: Set up KOReader assets
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: koreader/setup.sh
-
-      - name: Set up Readerly assets
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: readerly/setup.sh
+        run: installables/setup.sh
 
       - name: Validate download URLs
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
