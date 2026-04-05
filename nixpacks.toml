@@ -8,9 +8,7 @@ paths = ["/usr/local/go/bin"]
 cmds = [
     "cd kobopatch-wasm && bash setup.sh",
     "cd kobopatch-wasm && bash build.sh",
-    "cd nickelmenu && bash setup.sh",
-    "cd koreader && bash setup.sh",
-    "cd readerly && bash setup.sh",
+    "bash installables/setup.sh",
     "cd web && npm install && npm run build",
     "bash validate-dist.sh",
 ]
