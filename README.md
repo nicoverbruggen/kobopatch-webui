@@ -110,14 +110,10 @@ patches/
     kobopatch.yaml
     src/*.yaml
 
-nickelmenu/
-  setup.sh                      # Downloads NickelMenu.zip
-
-readerly/
-  setup.sh                      # Downloads latest Readerly fonts from GitHub releases
+installables/
+  setup.sh                      # Downloads NickelMenu, KOReader, and Readerly assets
 
 koreader/
-  setup.sh                      # Downloads latest KOReader release for Kobo
   update.sh                     # Updates KOReader in web/dist/ (for production containers)
 
 kobopatch-wasm/
@@ -165,29 +161,13 @@ cd kobopatch-wasm
 ./build.sh    # compiles WASM, copies to web/dist/wasm/
 ```
 
-## Setting up NickelMenu assets
+## Setting up installable assets
 
 ```bash
-nickelmenu/setup.sh
+installables/setup.sh
 ```
 
-This downloads `NickelMenu.zip` into `web/src/nickelmenu/`.
-
-## Setting up Readerly font assets
-
-```bash
-readerly/setup.sh
-```
-
-This downloads the latest [Readerly](https://github.com/nicoverbruggen/readerly) font release (`KF_Readerly.zip`) into `web/src/readerly/`. The fonts are served from the app's own domain and downloaded by the browser at install time.
-
-## Setting up KOReader assets
-
-```bash
-koreader/setup.sh
-```
-
-This downloads the latest [KOReader](https://koreader.rocks) release for Kobo into `web/src/koreader/`. The KOReader zip is served from the app's own domain (to avoid CORS issues with GitHub release downloads). The version is displayed in the UI next to the KOReader checkbox. If the assets are missing, the KOReader option is hidden.
+This downloads NickelMenu, [KOReader](https://koreader.rocks), and [Readerly](https://github.com/nicoverbruggen/readerly) assets into `web/src/`. Each asset is skipped if already present; pass `--force` to re-download all. These are served from the app's own domain (to avoid CORS issues with GitHub release downloads). If assets are missing, the corresponding options are hidden in the UI.
 
 To update KOReader on a running production container without a full rebuild:
 
