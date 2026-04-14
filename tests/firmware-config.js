@@ -5,9 +5,9 @@
 // and E2E tests. All versions (primary + others) are used for patch testing.
 module.exports = {
   primary: {
-    version: '4.45.23646',
+    version: '4.45.23684',
     shortVersion: '4.45',
-    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip',
+    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Apr2026/kobo-update-4.45.23684.zip',
     patches: 'patches_4.45.zip',
     patchesSource: '4.45',
     checksums: {

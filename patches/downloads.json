@@ -3,6 +3,12 @@
     "https://pgaskin.net/KoboStuff/kobofirmware.html",
     "https://help.kobo.com/hc/en-us/articles/35059171032727-Manually-Updating-your-Kobo-eReader-device-Firmware"
   ],
+  "4.45.23684": {
+    "N428": "https://ereaderfiles.kobo.com/firmwares/kobo12/Apr2026/kobo-update-4.45.23684.zip",
+    "N365": "https://ereaderfiles.kobo.com/firmwares/kobo13/Apr2026/kobo-update-4.45.23684.zip",
+    "N367": "https://ereaderfiles.kobo.com/firmwares/kobo13/Apr2026/kobo-update-4.45.23684.zip",
+    "P365": "https://ereaderfiles.kobo.com/firmwares/kobo14/Apr2026/kobo-update-4.45.23684.zip"
+  },
   "4.45.23646": {
     "N428": "https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip",
     "N365": "https://ereaderfiles.kobo.com/firmwares/kobo13/Mar2026/kobo-update-4.45.23646.zip",

@@ -12,6 +12,9 @@
       "My 24 line spacing values",
       "Replace adobe page numbers toggle with invert screen",
       "Set KePub hyphenation"
+    ],
+    "src/nickel.yaml": [
+      "Remove forgot pin button from lock screen"
     ]
   },
   "4.38": {
