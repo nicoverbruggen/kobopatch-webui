@@ -4,6 +4,16 @@ set -euo pipefail
 # Test all patches against cached firmware using kobopatch -t.
 # Iterates over all firmware versions in tests/firmware-config.js,
 # builds the native kobopatch binary, and generates blacklist.json.
+#
+# Usage:
+#   test-patches.sh          # regenerate patches/blacklist.json in place
+#   test-patches.sh --check  # verify patches/blacklist.json is up to date;
+#                              exits non-zero if it would change
+
+CHECK_MODE=0
+if [ "${1:-}" = "--check" ]; then
+    CHECK_MODE=1
+fi
 
 cd "$(dirname "$0")"
 
@@ -17,7 +27,13 @@ fi
 FIRMWARE_CONFIG="$(cd .. && pwd)/tests/firmware-config.js"
 CACHED_ASSETS="$(cd .. && pwd)/tests/cached_assets"
 PATCHES_DIR="$(cd .. && pwd)/patches"
-BLACKLIST_FILE="$PATCHES_DIR/blacklist.json"
+COMMITTED_BLACKLIST="$PATCHES_DIR/blacklist.json"
+
+if [ "$CHECK_MODE" = "1" ]; then
+    BLACKLIST_FILE="$(mktemp)"
+else
+    BLACKLIST_FILE="$COMMITTED_BLACKLIST"
+fi
 
 # Build the native kobopatch binary.
 echo "=== Building kobopatch ==="
@@ -150,4 +166,17 @@ print(f'Wrote {total_failed} blacklisted patch(es) for version {version}')
 done
 
 echo ""
-echo "=== Blacklist written to $BLACKLIST_FILE ==="
+if [ "$CHECK_MODE" = "1" ]; then
+    echo "=== Checking blacklist.json is up to date ==="
+    if ! diff -u "$COMMITTED_BLACKLIST" "$BLACKLIST_FILE"; then
+        rm -f "$BLACKLIST_FILE"
+        echo ""
+        echo "ERROR: patches/blacklist.json is out of date."
+        echo "Regenerate with: kobopatch-wasm/test-patches.sh"
+        exit 1
+    fi
+    rm -f "$BLACKLIST_FILE"
+    echo "blacklist.json is up to date."
+else
+    echo "=== Blacklist written to $BLACKLIST_FILE ==="
+fi

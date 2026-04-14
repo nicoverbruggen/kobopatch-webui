@@ -90,6 +90,10 @@ echo "=== Validating dist resources ==="
 "$PROJECT_DIR/web/validate-dist.sh"
 
 echo ""
+echo "=== Checking patches/blacklist.json is up to date ==="
+"$PROJECT_DIR/kobopatch-wasm/test-patches.sh" --check
+
+echo ""
 echo "=== Running WASM integration test ==="
 PRIMARY_FW="$CACHED_ASSETS/kobo-update-$(node -e "console.log(require('$FIRMWARE_CONFIG').primary.version)").zip"
 if [ -f "$PRIMARY_FW" ]; then
