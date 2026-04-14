@@ -1038,7 +1038,7 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#step-patches')).not.toBeHidden();
   });
 
-  test('blacklisted patches are disabled in the UI', async ({ page }) => {
+  test('blacklisted patches are marked "known to fail" but remain enableable', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
     const blacklist = JSON.parse(fs.readFileSync(
@@ -1064,7 +1064,8 @@ test.describe('Custom patches', () => {
       await sections.nth(i).locator('summary').click();
     }
 
-    // Verify each blacklisted patch is disabled with "not compatible" badge
+    // Verify each blacklisted patch shows the "known to fail" badge but
+    // remains interactive (users can override the warning and try anyway).
     for (const [filename, patchNames] of Object.entries(version45)) {
       for (const name of patchNames) {
         const patchName = page.locator('.patch-name', { hasText: name }).first();
@@ -1072,11 +1073,11 @@ test.describe('Custom patches', () => {
 
         const label = patchName.locator('xpath=ancestor::label');
         const input = label.locator('input');
-        await expect(input).toBeDisabled();
+        await expect(input).toBeEnabled();
 
         const badge = label.locator('.patch-incompatible');
         await expect(badge).toBeVisible();
-        await expect(badge).toHaveText('not compatible');
+        await expect(badge).toHaveText('known to fail');
       }
     }
   });
@@ -1091,20 +1092,16 @@ test.describe('Custom patches', () => {
     await page.click('input[name="mode"][value="patches"]');
     await page.click('#btn-mode-next');
 
-    // "Allow rotation on all devices" is blacklisted and disabled in the UI.
-    // Bypass the disabled state to verify the build correctly fails when an
-    // incompatible patch is force-enabled (e.g. testing the Go Back flow).
+    // "Allow rotation on all devices" is marked "known to fail" but can still
+    // be enabled. Verify the build correctly fails (or skips) when an
+    // incompatible patch is enabled, exercising the Go Back flow.
     const patchName = page.locator('.patch-name', { hasText: 'Allow rotation on all devices' }).first();
     const patchSection = patchName.locator('xpath=ancestor::details');
     await patchSection.locator('summary').click();
     await expect(patchName).toBeVisible();
 
     const input = patchName.locator('xpath=ancestor::label').locator('input');
-    await input.evaluate(el => {
-      el.disabled = false;
-      el.checked = true;
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+    await input.check();
 
     await page.click('#btn-patches-next');
 

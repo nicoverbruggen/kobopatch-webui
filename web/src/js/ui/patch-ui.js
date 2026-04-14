@@ -289,9 +289,6 @@ class PatchUI {
                 const isGrouped = !!patch.patchGroup;
                 const blacklisted = this.isBlacklisted(filename, patch.name);
 
-                // Force-disable blacklisted patches.
-                if (blacklisted) patch.enabled = false;
-
                 // Create a group wrapper and "None" option before the first patch in each group.
                 if (isGrouped && !renderedGroupNone[patch.patchGroup]) {
                     renderedGroupNone[patch.patchGroup] = true;
@@ -357,9 +354,6 @@ class PatchUI {
                     });
                 }
 
-                if (blacklisted) {
-                    input.disabled = true;
-                }
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'patch-name';
@@ -371,7 +365,7 @@ class PatchUI {
                 if (blacklisted) {
                     const badge = document.createElement('span');
                     badge.className = 'patch-incompatible';
-                    badge.textContent = 'not compatible';
+                    badge.textContent = 'known to fail';
                     header.appendChild(badge);
                 }
 
