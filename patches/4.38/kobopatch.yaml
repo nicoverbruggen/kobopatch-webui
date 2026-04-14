@@ -1,7 +1,7 @@
 ## Works with kobopatch v0.15.0 and later.
 ## You can update kobopatch by downloading the latest release from https://github.com/pgaskin/kobopatch/releases. 
-version: 4.38.23555
-in: src/kobo-update-4.38.23555.zip
+version: 4.38.23684
+in: src/kobo-update-4.38.23684.zip
 out: out/KoboRoot.tgz
 log: out/log.txt
 

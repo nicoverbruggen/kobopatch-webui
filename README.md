@@ -122,14 +122,14 @@ kobopatch-wasm/
   setup.sh                      # Clones kobopatch source, copies wasm_exec.js
   build.sh                      # Compiles WASM, copies to web/dist/wasm/ and web/src/js/
   test-integration.sh           # WASM integration test (via Node.js)
-  test-patches.sh               # Tests all patches against cached firmware, updates blacklist.json
+  test-patches.sh               # Tests all patches against cached firmware, updates blacklist.json; pass --check to verify the committed blacklist is up to date
 
 tests/
   cached_assets/                  # Downloaded test assets (gitignored)
   helpers/                        # Shared test utilities
     assets.js                     # Asset availability checks, firmware symlink helpers
     mock-device.js                # Mock File System Access API (simulated Kobo device)
-    paths.js                      # Test asset paths, expected checksums
+    paths.js                      # Test asset paths; lazy helper for original-firmware SHA1
     tar.js                        # Tar archive parser for output verification
   build.spec.js                   # Build output verification tests
   integration.spec.js             # Playwright E2E tests
@@ -254,7 +254,7 @@ The E2E tests cover all major user flows:
 
 The simulated device tests mock the File System Access API with an in-memory filesystem that mimics a Kobo Libra Color (serial prefix N428, firmware 4.45.23646).
 
-Custom patches tests use firmware 4.45.23646 (~150 MB, cached in `tests/cached_assets/`), enable a single patch, and verify SHA1 checksums of all 4 patched binaries. This specific combination is used because the author has tested it on an actual device. KOReader tests use a real KOReader zip (~39 MB, also cached) to verify the full installation flow.
+Custom patches tests use the primary firmware version from `tests/firmware-config.js` (~150 MB, cached in `tests/cached_assets/`) and run the full WASM patching pipeline end-to-end. Correctness is checked structurally: patched binaries are parsed as ELF and verified against the pre-patch version to confirm the patch actually modified bytes — no hardcoded SHA1s to maintain per firmware release. KOReader tests use a real KOReader zip (~39 MB, also cached) to verify the full installation flow.
 
 ```bash
 make test-e2e
