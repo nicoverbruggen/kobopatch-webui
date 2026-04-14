@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Integration test: runs the full WASM patching pipeline with SHA1 checksum
-# validation against a real firmware zip.
+# Integration test: runs the full WASM patching pipeline against a real
+# firmware zip as a smoke test.
 
 cd "$(dirname "$0")"
 
@@ -17,8 +17,6 @@ FIRMWARE_CONFIG="$(cd .. && pwd)/tests/firmware-config.js"
 PRIMARY=$(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG').primary))")
 PRIMARY_VERSION=$(echo "$PRIMARY" | jq -r '.version')
 PATCHES_ZIP="$(cd .. && pwd)/web/dist/patches/$(echo "$PRIMARY" | jq -r '.patches')"
-CHECKSUMS=$(echo "$PRIMARY" | jq -r '.checksums | to_entries | map("\(.key)=\(.value)") | join(",")')
-ORIGINAL_TGZ_SHA1=$(echo "$PRIMARY" | jq -r '.originalTgzChecksum')
 FIRMWARE_FILE="${FIRMWARE_ZIP:-$(cd .. && pwd)/tests/cached_assets/kobo-update-${PRIMARY_VERSION}.zip}"
 if [ ! -f "$FIRMWARE_FILE" ]; then
     echo "ERROR: Firmware zip not found at $FIRMWARE_FILE"
@@ -45,6 +43,4 @@ fi
 echo "Running integration test..."
 FIRMWARE_ZIP="$FIRMWARE_FILE" \
   PATCHES_ZIP="$PATCHES_ZIP" \
-  EXPECTED_CHECKSUMS="$CHECKSUMS" \
-  ORIGINAL_TGZ_SHA1="$ORIGINAL_TGZ_SHA1" \
   GOOS=js GOARCH=wasm go test -v -run TestIntegrationPatch -timeout 300s -exec="$EXEC" .

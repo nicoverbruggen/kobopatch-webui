@@ -41,7 +41,7 @@ while IFS= read -r line; do
     if [ ! -f "$file" ]; then
         MISSING+=("$version|$url|$file")
     fi
-done < <(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, ...c.others]))" | jq -c '.[]')
+done < <(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, c.secondary]))" | jq -c '.[]')
 
 if [ ${#MISSING[@]} -gt 0 ]; then
     echo "The following firmware test assets are not cached locally (~150 MB each):"

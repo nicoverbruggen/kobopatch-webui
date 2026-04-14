@@ -29,8 +29,8 @@ echo "Built kobopatch successfully."
 # Start with an empty blacklist.
 echo "{}" > "$BLACKLIST_FILE"
 
-# Iterate over all firmware versions in the config (primary + others).
-CONFIGS=$(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, ...c.others]))")
+# Iterate over all firmware versions in the config (primary + secondary).
+CONFIGS=$(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, c.secondary]))")
 COUNT=$(echo "$CONFIGS" | jq 'length')
 
 for i in $(seq 0 $((COUNT - 1))); do

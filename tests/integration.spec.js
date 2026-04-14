@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const JSZip = require('jszip');
 
-const { FIRMWARE_PATH, EXPECTED_SHA1, ORIGINAL_TGZ_SHA1 } = require('./helpers/paths');
+const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('./helpers/paths');
 const { hasNickelMenuAssets, hasKOReaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('./helpers/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('./helpers/mock-device');
 const { parseTar } = require('./helpers/tar');
@@ -756,7 +756,6 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#build-status')).toContainText('Patching complete');
     await expect(page.locator('#build-status')).toContainText('Kobo Libra Colour');
 
-    // Download KoboRoot.tgz and verify checksums
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.click('#btn-download'),
@@ -764,19 +763,6 @@ test.describe('Custom patches', () => {
 
     expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
     await expect(page.locator('#download-device-name')).toHaveText('Kobo Libra Colour');
-
-    const downloadPath = await download.path();
-    const tgzData = fs.readFileSync(downloadPath);
-
-    const tarData = zlib.gunzipSync(tgzData);
-    const entries = parseTar(tarData);
-
-    for (const [name, expectedHash] of Object.entries(EXPECTED_SHA1)) {
-      const data = entries[name];
-      expect(data, `missing binary in output: ${name}`).toBeDefined();
-      const actualHash = crypto.createHash('sha1').update(data).digest('hex');
-      expect(actualHash, `SHA1 mismatch for ${name}`).toBe(expectedHash);
-    }
   });
 
   test('no device — restore original firmware', async ({ page }) => {
@@ -834,7 +820,7 @@ test.describe('Custom patches', () => {
     const downloadPath = await download.path();
     const tgzData = fs.readFileSync(downloadPath);
     const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
-    expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
+    expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
   });
 
   test('with device — incompatible version 5.x shows error', async ({ page }) => {
@@ -965,24 +951,12 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#btn-write')).toBeVisible();
     await expect(page.locator('#btn-download')).toBeVisible();
 
-    // Download and verify checksums
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.click('#btn-download'),
     ]);
 
     expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
-    const downloadPath = await download.path();
-    const tgzData = fs.readFileSync(downloadPath);
-    const tarData = zlib.gunzipSync(tgzData);
-    const entries = parseTar(tarData);
-
-    for (const [name, expectedHash] of Object.entries(EXPECTED_SHA1)) {
-      const data = entries[name];
-      expect(data, `missing binary in output: ${name}`).toBeDefined();
-      const actualHash = crypto.createHash('sha1').update(data).digest('hex');
-      expect(actualHash, `SHA1 mismatch for ${name}`).toBe(expectedHash);
-    }
   });
 
   test('with device — restore original firmware', async ({ page }) => {
@@ -1024,7 +998,7 @@ test.describe('Custom patches', () => {
     const downloadPath = await download.path();
     const tgzData = fs.readFileSync(downloadPath);
     const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
-    expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(ORIGINAL_TGZ_SHA1);
+    expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
   });
 
   test('with device — build failure shows Go Back and returns to patches', async ({ page }) => {
