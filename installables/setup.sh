@@ -10,7 +10,7 @@ if [ "${1:-}" = "--force" ] || [ ! -f "$NICKELMENU_DIR/NickelMenu.zip" ]; then
     mkdir -p "$NICKELMENU_DIR"
     echo "Downloading NickelMenu.zip..."
     curl -fSL -o "$NICKELMENU_DIR/NickelMenu.zip" \
-        "https://github.com/nicoverbruggen/NickelMenu/releases/download/experimental/NickelMenu.zip"
+        "https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.0/NickelMenu.zip"
     echo "  -> $(du -h "$NICKELMENU_DIR/NickelMenu.zip" | cut -f1)"
 fi
 
