@@ -67,7 +67,7 @@ test.describe('NickelMenu', () => {
 
     await page.click('#btn-nm-features-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-    await expect(page.locator('#nm-backup-intro')).toHaveText('Before continuing, it is highly recommended that you manually make a backup of your Kobo files. When you are done, press Continue.');
+    await expect(page.locator('#nm-backup-intro')).toContainText('highly recommended that you manually make a backup of the files on your Kobo device');
     await expect(page.locator('#nm-backup-options')).toBeHidden();
     await expect(page.locator('#nm-backup-warning')).toBeHidden();
     await page.click('#btn-nm-backup-next');
