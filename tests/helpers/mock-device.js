@@ -27,10 +27,18 @@ async function injectMockDevice(page, opts = {}) {
     const filesystem = dir({
       '.kobo': dir({
         'version': file(config.serial + ',4.9.77,' + config.firmware + ',4.9.77,4.9.77,00000000-0000-0000-0000-000000000390'),
+        'BookReader.sqlite': file('book-reader-db'),
+        'device.salt.conf': file('salt=abc123'),
+        'fonts.sqlite': file('fonts-db'),
+        'KoboReader.sqlite': file('kobo-reader-db'),
         'Kobo': dir({
           'Kobo eReader.conf': file(config.hasCalibreExclude
             ? '[General]\nsome=setting\n[FeatureSettings]\nExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)\n'
             : '[General]\nsome=setting\n'),
+          'affiliate.conf': file('affiliate=test'),
+        }),
+        'markups': dir({
+          'sample.annot': file('markup-data'),
         }),
       }),
     });

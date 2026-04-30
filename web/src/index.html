@@ -260,11 +260,40 @@
             </div>
         </section>
 
-        <!-- Step 2c: NickelMenu review -->
+        <!-- Step 2c: NickelMenu backup -->
+        <section id="step-nm-backup" class="step" hidden>
+            <p id="nm-backup-intro">Before continuing, choose whether you want to create a local backup from your Kobo first. This happens entirely in your browser on this computer and is never uploaded to any server.</p>
+            <div id="nm-backup-options" class="selection-cards" role="radiogroup" aria-label="NickelMenu backup options">
+                <label class="selection-card selection-card--recommended">
+                    <input type="radio" name="nm-backup-option" value="key-files">
+                    <div class="selection-card-body">
+                        <div class="recommended-label">Recommended (and safest)</div>
+                        <div class="selection-card-title">Back up important files</div>
+                        <div class="selection-card-desc">This minimal backup includes key database and configuration files that you cannot easily re-download. For example, the database includes all information about your reading time, stats, and annotations.</div>
+                    </div>
+                </label>
+                <label class="selection-card">
+                    <input type="radio" name="nm-backup-option" value="skip">
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Don't make a backup</div>
+                        <div class="selection-card-desc">If you previously made a backup, you can probably skip this.</div>
+                    </div>
+                </label>
+            </div>
+            <p id="nm-backup-local-note">
+                A backup of your files is only created locally via your browser. Your backup is never uploaded anywhere. Once ready, your browser will "download" an archive that you can use to restore files in the unlikely event that something goes wrong.
+            </p>
+            <div id="nm-backup-warning" class="banner banner--warning" hidden></div>
+            <div class="step-actions">
+                <button id="btn-nm-backup-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-nm-backup-next" class="primary" disabled>Continue &#x203A;</button>
+            </div>
+        </section>
+
+        <!-- Step 2d: NickelMenu review -->
         <section id="step-nm-review" class="step" hidden>
             <p id="nm-review-summary"></p>
             <ul id="nm-review-list" class="selected-patches-list"></ul>
-            <div id="nm-review-warning" class="banner banner--warning" hidden></div>
             <p>Before continuing, make sure you these are the changes you want. You can always use the wizard again to uninstall NickelMenu, if you want to.</p>
             <div id="nm-review-actions" class="step-actions">
                 <button id="btn-nm-review-back" class="secondary">&#x2039; Back</button>

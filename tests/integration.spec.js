@@ -10,6 +10,14 @@ const { hasNickelMenuAssets, hasKOReaderAssets, hasReaderlyAssets, hasFirmwareZi
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('./helpers/mock-device');
 const { parseTar } = require('./helpers/tar');
 
+async function skipNmBackup(page) {
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  if (await page.locator('#nm-backup-options').isVisible()) {
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+  }
+  await page.click('#btn-nm-backup-next');
+}
+
 
 // ============================================================
 // NickelMenu
@@ -58,12 +66,16 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#nm-backup-intro')).toHaveText('Before continuing, it is highly recommended that you manually make a backup of your Kobo files. When you are done, press Continue.');
+    await expect(page.locator('#nm-backup-options')).toBeHidden();
+    await expect(page.locator('#nm-backup-warning')).toBeHidden();
+    await page.click('#btn-nm-backup-next');
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
-    await expect(page.locator('#nm-review-warning')).toBeHidden();
 
     // Write button should be hidden in manual mode
     await expect(page.locator('#btn-nm-write')).toBeHidden();
@@ -135,6 +147,7 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-koreader"]');
 
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
 
     // Review step — should list KOReader
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -184,6 +197,7 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-koreader"]');
 
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
 
     // Review step
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
@@ -213,6 +227,7 @@ test.describe('NickelMenu', () => {
     // Select "Install NickelMenu only" — goes directly to review (no features step)
     await page.click('input[name="nm-option"][value="nickelmenu-only"]');
     await page.click('#btn-nm-next');
+    await skipNmBackup(page);
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -285,6 +300,7 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -293,7 +309,6 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
-    await expect(page.locator('#nm-review-warning')).toBeHidden();
 
     // Both buttons visible when device is connected
     await expect(page.locator('#btn-nm-write')).toBeVisible();
@@ -332,6 +347,45 @@ test.describe('NickelMenu', () => {
     expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
   });
 
+  test('with device — backup step can download important files before review', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
+
+    await connectMockDevice(page, { hasNickelMenu: true });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
+
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#btn-nm-backup-next')).toBeEnabled();
+
+    const [backupDownload] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-backup-next'),
+    ]);
+
+    expect(backupDownload.suggestedFilename()).toMatch(/^KoboPatch Backup \(N4280A0000000\) - \d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}\.zip$/);
+    const backupZip = await JSZip.loadAsync(fs.readFileSync(await backupDownload.path()));
+    const backupFiles = Object.keys(backupZip.files);
+    expect(backupFiles).toContain('.kobo/Kobo/Kobo eReader.conf');
+    expect(backupFiles).toContain('.kobo/Kobo/affiliate.conf');
+    expect(backupFiles).toContain('.kobo/markups/sample.annot');
+    expect(backupFiles).toContain('.kobo/BookReader.sqlite');
+    expect(backupFiles).toContain('.kobo/device.salt.conf');
+    expect(backupFiles).toContain('.kobo/fonts.sqlite');
+    expect(backupFiles).toContain('.kobo/KoboReader.sqlite');
+    expect(backupFiles).toContain('.kobo/version');
+    expect(backupFiles).toContain('.adds/nm/items');
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#btn-nm-download')).toBeVisible();
+    await expect(page.locator('#btn-nm-write')).toBeVisible();
+  });
+
   test('with device — install with config without exclude-calibre omits calibre from pattern', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
     test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
@@ -353,6 +407,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
 
     // Review and download (not write) to test download instructions
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -378,7 +433,7 @@ test.describe('NickelMenu', () => {
     expect(conf).not.toContain('ExcludeSyncFolders');
   });
 
-  test('with device — review warns when a root folder contains a comma', async ({ page }) => {
+  test('with device — backup step warns for key-files and skip when a root folder contains a comma', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
     test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
@@ -390,12 +445,13 @@ test.describe('NickelMenu', () => {
     await page.click('input[name="nm-option"][value="preset"]');
     await page.click('#btn-nm-next');
     await page.click('#btn-nm-features-next');
-
-    await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
   });
 
-  test('with device — review warns when a root calibre folder exists', async ({ page }) => {
+  test('with device — backup step warns for key-files and skip when a root calibre folder exists', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
     test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
 
@@ -407,9 +463,10 @@ test.describe('NickelMenu', () => {
     await page.click('input[name="nm-option"][value="preset"]');
     await page.click('#btn-nm-next');
     await page.click('#btn-nm-features-next');
-
-    await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
   });
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {
@@ -435,6 +492,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
@@ -463,6 +521,7 @@ test.describe('NickelMenu', () => {
     // Select "Install NickelMenu only" — goes directly to review (no features step)
     await page.click('input[name="nm-option"][value="nickelmenu-only"]');
     await page.click('#btn-nm-next');
+    await skipNmBackup(page);
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -504,6 +563,9 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-uninstall-options')).toBeHidden();
 
     await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#nm-backup-options')).not.toBeHidden();
+    await skipNmBackup(page);
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -560,6 +622,8 @@ test.describe('NickelMenu', () => {
     await page.uncheck('input[name="nm-uninstall-screensaver"]');
 
     await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await skipNmBackup(page);
 
     // Review should list KOReader and Readerly but not Screensaver
     await expect(page.locator('#nm-review-summary')).toContainText('removal');
@@ -614,6 +678,8 @@ test.describe('NickelMenu', () => {
     await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
 
     await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await skipNmBackup(page);
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -621,6 +687,8 @@ test.describe('NickelMenu', () => {
 
     // Go back
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-back');
 
     // Checklist should still be visible with preserved state
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
@@ -650,13 +718,16 @@ test.describe('NickelMenu', () => {
 
     // Continue to review
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
     await expect(page.locator('#nm-review-list')).not.toContainText('Readerly fonts');
 
-    // Back to features — selections must be preserved
+    // Back to backup, then features — selections must be preserved
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-back');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
@@ -675,6 +746,7 @@ test.describe('NickelMenu', () => {
     await page.uncheck('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
     await expect(page.locator('#nm-review-list')).not.toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
@@ -694,20 +766,24 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
 
     // Review should list features
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
 
-    // Back to features, back to config
+    // Back to backup, back to features, back to config
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-back');
     await page.click('#btn-nm-features-back');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     // Switch to nickelmenu-only
     await page.click('input[name="nm-option"][value="nickelmenu-only"]');
     await page.click('#btn-nm-next');
+    await skipNmBackup(page);
 
     // Review should skip features step and show only NickelMenu
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
@@ -715,8 +791,10 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).not.toContainText('Readerly');
     await expect(page.locator('#nm-review-list')).not.toContainText('Hide home screen');
 
-    // Back to config, switch back to preset
+    // Back to backup, then config, switch back to preset
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-back');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
     await page.click('input[name="nm-option"][value="preset"]');
     await page.click('#btn-nm-next');
@@ -728,6 +806,7 @@ test.describe('NickelMenu', () => {
 
     // Review should show features again
     await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
   });
@@ -1217,10 +1296,15 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
     await page.click('input[value="nickelmenu-only"]');
     await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+    await page.click('#btn-nm-backup-next');
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
 
-    // NM review → Back → NM config (skips features for nickelmenu-only)
+    // NM review → Back → NM backup for nickelmenu-only
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-back');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     // NM config → select preset → Continue → Features step
@@ -1228,12 +1312,17 @@ test.describe('Custom patches', () => {
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-    // Features → Continue → NM review
+    // Features → Continue → NM backup
     await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+    await page.click('#btn-nm-backup-next');
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
 
-    // NM review → Back → Features (for preset)
+    // NM review → Back → NM backup (for preset)
     await page.click('#btn-nm-review-back');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-back');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
     // Features → Back → NM config

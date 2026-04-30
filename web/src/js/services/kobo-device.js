@@ -222,6 +222,93 @@ class KoboDevice {
         }
     }
 
+    async readFileBytes(filePath) {
+        try {
+            let dir = this.directoryHandle;
+            const dirParts = filePath.slice(0, -1);
+            const fileName = filePath[filePath.length - 1];
+            for (const part of dirParts) {
+                dir = await dir.getDirectoryHandle(part);
+            }
+            const fileHandle = await dir.getFileHandle(fileName);
+            const file = await fileHandle.getFile();
+            return new Uint8Array(await file.arrayBuffer());
+        } catch {
+            return null;
+        }
+    }
+
+    async collectExistingEntries(pathList, progressFn) {
+        const filePaths = [];
+        for (const pathParts of pathList) {
+            await this.collectExistingFilePaths(pathParts, filePaths);
+        }
+        return this.collectFilesAtPaths(filePaths, progressFn);
+    }
+
+    async collectExistingFilePaths(pathParts, filePaths) {
+        let dir = this.directoryHandle;
+        const dirParts = pathParts.slice(0, -1);
+        const entryName = pathParts[pathParts.length - 1];
+
+        try {
+            for (const part of dirParts) {
+                dir = await dir.getDirectoryHandle(part);
+            }
+        } catch {
+            return;
+        }
+
+        try {
+            const childDir = await dir.getDirectoryHandle(entryName);
+            await this.collectDirectoryFilePaths(childDir, pathParts, filePaths);
+            return;
+        } catch {}
+
+        const data = await this.readFileBytes(pathParts);
+        if (data) {
+            filePaths.push(pathParts);
+        }
+    }
+
+    async collectDirectoryFilePaths(dirHandle, currentPathParts, filePaths) {
+        if (typeof dirHandle.values !== 'function') return;
+
+        for await (const entry of dirHandle.values()) {
+            const nextPathParts = [...currentPathParts, entry.name];
+            if (entry.kind === 'directory') {
+                const childDir = typeof entry.values === 'function'
+                    ? entry
+                    : await dirHandle.getDirectoryHandle(entry.name);
+                await this.collectDirectoryFilePaths(childDir, nextPathParts, filePaths);
+            } else if (entry.kind === 'file') {
+                filePaths.push(nextPathParts);
+            }
+        }
+    }
+
+    async collectFilesAtPaths(filePaths, progressFn) {
+        const entries = [];
+        const total = filePaths.length;
+
+        for (let i = 0; i < filePaths.length; i++) {
+            const pathParts = filePaths[i];
+            const data = await this.readFileBytes(pathParts);
+            if (!data) continue;
+            entries.push({ path: pathParts.join('/'), data });
+            if (progressFn) {
+                progressFn({
+                    phase: 'reading',
+                    current: i + 1,
+                    total,
+                    path: pathParts.join('/'),
+                });
+            }
+        }
+
+        return entries;
+    }
+
     /**
      * Remove a file or directory at the given path.
      */

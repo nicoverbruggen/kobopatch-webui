@@ -1,5 +1,5 @@
 export const TL = {
-    NAV_NICKELMENU: ['Device', 'Mode', 'Configure', 'Review', 'Install'],
+    NAV_NICKELMENU: ['Device', 'Mode', 'Configure', 'Backup', 'Review', 'Install'],
     NAV_PATCHES: ['Device', 'Mode', 'Patches', 'Build', 'Install'],
     NAV_DEFAULT: ['Device', 'Mode', 'Patches', 'Build', 'Install'],
 

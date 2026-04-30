@@ -18,7 +18,7 @@ const stepNav = $('step-nav');
 const allSteps = [
     $('step-connect'), $('step-connect-instructions'), $('step-manual-version'), $('step-device'),
     $('step-mode'), $('step-nickelmenu'), $('step-nm-features'),
-    $('step-nm-review'), $('step-nm-installing'), $('step-nm-done'),
+    $('step-nm-backup'), $('step-nm-review'), $('step-nm-installing'), $('step-nm-done'),
     $('step-patches'), $('step-firmware'), $('step-building'), $('step-done'),
     $('step-error'),
 ];

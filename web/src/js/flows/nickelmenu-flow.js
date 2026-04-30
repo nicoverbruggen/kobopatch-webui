@@ -4,26 +4,39 @@
  * Handles the entire NickelMenu path through the wizard:
  *   1. Config step    — choose preset install, NickelMenu-only, or removal
  *   2. Features step  — pick which features to include (only for "preset")
- *   3. Review step    — confirm selections before proceeding
- *   4. Installing step — progress indicator while writing files
- *   5. Done step      — success message with next-steps instructions
+ *   3. Backup step    — optionally download a backup from the connected Kobo
+ *   4. Review step    — confirm selections before proceeding
+ *   5. Installing step — progress indicator while writing files
+ *   6. Done step      — success message with next-steps instructions
  *
  * Exported `initNickelMenu(state)` receives the shared app state and returns
  * functions the orchestrator (app.js) needs: `goToNickelMenuConfig` and
  * `resetNickelMenuState`.
  */
 
+import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavStep } from '../nav.js';
 import { ALL_FEATURES } from '../../nickelmenu/installer.js';
 import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 
+const NM_REVIEW_BACKUP_PATHS = [
+    ['.kobo', 'Kobo'],
+    ['.kobo', 'markups'],
+    ['.kobo', 'BookReader.sqlite'],
+    ['.kobo', 'device.salt.conf'],
+    ['.kobo', 'fonts.sqlite'],
+    ['.kobo', 'KoboReader.sqlite'],
+    ['.kobo', 'version'],
+];
+
 export function initNickelMenu(state) {
     // --- DOM references (scoped to this flow) ---
 
     const stepNickelMenu = $('step-nickelmenu');
     const stepNmFeatures = $('step-nm-features');
+    const stepNmBackup = $('step-nm-backup');
     const stepNmReview = $('step-nm-review');
     const stepNmInstalling = $('step-nm-installing');
     const stepNmDone = $('step-nm-done');
@@ -33,14 +46,21 @@ export function initNickelMenu(state) {
     const btnNmNext = $('btn-nm-next');
     const btnNmFeaturesBack = $('btn-nm-features-back');
     const btnNmFeaturesNext = $('btn-nm-features-next');
+    const btnNmBackupBack = $('btn-nm-backup-back');
+    const btnNmBackupNext = $('btn-nm-backup-next');
     const btnNmReviewBack = $('btn-nm-review-back');
     const btnNmWrite = $('btn-nm-write');
     const btnNmDownload = $('btn-nm-download');
-    const nmReviewWarning = $('nm-review-warning');
+    const nmBackupIntro = $('nm-backup-intro');
+    const nmBackupOptions = $('nm-backup-options');
+    const nmBackupLocalNote = $('nm-backup-local-note');
+    const nmBackupWarning = $('nm-backup-warning');
 
     // Features detected on the device that can be cleaned up during removal
     // (e.g. KOReader). Populated by checkNickelMenuInstalled().
     let detectedUninstallFeatures = [];
+    let nmBackupChoice = null;
+    let nmNeedsBookBackupWarning = false;
 
     // --- Feature checkboxes ---
     // Renders one checkbox per available feature from ALL_FEATURES.
@@ -83,6 +103,17 @@ export function initNickelMenu(state) {
         detectedUninstallFeatures = [];
         nmUninstallOptions.hidden = true;
         nmUninstallOptions.innerHTML = '';
+        nmBackupChoice = null;
+        nmBackupWarning.hidden = true;
+        nmBackupWarning.textContent = '';
+        btnNmBackupNext.disabled = true;
+        btnNmBackupNext.textContent = 'Continue ›';
+        btnNmBackupBack.disabled = false;
+        for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
+            radio.checked = false;
+            radio.closest('.selection-card')?.classList.remove('selection-card--selected');
+            radio.disabled = false;
+        }
     }
 
     /** Return only the uninstall features whose checkboxes are checked. */
@@ -103,24 +134,104 @@ export function initNickelMenu(state) {
         });
     }
 
-    async function updateNmReviewWarning() {
-        nmReviewWarning.hidden = true;
-        nmReviewWarning.textContent = '';
-
+    async function updateNmBackupWarningState() {
+        nmNeedsBookBackupWarning = false;
         if (state.manualMode || !state.device.directoryHandle || state.nickelMenuOption !== 'preset') {
             return;
         }
 
         const rootEntries = await state.device.listDirectoryNames();
-        const hasCommaFolder = rootEntries.some(name => name.includes(','));
-        const hasCalibreFolder = rootEntries.includes('calibre');
+        nmNeedsBookBackupWarning =
+            rootEntries.some(name => name.includes(',')) ||
+            rootEntries.includes('calibre');
+    }
 
-        if (!hasCommaFolder && !hasCalibreFolder) {
-            return;
+    function updateNmBackupWarningUi() {
+        const shouldShow =
+            nmNeedsBookBackupWarning &&
+            (nmBackupChoice === 'key-files' || nmBackupChoice === 'skip');
+
+        nmBackupWarning.hidden = !shouldShow;
+        nmBackupWarning.textContent = shouldShow
+            ? 'At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.'
+            : '';
+    }
+
+    function shouldOfferNmBackup() {
+        return !state.manualMode && !!state.device.directoryHandle;
+    }
+
+    function getNmBackupFilename() {
+        const serial = state.device.deviceInfo?.serial || 'UNKNOWN SERIAL';
+        const now = new Date();
+        const timestamp = [
+            now.getFullYear(),
+            String(now.getMonth() + 1).padStart(2, '0'),
+            String(now.getDate()).padStart(2, '0'),
+        ].join('-') + ' ' + [
+            String(now.getHours()).padStart(2, '0'),
+            String(now.getMinutes()).padStart(2, '0'),
+            String(now.getSeconds()).padStart(2, '0'),
+        ].join('-');
+        return `KoboPatch Backup (${serial}) - ${timestamp}.zip`;
+    }
+
+    async function showNmBackupStep() {
+        const canCreateBackup = shouldOfferNmBackup();
+        if (canCreateBackup && !nmBackupChoice) {
+            nmBackupChoice = 'key-files';
+            for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
+                const checked = radio.value === nmBackupChoice;
+                radio.checked = checked;
+                radio.closest('.selection-card')?.classList.toggle('selection-card--selected', checked);
+            }
         }
 
-        nmReviewWarning.textContent = 'At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.';
-        nmReviewWarning.hidden = false;
+        btnNmBackupNext.disabled = canCreateBackup ? !nmBackupChoice : false;
+        btnNmBackupBack.disabled = false;
+        btnNmBackupNext.textContent = 'Continue ›';
+        nmBackupIntro.textContent = canCreateBackup
+            ? 'Before continuing, it\'s highly recommended that you let the Web UI make an automatic backup of the most important files (database, configuration files) before making any changes. If something goes wrong, you can always restore this backup.'
+            : 'Before continuing, it is highly recommended that you manually make a backup of your Kobo files. When you are done, press Continue.';
+        nmBackupOptions.hidden = !canCreateBackup;
+        nmBackupLocalNote.hidden = !canCreateBackup;
+        await updateNmBackupWarningState();
+        if (canCreateBackup) {
+            updateNmBackupWarningUi();
+        } else {
+            nmBackupWarning.hidden = true;
+            nmBackupWarning.textContent = '';
+        }
+        setNavStep(4);
+        showStep(stepNmBackup);
+    }
+
+    async function buildNmBackupZip() {
+        if (nmBackupChoice !== 'key-files') {
+            return null;
+        }
+
+        const backupPaths = [...NM_REVIEW_BACKUP_PATHS];
+        if (await state.device.pathExists(['.adds', 'nm'])) {
+            backupPaths.push(['.adds', 'nm']);
+        }
+
+        const entries = await state.device.collectExistingEntries(backupPaths);
+        const filename = getNmBackupFilename();
+
+        if (entries.length === 0) {
+            throw new Error('No backup files were found on the connected Kobo.');
+        }
+
+        const zip = new JSZip();
+        for (const entry of entries) {
+            zip.file(entry.path, entry.data);
+        }
+
+        return {
+            bytes: await zip.generateAsync({ type: 'uint8array' }),
+            filename,
+        };
     }
 
     // --- NM installed detection ---
@@ -209,7 +320,7 @@ export function initNickelMenu(state) {
         if (state.nickelMenuOption === 'preset') {
             goToNmFeatures();
         } else {
-            await goToNmReview();
+            await showNmBackupStep();
         }
     });
 
@@ -230,7 +341,62 @@ export function initNickelMenu(state) {
     });
 
     btnNmFeaturesNext.addEventListener('click', async () => {
-        await goToNmReview();
+        await showNmBackupStep();
+    });
+
+    for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
+        radio.addEventListener('change', () => {
+            nmBackupChoice = radio.value;
+            btnNmBackupNext.disabled = false;
+            for (const other of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
+                other.closest('.selection-card')?.classList.toggle('selection-card--selected', other.checked);
+            }
+            updateNmBackupWarningUi();
+        });
+    }
+
+    btnNmBackupBack.addEventListener('click', async () => {
+        if (state.nickelMenuOption === 'preset') {
+            goToNmFeatures();
+        } else {
+            await goToNickelMenuConfig();
+        }
+    });
+
+    btnNmBackupNext.addEventListener('click', async () => {
+        if (!shouldOfferNmBackup()) {
+            await goToNmReview();
+            return;
+        }
+
+        if (!nmBackupChoice) return;
+        if (nmBackupChoice === 'skip') {
+            await goToNmReview();
+            return;
+        }
+
+        btnNmBackupBack.disabled = true;
+        btnNmBackupNext.disabled = true;
+        btnNmBackupNext.textContent = 'Preparing backup...';
+        for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
+            radio.disabled = true;
+        }
+
+        try {
+            const backup = await buildNmBackupZip();
+            if (backup) {
+                triggerDownload(backup.bytes, backup.filename, 'application/zip');
+            }
+            await goToNmReview();
+        } catch (err) {
+            state.showError(err.message);
+        } finally {
+            btnNmBackupBack.disabled = false;
+            btnNmBackupNext.textContent = 'Continue ›';
+            for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
+                radio.disabled = false;
+            }
+        }
     });
 
     // --- Step: Review ---
@@ -275,17 +441,15 @@ export function initNickelMenu(state) {
         btnNmWrite.className = 'primary';
         btnNmDownload.disabled = false;
 
-        await updateNmReviewWarning();
-
-        setNavStep(4);
+        setNavStep(5);
         showStep(stepNmReview);
     }
 
     btnNmReviewBack.addEventListener('click', async () => {
         if (state.nickelMenuOption === 'preset') {
-            goToNmFeatures();
+            await showNmBackupStep();
         } else {
-            await goToNickelMenuConfig();
+            await showNmBackupStep();
         }
     });
 
@@ -407,7 +571,7 @@ export function initNickelMenu(state) {
             });
         }
 
-        setNavStep(5);
+        setNavStep(6);
         showStep(stepNmDone);
     }
 
