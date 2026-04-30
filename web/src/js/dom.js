@@ -47,11 +47,48 @@ export function populateSelect(selectEl, placeholder, items) {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, sectionTitle?: string, sectionDescription?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
+    let currentSectionKey = null;
+    let currentTarget = container;
+
     for (const item of items) {
+        const nextSectionKey = item.sectionTitle || '';
+        if (nextSectionKey && nextSectionKey !== currentSectionKey) {
+            const section = document.createElement('section');
+            section.className = 'nm-config-section';
+
+            const heading = document.createElement('div');
+            heading.className = 'nm-config-section-heading';
+
+            const title = document.createElement('h3');
+            title.className = 'nm-config-section-title';
+            title.textContent = item.sectionTitle;
+            heading.appendChild(title);
+
+            if (item.sectionDescription) {
+                const desc = document.createElement('p');
+                desc.className = 'nm-config-section-desc';
+                desc.textContent = item.sectionDescription;
+                heading.appendChild(desc);
+            }
+
+            const itemsWrap = document.createElement('div');
+            itemsWrap.className = 'nm-config-section-items';
+
+            section.appendChild(heading);
+            section.appendChild(itemsWrap);
+            container.appendChild(section);
+
+            currentSectionKey = nextSectionKey;
+            currentTarget = itemsWrap;
+        } else if (!nextSectionKey) {
+            currentSectionKey = null;
+            currentTarget = container;
+        }
+
         const label = document.createElement('label');
         label.className = 'nm-config-item';
 
@@ -76,7 +113,7 @@ export function renderNmCheckboxList(container, items) {
         textDiv.appendChild(descSpan);
         label.appendChild(input);
         label.appendChild(textDiv);
-        container.appendChild(label);
+        currentTarget.appendChild(label);
     }
 }
 

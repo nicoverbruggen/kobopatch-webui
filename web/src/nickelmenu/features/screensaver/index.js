@@ -1,5 +1,6 @@
 export default {
     id: 'screensaver',
+    section: 'Extras',
     title: 'Copy screensaver',
     description: 'Copies a screensaver to .kobo/screensaver. Depending on your configuration, it will now be displayed instead of your current read. You can always add your own in the .kobo/screensaver folder, and choosing Tweak > Screensaver will let you toggle it off.',
     default: false,

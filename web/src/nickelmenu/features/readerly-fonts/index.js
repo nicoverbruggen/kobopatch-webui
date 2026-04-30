@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 
 export default {
     id: 'readerly-fonts',
+    section: 'Extras',
     title: 'Install Readerly fonts',
     description: 'Adds the Readerly font family. These fonts are optically similar to Bookerly. When you are reading a book, you will be able to select this font from the dropdown as "KF Readerly".',
     default: true,

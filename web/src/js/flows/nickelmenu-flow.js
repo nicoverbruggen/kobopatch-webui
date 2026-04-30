@@ -20,7 +20,6 @@ import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 
 export function initNickelMenu(state) {
-
     // --- DOM references (scoped to this flow) ---
 
     const stepNickelMenu = $('step-nickelmenu');
@@ -53,6 +52,7 @@ export function initNickelMenu(state) {
                 name: 'nm-cfg-' + f.id,
                 title: f.title + (f.required ? ' (required)' : '') + (f.version ? ' ' + f.version : ''),
                 description: f.description,
+                sectionTitle: f.section,
                 checked: f.required || f.default,
                 disabled: f.required,
             }));
@@ -319,7 +319,9 @@ export function initNickelMenu(state) {
             // Install flow: either write directly to device or build a ZIP for download.
             const features = state.nickelMenuOption === 'preset' ? getSelectedFeatures() : [];
             const hasKOReader = features.some(f => f.id === 'koreader');
-            const hasSimplifiedHome = features.some(f => f.id === 'hide-notices' || f.id === 'hide-recommendations');
+            const hasSimplifiedHome = features.some(f =>
+                ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id)
+            );
             const hasBasicTabs = features.some(f => f.id === 'simplify-tabs');
             track('nm-koreader-addon', { enabled: hasKOReader ? 'yes' : 'no' });
             track('nm-simplified-home', { enabled: hasSimplifiedHome ? 'yes' : 'no' });

@@ -38,18 +38,22 @@ test.describe('NickelMenu', () => {
 
     // Feature selection step
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('#nm-config-options')).toContainText('Required components');
+    await expect(page.locator('#nm-config-options')).toContainText('Interface tweaks');
 
     // Verify default checkbox states
     await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-screensaver"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-recommendations"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-hide-row2col2"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-notices"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
-    // Enable both home screen hiding options and exclude-calibre for testing
+    // Enable home screen hiding options and exclude-calibre for testing
     await page.check('input[name="nm-cfg-hide-recommendations"]');
+    await page.check('input[name="nm-cfg-hide-row2col2"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
@@ -96,9 +100,10 @@ test.describe('NickelMenu', () => {
     // Must NOT contain screensaver (unchecked by default)
     expect(zipFiles.some(f => f.startsWith('.kobo/screensaver/'))).toBe(false);
 
-    // Verify items file has hide-recommendations and hide-notices modifications
+    // Verify items file has the selected home screen modifications
     const itemsContent = await zip.file('.adds/nm/items').async('string');
     expect(itemsContent).toContain('experimental:hide_home_row1col2_enabled:1');
+    expect(itemsContent).toContain('experimental:hide_home_row2col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
   });
 

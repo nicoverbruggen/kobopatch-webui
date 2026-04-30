@@ -1,5 +1,6 @@
 export default {
     id: 'custom-menu',
+    section: 'Required components',
     title: 'Set up NickelMenu preset',
     description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak". (Preset made by the author of this website.)',
     default: true,

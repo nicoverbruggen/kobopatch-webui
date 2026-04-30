@@ -6,6 +6,7 @@ import readerlyFonts from './features/readerly-fonts/index.js';
 import koreader from './features/koreader/index.js';
 import simplifyTabs from './features/simplify-tabs/index.js';
 import hideRecommendations from './features/hide-recommendations/index.js';
+import hideRow2Col2 from './features/hide-row2col2/index.js';
 import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
@@ -17,13 +18,14 @@ import excludeCalibre from './features/exclude-calibre/index.js';
  */
 export const ALL_FEATURES = [
     customMenu,
-    readerlyFonts,
     simplifyTabs,
     hideRecommendations,
+    hideRow2Col2,
     hideNotices,
+    readerlyFonts,
+    screensaver,
     koreader,
     excludeCalibre,
-    screensaver,
 ];
 
 /**

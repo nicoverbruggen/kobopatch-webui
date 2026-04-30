@@ -15,8 +15,9 @@ const TAB_CONFIG = [
 
 export default {
     id: 'simplify-tabs',
+    section: 'Interface tweaks',
     title: 'Simplify navigation tabs',
-    description: 'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar.',
+    description: 'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar, and this also makes your reading stats available as a separate "Stats" tab.',
     default: false,
 
     postProcess: prependToNmConfig(TAB_CONFIG),

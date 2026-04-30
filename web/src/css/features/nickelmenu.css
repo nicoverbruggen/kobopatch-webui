@@ -2,6 +2,38 @@
 .nm-config-options {
     display: flex;
     flex-direction: column;
+    gap: 0.9rem;
+}
+
+.nm-config-section {
+    padding: 0.7rem 0.9rem 0.55rem;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background: color-mix(in srgb, white 75%, var(--secondary-light, #f3f4f6) 25%);
+}
+
+.nm-config-section-heading {
+    margin-bottom: 0.15rem;
+}
+
+.nm-config-section-title {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.nm-config-section-desc {
+    margin: 0.2rem 0 0;
+    font-size: 0.83rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+.nm-config-section-items {
+    margin-top: 0.3rem;
 }
 
 .nm-config-item {
