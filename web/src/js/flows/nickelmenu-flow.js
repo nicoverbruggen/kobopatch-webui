@@ -36,6 +36,7 @@ export function initNickelMenu(state) {
     const btnNmReviewBack = $('btn-nm-review-back');
     const btnNmWrite = $('btn-nm-write');
     const btnNmDownload = $('btn-nm-download');
+    const nmReviewWarning = $('nm-review-warning');
 
     // Features detected on the device that can be cleaned up during removal
     // (e.g. KOReader). Populated by checkNickelMenuInstalled().
@@ -100,6 +101,26 @@ export function initNickelMenu(state) {
             const checkbox = $q(`input[name="nm-cfg-${f.id}"]`);
             return checkbox && checkbox.checked;
         });
+    }
+
+    async function updateNmReviewWarning() {
+        nmReviewWarning.hidden = true;
+        nmReviewWarning.textContent = '';
+
+        if (state.manualMode || !state.device.directoryHandle || state.nickelMenuOption !== 'preset') {
+            return;
+        }
+
+        const rootEntries = await state.device.listDirectoryNames();
+        const hasCommaFolder = rootEntries.some(name => name.includes(','));
+        const hasCalibreFolder = rootEntries.includes('calibre');
+
+        if (!hasCommaFolder && !hasCalibreFolder) {
+            return;
+        }
+
+        nmReviewWarning.textContent = 'At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.';
+        nmReviewWarning.hidden = false;
     }
 
     // --- NM installed detection ---
@@ -178,7 +199,7 @@ export function initNickelMenu(state) {
         state.goToModeSelection();
     });
 
-    btnNmNext.addEventListener('click', () => {
+    btnNmNext.addEventListener('click', async () => {
         const selected = $q('input[name="nm-option"]:checked', stepNickelMenu);
         if (!selected) return;
         state.nickelMenuOption = selected.value;
@@ -188,7 +209,7 @@ export function initNickelMenu(state) {
         if (state.nickelMenuOption === 'preset') {
             goToNmFeatures();
         } else {
-            goToNmReview();
+            await goToNmReview();
         }
     });
 
@@ -208,15 +229,15 @@ export function initNickelMenu(state) {
         await goToNickelMenuConfig();
     });
 
-    btnNmFeaturesNext.addEventListener('click', () => {
-        goToNmReview();
+    btnNmFeaturesNext.addEventListener('click', async () => {
+        await goToNmReview();
     });
 
     // --- Step: Review ---
     // Builds a summary of what will be installed/removed and shows
     // the appropriate action buttons (write to device / download).
 
-    function goToNmReview() {
+    async function goToNmReview() {
         const summary = $('nm-review-summary');
         const list = $('nm-review-list');
 
@@ -253,6 +274,8 @@ export function initNickelMenu(state) {
         btnNmWrite.disabled = false;
         btnNmWrite.className = 'primary';
         btnNmDownload.disabled = false;
+
+        await updateNmReviewWarning();
 
         setNavStep(4);
         showStep(stepNmReview);

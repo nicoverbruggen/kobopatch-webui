@@ -65,6 +65,7 @@
 #step-connect > .banner { margin-bottom: 1.5rem; }
 #device-unknown-warning { margin-bottom: 1.5rem; }
 #existing-tgz-warning { margin-bottom: 1.5rem; }
+#nm-review-warning { margin-bottom: 1rem; }
 #error-message { margin-top: 1rem; }
 
 .install-instructions .banner--warning { margin-bottom: 0.75rem; }

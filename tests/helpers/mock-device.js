@@ -15,6 +15,7 @@ const defaultConfig = {
   hasReaderlyFonts: false,
   hasScreensaver: false,
   hasCalibreExclude: false,
+  rootFolders: [],
 };
 
 async function injectMockDevice(page, opts = {}) {
@@ -59,6 +60,10 @@ async function injectMockDevice(page, opts = {}) {
         filesystem['.kobo']['screensaver'] = dir();
       }
       filesystem['.kobo']['screensaver']['moon.png'] = file();
+    }
+
+    for (const folderName of config.rootFolders) {
+      filesystem[folderName] = dir();
     }
 
     window.__mockFS = filesystem;
@@ -122,6 +127,19 @@ async function injectMockDevice(page, opts = {}) {
             return;
           }
           throw new DOMException('Not found: ' + childName, 'NotFoundError');
+        },
+        values: async function* () {
+          for (const [childName, childNode] of Object.entries(node)) {
+            if (childName === '_type') continue;
+            if (childNode && childNode._type === 'dir') {
+              yield makeDirHandle(childNode, childName, currentPath);
+            } else if (childNode && childNode._type === 'file') {
+              yield {
+                name: childName,
+                kind: 'file',
+              };
+            }
+          }
         },
       };
     }

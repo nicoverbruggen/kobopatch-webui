@@ -193,6 +193,36 @@ class KoboDevice {
     }
 
     /**
+     * List the names of files and directories directly inside a directory.
+     * Returns an empty array if the path cannot be read.
+     */
+    async listDirectoryNames(pathParts = []) {
+        try {
+            let dir = this.directoryHandle;
+            for (const part of pathParts) {
+                dir = await dir.getDirectoryHandle(part);
+            }
+
+            const names = [];
+            if (typeof dir.values === 'function') {
+                for await (const entry of dir.values()) {
+                    names.push(entry.name);
+                }
+                return names;
+            }
+            if (typeof dir[Symbol.asyncIterator] === 'function') {
+                for await (const entry of dir) {
+                    names.push(entry.name);
+                }
+                return names;
+            }
+            return [];
+        } catch {
+            return [];
+        }
+    }
+
+    /**
      * Remove a file or directory at the given path.
      */
     async removeEntry(pathParts, options = {}) {

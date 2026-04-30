@@ -63,6 +63,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-warning')).toBeHidden();
 
     // Write button should be hidden in manual mode
     await expect(page.locator('#btn-nm-write')).toBeHidden();
@@ -292,6 +293,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
+    await expect(page.locator('#nm-review-warning')).toBeHidden();
 
     // Both buttons visible when device is connected
     await expect(page.locator('#btn-nm-write')).toBeVisible();
@@ -374,6 +376,40 @@ test.describe('NickelMenu', () => {
     // Verify eReader.conf on device was NOT modified (download mode doesn't write to device)
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
     expect(conf).not.toContain('ExcludeSyncFolders');
+  });
+
+  test('with device — review warns when a root folder contains a comma', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
+
+    await connectMockDevice(page, { hasNickelMenu: false, rootFolders: ['Author, Name'] });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+  });
+
+  test('with device — review warns when a root calibre folder exists', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
+
+    await connectMockDevice(page, { hasNickelMenu: false, rootFolders: ['calibre'] });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await page.click('#btn-nm-features-next');
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
   });
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {
