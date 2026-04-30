@@ -446,9 +446,9 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-nm-next');
     await page.click('#btn-nm-features-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
     await page.click('input[name="nm-backup-option"][value="skip"]');
-    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
   });
 
   test('with device — backup step warns for key-files and skip when a root calibre folder exists', async ({ page }) => {
@@ -464,9 +464,9 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-nm-next');
     await page.click('#btn-nm-features-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
     await page.click('input[name="nm-backup-option"][value="skip"]');
-    await expect(page.locator('#nm-backup-warning')).toHaveText('At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.');
+    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
   });
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {

@@ -153,7 +153,7 @@ export function initNickelMenu(state) {
 
         nmBackupWarning.hidden = !shouldShow;
         nmBackupWarning.textContent = shouldShow
-            ? 'At this point, it\'s highly recommended that you back up your sideloaded books before continuing, just to be safe.'
+            ? 'At this point, it\'s also recommended that you back up your sideloaded books before continuing, if you have any.'
             : '';
     }
 
@@ -191,8 +191,8 @@ export function initNickelMenu(state) {
         btnNmBackupBack.disabled = false;
         btnNmBackupNext.textContent = 'Continue ›';
         nmBackupIntro.textContent = canCreateBackup
-            ? 'Before continuing, it\'s highly recommended that you let the Web UI make an automatic backup of the most important files (database, configuration files) before making any changes. If something goes wrong, you can always restore this backup.'
-            : 'Before continuing, it is highly recommended that you manually make a backup of your Kobo files. When you are done, press Continue.';
+            ? 'Before continuing, it\'s highly recommended that you let the Web UI make an automatic backup of important system files. You can do that here.'
+            : 'Before continuing, it is highly recommended that you manually make a backup of the files on your Kobo device, especially the hidden `.kobo` folder. Please do that now (or skip this, if you prefer). When you are ready to move on, press Continue.';
         nmBackupOptions.hidden = !canCreateBackup;
         nmBackupLocalNote.hidden = !canCreateBackup;
         await updateNmBackupWarningState();

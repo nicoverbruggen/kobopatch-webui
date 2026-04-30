@@ -55,16 +55,19 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
   await expect(page.locator('#step-nm-features')).not.toBeHidden();
   await shot(page, dir, '03-nickelmenu-features', testInfo);
 
-  // Features → review (only download button in manual mode)
+  // Features → backup → review (only download button in manual mode)
   await page.click('#btn-nm-features-next');
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  await shot(page, dir, '04-nickelmenu-backup', testInfo);
+  await page.click('#btn-nm-backup-next');
   await expect(page.locator('#step-nm-review')).not.toBeHidden();
-  await shot(page, dir, '04-nickelmenu-review', testInfo);
+  await shot(page, dir, '05-nickelmenu-review', testInfo);
 
   // Download → done
   await page.click('#btn-nm-download');
   const nmDone = page.locator('#step-nm-done');
   await expect(nmDone).not.toBeHidden();
-  await shot(page, dir, '05-nickelmenu-done', testInfo);
+  await shot(page, dir, '06-nickelmenu-done', testInfo);
 });
 
 // ============================================================
@@ -175,16 +178,19 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
   await expect(page.locator('#step-nm-features')).not.toBeHidden();
   await shot(page, dir, '06-nickelmenu-features', testInfo);
 
-  // Features → review
+  // Features → backup → review
   await page.click('#btn-nm-features-next');
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  await shot(page, dir, '07-nickelmenu-backup', testInfo);
+  await page.click('#btn-nm-backup-next');
   await expect(page.locator('#step-nm-review')).not.toBeHidden();
-  await shot(page, dir, '07-nickelmenu-review', testInfo);
+  await shot(page, dir, '08-nickelmenu-review', testInfo);
 
   // Write to device → done
   await page.click('#btn-nm-write');
   const nmDone = page.locator('#step-nm-done');
   await expect(nmDone).not.toBeHidden();
-  await shot(page, dir, '08-nickelmenu-done', testInfo);
+  await shot(page, dir, '09-nickelmenu-done', testInfo);
 });
 
 // ============================================================
