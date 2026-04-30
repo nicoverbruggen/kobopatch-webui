@@ -12,6 +12,8 @@ menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disa
 menu_item :main :Screenshots        :nickel_setting     :toggle :screenshots
 menu_item :main :Auto USB           :nickel_setting     :toggle :auto_usb_gadget
 
+menu_item :library :Rescan books    :nickel_misc        :rescan_books_full
+
 menu_item :main :Legibility Status    :cmd_output :500 :/mnt/onboard/.adds/scripts/legibility_status.sh
 
 menu_item :main :Legibility Toggle    :cmd_output :5000 :/mnt/onboard/.adds/scripts/toggle_wk_rendering.sh

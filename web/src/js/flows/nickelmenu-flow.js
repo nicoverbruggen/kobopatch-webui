@@ -373,7 +373,7 @@ export function initNickelMenu(state) {
                 ? 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)'
                 : 'ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)';
             $('nm-download-conf-desc').textContent = hasExcludeCalibre
-                ? 'This prevents new books in the calibre folder from showing up in Kobo\'s list of books.'
+                ? 'This prevents new books in the calibre folder from showing up in Kobo\'s list of books. Move Calibre-transferred books into a "calibre" folder first.'
                 : 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
             track('flow-end', { result: 'nm-download' });
         }

@@ -82,7 +82,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
     // Verify the correct pattern and description are shown (exclude-calibre is enabled)
     await expect(page.locator('#nm-download-conf-line')).toHaveText('ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)');
-    await expect(page.locator('#nm-download-conf-desc')).toHaveText('This prevents new books in the calibre folder from showing up in Kobo\'s list of books.');
+    await expect(page.locator('#nm-download-conf-desc')).toHaveText('This prevents new books in the calibre folder from showing up in Kobo\'s list of books. Move Calibre-transferred books into a "calibre" folder first.');
 
     // Verify ZIP contents
     expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
@@ -105,6 +105,7 @@ test.describe('NickelMenu', () => {
     expect(itemsContent).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row2col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
+    expect(itemsContent).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
   });
 
   test('no device — install with KOReader via manual download', async ({ page }) => {
@@ -326,6 +327,7 @@ test.describe('NickelMenu', () => {
     expect(items).toContain('experimental:hide_home_row3_enabled:1');
     // With simplify-tabs enabled, TAB_CONFIG should be prepended
     expect(items).toContain('experimental :menu_main_15505_enabled: 1');
+    expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
   });
 
   test('with device — install with config without exclude-calibre omits calibre from pattern', async ({ page }) => {
