@@ -250,6 +250,24 @@
             </div>
         </section>
 
+        <!-- Step 2b-1: NickelMenu preset conflict -->
+        <section id="step-nm-preset-conflict" class="step" hidden>
+            <p id="nm-preset-conflict-summary" class="banner banner--warning"></p>
+            <p>In most cases that is fine, but if any of these installed mods are too old, they may conflict with the preset or with each other. Please update them to their latest versions first if you can. These mods were detected:</p>
+            <ul id="nm-preset-conflict-list" class="selected-patches-list"></ul>
+            <label class="selection-card">
+                <input id="nm-preset-conflict-ack" type="checkbox">
+                <div class="selection-card-body">
+                    <div class="selection-card-title">I understand and want to continue anyway</div>
+                    <div class="selection-card-desc">I understand that these installed mods should ideally be updated first, and that older versions may conflict with this preset or with each other.</div>
+                </div>
+            </label>
+            <div class="step-actions">
+                <button id="btn-nm-preset-conflict-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-nm-preset-conflict-next" class="primary" disabled>Continue &#x203A;</button>
+            </div>
+        </section>
+
         <!-- Step 2b-2: NickelMenu feature selection (preset only) -->
         <section id="step-nm-features" class="step" hidden>
             <p>Select which features you'd like to enable.</p>

@@ -23,11 +23,16 @@
         border-color: var(--border);
     }
 
-    & input[type="radio"] {
+    & input[type="radio"],
+    & input[type="checkbox"] {
         margin-top: 0.2rem;
         flex-shrink: 0;
         accent-color: var(--primary);
     }
+}
+
+.selection-card-body {
+    flex: 1;
 }
 
 .selection-card-icon {

@@ -194,7 +194,43 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 4. Connected Patches flow
+// 4. Connected NickelMenu preset conflict
+// ============================================================
+
+test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  await injectMockDevice(page, {
+    hasNickelDbus: true,
+    hasNickelSeries: true,
+    hasNickelClock: true,
+  });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-preset-conflict')).not.toBeHidden();
+  await shot(page, dir, '06a-nickelmenu-preset-conflict', testInfo);
+});
+
+// ============================================================
+// 5. Connected Patches flow
 // ============================================================
 
 test('connected patches', async ({ page }, testInfo) => {
@@ -260,7 +296,7 @@ test('connected patches', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 5. Edge cases
+// 6. Edge cases
 // ============================================================
 
 test('unsupported browser', async ({ page }, testInfo) => {

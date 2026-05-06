@@ -17,7 +17,7 @@ const stepNav = $('step-nav');
 // Used by showStep() to hide all steps except the active one.
 const allSteps = [
     $('step-connect'), $('step-connect-instructions'), $('step-manual-version'), $('step-device'),
-    $('step-mode'), $('step-nickelmenu'), $('step-nm-features'),
+    $('step-mode'), $('step-nickelmenu'), $('step-nm-preset-conflict'), $('step-nm-features'),
     $('step-nm-backup'), $('step-nm-review'), $('step-nm-installing'), $('step-nm-done'),
     $('step-patches'), $('step-firmware'), $('step-building'), $('step-done'),
     $('step-error'),

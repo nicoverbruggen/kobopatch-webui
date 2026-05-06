@@ -3,11 +3,12 @@
  *
  * Handles the entire NickelMenu path through the wizard:
  *   1. Config step    — choose preset install, NickelMenu-only, or removal
- *   2. Features step  — pick which features to include (only for "preset")
- *   3. Backup step    — optionally download a backup from the connected Kobo
- *   4. Review step    — confirm selections before proceeding
- *   5. Installing step — progress indicator while writing files
- *   6. Done step      — success message with next-steps instructions
+ *   2. Conflict step  — blocks preset installs when incompatible add-ons exist
+ *   3. Features step  — pick which features to include (only for "preset")
+ *   4. Backup step    — optionally download a backup from the connected Kobo
+ *   5. Review step    — confirm selections before proceeding
+ *   6. Installing step — progress indicator while writing files
+ *   7. Done step      — success message with next-steps instructions
  *
  * Exported `initNickelMenu(state)` receives the shared app state and returns
  * functions the orchestrator (app.js) needs: `goToNickelMenuConfig` and
@@ -31,10 +32,17 @@ const NM_REVIEW_BACKUP_PATHS = [
     ['.kobo', 'version'],
 ];
 
+const NM_PRESET_CONFLICTS = [
+    { id: 'nickeldbus', path: ['.adds', 'nickeldbus'], label: 'nickeldbus (.adds/nickeldbus)' },
+    { id: 'nickelseries', path: ['.adds', 'nickelseries'], label: 'nickelseries (.adds/nickelseries)' },
+    { id: 'nickelclock', path: ['.adds', 'nickelclock'], label: 'nickelclock (.adds/nickelclock)' },
+];
+
 export function initNickelMenu(state) {
     // --- DOM references (scoped to this flow) ---
 
     const stepNickelMenu = $('step-nickelmenu');
+    const stepNmPresetConflict = $('step-nm-preset-conflict');
     const stepNmFeatures = $('step-nm-features');
     const stepNmBackup = $('step-nm-backup');
     const stepNmReview = $('step-nm-review');
@@ -44,6 +52,8 @@ export function initNickelMenu(state) {
     const nmUninstallOptions = $('nm-uninstall-options');
     const btnNmBack = $('btn-nm-back');
     const btnNmNext = $('btn-nm-next');
+    const btnNmPresetConflictBack = $('btn-nm-preset-conflict-back');
+    const btnNmPresetConflictNext = $('btn-nm-preset-conflict-next');
     const btnNmFeaturesBack = $('btn-nm-features-back');
     const btnNmFeaturesNext = $('btn-nm-features-next');
     const btnNmBackupBack = $('btn-nm-backup-back');
@@ -55,10 +65,14 @@ export function initNickelMenu(state) {
     const nmBackupOptions = $('nm-backup-options');
     const nmBackupLocalNote = $('nm-backup-local-note');
     const nmBackupWarning = $('nm-backup-warning');
+    const nmPresetConflictSummary = $('nm-preset-conflict-summary');
+    const nmPresetConflictList = $('nm-preset-conflict-list');
+    const nmPresetConflictAck = $('nm-preset-conflict-ack');
 
     // Features detected on the device that can be cleaned up during removal
     // (e.g. KOReader). Populated by checkNickelMenuInstalled().
     let detectedUninstallFeatures = [];
+    let detectedPresetConflicts = [];
     let nmBackupChoice = null;
     let nmNeedsBookBackupWarning = false;
 
@@ -101,8 +115,12 @@ export function initNickelMenu(state) {
     /** Clear removal state when returning to mode selection. */
     function resetNickelMenuState() {
         detectedUninstallFeatures = [];
+        detectedPresetConflicts = [];
         nmUninstallOptions.hidden = true;
         nmUninstallOptions.innerHTML = '';
+        nmPresetConflictList.innerHTML = '';
+        nmPresetConflictAck.checked = false;
+        btnNmPresetConflictNext.disabled = true;
         nmBackupChoice = null;
         nmBackupWarning.hidden = true;
         nmBackupWarning.textContent = '';
@@ -285,6 +303,35 @@ export function initNickelMenu(state) {
         }
     }
 
+    async function detectPresetConflicts() {
+        if (state.manualMode || !state.device.directoryHandle) {
+            return [];
+        }
+
+        const conflicts = [];
+        for (const conflict of NM_PRESET_CONFLICTS) {
+            if (await state.device.pathExists(conflict.path)) {
+                conflicts.push(conflict);
+            }
+        }
+        return conflicts;
+    }
+
+    async function maybeShowPresetConflictStep() {
+        detectedPresetConflicts = await detectPresetConflicts();
+        if (detectedPresetConflicts.length === 0) {
+            return false;
+        }
+
+        nmPresetConflictSummary.textContent = TL.STATUS.NM_PRESET_CONFLICT;
+        populateList(nmPresetConflictList, detectedPresetConflicts.map(conflict => conflict.label));
+        nmPresetConflictAck.checked = false;
+        btnNmPresetConflictNext.disabled = true;
+        setNavStep(3);
+        showStep(stepNmPresetConflict);
+        return true;
+    }
+
     // --- Step: NM config ---
     // Radio buttons for the three NM options: preset, nickelmenu-only, remove.
     // Toggling "remove" shows/hides the uninstall checkboxes.
@@ -318,10 +365,26 @@ export function initNickelMenu(state) {
 
         // "preset" goes to feature selection; other options skip to review.
         if (state.nickelMenuOption === 'preset') {
+            if (await maybeShowPresetConflictStep()) {
+                return;
+            }
             goToNmFeatures();
         } else {
             await showNmBackupStep();
         }
+    });
+
+    btnNmPresetConflictBack.addEventListener('click', async () => {
+        await goToNickelMenuConfig();
+    });
+
+    nmPresetConflictAck.addEventListener('change', () => {
+        btnNmPresetConflictNext.disabled = !nmPresetConflictAck.checked;
+    });
+
+    btnNmPresetConflictNext.addEventListener('click', () => {
+        if (!nmPresetConflictAck.checked) return;
+        goToNmFeatures();
     });
 
     // --- Step: Features ---

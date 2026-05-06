@@ -12,6 +12,9 @@ const defaultConfig = {
   serial: 'N4280A0000000',
   hasNickelMenu: false,
   hasKOReader: false,
+  hasNickelDbus: false,
+  hasNickelSeries: false,
+  hasNickelClock: false,
   hasReaderlyFonts: false,
   hasScreensaver: false,
   hasCalibreExclude: false,
@@ -52,6 +55,21 @@ async function injectMockDevice(page, opts = {}) {
     if (config.hasKOReader) {
       if (!filesystem['.adds']) filesystem['.adds'] = dir();
       filesystem['.adds']['koreader'] = dir({ 'koreader.sh': file('#!/bin/sh') });
+    }
+
+    if (config.hasNickelDbus) {
+      if (!filesystem['.adds']) filesystem['.adds'] = dir();
+      filesystem['.adds']['nickeldbus'] = dir();
+    }
+
+    if (config.hasNickelSeries) {
+      if (!filesystem['.adds']) filesystem['.adds'] = dir();
+      filesystem['.adds']['nickelseries'] = dir();
+    }
+
+    if (config.hasNickelClock) {
+      if (!filesystem['.adds']) filesystem['.adds'] = dir();
+      filesystem['.adds']['nickelclock'] = dir();
     }
 
     if (config.hasReaderlyFonts) {

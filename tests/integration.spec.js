@@ -216,6 +216,45 @@ test.describe('NickelMenu', () => {
     expect(koreaderDirExists, '.adds/koreader/ should exist').toBe(true);
   });
 
+  test('with device — preset is blocked when conflicting add-ons are already installed', async ({ page }) => {
+    await connectMockDevice(page, {
+      hasNickelDbus: true,
+      hasNickelSeries: true,
+      hasNickelClock: true,
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-preset-conflict')).not.toBeHidden();
+    await expect(page.locator('#nm-preset-conflict-summary')).toContainText('potentially conflicting add-ons');
+    await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickeldbus (.adds/nickeldbus)');
+    await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelseries (.adds/nickelseries)');
+    await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelclock (.adds/nickelclock)');
+    await expect(page.locator('#btn-nm-preset-conflict-next')).toBeDisabled();
+
+    await page.check('#nm-preset-conflict-ack');
+    await expect(page.locator('#btn-nm-preset-conflict-next')).toBeEnabled();
+    await page.click('#btn-nm-preset-conflict-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.click('#btn-nm-features-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-preset-conflict')).not.toBeHidden();
+    await page.click('#btn-nm-preset-conflict-back');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    await page.click('input[name="nm-option"][value="nickelmenu-only"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  });
+
   test('no device — install NickelMenu only via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
