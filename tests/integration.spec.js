@@ -233,7 +233,7 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-nm-next');
 
     await expect(page.locator('#step-nm-preset-conflict')).not.toBeHidden();
-    await expect(page.locator('#nm-preset-conflict-summary')).toContainText('potentially conflicting add-ons');
+    await expect(page.locator('#nm-preset-conflict-summary')).toContainText('This Kobo seems to have been modded before');
     await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickeldbus (.adds/nickeldbus)');
     await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelseries (.adds/nickelseries)');
     await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelclock (.adds/nickelclock)');
