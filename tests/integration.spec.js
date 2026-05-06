@@ -76,6 +76,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-library-warning')).toBeHidden();
 
     // Write button should be hidden in manual mode
     await expect(page.locator('#btn-nm-write')).toBeHidden();
@@ -152,6 +153,7 @@ test.describe('NickelMenu', () => {
     // Review step — should list KOReader
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+    await expect(page.locator('#nm-review-library-warning')).toBeHidden();
 
     // Download
     const [download] = await Promise.all([
@@ -506,6 +508,9 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
     await page.click('input[name="nm-backup-option"][value="skip"]');
     await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
+    await page.click('#btn-nm-backup-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-library-warning')).toContainText('driver provided by Calibre');
   });
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {

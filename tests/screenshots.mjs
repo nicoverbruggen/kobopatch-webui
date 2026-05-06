@@ -230,7 +230,82 @@ test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 5. Connected Patches flow
+// 5. Connected NickelMenu backup with sideloaded-books warning
+// ============================================================
+
+test('connected nickelmenu backup library warning', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  await injectMockDevice(page, { rootFolders: ['calibre'] });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+  await page.click('#btn-nm-features-next');
+
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  await expect(page.locator('#nm-backup-warning')).not.toBeHidden();
+  await shot(page, dir, '07a-nickelmenu-backup-library-warning', testInfo);
+});
+
+// ============================================================
+// 6. Connected NickelMenu review with library warning
+// ============================================================
+
+test('connected nickelmenu review library warning', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  await injectMockDevice(page, { rootFolders: ['calibre'] });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+  await page.click('#btn-nm-features-next');
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  await page.click('input[name="nm-backup-option"][value="skip"]');
+  await page.click('#btn-nm-backup-next');
+
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await expect(page.locator('#nm-review-library-warning')).not.toBeHidden();
+  await shot(page, dir, '08a-nickelmenu-review-library-warning', testInfo);
+});
+
+// ============================================================
+// 7. Connected Patches flow
 // ============================================================
 
 test('connected patches', async ({ page }, testInfo) => {
@@ -296,7 +371,7 @@ test('connected patches', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 6. Edge cases
+// 8. Edge cases
 // ============================================================
 
 test('unsupported browser', async ({ page }, testInfo) => {

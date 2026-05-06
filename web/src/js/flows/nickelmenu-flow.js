@@ -171,8 +171,13 @@ export function initNickelMenu(state) {
 
         nmBackupWarning.hidden = !shouldShow;
         nmBackupWarning.textContent = shouldShow
-            ? 'At this point, it\'s also recommended that you back up your sideloaded books before continuing, if you have any.'
+            ? 'At this point, it\'s also recommended that you back up your sideloaded books (if you have any!) before continuing, just in case something goes wrong.'
             : '';
+    }
+
+    function updateNmReviewLibraryWarningUi() {
+        const libraryWarning = $('nm-review-library-warning');
+        libraryWarning.hidden = !nmNeedsBookBackupWarning;
     }
 
     function shouldOfferNmBackup() {
@@ -469,6 +474,7 @@ export function initNickelMenu(state) {
     async function goToNmReview() {
         const summary = $('nm-review-summary');
         const list = $('nm-review-list');
+        await updateNmBackupWarningState();
 
         if (state.nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
@@ -477,6 +483,7 @@ export function initNickelMenu(state) {
                 TL.STATUS.NM_REMOVE_NICKELMENU,
                 ...featuresToRemove.map(f => f.uninstall.title + ' will also be removed'),
             ]);
+            $('nm-review-library-warning').hidden = true;
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
@@ -490,6 +497,7 @@ export function initNickelMenu(state) {
                 }
             }
             populateList(list, items);
+            updateNmReviewLibraryWarningUi();
             btnNmWrite.hidden = false;
             btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             btnNmDownload.hidden = false;
