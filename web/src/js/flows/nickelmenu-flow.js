@@ -17,7 +17,7 @@
 
 import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../dom.js';
-import { showStep, setNavStep } from '../nav.js';
+import { showStep, setNavLabels, setNavStep } from '../nav.js';
 import { ALL_FEATURES, getExcludeSyncFoldersLine } from '../../nickelmenu/installer.js';
 import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
@@ -277,10 +277,12 @@ export function initNickelMenu(state) {
         if (state.manualMode) {
             removeRadio.disabled = false;
             removeOption.classList.remove('selection-card--disabled');
+            removeOption.classList.remove('selection-card--danger');
             removeDesc.textContent = TL.STATUS.NM_REMOVAL_MANUAL_HINT;
             return;
         }
 
+        removeOption.classList.add('selection-card--danger');
         if (state.device.directoryHandle) {
             try {
                 const addsDir = await state.device.directoryHandle.getDirectoryHandle('.adds');
@@ -313,6 +315,7 @@ export function initNickelMenu(state) {
         // NickelMenu not found — disable removal.
         removeRadio.disabled = true;
         removeOption.classList.add('selection-card--disabled');
+        removeOption.classList.add('selection-card--danger');
         removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
         if (removeRadio.checked) {
             const presetRadio = $q('input[value="preset"]', stepNickelMenu);
@@ -386,8 +389,10 @@ export function initNickelMenu(state) {
         track('nm-option', { option: state.nickelMenuOption });
 
         if (state.nickelMenuOption === 'remove' && state.manualMode) {
-            setNavStep(5);
+            setNavLabels(TL.NAV_NICKELMENU_MANUAL_REMOVE);
+            setNavStep(4);
             showStep(stepNmManualRemove);
+            track('flow-end', { result: 'nm-manual-remove' });
             return;
         }
 

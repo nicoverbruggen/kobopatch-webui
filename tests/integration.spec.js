@@ -303,23 +303,38 @@ test.describe('NickelMenu', () => {
   test('no device — remove option shows manual removal instructions', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
+    await page.addInitScript(() => {
+      window.__ANALYTICS_ENABLED = true;
+      window.__trackedEvents = [];
+      window.umami = {
+        track: (eventName, data) => window.__trackedEvents.push({ eventName, data }),
+      };
+    });
     await goToManualMode(page);
     await page.click('input[name="mode"][value="nickelmenu"]');
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
     await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--disabled/);
+    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--danger/);
     await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
 
     await page.click('input[name="nm-option"][value="remove"]');
     await page.click('#btn-nm-next');
 
     await expect(page.locator('#step-nm-manual-remove')).not.toBeHidden();
+    await expect(page.locator('#step-nav')).not.toContainText('Install');
+    await expect(page.locator('#step-nav')).toContainText('Remove');
+    await expect(page.locator('#nm-manual-remove-instructions')).toHaveClass(/install-instructions/);
     await expect(page.locator('#step-nm-manual-remove')).toContainText('.adds/nm');
     await expect(page.locator('#step-nm-manual-remove')).toContainText('uninstall');
-    await expect(page.locator('#step-nm-manual-remove')).toContainText('reboot');
+    await expect(page.locator('#step-nm-manual-remove')).toContainText('long-pressing the power button');
     await expect(page.locator('#step-nm-manual-remove')).not.toContainText('KoboRoot.tgz');
     await expect(page.locator('#step-nm-manual-remove')).toContainText('ExcludeSyncFolders=');
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({
+      eventName: 'flow-end',
+      data: { result: 'nm-manual-remove' },
+    });
   });
 
   test('with device — install with config and write to Kobo', async ({ page }) => {
