@@ -24,6 +24,7 @@ export const TL = {
         NM_NICKEL_ROOT_TGZ: 'NickelMenu (KoboRoot.tgz)',
         NM_REMOVE_NICKELMENU: 'Remove NickelMenu',
         NM_REMOVAL_HINT: 'Removes NickelMenu from your device. Your device will restart automatically.',
+        NM_REMOVAL_MANUAL_HINT: 'Shows instructions for manually removing NickelMenu from a Kobo.',
         NM_REMOVAL_DISABLED: 'Removes NickelMenu from your device. Only available when a Kobo with NickelMenu installed is connected.',
         NM_PRESET_CONFLICT: 'This Kobo seems to have been modded before.',
         PATCH_COUNT_ZERO: 'No patches selected \u2014 continuing will restore the original unpatched software.',

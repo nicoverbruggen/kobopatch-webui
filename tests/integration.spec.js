@@ -300,7 +300,7 @@ test.describe('NickelMenu', () => {
     expect(zipFiles).toEqual(['.kobo/KoboRoot.tgz']);
   });
 
-  test('no device — remove option is disabled in manual mode', async ({ page }) => {
+  test('no device — remove option shows manual removal instructions', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await goToManualMode(page);
@@ -308,9 +308,18 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
-    // Remove option should be disabled (no device connected)
-    await expect(page.locator('#nm-option-remove')).toHaveClass(/selection-card--disabled/);
-    await expect(page.locator('input[name="nm-option"][value="remove"]')).toBeDisabled();
+    await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--disabled/);
+    await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
+
+    await page.click('input[name="nm-option"][value="remove"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-manual-remove')).not.toBeHidden();
+    await expect(page.locator('#step-nm-manual-remove')).toContainText('.adds/nm');
+    await expect(page.locator('#step-nm-manual-remove')).toContainText('uninstall');
+    await expect(page.locator('#step-nm-manual-remove')).toContainText('reboot');
+    await expect(page.locator('#step-nm-manual-remove')).not.toContainText('KoboRoot.tgz');
+    await expect(page.locator('#step-nm-manual-remove')).toContainText('ExcludeSyncFolders=');
   });
 
   test('with device — install with config and write to Kobo', async ({ page }) => {

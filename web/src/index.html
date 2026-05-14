@@ -250,6 +250,21 @@
             </div>
         </section>
 
+        <!-- Step 2b-1: NickelMenu manual removal instructions -->
+        <section id="step-nm-manual-remove" class="step" hidden>
+            <p>If you installed NickelMenu manually from a downloaded ZIP, remove it manually by undoing those files on the Kobo drive.</p>
+            <ol class="install-steps">
+                <li>Connect your Kobo via USB so it appears as a removable drive.</li>
+                <li>Create an empty file named <code>uninstall</code> inside <strong>.adds/nm</strong>. If the folder is missing, create <strong>.adds/nm</strong> first.</li>
+                <li><strong>Safely eject</strong> the Kobo, then restart it by long-pressing the power button until it turns off. Press the power button again to turn it back on. NickelMenu will finish removing itself during startup.</li>
+                <li>If you installed this tool's preset, you can remove <strong>.adds/scripts</strong>.</li>
+                <li>If there are no other folders inside <strong>.adds</strong> besides <strong>nm</strong> and <strong>scripts</strong>, open <strong>.kobo/Kobo/Kobo eReader.conf</strong> and remove the line that starts with <code>ExcludeSyncFolders=</code>.</li>
+            </ol>
+            <div class="step-actions">
+                <button id="btn-nm-manual-remove-back" class="secondary">&#x2039; Back</button>
+            </div>
+        </section>
+
         <!-- Step 2b-1: NickelMenu preset conflict -->
         <section id="step-nm-preset-conflict" class="step" hidden>
             <p id="nm-preset-conflict-summary" class="banner banner--warning"></p>

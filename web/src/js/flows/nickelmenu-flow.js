@@ -42,6 +42,7 @@ export function initNickelMenu(state) {
     // --- DOM references (scoped to this flow) ---
 
     const stepNickelMenu = $('step-nickelmenu');
+    const stepNmManualRemove = $('step-nm-manual-remove');
     const stepNmPresetConflict = $('step-nm-preset-conflict');
     const stepNmFeatures = $('step-nm-features');
     const stepNmBackup = $('step-nm-backup');
@@ -52,6 +53,7 @@ export function initNickelMenu(state) {
     const nmUninstallOptions = $('nm-uninstall-options');
     const btnNmBack = $('btn-nm-back');
     const btnNmNext = $('btn-nm-next');
+    const btnNmManualRemoveBack = $('btn-nm-manual-remove-back');
     const btnNmPresetConflictBack = $('btn-nm-preset-conflict-back');
     const btnNmPresetConflictNext = $('btn-nm-preset-conflict-next');
     const btnNmFeaturesBack = $('btn-nm-features-back');
@@ -272,8 +274,14 @@ export function initNickelMenu(state) {
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
-        // Only probe the device in auto mode (manual mode has no device handle).
-        if (!state.manualMode && state.device.directoryHandle) {
+        if (state.manualMode) {
+            removeRadio.disabled = false;
+            removeOption.classList.remove('selection-card--disabled');
+            removeDesc.textContent = TL.STATUS.NM_REMOVAL_MANUAL_HINT;
+            return;
+        }
+
+        if (state.device.directoryHandle) {
             try {
                 const addsDir = await state.device.directoryHandle.getDirectoryHandle('.adds');
                 const nmDir = await addsDir.getDirectoryHandle('nm');
@@ -302,7 +310,7 @@ export function initNickelMenu(state) {
             }
         }
 
-        // No device or NickelMenu not found — disable removal.
+        // NickelMenu not found — disable removal.
         removeRadio.disabled = true;
         removeOption.classList.add('selection-card--disabled');
         removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
@@ -367,11 +375,21 @@ export function initNickelMenu(state) {
         state.goToModeSelection();
     });
 
+    btnNmManualRemoveBack.addEventListener('click', async () => {
+        await goToNickelMenuConfig();
+    });
+
     btnNmNext.addEventListener('click', async () => {
         const selected = $q('input[name="nm-option"]:checked', stepNickelMenu);
         if (!selected) return;
         state.nickelMenuOption = selected.value;
         track('nm-option', { option: state.nickelMenuOption });
+
+        if (state.nickelMenuOption === 'remove' && state.manualMode) {
+            setNavStep(5);
+            showStep(stepNmManualRemove);
+            return;
+        }
 
         // "preset" goes to feature selection; other options skip to review.
         if (state.nickelMenuOption === 'preset') {
