@@ -318,13 +318,17 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--disabled/);
     await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--danger/);
     await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeDisabled();
+    await expect(page.locator('#step-nav')).toContainText('Install');
 
     await page.click('input[name="nm-option"][value="remove"]');
+    await expect(page.locator('#step-nav')).not.toContainText('Install');
+    await expect(page.locator('#step-nav')).toContainText('Remove');
     await page.click('#btn-nm-next');
 
     await expect(page.locator('#step-nm-manual-remove')).not.toBeHidden();
     await expect(page.locator('#step-nav')).not.toContainText('Install');
     await expect(page.locator('#step-nav')).toContainText('Remove');
+    await expect(page.locator('#btn-nm-manual-remove-back')).toHaveCount(0);
     await expect(page.locator('#nm-manual-remove-instructions')).toHaveClass(/install-instructions/);
     await expect(page.locator('#step-nm-manual-remove')).toContainText('.adds/nm');
     await expect(page.locator('#step-nm-manual-remove')).toContainText('uninstall');
@@ -688,6 +692,8 @@ test.describe('NickelMenu', () => {
 
     // Select remove
     await page.click('input[name="nm-option"][value="remove"]');
+    await expect(page.locator('#step-nav')).not.toContainText('Install');
+    await expect(page.locator('#step-nav')).toContainText('Remove');
 
     // No extra features installed — uninstall options should be hidden
     await expect(page.locator('#nm-uninstall-options')).toBeHidden();

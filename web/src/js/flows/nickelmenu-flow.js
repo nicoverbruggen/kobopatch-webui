@@ -53,7 +53,6 @@ export function initNickelMenu(state) {
     const nmUninstallOptions = $('nm-uninstall-options');
     const btnNmBack = $('btn-nm-back');
     const btnNmNext = $('btn-nm-next');
-    const btnNmManualRemoveBack = $('btn-nm-manual-remove-back');
     const btnNmPresetConflictBack = $('btn-nm-preset-conflict-back');
     const btnNmPresetConflictNext = $('btn-nm-preset-conflict-next');
     const btnNmFeaturesBack = $('btn-nm-features-back');
@@ -353,6 +352,17 @@ export function initNickelMenu(state) {
         return true;
     }
 
+    function updateNmNavLabelsForOption(option) {
+        if (option === 'remove' && state.manualMode) {
+            setNavLabels(TL.NAV_NICKELMENU_MANUAL_REMOVE);
+        } else if (option === 'remove') {
+            setNavLabels(TL.NAV_NICKELMENU_REMOVE);
+        } else {
+            setNavLabels(TL.NAV_NICKELMENU);
+        }
+        setNavStep(3);
+    }
+
     // --- Step: NM config ---
     // Radio buttons for the three NM options: preset, nickelmenu-only, remove.
     // Toggling "remove" shows/hides the uninstall checkboxes.
@@ -360,6 +370,7 @@ export function initNickelMenu(state) {
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
             nmUninstallOptions.hidden = radio.value !== 'remove' || !radio.checked || detectedUninstallFeatures.length === 0;
+            updateNmNavLabelsForOption(radio.value);
             btnNmNext.disabled = false;
         });
     }
@@ -370,16 +381,12 @@ export function initNickelMenu(state) {
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmUninstallOptions.hidden = !currentOption || currentOption.value !== 'remove' || detectedUninstallFeatures.length === 0;
         btnNmNext.disabled = !currentOption;
-        setNavStep(3);
+        updateNmNavLabelsForOption(currentOption?.value);
         showStep(stepNickelMenu);
     }
 
     btnNmBack.addEventListener('click', () => {
         state.goToModeSelection();
-    });
-
-    btnNmManualRemoveBack.addEventListener('click', async () => {
-        await goToNickelMenuConfig();
     });
 
     btnNmNext.addEventListener('click', async () => {
