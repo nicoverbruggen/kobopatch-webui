@@ -71,7 +71,32 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 2. Manual Patches flow
+// 2. Manual NickelMenu removal instructions
+// ============================================================
+
+test('manual nickelmenu remove', async ({ page }, testInfo) => {
+  const dir = 'manual-nickelmenu';
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  await page.click('#btn-manual');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+  await page.click('input[name="nm-option"][value="remove"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-manual-remove')).not.toBeHidden();
+  await shot(page, dir, '02a-nickelmenu-manual-remove', testInfo);
+});
+
+// ============================================================
+// 3. Manual Patches flow
 // ============================================================
 
 test('manual patches', async ({ page }, testInfo) => {
@@ -136,7 +161,7 @@ test('manual patches', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 3. Connected NickelMenu flow
+// 4. Connected NickelMenu flow
 // ============================================================
 
 test('connected nickelmenu', async ({ page }, testInfo) => {
@@ -194,7 +219,7 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 4. Connected NickelMenu preset conflict
+// 5. Connected NickelMenu preset conflict
 // ============================================================
 
 test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
@@ -230,7 +255,7 @@ test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
 });
 
 // ============================================================
-// 5. Connected NickelMenu backup with sideloaded-books warning
+// 6. Connected NickelMenu backup with sideloaded-books warning
 // ============================================================
 
 test('connected nickelmenu backup library warning', async ({ page }, testInfo) => {
@@ -266,7 +291,7 @@ test('connected nickelmenu backup library warning', async ({ page }, testInfo) =
 });
 
 // ============================================================
-// 6. Connected NickelMenu review with library warning
+// 7. Connected NickelMenu review with library warning
 // ============================================================
 
 test('connected nickelmenu review library warning', async ({ page }, testInfo) => {
@@ -305,7 +330,7 @@ test('connected nickelmenu review library warning', async ({ page }, testInfo) =
 });
 
 // ============================================================
-// 7. Connected Patches flow
+// 8. Connected Patches flow
 // ============================================================
 
 test('connected patches', async ({ page }, testInfo) => {
