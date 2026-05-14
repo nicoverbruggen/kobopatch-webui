@@ -73,16 +73,16 @@ test.describe('NickelMenu', () => {
 
     await page.click('#btn-nm-features-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-    await expect(page.locator('#nm-backup-intro')).toContainText('highly recommended that you manually make a backup of the files on your Kobo device');
+    await expect(page.locator('#nm-backup-intro')).toContainText('Manual mode cannot create a backup for you');
     await expect(page.locator('#nm-backup-options')).toBeHidden();
-    await expect(page.locator('#nm-backup-warning')).toBeHidden();
+    await expect(page.locator('#nm-manual-backup-instructions')).not.toBeHidden();
+    await expect(page.locator('#nm-manual-backup-instructions')).toContainText('.kobo');
     await page.click('#btn-nm-backup-next');
 
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
-    await expect(page.locator('#nm-review-library-warning')).toBeHidden();
 
     // Write button should be hidden in manual mode
     await expect(page.locator('#btn-nm-write')).toBeHidden();
@@ -159,7 +159,6 @@ test.describe('NickelMenu', () => {
     // Review step — should list KOReader
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
-    await expect(page.locator('#nm-review-library-warning')).toBeHidden();
 
     // Download
     const [download] = await Promise.all([
@@ -335,6 +334,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-manual-remove')).toContainText('long-pressing the power button');
     await expect(page.locator('#step-nm-manual-remove')).not.toContainText('KoboRoot.tgz');
     await expect(page.locator('#step-nm-manual-remove')).toContainText('ExcludeSyncFolders=');
+    await expect(page.locator('#nm-manual-remove-retry')).toBeVisible();
+    await expect(page.locator('#nm-manual-remove-retry')).toHaveText('You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.');
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({
       eventName: 'flow-end',
       data: { result: 'nm-manual-remove' },
@@ -441,6 +442,7 @@ test.describe('NickelMenu', () => {
 
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
     await expect(page.locator('#btn-nm-backup-next')).toBeEnabled();
+    await expect(page.locator('#nm-manual-backup-instructions')).toBeHidden();
 
     const [backupDownload] = await Promise.all([
       page.waitForEvent('download'),
@@ -510,45 +512,6 @@ test.describe('NickelMenu', () => {
     // Verify eReader.conf on device was NOT modified (download mode doesn't write to device)
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
     expect(conf).not.toContain('ExcludeSyncFolders');
-  });
-
-  test('with device — backup step warns for key-files and skip when a root folder contains a comma', async ({ page }) => {
-    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
-
-    await connectMockDevice(page, { hasNickelMenu: false, rootFolders: ['Author, Name'] });
-
-    await page.click('#btn-device-next');
-    await page.click('input[name="mode"][value="nickelmenu"]');
-    await page.click('#btn-mode-next');
-    await page.click('input[name="nm-option"][value="preset"]');
-    await page.click('#btn-nm-next');
-    await page.click('#btn-nm-features-next');
-    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
-    await page.click('input[name="nm-backup-option"][value="skip"]');
-    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
-  });
-
-  test('with device — backup step warns for key-files and skip when a root calibre folder exists', async ({ page }) => {
-    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run installables/setup.sh)');
-
-    await connectMockDevice(page, { hasNickelMenu: false, rootFolders: ['calibre'] });
-
-    await page.click('#btn-device-next');
-    await page.click('input[name="mode"][value="nickelmenu"]');
-    await page.click('#btn-mode-next');
-    await page.click('input[name="nm-option"][value="preset"]');
-    await page.click('#btn-nm-next');
-    await page.click('#btn-nm-features-next');
-    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
-    await page.click('input[name="nm-backup-option"][value="skip"]');
-    await expect(page.locator('#nm-backup-warning')).toContainText('back up your sideloaded books');
-    await page.click('#btn-nm-backup-next');
-    await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-library-warning')).toContainText('driver provided by Calibre');
   });
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {

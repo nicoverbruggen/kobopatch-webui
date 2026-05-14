@@ -65,7 +65,7 @@ export function initNickelMenu(state) {
     const nmBackupIntro = $('nm-backup-intro');
     const nmBackupOptions = $('nm-backup-options');
     const nmBackupLocalNote = $('nm-backup-local-note');
-    const nmBackupWarning = $('nm-backup-warning');
+    const nmManualBackupInstructions = $('nm-manual-backup-instructions');
     const nmPresetConflictSummary = $('nm-preset-conflict-summary');
     const nmPresetConflictList = $('nm-preset-conflict-list');
     const nmPresetConflictAck = $('nm-preset-conflict-ack');
@@ -75,7 +75,6 @@ export function initNickelMenu(state) {
     let detectedUninstallFeatures = [];
     let detectedPresetConflicts = [];
     let nmBackupChoice = null;
-    let nmNeedsBookBackupWarning = false;
 
     // --- Feature checkboxes ---
     // Renders one checkbox per available feature from ALL_FEATURES.
@@ -123,8 +122,6 @@ export function initNickelMenu(state) {
         nmPresetConflictAck.checked = false;
         btnNmPresetConflictNext.disabled = true;
         nmBackupChoice = null;
-        nmBackupWarning.hidden = true;
-        nmBackupWarning.textContent = '';
         btnNmBackupNext.disabled = true;
         btnNmBackupNext.textContent = 'Continue ›';
         btnNmBackupBack.disabled = false;
@@ -156,34 +153,6 @@ export function initNickelMenu(state) {
             const checkbox = $q(`input[name="nm-cfg-${f.id}"]`);
             return checkbox && checkbox.checked;
         });
-    }
-
-    async function updateNmBackupWarningState() {
-        nmNeedsBookBackupWarning = false;
-        if (state.manualMode || !state.device.directoryHandle || state.nickelMenuOption !== 'preset') {
-            return;
-        }
-
-        const rootEntries = await state.device.listDirectoryNames();
-        nmNeedsBookBackupWarning =
-            rootEntries.some(name => name.includes(',')) ||
-            rootEntries.includes('calibre');
-    }
-
-    function updateNmBackupWarningUi() {
-        const shouldShow =
-            nmNeedsBookBackupWarning &&
-            (nmBackupChoice === 'key-files' || nmBackupChoice === 'skip');
-
-        nmBackupWarning.hidden = !shouldShow;
-        nmBackupWarning.textContent = shouldShow
-            ? 'At this point, it\'s also recommended that you back up your sideloaded books (if you have any!) before continuing, just in case something goes wrong.'
-            : '';
-    }
-
-    function updateNmReviewLibraryWarningUi() {
-        const libraryWarning = $('nm-review-library-warning');
-        libraryWarning.hidden = !nmNeedsBookBackupWarning;
     }
 
     function shouldOfferNmBackup() {
@@ -221,16 +190,10 @@ export function initNickelMenu(state) {
         btnNmBackupNext.textContent = 'Continue ›';
         nmBackupIntro.textContent = canCreateBackup
             ? 'Before continuing, it\'s highly recommended that you let the Web UI make an automatic backup of important system files. You can do that here.'
-            : 'Before continuing, it is highly recommended that you manually make a backup of the files on your Kobo device, especially the hidden `.kobo` folder. Please do that now (or skip this, if you prefer). When you are ready to move on, press Continue.';
+            : 'Manual mode cannot create a backup for you, but it is worth making a backup of some important device files first.';
         nmBackupOptions.hidden = !canCreateBackup;
         nmBackupLocalNote.hidden = !canCreateBackup;
-        await updateNmBackupWarningState();
-        if (canCreateBackup) {
-            updateNmBackupWarningUi();
-        } else {
-            nmBackupWarning.hidden = true;
-            nmBackupWarning.textContent = '';
-        }
+        nmManualBackupInstructions.hidden = canCreateBackup;
         setNavStep(4);
         showStep(stepNmBackup);
     }
@@ -454,7 +417,6 @@ export function initNickelMenu(state) {
             for (const other of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
                 other.closest('.selection-card')?.classList.toggle('selection-card--selected', other.checked);
             }
-            updateNmBackupWarningUi();
         });
     }
 
@@ -509,7 +471,6 @@ export function initNickelMenu(state) {
     async function goToNmReview() {
         const summary = $('nm-review-summary');
         const list = $('nm-review-list');
-        await updateNmBackupWarningState();
 
         if (state.nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
@@ -518,7 +479,6 @@ export function initNickelMenu(state) {
                 TL.STATUS.NM_REMOVE_NICKELMENU,
                 ...featuresToRemove.map(f => f.uninstall.title + ' will also be removed'),
             ]);
-            $('nm-review-library-warning').hidden = true;
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
@@ -532,7 +492,6 @@ export function initNickelMenu(state) {
                 }
             }
             populateList(list, items);
-            updateNmReviewLibraryWarningUi();
             btnNmWrite.hidden = false;
             btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             btnNmDownload.hidden = false;
