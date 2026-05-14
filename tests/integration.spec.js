@@ -683,6 +683,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('removed');
     await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
+    await expect(page.locator('#nm-manual-remove-retry')).toBeHidden();
 
     // Verify files written to mock device
     const writtenFiles = await getWrittenFiles(page);
