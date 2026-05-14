@@ -1,5 +1,7 @@
 const { expect } = require('@playwright/test');
 
+const EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE = String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`;
+
 /**
  * Inject a mock File System Access API into the page, simulating a Kobo Libra Color.
  * The mock provides:
@@ -18,11 +20,17 @@ const defaultConfig = {
   hasReaderlyFonts: false,
   hasScreensaver: false,
   hasCalibreExclude: false,
+  eReaderConf: null,
+  extraAddsDirs: [],
   rootFolders: [],
 };
 
 async function injectMockDevice(page, opts = {}) {
   const config = { ...defaultConfig, ...opts };
+  config.eReaderConf = config.eReaderConf ?? (config.hasCalibreExclude
+    ? '[General]\nsome=setting\n[FeatureSettings]\n' + EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n'
+    : '[General]\nsome=setting\n');
+
   await page.evaluate((config) => {
     const file = (content = '') => ({ _type: 'file', content });
     const dir = (children = {}) => ({ _type: 'dir', ...children });
@@ -35,9 +43,7 @@ async function injectMockDevice(page, opts = {}) {
         'fonts.sqlite': file('fonts-db'),
         'KoboReader.sqlite': file('kobo-reader-db'),
         'Kobo': dir({
-          'Kobo eReader.conf': file(config.hasCalibreExclude
-            ? '[General]\nsome=setting\n[FeatureSettings]\nExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)\n'
-            : '[General]\nsome=setting\n'),
+          'Kobo eReader.conf': file(config.eReaderConf),
           'affiliate.conf': file('affiliate=test'),
         }),
         'markups': dir({
@@ -70,6 +76,11 @@ async function injectMockDevice(page, opts = {}) {
     if (config.hasNickelClock) {
       if (!filesystem['.adds']) filesystem['.adds'] = dir();
       filesystem['.adds']['nickelclock'] = dir();
+    }
+
+    for (const folderName of config.extraAddsDirs) {
+      if (!filesystem['.adds']) filesystem['.adds'] = dir();
+      filesystem['.adds'][folderName] = dir();
     }
 
     if (config.hasReaderlyFonts) {

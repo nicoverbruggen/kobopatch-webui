@@ -108,4 +108,8 @@ E2E_ARGS=()
 if [ -n "$HEADED" ]; then E2E_ARGS+=("--headed"); fi
 if [ -n "$GREP" ]; then E2E_ARGS+=("--" $GREP); fi
 if [ ${#EXTRA_ARGS[@]} -gt 0 ]; then E2E_ARGS+=("${EXTRA_ARGS[@]}"); fi
-"$PROJECT_DIR/tests/run-e2e.sh" "${E2E_ARGS[@]}"
+if [ ${#E2E_ARGS[@]} -gt 0 ]; then
+    "$PROJECT_DIR/tests/run-e2e.sh" "${E2E_ARGS[@]}"
+else
+    "$PROJECT_DIR/tests/run-e2e.sh"
+fi

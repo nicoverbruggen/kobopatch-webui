@@ -82,7 +82,8 @@ for i in $(seq 0 $((COUNT - 1))); do
     cp -r "$PATCHES_SRC_DIR"/* "$TMPDIR/"
 
     # Rewrite the config to point at the cached firmware and create output dir.
-    sed -i "s|^in:.*|in: $FIRMWARE_FILE|" "$TMPDIR/kobopatch.yaml"
+    sed "s|^in:.*|in: $FIRMWARE_FILE|" "$TMPDIR/kobopatch.yaml" > "$TMPDIR/kobopatch.yaml.tmp"
+    mv "$TMPDIR/kobopatch.yaml.tmp" "$TMPDIR/kobopatch.yaml"
     mkdir -p "$TMPDIR/out"
 
     # Run patch tests and capture output.

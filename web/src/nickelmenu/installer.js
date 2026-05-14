@@ -10,6 +10,15 @@ import hideRow2Col2 from './features/hide-row2col2/index.js';
 import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
+import excludeSyncFolders from './exclude-sync-folders.cjs';
+
+const { buildExcludeSyncFoldersLine } = excludeSyncFolders;
+
+export function getExcludeSyncFoldersLine(features = []) {
+    return buildExcludeSyncFoldersLine({
+        excludeCalibre: features.some(f => f.id === excludeCalibre.id),
+    });
+}
 
 /**
  * All available NickelMenu features in display order.
@@ -174,10 +183,7 @@ export class NickelMenuInstaller {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
         let content = await device.readFile(confPath) || '';
 
-        const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
-        const settingLine = hasExcludeCalibre
-            ? 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)'
-            : 'ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)';
+        const settingLine = getExcludeSyncFoldersLine(features);
 
         if (content.includes('ExcludeSyncFolders')) {
             // Replace existing line so switching between modes takes effect.
@@ -192,5 +198,19 @@ export class NickelMenuInstaller {
         }
 
         await device.writeFile(confPath, new TextEncoder().encode(content));
+    }
+
+    /**
+     * Remove ExcludeSyncFolders from Kobo eReader.conf.
+     */
+    async removeExcludeSyncFolders(device) {
+        const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
+        const content = await device.readFile(confPath);
+        if (!content || !content.includes('ExcludeSyncFolders')) return;
+
+        const updated = content.replace(/^ExcludeSyncFolders=.*(?:\r?\n)?/m, '');
+        if (updated !== content) {
+            await device.writeFile(confPath, new TextEncoder().encode(updated));
+        }
     }
 }

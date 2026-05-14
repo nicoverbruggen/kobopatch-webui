@@ -170,6 +170,25 @@ class KoboDevice {
     }
 
     /**
+     * List direct children for a directory path. Returns [] if the directory is missing.
+     */
+    async listDirectory(pathParts) {
+        try {
+            let dir = this.directoryHandle;
+            for (const part of pathParts) {
+                dir = await dir.getDirectoryHandle(part);
+            }
+            const entries = [];
+            for await (const entry of dir.values()) {
+                entries.push({ name: entry.name, kind: entry.kind });
+            }
+            return entries;
+        } catch {
+            return [];
+        }
+    }
+
+    /**
      * Check if a file or directory exists at the given path.
      */
     async pathExists(pathParts) {

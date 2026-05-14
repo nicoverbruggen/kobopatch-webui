@@ -18,7 +18,7 @@
 import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavStep } from '../nav.js';
-import { ALL_FEATURES } from '../../nickelmenu/installer.js';
+import { ALL_FEATURES, getExcludeSyncFoldersLine } from '../../nickelmenu/installer.js';
 import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 
@@ -140,6 +140,11 @@ export function initNickelMenu(state) {
             const cb = $q(`input[name="nm-uninstall-${f.id}"]`);
             return cb && cb.checked;
         });
+    }
+
+    async function hasAddsDirectoriesOtherThanNickelMenu() {
+        const entries = await state.device.listDirectory(['.adds']);
+        return entries.some(entry => entry.kind === 'directory' && entry.name !== 'nm');
     }
 
     /** Return all features the user has selected for installation. */
@@ -570,6 +575,11 @@ export function initNickelMenu(state) {
                     }
                 }
 
+                if (!await hasAddsDirectoriesOtherThanNickelMenu()) {
+                    nmProgress.textContent = 'Removing Kobo eReader.conf sync exclusions...';
+                    await state.nmInstaller.removeExcludeSyncFolders(state.device);
+                }
+
                 showNmDone('remove');
                 return;
             }
@@ -627,9 +637,7 @@ export function initNickelMenu(state) {
             const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
             $('nm-download-conf-step').hidden = state.nickelMenuOption !== 'preset';
             $('nm-download-reboot-step').hidden = state.nickelMenuOption !== 'preset';
-            $('nm-download-conf-line').textContent = hasExcludeCalibre
-                ? 'ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)'
-                : 'ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)';
+            $('nm-download-conf-line').textContent = getExcludeSyncFoldersLine(features);
             $('nm-download-conf-desc').textContent = hasExcludeCalibre
                 ? 'This prevents new books in the calibre folder from showing up in Kobo\'s list of books. Move Calibre-transferred books into a "calibre" folder first.'
                 : 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
