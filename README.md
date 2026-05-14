@@ -49,8 +49,9 @@ If you want to apply **custom patches**:
 1. **Connect or download** — auto-detect your Kobo via File System Access API on Chromium, or choose manual download mode (any browser)
 2. **Choose mode** — NickelMenu (install/configure/remove) or custom patches
 3. **Configure** — for NickelMenu: select install options (fonts, screensaver, tab/homescreen tweaks, KOReader) or removal; for patches: enable/disable patches (or select none to restore original software)
-4. **Review** — confirm your selections before proceeding
-5. **Install** — write directly to the device (Chromium auto mode) or download a ZIP/tgz for manual installation
+4. **Backup** — create or manually confirm a backup before changing NickelMenu files
+5. **Review** — confirm your selections before proceeding
+6. **Install or remove** — write directly to the device (Chromium auto mode) or download a ZIP/tgz for manual installation
 
 ## File structure
 
@@ -246,7 +247,7 @@ Additional Playwright arguments can be appended after the flags.
 
 The E2E tests cover all major user flows:
 
-- **NickelMenu** — install with config (manual download), install NickelMenu only, KOReader installation, remove option disabled without device
+- **NickelMenu** — install with config, install NickelMenu only, KOReader installation, manual removal instructions, exact `ExcludeSyncFolders` output, malformed config repair, and removal cleanup behavior
 - **Custom patches** — full patching pipeline, restore original firmware, build failure with "Go Back" recovery
 - **Device detection** — firmware version validation (4.x supported, 5.x incompatible), unknown model warning
 - **Back navigation** — verifies every back button returns to the correct previous screen in both auto and manual mode
@@ -315,7 +316,7 @@ The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses 
 - **nm-koreader-addon** — whether KOReader was selected for installation
 - **nm-simplified-home** — whether simplified home screen features were selected
 - **nm-basic-tabs** — whether the basic tab bar option was selected
-- **flow-end** — how the flow ended (write to device or download, for both NickelMenu and custom patches)
+- **flow-end** — how the flow ended (write, download, or removal outcome for NickelMenu, custom patches, and restore)
 - **feedback** — thumbs up/down response to "Did you find it easy to use this wizard?" shown on done screens
 
 Analytics are disabled for local and self-hosted installs. They activate only when `UMAMI_WEBSITE_ID` and `UMAMI_SCRIPT_URL` environment variables are set on the server. To test the analytics UI locally without sending any data:
