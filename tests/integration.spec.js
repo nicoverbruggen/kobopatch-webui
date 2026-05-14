@@ -338,7 +338,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-manual-remove-retry')).toHaveText('You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.');
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({
       eventName: 'flow-end',
-      data: { result: 'nm-manual-remove' },
+      data: { result: 'nm-remove-manual' },
     });
   });
 
@@ -639,6 +639,13 @@ test.describe('NickelMenu', () => {
   test('with device — remove NickelMenu', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
+    await page.addInitScript(() => {
+      window.__ANALYTICS_ENABLED = true;
+      window.__trackedEvents = [];
+      window.umami = {
+        track: (eventName, data) => window.__trackedEvents.push({ eventName, data }),
+      };
+    });
     await connectMockDevice(page, { hasNickelMenu: true });
 
     // Continue to mode selection → select NickelMenu
@@ -677,6 +684,10 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#btn-nm-download')).toBeHidden();
     // Write should show "Remove from Kobo"
     await expect(page.locator('#btn-nm-write')).toContainText('Remove from Kobo');
+    await expect(page.evaluate(() => window.__trackedEvents)).resolves.not.toContainEqual({
+      eventName: 'flow-end',
+      data: { result: 'nm-remove' },
+    });
 
     // Execute removal
     await page.click('#btn-nm-write');
@@ -684,6 +695,14 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-done-status')).toContainText('removed');
     await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
     await expect(page.locator('#nm-manual-remove-retry')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({
+      eventName: 'flow-end',
+      data: { result: 'nm-remove' },
+    });
+    await expect(page.evaluate(() => window.__trackedEvents)).resolves.not.toContainEqual({
+      eventName: 'flow-end',
+      data: { result: 'nm-remove-manual' },
+    });
 
     // Verify files written to mock device
     const writtenFiles = await getWrittenFiles(page);

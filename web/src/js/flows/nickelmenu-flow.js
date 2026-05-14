@@ -362,7 +362,7 @@ export function initNickelMenu(state) {
             setNavLabels(TL.NAV_NICKELMENU_MANUAL_REMOVE);
             setNavStep(4);
             showStep(stepNmManualRemove);
-            track('flow-end', { result: 'nm-manual-remove' });
+            track('flow-end', { result: 'nm-remove-manual' });
             return;
         }
 
