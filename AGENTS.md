@@ -5,11 +5,16 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 ## Project shape
 
 - This is a static web app for customising Kobo e-readers. It can write directly to a connected Kobo through the File System Access API, so changes around device writes should be treated as high risk.
-- `web/src/js/app.js` is the orchestrator. It owns shared state, device connection, mode selection, error recovery, and dialogs.
-- `web/src/js/flows/` contains the user journeys. Keep flow-specific behavior inside the relevant flow file.
-- `web/src/nickelmenu/` contains NickelMenu domain logic. Installer code belongs in `installer.js`, removal code belongs in `uninstaller.js`, and `Kobo eReader.conf` sync-exclusion logic belongs in `sync-exclusions.js`.
-- `web/src/js/domain/` is for small pure domain modules that can be unit tested without DOM or filesystem mocks.
-- `tests/` contains Playwright integration tests. `web/tests/unit/` contains Node unit tests for pure logic and mocked device-write behavior.
+- `src/js/app.js` is the orchestrator. It owns shared state, device connection, mode selection, error recovery, and dialogs.
+- `src/js/flows/` contains the user journeys. Keep flow-specific behavior inside the relevant flow file.
+- `src/js/nickelmenu/` contains NickelMenu domain logic. Installer code belongs in `installer.js`, removal code belongs in `uninstaller.js`, and feature modules belong in `features/`.
+- `src/assets/` contains external installable assets such as NickelMenu, KOReader, and Readerly archives.
+- `src/js/kobo/` contains Kobo device/version/firmware URL/configuration logic. Keep File System Access wrappers in `device.js`, pure version parsing in `version.js`, and `Kobo eReader.conf` parsing plus `ExcludeSyncFolders` generation in `configuration.js` and `sync-exclusions.js`.
+- `src/js/shell/` contains app-shell helpers shared by flows, such as DOM utilities, navigation, strings, and analytics.
+- `src/js/patches/` contains custom patch UI and runner code.
+- `tests/e2e/` contains Playwright integration tests. `tests/unit/` contains Node unit tests for pure logic and mocked device-write behavior.
+- `patches/` contains the patch catalog and patch source YAML files served by the app.
+- `tools/` contains app-specific tooling such as installable asset setup and the kobopatch WASM wrapper.
 - Keep JavaScript carefully organized by responsibility. Avoid letting flow logic, domain parsing, DOM rendering, and device-write orchestration bleed into one another.
 
 ## Safety priorities
@@ -29,19 +34,21 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 
 ## Commands
 
-- `make serve` builds and serves the app at `http://localhost:8888`.
-- `make dev` starts the local dev server with watch mode.
-- `make test-unit` runs the frontend unit tests.
-- `npm --prefix web run lint` runs ESLint.
-- `npm --prefix web run build` builds the frontend.
-- `make test` runs lint, unit tests, build, WASM checks, patch blacklist checks, and E2E tests.
-- `make test-e2e` runs only the Playwright E2E suite.
-- `make screenshots` captures mobile and desktop screenshots for visual review.
+- `npm run serve` builds and serves the app at `http://localhost:8888`.
+- `npm run dev` starts the local dev server with watch mode.
+- `npm run test:unit` runs the frontend unit tests.
+- `npm run lint` runs ESLint.
+- `npm run build` builds the frontend.
+- `npm run test` runs lint, unit tests, build, WASM checks, patch blacklist checks, and E2E tests.
+- `npm run test:e2e` runs only the Playwright E2E suite.
+- `npm run test:e2e:fresh` removes `dist`, rebuilds the app and required WASM artifact, then runs Playwright without the standalone WASM test suites.
+- `npm run screenshots` captures mobile and desktop screenshots for visual review.
 
 ## Working notes
 
 - Use `rg` for searching.
 - Keep README user-facing. Put architecture, module maps, and detailed testing notes in `PROJECT.md`.
 - Update documentation when the project changes. README, PROJECT.md, and AGENTS.md should stay accurate when architecture, commands, testing expectations, or workflows change.
-- Do not edit generated or cached outputs such as `web/dist/`, `tests/cached_assets/`, or downloaded installable assets unless the task specifically requires it.
+- Do not edit generated or cached outputs such as `dist/`, `tests/e2e/cached_assets/`, or downloaded installable assets unless the task specifically requires it.
+- After completing feature work, run `npm run test:e2e:fresh` so `dist` is rebuilt from scratch before Playwright verifies the app. (Keep in mind this may not work in a sandbox.)
 - The worktree may contain unrelated changes. Do not revert user changes while making a focused patch.

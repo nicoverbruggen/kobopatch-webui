@@ -6,13 +6,14 @@ paths = ["/usr/local/go/bin"]
 
 [phases.build]
 cmds = [
-    "cd kobopatch-wasm && bash setup.sh",
-    "cd kobopatch-wasm && bash build.sh",
-    "bash installables/setup.sh",
-    "cd web && npm install && npm run build",
-    "bash web/validate-dist.sh",
+    "npm install",
+    "npm run setup:wasm",
+    "npm run build:wasm",
+    "npm run setup:installables",
+    "npm run build",
+    "node scripts/validate-dist.mjs",
 ]
 
 [start]
 # TODO: replace simple node server with something better
-cmd = "node web/serve.mjs"
+cmd = "node scripts/serve.mjs"

@@ -18,42 +18,39 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.23'
-          cache-dependency-path: kobopatch-wasm/go.sum
+          cache-dependency-path: tools/kobopatch-wasm/go.sum
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: |
-            web/package-lock.json
-            tests/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install jq
         run: sudo apt-get install -y jq
 
       - name: Run web unit tests
         run: |
-          cd web
           npm install
           npm run test:unit
 
       - name: Clone kobopatch source
-        run: make setup-wasm
+        run: npm run setup:wasm
 
       - name: Run native tests
         run: |
-          cd kobopatch-wasm/kobopatch-src
+          cd tools/kobopatch-wasm/kobopatch-src
           go test ./...
 
       - name: Build WASM binary
         run: |
-          make build-wasm
-          test -f kobopatch-wasm/kobopatch.wasm || { echo "ERROR: kobopatch.wasm not found after build"; exit 1; }
+          npm run build:wasm
+          test -f tools/kobopatch-wasm/kobopatch.wasm || { echo "ERROR: kobopatch.wasm not found after build"; exit 1; }
 
       - name: Run WASM tests
         run: |
-          cd kobopatch-wasm/kobopatch-src
+          cd tools/kobopatch-wasm/kobopatch-src
           GOROOT="$(go env GOROOT)"
           if [ -f "$GOROOT/lib/wasm/go_js_wasm_exec" ]; then
             EXEC="$GOROOT/lib/wasm/go_js_wasm_exec"
@@ -69,7 +66,7 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(kobopatch-wasm/|web/|tests/|installables/|scripts/|patches/|\.github/workflows/)'; then
+          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(src/|tests/|tools/|scripts/|patches/|package.json|package-lock.json|nixpacks.toml|\.github/workflows/)'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -78,11 +75,11 @@ jobs:
       - name: Download test firmware
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
-          mkdir -p tests/cached_assets
-          node -e "var c=require('./tests/firmware-config'); console.log(JSON.stringify([c.primary, c.secondary]))" | jq -c '.[]' | while IFS= read -r entry; do
+          mkdir -p tests/e2e/cached_assets
+          node -e "var c=require('./tests/e2e/firmware-config'); console.log(JSON.stringify([c.primary, c.secondary]))" | jq -c '.[]' | while IFS= read -r entry; do
             version=$(echo "$entry" | jq -r '.version')
             url=$(echo "$entry" | jq -r '.url')
-            file="tests/cached_assets/kobo-update-${version}.zip"
+            file="tests/e2e/cached_assets/kobo-update-${version}.zip"
             if [ ! -f "$file" ]; then
               echo "Downloading firmware $version..."
               curl -fL --progress-bar -o "$file" "$url"
@@ -91,22 +88,22 @@ jobs:
 
       - name: Build web app
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: cd web && npm install && npm run build
+        run: npm install && npm run build
 
       - name: Full integration test (WASM)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: make test-wasm
+        run: npm run test:wasm
 
       - name: Set up installable assets
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: make setup-installables
+        run: npm run setup:installables
 
       - name: Validate download URLs
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
-          cd tests
+          cd tests/e2e
           ./validate-dl-urls.sh
 
       - name: Full integration test (Playwright)
         if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: make test-e2e
+        run: npm run test:e2e

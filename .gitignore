@@ -3,24 +3,21 @@ kobo_usb_root/
 firmware/
 
 # Kobopatch WASM build artifacts
-kobopatch-wasm/kobopatch
-kobopatch-wasm/go/
-kobopatch-wasm/kobopatch-src/
-kobopatch-wasm/kobopatch.wasm
-kobopatch-wasm/wasm_exec.js
+tools/kobopatch-wasm/kobopatch
+tools/kobopatch-wasm/go/
+tools/kobopatch-wasm/kobopatch-src/
+tools/kobopatch-wasm/kobopatch.wasm
+tools/kobopatch-wasm/wasm_exec.js
 
 # Generated files in src (written by build scripts, regenerated on demand)
-web/src/js/wasm_exec.js
-web/src/nickelmenu/NickelMenu.zip
-web/src/koreader/
-web/src/readerly/
+src/js/wasm_exec.js
 
 # Build output
-web/dist/
-web/test-results/
+dist/
+test-results/
 
 # Node
-web/node_modules/
+node_modules
 electron/node_modules
 
 # Electron build artifacts
@@ -28,15 +25,14 @@ electron/dist/
 electron/release/
 
 # Cached test assets (firmware, KOReader zips)
-tests/cached_assets/
+tests/e2e/cached_assets/
 
 # E2E tests
-test-results/
-tests/node_modules/
-tests/test-results/
-tests/playwright-report/
-tests/screenshots/
-tests/test_firmware.zip
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/screenshots/
+tests/e2e/test_firmware.zip
 
 # NickelMenu build artifacts
 nickelmenu/kobo-config/

@@ -1,0 +1,197 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { bytes, text } from './test-helpers.js';
+
+globalThis.window = {};
+const { KoboDevice } = await import('../../src/js/kobo/device.js');
+
+function copyBytes(data) {
+    return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+}
+
+function normalizeBytes(data) {
+    if (data instanceof Uint8Array) return data;
+    if (data instanceof ArrayBuffer) return new Uint8Array(data);
+    return bytes(data);
+}
+
+class MockFileHandle {
+    constructor(name, data = new Uint8Array()) {
+        this.name = name;
+        this.kind = 'file';
+        this.data = normalizeBytes(data);
+        this.writes = [];
+    }
+
+    async getFile() {
+        const handle = this;
+        return {
+            async text() {
+                return text(handle.data);
+            },
+            async arrayBuffer() {
+                return copyBytes(handle.data);
+            },
+        };
+    }
+
+    async createWritable() {
+        const handle = this;
+        const chunks = [];
+        return {
+            async write(chunk) {
+                chunks.push(normalizeBytes(chunk));
+            },
+            async close() {
+                const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+                const merged = new Uint8Array(length);
+                let offset = 0;
+                for (const chunk of chunks) {
+                    merged.set(chunk, offset);
+                    offset += chunk.length;
+                }
+                handle.data = merged;
+                handle.writes.push(merged);
+            },
+        };
+    }
+}
+
+class MockDirectoryHandle {
+    constructor(name) {
+        this.name = name;
+        this.kind = 'directory';
+        this.children = new Map();
+        this.removals = [];
+    }
+
+    async getDirectoryHandle(name, options = {}) {
+        const existing = this.children.get(name);
+        if (existing?.kind === 'directory') return existing;
+        if (existing) throw new Error(`${name} is not a directory`);
+        if (!options.create) throw new Error(`Missing directory ${name}`);
+
+        const directory = new MockDirectoryHandle(name);
+        this.children.set(name, directory);
+        return directory;
+    }
+
+    async getFileHandle(name, options = {}) {
+        const existing = this.children.get(name);
+        if (existing?.kind === 'file') return existing;
+        if (existing) throw new Error(`${name} is not a file`);
+        if (!options.create) throw new Error(`Missing file ${name}`);
+
+        const file = new MockFileHandle(name);
+        this.children.set(name, file);
+        return file;
+    }
+
+    async removeEntry(name, options = {}) {
+        const existing = this.children.get(name);
+        if (!existing) throw new Error(`Missing entry ${name}`);
+        if (existing.kind === 'directory' && existing.children.size > 0 && !options.recursive) {
+            throw new Error(`Directory ${name} is not empty`);
+        }
+
+        this.removals.push({ name, options });
+        this.children.delete(name);
+    }
+
+    async *values() {
+        yield* this.children.values();
+    }
+
+    async addDirectory(pathParts) {
+        let dir = this;
+        for (const part of pathParts) {
+            dir = await dir.getDirectoryHandle(part, { create: true });
+        }
+        return dir;
+    }
+
+    async addFile(pathParts, data) {
+        const dir = await this.addDirectory(pathParts.slice(0, -1));
+        const file = new MockFileHandle(pathParts[pathParts.length - 1], data);
+        dir.children.set(file.name, file);
+        return file;
+    }
+}
+
+async function getDirectory(root, pathParts) {
+    let dir = root;
+    for (const part of pathParts) {
+        dir = await dir.getDirectoryHandle(part);
+    }
+    return dir;
+}
+
+async function getFile(root, pathParts) {
+    const dir = await getDirectory(root, pathParts.slice(0, -1));
+    return dir.getFileHandle(pathParts[pathParts.length - 1]);
+}
+
+function createDevice(root = new MockDirectoryHandle('root')) {
+    const device = new KoboDevice();
+    device.directoryHandle = root;
+    return { device, root };
+}
+
+test('writeFile creates nested directories and writes bytes to the target file', async () => {
+    const { device, root } = createDevice();
+    const payload = bytes('tgz payload');
+
+    await device.writeFile(['.kobo', 'KoboRoot.tgz'], payload);
+
+    const file = await getFile(root, ['.kobo', 'KoboRoot.tgz']);
+    assert.equal(text(file.data), 'tgz payload');
+    assert.equal(file.writes.length, 1);
+});
+
+test('removeEntry removes nested entries with the requested options', async () => {
+    const { device, root } = createDevice();
+    await root.addFile(['.adds', 'nm', 'items'], 'items');
+    const addsDir = await getDirectory(root, ['.adds']);
+
+    await device.removeEntry(['.adds', 'nm'], { recursive: true });
+
+    assert.equal(await device.pathExists(['.adds', 'nm']), false);
+    assert.deepEqual(addsDir.removals, [
+        { name: 'nm', options: { recursive: true } },
+    ]);
+});
+
+test('collectExistingEntries reads files and recursively collects directories', async () => {
+    const { device, root } = createDevice();
+    await root.addFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], 'conf');
+    await root.addFile(['.adds', 'nm', 'items'], 'items');
+    await root.addFile(['.adds', 'nm', 'icons', 'cog.png'], 'icon');
+    const progress = [];
+
+    const entries = await device.collectExistingEntries([
+        ['.kobo', 'Kobo', 'Kobo eReader.conf'],
+        ['.adds', 'nm'],
+        ['missing', 'file.txt'],
+    ], message => progress.push(message));
+
+    assert.deepEqual(entries.map(entry => entry.path), [
+        '.kobo/Kobo/Kobo eReader.conf',
+        '.adds/nm/items',
+        '.adds/nm/icons/cog.png',
+    ]);
+    assert.deepEqual(entries.map(entry => text(entry.data)), ['conf', 'items', 'icon']);
+    assert.deepEqual(progress.map(message => message.path), [
+        '.kobo/Kobo/Kobo eReader.conf',
+        '.adds/nm/items',
+        '.adds/nm/icons/cog.png',
+    ]);
+});
+
+test('readFile and pathExists return null or false for missing paths without creating directories', async () => {
+    const { device, root } = createDevice();
+
+    assert.equal(await device.readFile(['.kobo', 'missing.conf']), null);
+    assert.equal(await device.pathExists(['.kobo', 'missing.conf']), false);
+    assert.equal(root.children.has('.kobo'), false);
+});

@@ -1,0 +1,32 @@
+{
+  "name": "kobopatch-webui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:wasm": "bash tools/kobopatch-wasm/build.sh",
+    "dev": "node scripts/serve-locally.mjs --dev",
+    "lint": "eslint .",
+    "playwright:install": "playwright install chromium",
+    "screenshots": "bash tests/e2e/run-screenshots.sh",
+    "serve": "node scripts/serve-locally.mjs",
+    "serve:fake-analytics": "node scripts/serve-locally.mjs --fake-analytics",
+    "setup:installables": "bash tools/installables/setup.sh",
+    "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
+    "test": "node scripts/test.mjs",
+    "test:headed": "node scripts/test.mjs --headed",
+    "test:e2e": "bash tests/e2e/run-e2e.sh",
+    "test:e2e:fresh": "bash tests/e2e/run-e2e-fresh.sh",
+    "test:patches": "bash tools/kobopatch-wasm/test-patches.sh",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:wasm": "bash tools/kobopatch-wasm/test-integration.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "esbuild": "^0.27.4",
+    "eslint": "^9.0.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}
