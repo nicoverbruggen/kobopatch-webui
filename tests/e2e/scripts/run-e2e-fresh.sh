@@ -7,9 +7,9 @@ set -euo pipefail
 #
 # Usage: ./run-e2e-fresh.sh [--headed] [-- <extra playwright args>]
 
-cd "$(dirname "$0")"
-
-APP_DIR="$(cd ../.. && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+E2E_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$(cd "$E2E_DIR/../.." && pwd)"
 DIST_DIR="$APP_DIR/dist"
 WASM_SRC_DIR="$APP_DIR/tools/kobopatch-wasm/kobopatch-src"
 
@@ -37,4 +37,4 @@ echo "Validating dist resources..."
 npm --prefix "$APP_DIR" run validate:dist
 
 echo "Running fresh E2E integration tests..."
-"$APP_DIR/tests/e2e/run-e2e.sh" "$@"
+"$E2E_DIR/scripts/run-e2e.sh" "$@"

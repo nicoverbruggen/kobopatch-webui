@@ -41,7 +41,12 @@ patches/                        # Patch catalog and source YAML files served by 
 
 tests/
   unit/                         # Node unit tests for pure logic and mocked device-write behavior
-  e2e/                          # Playwright integration tests, helpers, screenshots, cached firmware
+  e2e/                          # Playwright integration tests
+    config/                     # Playwright config, global setup, firmware metadata
+    scripts/                    # E2E shell entrypoints
+    specs/                      # Browser test specs and screenshot capture spec
+    support/                    # E2E helpers and mock device utilities
+    cached_assets/              # Cached firmware test assets
 
 tools/
   installables/                 # Downloads/updates NickelMenu, KOReader, and Readerly assets
@@ -140,9 +145,9 @@ npm run validate:dist
 To pass flags to Playwright:
 
 ```bash
-bash tests/e2e/run-e2e.sh --headed
-bash tests/e2e/run-e2e.sh --headed --slow
-bash tests/e2e/run-e2e.sh --headed --slow -- --grep "NickelMenu"
+bash tests/e2e/scripts/run-e2e.sh --headed
+bash tests/e2e/scripts/run-e2e.sh --headed --slow
+bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 ```
 
 ## Running Locally

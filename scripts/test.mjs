@@ -9,7 +9,7 @@ const appDir = join(import.meta.dirname, '..');
 const e2eDir = join(appDir, 'tests/e2e');
 const toolsDir = join(appDir, 'tools');
 const cachedAssets = join(e2eDir, 'cached_assets');
-const firmwareConfigPath = join(e2eDir, 'firmware-config.js');
+const firmwareConfigPath = join(e2eDir, 'config/firmware-config.js');
 const require = createRequire(import.meta.url);
 const firmwareConfig = require(firmwareConfigPath);
 
@@ -113,4 +113,4 @@ const e2eArgs = [];
 if (headed) e2eArgs.push('--headed');
 if (grep) e2eArgs.push('--', '--grep', grep);
 e2eArgs.push(...extraArgs);
-await run(join(e2eDir, 'run-e2e.sh'), e2eArgs);
+await run(join(e2eDir, 'scripts/run-e2e.sh'), e2eArgs);

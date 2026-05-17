@@ -3,7 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const JSZip = require('jszip');
 
-const { primary } = require('../firmware-config');
+const { primary } = require('../config/firmware-config');
 
 const CACHED_ASSETS = path.resolve(__dirname, '..', 'cached_assets');
 const WEBROOT = path.resolve(__dirname, '..', '..', '..', 'dist');

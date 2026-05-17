@@ -16,7 +16,7 @@ fi
 
 APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 E2E_DIR="$APP_DIR/tests/e2e"
-FIRMWARE_CONFIG="$E2E_DIR/firmware-config.js"
+FIRMWARE_CONFIG="$E2E_DIR/config/firmware-config.js"
 PRIMARY=$(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG').primary))")
 PRIMARY_VERSION=$(echo "$PRIMARY" | jq -r '.version')
 PATCHES_ZIP="$APP_DIR/dist/patches/$(echo "$PRIMARY" | jq -r '.patches')"

@@ -3,7 +3,8 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
-const distDir = path.join(__dirname, '..', '..', 'dist');
+const appDir = path.join(__dirname, '..', '..', '..');
+const distDir = path.join(appDir, 'dist');
 
 test.describe('Build output', () => {
   test('CSS cache-bust hash is present on style.css link', async () => {
@@ -31,7 +32,7 @@ test.describe('Build output', () => {
 
   test('--primary-hover differs from --primary', async () => {
     const critical = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'src', 'css', 'critical.css'), 'utf-8'
+      path.join(appDir, 'src', 'css', 'critical.css'), 'utf-8'
     );
     const primary = critical.match(/--primary:\s*([^;]+);/);
     const hover = critical.match(/--primary-hover:\s*([^;]+);/);

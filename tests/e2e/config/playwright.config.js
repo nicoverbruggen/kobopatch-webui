@@ -2,17 +2,18 @@ const { defineConfig } = require('@playwright/test');
 const path = require('path');
 
 const serial = parseInt(process.env.SLOW_MO || '0', 10) > 0 || process.argv.includes('--headed');
-const testsDir = __dirname;
-const appDir = path.resolve(testsDir, '../..');
+const configDir = __dirname;
+const e2eDir = path.resolve(configDir, '..');
+const appDir = path.resolve(e2eDir, '../..');
 
 module.exports = defineConfig({
-  testDir: testsDir,
+  testDir: path.join(e2eDir, 'specs'),
   testMatch: '*.spec.js',
   timeout: 300_000,
   retries: 0,
   workers: serial ? 1 : 4,
   fullyParallel: !serial,
-  globalSetup: './global-setup.js',
+  globalSetup: path.join(configDir, 'global-setup.js'),
   expect: {
     timeout: 10_000,
   },

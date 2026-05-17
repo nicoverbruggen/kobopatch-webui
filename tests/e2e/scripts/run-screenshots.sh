@@ -7,12 +7,13 @@ set -euo pipefail
 #
 # Output: screenshots/{mobile,desktop}/{manual-nickelmenu,manual-patches,connected-nickelmenu,connected-patches,edge-cases}/*.png (gitignored)
 
-cd "$(dirname "$0")"
-
-APP_DIR="$(cd ../.. && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+E2E_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$(cd "$E2E_DIR/../.." && pwd)"
 PLAYWRIGHT="$APP_DIR/node_modules/.bin/playwright"
 STALE_TEST_NODE_MODULES="$APP_DIR/tests/e2e/node_modules"
 
+cd "$E2E_DIR"
 rm -rf screenshots
 
 if [ -d "$STALE_TEST_NODE_MODULES" ]; then
@@ -22,7 +23,7 @@ fi
 
 npm --prefix "$APP_DIR" install --silent
 "$PLAYWRIGHT" install chromium
-"$PLAYWRIGHT" test --config "$APP_DIR/tests/e2e/screenshots.config.js" --reporter=list "$@"
+"$PLAYWRIGHT" test --config "$E2E_DIR/config/screenshots.config.js" --reporter=list "$@"
 
 echo ""
 echo "Screenshots saved to tests/e2e/screenshots/"

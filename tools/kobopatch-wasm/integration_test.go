@@ -20,7 +20,7 @@ import (
 // kobopatch internally; the E2E tests cover the browser flow.
 //
 // All values are provided via environment variables by test-integration.sh,
-// which reads from tests/e2e/firmware-config.js.
+// which reads from tests/e2e/config/firmware-config.js.
 func TestIntegrationPatch(t *testing.T) {
 	firmwarePath := os.Getenv("FIRMWARE_ZIP")
 	if firmwarePath == "" {

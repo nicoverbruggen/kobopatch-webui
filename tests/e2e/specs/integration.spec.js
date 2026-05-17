@@ -5,10 +5,10 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const JSZip = require('jszip');
 
-const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('./helpers/paths');
-const { hasNickelMenuAssets, hasKOReaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('./helpers/assets');
-const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('./helpers/mock-device');
-const { parseTar } = require('./helpers/tar');
+const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../support/paths');
+const { hasNickelMenuAssets, hasKOReaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('../support/assets');
+const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('../support/mock-device');
+const { parseTar } = require('../support/tar');
 
 const EXCLUDE_SYNC_FOLDERS_LINE = String.raw`ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)`;
 const EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE = String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`;
@@ -1395,7 +1395,7 @@ test.describe('Custom patches', () => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
     const blacklist = JSON.parse(fs.readFileSync(
-      require('path').join(__dirname, '..', '..', 'patches', 'blacklist.json'), 'utf-8'
+      require('path').join(__dirname, '..', '..', '..', 'patches', 'blacklist.json'), 'utf-8'
     ));
     const version45 = blacklist['4.45'];
     test.skip(!version45, 'No 4.45 blacklist entries found');

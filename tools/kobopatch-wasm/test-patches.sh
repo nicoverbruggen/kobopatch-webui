@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Test all patches against cached firmware using kobopatch -t.
-# Iterates over all firmware versions in tests/e2e/firmware-config.js,
+# Iterates over all firmware versions in tests/e2e/config/firmware-config.js,
 # builds the native kobopatch binary, and generates blacklist.json.
 #
 # Usage:
@@ -27,7 +27,7 @@ fi
 
 APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 E2E_DIR="$APP_DIR/tests/e2e"
-FIRMWARE_CONFIG="$E2E_DIR/firmware-config.js"
+FIRMWARE_CONFIG="$E2E_DIR/config/firmware-config.js"
 CACHED_ASSETS="$E2E_DIR/cached_assets"
 PATCHES_DIR="$APP_DIR/patches"
 COMMITTED_BLACKLIST="$PATCHES_DIR/blacklist.json"

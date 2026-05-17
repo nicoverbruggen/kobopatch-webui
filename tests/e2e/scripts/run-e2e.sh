@@ -16,9 +16,9 @@ set -euo pipefail
 #   - Test assets cached in tests/e2e/cached_assets/ (run npm run test to download)
 #   - Installable assets in src/assets/ (set up automatically)
 
-cd "$(dirname "$0")"
-
-APP_DIR="$(cd ../.. && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+E2E_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+APP_DIR="$(cd "$E2E_DIR/../.." && pwd)"
 DIST_DIR="$APP_DIR/dist"
 STALE_TEST_NODE_MODULES="$APP_DIR/tests/e2e/node_modules"
 
@@ -72,4 +72,5 @@ PLAYWRIGHT="$APP_DIR/node_modules/.bin/playwright"
 
 # Run the tests.
 echo "Running E2E integration tests..."
-"$PLAYWRIGHT" test --config "$APP_DIR/tests/e2e/playwright.config.js" "${PLAYWRIGHT_ARGS[@]}"
+cd "$E2E_DIR"
+"$PLAYWRIGHT" test --config "$E2E_DIR/config/playwright.config.js" "${PLAYWRIGHT_ARGS[@]}"

@@ -1,5 +1,5 @@
 // Firmware versions used for testing. Shell scripts read this via jq-compatible
-// JSON output from: node -e "console.log(JSON.stringify(require('./tests/e2e/firmware-config')))"
+// JSON output from: node -e "console.log(JSON.stringify(require('./tests/e2e/config/firmware-config')))"
 //
 // The primary version is used for WASM integration tests and E2E tests.
 // Both primary and secondary are used for patch testing.

@@ -95,12 +95,12 @@ jobs:
             src/assets/KF_Readerly.zip
             src/assets/koreader-kobo.zip
             src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          key: firmware-installables-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
 
       - name: Download test firmware
         run: |
           mkdir -p tests/e2e/cached_assets
-          node -e "var c=require('./tests/e2e/firmware-config'); console.log(JSON.stringify([c.primary, c.secondary]))" | jq -c '.[]' | while IFS= read -r entry; do
+          node -e "var c=require('./tests/e2e/config/firmware-config'); console.log(JSON.stringify([c.primary, c.secondary]))" | jq -c '.[]' | while IFS= read -r entry; do
             version=$(echo "$entry" | jq -r '.version')
             url=$(echo "$entry" | jq -r '.url')
             file="tests/e2e/cached_assets/kobo-update-${version}.zip"
@@ -129,7 +129,7 @@ jobs:
             src/assets/KF_Readerly.zip
             src/assets/koreader-kobo.zip
             src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
           fail-on-cache-miss: true
 
       - name: Set up Go
@@ -178,7 +178,7 @@ jobs:
             src/assets/KF_Readerly.zip
             src/assets/koreader-kobo.zip
             src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
           fail-on-cache-miss: true
 
       - name: Set up Go
@@ -215,7 +215,7 @@ jobs:
             src/assets/KF_Readerly.zip
             src/assets/koreader-kobo.zip
             src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
           fail-on-cache-miss: true
 
       - name: Set up Go
@@ -245,5 +245,5 @@ jobs:
 
       - name: Validate download URLs
         run: |
-          cd tests/e2e
+          cd tests/e2e/scripts
           ./validate-dl-urls.sh

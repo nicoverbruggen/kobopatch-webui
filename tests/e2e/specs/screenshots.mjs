@@ -6,8 +6,8 @@
  * Run: ./run-screenshots.sh
  */
 import { test, expect } from '@playwright/test';
-import { injectMockDevice, overrideFirmwareURLs } from './helpers/mock-device.js';
-import { hasFirmwareZip } from './helpers/assets.js';
+import { injectMockDevice, overrideFirmwareURLs } from '../support/mock-device.js';
+import { hasFirmwareZip } from '../support/assets.js';
 
 const shot = async (page, folder, name, testInfo) => {
   const project = testInfo.project.name;

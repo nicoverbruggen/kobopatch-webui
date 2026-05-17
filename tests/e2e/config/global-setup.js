@@ -1,4 +1,4 @@
-const { setupFirmwareSymlink, cleanupFirmwareSymlink, hasFirmwareZip } = require('./helpers/assets');
+const { setupFirmwareSymlink, cleanupFirmwareSymlink, hasFirmwareZip } = require('../support/assets');
 
 module.exports = function globalSetup() {
     if (hasFirmwareZip()) setupFirmwareSymlink();
