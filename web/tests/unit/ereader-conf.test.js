@@ -12,6 +12,20 @@ import {
 
 const { buildExcludeSyncFoldersLine, LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_LINES } = excludeSyncFolders;
 
+test('buildExcludeSyncFoldersLine returns the expected default regex line', () => {
+    assert.equal(
+        buildExcludeSyncFoldersLine(),
+        String.raw`ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)`
+    );
+});
+
+test('buildExcludeSyncFoldersLine returns the expected calibre regex line', () => {
+    assert.equal(
+        buildExcludeSyncFoldersLine({ excludeCalibre: true }),
+        String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`
+    );
+});
+
 test('parseEReaderConf reads settings inside sections', () => {
     const parsed = parseEReaderConf([
         '[ApplicationPreferences]',
@@ -69,6 +83,13 @@ test('setExcludeSyncFoldersLine replaces an existing setting without touching ot
     ].join('\n'));
 });
 
+test('setExcludeSyncFoldersLine preserves CRLF line endings', () => {
+    const line = buildExcludeSyncFoldersLine();
+    const updated = setExcludeSyncFoldersLine('[FeatureSettings]\r\nFoo=bar\r\n', line);
+
+    assert.equal(updated, `[FeatureSettings]\r\n${line}\r\nFoo=bar\r\n`);
+});
+
 test('removeExcludeSyncFoldersLine removes the setting from FeatureSettings only', () => {
     const updated = removeExcludeSyncFoldersLine([
         '[FeatureSettings]',
@@ -86,6 +107,12 @@ test('removeExcludeSyncFoldersLine removes the setting from FeatureSettings only
         'ExcludeSyncFolders=(leave-alone)',
         '',
     ].join('\n'));
+});
+
+test('removeExcludeSyncFoldersLine preserves CRLF line endings', () => {
+    const updated = removeExcludeSyncFoldersLine('[FeatureSettings]\r\nFoo=bar\r\nExcludeSyncFolders=(old)\r\n');
+
+    assert.equal(updated, '[FeatureSettings]\r\nFoo=bar\r\n');
 });
 
 test('validateExcludeSyncFoldersLine accepts the default generated regex', () => {
@@ -106,6 +133,13 @@ test('validateExcludeSyncFoldersLine accepts the calibre generated regex', () =>
 
 test('validateExcludeSyncFoldersLine rejects the legacy broad nested path regex', () => {
     const result = validateExcludeSyncFoldersLine(LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_LINES.default);
+
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join('\n'), /should not match fonts\/regular\.ttf/);
+});
+
+test('validateExcludeSyncFoldersLine rejects the legacy broad calibre nested path regex', () => {
+    const result = validateExcludeSyncFoldersLine(LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_LINES.calibre);
 
     assert.equal(result.valid, false);
     assert.match(result.errors.join('\n'), /should not match fonts\/regular\.ttf/);

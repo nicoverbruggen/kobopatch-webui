@@ -30,8 +30,15 @@ test('parseKoboVersion reads known older 4-character prefixes', () => {
 test('parseKoboVersion reports unknown models with the first 4 serial characters', () => {
     const info = parseKoboVersion(versionLine('Z999ABC123456', '4.38.21908'));
 
-    assert.equal(info.serialPrefix, 'Z99');
+    assert.equal(info.serialPrefix, 'Z999');
     assert.equal(info.model, 'Unknown Kobo (Z999)');
+});
+
+test('parseKoboVersion does not fall back to a 3-character prefix', () => {
+    const info = parseKoboVersion(versionLine('N90XABC123456', '4.38.21908'));
+
+    assert.equal(info.serialPrefix, 'N90X');
+    assert.equal(info.model, 'Unknown Kobo (N90X)');
 });
 
 test('parseKoboVersion rejects malformed version files', () => {

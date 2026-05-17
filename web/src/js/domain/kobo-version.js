@@ -1,7 +1,7 @@
 /**
  * Known Kobo device serial prefixes mapped to model names.
  * Source: https://help.kobo.com/hc/en-us/articles/360019676973
- * The serial number prefix (first 3-4 characters) identifies the model.
+ * The serial number prefix (first 4 characters) identifies the model.
  */
 const KoboModels = {
     // Current eReaders
@@ -54,11 +54,8 @@ function parseKoboVersion(content) {
     const firmware = parts[2];
     const hardwareId = parts[5];
 
-    // Try matching 4-char prefix first, then fall back to a 3-char prefix.
-    const serialPrefix = KoboModels[serial.substring(0, 4)]
-        ? serial.substring(0, 4)
-        : serial.substring(0, 3);
-    const model = KoboModels[serialPrefix] || 'Unknown Kobo (' + serial.substring(0, 4) + ')';
+    const serialPrefix = serial.substring(0, 4);
+    const model = KoboModels[serialPrefix] || 'Unknown Kobo (' + serialPrefix + ')';
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
     const fwMinor = parseInt(fwParts[1], 10) || 0;
