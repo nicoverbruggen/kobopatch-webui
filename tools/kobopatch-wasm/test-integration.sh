@@ -44,6 +44,25 @@ else
 fi
 
 echo "Running integration test..."
-FIRMWARE_ZIP="$FIRMWARE_FILE" \
-  PATCHES_ZIP="$PATCHES_ZIP" \
-  GOOS=js GOARCH=wasm go test -v -run TestIntegrationPatch -timeout 300s -exec="$EXEC" .
+TEST_ENV=(
+    "PATH=$PATH"
+    "HOME=${HOME:-$SCRIPT_DIR}"
+    "TMPDIR=${TMPDIR:-/tmp}"
+    "GOROOT=$GOROOT"
+    "FIRMWARE_ZIP=$FIRMWARE_FILE"
+    "PATCHES_ZIP=$PATCHES_ZIP"
+    "GOOS=js"
+    "GOARCH=wasm"
+)
+
+if [ -n "${GOPATH:-}" ]; then
+    TEST_ENV+=("GOPATH=$GOPATH")
+fi
+if [ -n "${GOCACHE:-}" ]; then
+    TEST_ENV+=("GOCACHE=$GOCACHE")
+fi
+if [ -n "${XDG_CACHE_HOME:-}" ]; then
+    TEST_ENV+=("XDG_CACHE_HOME=$XDG_CACHE_HOME")
+fi
+
+env -i "${TEST_ENV[@]}" go test -v -run TestIntegrationPatch -timeout 300s -exec="$EXEC" .

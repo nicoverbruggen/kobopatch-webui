@@ -11,12 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -34,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -43,9 +42,7 @@ jobs:
           cache-dependency-path: tools/kobopatch-wasm/go.sum
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
+        uses: actions/setup-node@v6
 
       - name: Clone kobopatch source
         run: npm run setup:wasm
@@ -76,12 +73,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
+        uses: actions/setup-node@v6
 
       - name: Install jq
         run: sudo apt-get install -y jq
@@ -91,7 +86,7 @@ jobs:
         run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       - name: Cache firmware and installable assets
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             tests/e2e/cached_assets
@@ -117,7 +112,7 @@ jobs:
         run: npm run setup:installables
 
       - name: Upload assets for this workflow run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: firmware-installable-assets
           path: |
@@ -135,10 +130,10 @@ jobs:
     needs: assets
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: firmware-installable-assets
           path: .
@@ -150,9 +145,8 @@ jobs:
           cache-dependency-path: tools/kobopatch-wasm/go.sum
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -180,10 +174,10 @@ jobs:
     needs: assets
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: firmware-installable-assets
           path: .
@@ -195,9 +189,7 @@ jobs:
           cache-dependency-path: tools/kobopatch-wasm/go.sum
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
+        uses: actions/setup-node@v6
 
       - name: Install jq
         run: sudo apt-get install -y jq
@@ -214,10 +206,10 @@ jobs:
     needs: assets
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: firmware-installable-assets
           path: .
@@ -229,9 +221,8 @@ jobs:
           cache-dependency-path: tools/kobopatch-wasm/go.sum
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -246,7 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Validate download URLs
         run: |
