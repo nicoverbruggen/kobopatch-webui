@@ -3,7 +3,17 @@
 
 # KoboPatch Web UI
 
-A web application for customising Kobo e-readers. It supports two modes.
+A web application for customising Kobo e-readers available [here](https://kp.nicoverbruggen.be).
+
+## About this project
+
+What's this about? Well, I have two resources that explain why the project was built:
+
+- **YouTube:** I have recorded a [YouTube video](https://youtu.be/lNtg_GfCups) that includes an explanation and demonstration. Also includes a demo of my [custom fonts](https://github.com/nicoverbruggen/ebook-fonts).
+
+- **Blog:** I have also written a lengthy [blog post](https://nicoverbruggen.be/blog/kobopatch-webui) on the subject. This blog post contains more technical details than the video.
+
+The project itself currently has a few operational modes, depending on what it is that you're trying to do. They're documented below.
 
 ## Mode A: NickelMenu
 
