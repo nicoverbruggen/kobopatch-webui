@@ -1,5 +1,9 @@
 import JSZip from 'jszip';
 import { fetchOrThrow } from '../js/dom.js';
+import {
+    removeExcludeSyncFoldersLine,
+    setExcludeSyncFoldersLine,
+} from '../js/domain/ereader-conf.js';
 
 import customMenu from './features/custom-menu/index.js';
 import readerlyFonts from './features/readerly-fonts/index.js';
@@ -181,21 +185,11 @@ export class NickelMenuInstaller {
      */
     async updateEReaderConf(device, features = []) {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
-        let content = await device.readFile(confPath) || '';
-
         const settingLine = getExcludeSyncFoldersLine(features);
-
-        if (content.includes('ExcludeSyncFolders')) {
-            // Replace existing line so switching between modes takes effect.
-            content = content.replace(/^ExcludeSyncFolders=.+$/m, settingLine);
-        } else if (content.includes('[FeatureSettings]')) {
-            content = content.replace(
-                '[FeatureSettings]',
-                '[FeatureSettings]\n' + settingLine
-            );
-        } else {
-            content += '\n[FeatureSettings]\n' + settingLine + '\n';
-        }
+        const content = setExcludeSyncFoldersLine(
+            await device.readFile(confPath) || '',
+            settingLine
+        );
 
         await device.writeFile(confPath, new TextEncoder().encode(content));
     }
@@ -208,7 +202,7 @@ export class NickelMenuInstaller {
         const content = await device.readFile(confPath);
         if (!content || !content.includes('ExcludeSyncFolders')) return;
 
-        const updated = content.replace(/^ExcludeSyncFolders=.*(?:\r?\n)?/m, '');
+        const updated = removeExcludeSyncFoldersLine(content);
         if (updated !== content) {
             await device.writeFile(confPath, new TextEncoder().encode(updated));
         }

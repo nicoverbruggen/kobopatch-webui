@@ -1,10 +1,12 @@
 {
   "name": "kobopatch-webui",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs --dev",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:unit": "node --test tests/unit/*.test.js"
   },
   "devDependencies": {
     "esbuild": "^0.27.4",
