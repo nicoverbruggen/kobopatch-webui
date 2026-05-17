@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import excludeSyncFolders from '../../src/nickelmenu/exclude-sync-folders.cjs';
+import {
+    buildExcludeSyncFoldersLine,
+    legacyBrokenExcludeSyncFoldersLines,
+} from '../../src/nickelmenu/sync-exclusions.js';
 import {
     createExcludeSyncFoldersMatcher,
     parseEReaderConf,
@@ -9,8 +12,6 @@ import {
     setExcludeSyncFoldersLine,
     validateExcludeSyncFoldersLine,
 } from '../../src/js/domain/ereader-conf.js';
-
-const { buildExcludeSyncFoldersLine, LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_LINES } = excludeSyncFolders;
 
 test('buildExcludeSyncFoldersLine returns the expected default regex line', () => {
     assert.equal(
@@ -132,14 +133,14 @@ test('validateExcludeSyncFoldersLine accepts the calibre generated regex', () =>
 });
 
 test('validateExcludeSyncFoldersLine rejects the legacy broad nested path regex', () => {
-    const result = validateExcludeSyncFoldersLine(LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_LINES.default);
+    const result = validateExcludeSyncFoldersLine(legacyBrokenExcludeSyncFoldersLines.default);
 
     assert.equal(result.valid, false);
     assert.match(result.errors.join('\n'), /should not match fonts\/regular\.ttf/);
 });
 
 test('validateExcludeSyncFoldersLine rejects the legacy broad calibre nested path regex', () => {
-    const result = validateExcludeSyncFoldersLine(LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_LINES.calibre);
+    const result = validateExcludeSyncFoldersLine(legacyBrokenExcludeSyncFoldersLines.calibre);
 
     assert.equal(result.valid, false);
     assert.match(result.errors.join('\n'), /should not match fonts\/regular\.ttf/);

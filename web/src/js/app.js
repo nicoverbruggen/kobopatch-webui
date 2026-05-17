@@ -22,7 +22,7 @@ import { KoboDevice } from './services/kobo-device.js';
 import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './services/kobo-software-urls.js';
 import { PatchUI, scanAvailablePatches } from './ui/patch-ui.js';
 import { KoboPatchRunner } from './services/patch-runner.js';
-import { NickelMenuInstaller, ALL_FEATURES } from '../nickelmenu/installer.js';
+import { NickelMenuInstaller, NICKELMENU_FEATURES } from '../nickelmenu/installer.js';
 import { TL } from './strings.js';
 import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import { $, $q, $qa, populateSelect } from './dom.js';
@@ -73,7 +73,7 @@ const blacklistReady = state.patchUI.loadBlacklist();
 // Best-effort KOReader availability check. If the server has KOReader assets,
 // mark the feature as available so it shows up in the NickelMenu features list.
 // Runs in the background — failure is silently ignored.
-const koreaderFeature = ALL_FEATURES.find(f => f.id === 'koreader');
+const koreaderFeature = NICKELMENU_FEATURES.find(f => f.id === 'koreader');
 fetch('/koreader/release.json')
     .then(r => r.ok ? r.json() : null)
     .then(meta => {

@@ -1,5 +1,5 @@
-import { KoboModels } from './kobo-device.js';
 import { fetchOrThrow } from '../dom.js';
+import { koboModels } from '../domain/kobo-version.js';
 
 let _data = null;
 
@@ -38,7 +38,7 @@ function getDevicesForVersion(version) {
     if (!versionMap) return [];
     const devices = [];
     for (const prefix of Object.keys(versionMap)) {
-        const model = KoboModels[prefix] || 'Unknown';
+        const model = koboModels[prefix] || 'Unknown';
         devices.push({ prefix, model: model + ' (' + prefix + ')' });
     }
     return devices;

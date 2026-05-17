@@ -1,4 +1,4 @@
-import { KoboModels, parseKoboVersion } from '../domain/kobo-version.js';
+import { parseKoboVersion } from '../domain/kobo-version.js';
 
 class KoboDevice {
     constructor() {
@@ -289,4 +289,4 @@ class KoboDevice {
 // Expose on window for E2E test compatibility (tests access these via page.evaluate)
 window.KoboDevice = KoboDevice;
 
-export { KoboModels, KoboDevice };
+export { KoboDevice };

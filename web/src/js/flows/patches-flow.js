@@ -16,7 +16,7 @@
 
 import { $, formatMB, triggerDownload, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavLabels, setNavStep } from '../nav.js';
-import { KoboModels } from '../services/kobo-device.js';
+import { koboModels } from '../domain/kobo-version.js';
 import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 import JSZip from 'jszip';
@@ -68,7 +68,7 @@ export function initPatchesFlow(state) {
     function configureFirmwareStep(version, prefix) {
         state.firmwareURL = prefix ? state.getSoftwareUrl(prefix, version) : null;
         firmwareVersionLabel.textContent = version;
-        firmwareDeviceLabel.textContent = KoboModels[prefix] || prefix;
+        firmwareDeviceLabel.textContent = koboModels[prefix] || prefix;
         $('firmware-download-url').textContent = state.firmwareURL || '';
     }
 
@@ -228,7 +228,7 @@ export function initPatchesFlow(state) {
     function showBuildResult() {
         const action = state.isRestore ? 'Software extracted' : 'Patching complete';
         const description = state.isRestore ? 'This will restore the original unpatched software.' : '';
-        const deviceName = KoboModels[state.selectedPrefix] || 'Kobo';
+        const deviceName = koboModels[state.selectedPrefix] || 'Kobo';
         const installHint = state.manualMode
             ? 'Download the file and copy it to your ' + deviceName + '.'
             : 'Write it directly to your connected Kobo, or download for manual installation.';
@@ -341,7 +341,7 @@ export function initPatchesFlow(state) {
         triggerDownload(state.resultTgz, 'KoboRoot.tgz', 'application/gzip');
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
-        $('download-device-name').textContent = KoboModels[state.selectedPrefix] || 'Kobo';
+        $('download-device-name').textContent = koboModels[state.selectedPrefix] || 'Kobo';
         track('flow-end', { result: state.isRestore ? 'restore-download' : 'patches-download' });
     });
 

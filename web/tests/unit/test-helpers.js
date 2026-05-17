@@ -2,8 +2,8 @@ import JSZip from 'jszip';
 
 import { NickelMenuInstaller } from '../../src/nickelmenu/installer.js';
 
-const CONF_PATH = '.kobo/Kobo/Kobo eReader.conf';
-const TGZ_PATH = '.kobo/KoboRoot.tgz';
+const koboEReaderConfPath = '.kobo/Kobo/Kobo eReader.conf';
+const koboRootTgzPath = '.kobo/KoboRoot.tgz';
 
 function bytes(value) {
     return new TextEncoder().encode(value);
@@ -80,7 +80,7 @@ class RecordingDevice {
 
         const bytesData = data instanceof Uint8Array ? data : new Uint8Array(data);
         this.writes.push({ path, data: bytesData });
-        if (path === CONF_PATH) {
+        if (path === koboEReaderConfPath) {
             this.textFiles.set(path, text(bytesData));
         }
     }
@@ -112,12 +112,12 @@ class RecordingDevice {
 }
 
 export {
-    CONF_PATH,
     RecordingDevice,
-    TGZ_PATH,
     bytes,
     createInstaller,
     createProgressRecorder,
+    koboEReaderConfPath,
+    koboRootTgzPath,
     text,
     useCustomMenuAssetFetch,
 };

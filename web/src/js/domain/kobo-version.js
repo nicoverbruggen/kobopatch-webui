@@ -3,7 +3,7 @@
  * Source: https://help.kobo.com/hc/en-us/articles/360019676973
  * The serial number prefix (first 4 characters) identifies the model.
  */
-const KoboModels = {
+const koboModels = {
     // Current eReaders
     'N428': 'Kobo Libra Colour',
     'N367': 'Kobo Clara Colour',
@@ -55,7 +55,7 @@ function parseKoboVersion(content) {
     const hardwareId = parts[5];
 
     const serialPrefix = serial.substring(0, 4);
-    const model = KoboModels[serialPrefix] || 'Unknown Kobo (' + serialPrefix + ')';
+    const model = koboModels[serialPrefix] || 'Unknown Kobo (' + serialPrefix + ')';
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
     const fwMinor = parseInt(fwParts[1], 10) || 0;
@@ -71,4 +71,4 @@ function parseKoboVersion(content) {
     };
 }
 
-export { KoboModels, parseKoboVersion };
+export { koboModels, parseKoboVersion };

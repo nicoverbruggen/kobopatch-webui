@@ -14,9 +14,7 @@ import hideRow2Col2 from './features/hide-row2col2/index.js';
 import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
-import excludeSyncFolders from './exclude-sync-folders.cjs';
-
-const { buildExcludeSyncFoldersLine } = excludeSyncFolders;
+import { buildExcludeSyncFoldersLine } from './sync-exclusions.js';
 
 export function getExcludeSyncFoldersLine(features = []) {
     return buildExcludeSyncFoldersLine({
@@ -29,7 +27,7 @@ export function getExcludeSyncFoldersLine(features = []) {
  * Features with `required: true` are always included in the preset.
  * Features with `postProcess` modify files produced by other features.
  */
-export const ALL_FEATURES = [
+export const NICKELMENU_FEATURES = [
     customMenu,
     simplifyTabs,
     hideRecommendations,

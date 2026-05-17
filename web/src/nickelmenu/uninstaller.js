@@ -1,9 +1,9 @@
-const NICKELMENU_TGZ_PATH = ['.kobo', 'KoboRoot.tgz'];
-const NICKELMENU_ASSET_PATHS = [
+const nickelMenuTgzPath = ['.kobo', 'KoboRoot.tgz'];
+const nickelMenuAssetPaths = [
     ['.adds', 'nm'],
     ['.adds', 'scripts'],
 ];
-const NICKELMENU_UNINSTALL_MARKER_PATH = ['.adds', 'nm', 'uninstall'];
+const nickelMenuUninstallMarkerPath = ['.adds', 'nm', 'uninstall'];
 
 async function removeOptionalEntry(device, path, options, logger) {
     try {
@@ -25,15 +25,15 @@ async function executeNickelMenuRemoval({
 
     onProgress('Writing KoboRoot.tgz...');
     const tgz = await installer.getKoboRootTgz();
-    await device.writeFile(NICKELMENU_TGZ_PATH, tgz);
+    await device.writeFile(nickelMenuTgzPath, tgz);
 
     onProgress('Removing NickelMenu assets...');
-    for (const path of NICKELMENU_ASSET_PATHS) {
+    for (const path of nickelMenuAssetPaths) {
         await removeOptionalEntry(device, path, { recursive: true }, logger);
     }
 
     onProgress('Creating uninstall marker...');
-    await device.writeFile(NICKELMENU_UNINSTALL_MARKER_PATH, new Uint8Array(0));
+    await device.writeFile(nickelMenuUninstallMarkerPath, new Uint8Array(0));
 
     for (const feature of featuresToRemove) {
         onProgress('Removing ' + feature.uninstall.title + '...');
@@ -49,8 +49,8 @@ async function executeNickelMenuRemoval({
 }
 
 export {
-    NICKELMENU_ASSET_PATHS,
-    NICKELMENU_TGZ_PATH,
-    NICKELMENU_UNINSTALL_MARKER_PATH,
     executeNickelMenuRemoval,
+    nickelMenuAssetPaths,
+    nickelMenuTgzPath,
+    nickelMenuUninstallMarkerPath,
 };

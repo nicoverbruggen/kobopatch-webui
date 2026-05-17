@@ -1,6 +1,6 @@
 const SECTION_HEADER_PATTERN = /^\s*\[([^\]]+)\]\s*$/;
-const FEATURE_SETTINGS_SECTION = 'FeatureSettings';
-const EXCLUDE_SYNC_FOLDERS_KEY = 'ExcludeSyncFolders';
+const featureSettingsSection = 'FeatureSettings';
+const excludeSyncFoldersKey = 'ExcludeSyncFolders';
 
 function detectNewline(content) {
     return content.includes('\r\n') ? '\r\n' : '\n';
@@ -122,7 +122,7 @@ function removeConfSetting(content = '', sectionName, key) {
 
 function parseExcludeSyncFoldersLine(line) {
     const setting = parseSettingLine(line);
-    if (!setting || setting.key !== EXCLUDE_SYNC_FOLDERS_KEY) {
+    if (!setting || setting.key !== excludeSyncFoldersKey) {
         throw new Error('Expected an ExcludeSyncFolders setting line.');
     }
 
@@ -195,8 +195,8 @@ function setExcludeSyncFoldersLine(content, settingLine) {
     const value = parseExcludeSyncFoldersLine(settingLine);
     return setConfSetting(
         content,
-        FEATURE_SETTINGS_SECTION,
-        EXCLUDE_SYNC_FOLDERS_KEY,
+        featureSettingsSection,
+        excludeSyncFoldersKey,
         value
     );
 }
@@ -204,14 +204,12 @@ function setExcludeSyncFoldersLine(content, settingLine) {
 function removeExcludeSyncFoldersLine(content) {
     return removeConfSetting(
         content,
-        FEATURE_SETTINGS_SECTION,
-        EXCLUDE_SYNC_FOLDERS_KEY
+        featureSettingsSection,
+        excludeSyncFoldersKey
     );
 }
 
 export {
-    EXCLUDE_SYNC_FOLDERS_KEY,
-    FEATURE_SETTINGS_SECTION,
     createExcludeSyncFoldersMatcher,
     parseEReaderConf,
     parseExcludeSyncFoldersLine,

@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 
 import screensaver from '../../src/nickelmenu/features/screensaver/index.js';
 import {
-    NICKELMENU_UNINSTALL_MARKER_PATH,
     executeNickelMenuRemoval,
-} from '../../src/js/use-cases/nickelmenu-removal.js';
+    nickelMenuUninstallMarkerPath,
+} from '../../src/nickelmenu/uninstaller.js';
 import {
-    CONF_PATH,
     RecordingDevice,
-    TGZ_PATH,
     createInstaller,
     createProgressRecorder,
+    koboEReaderConfPath,
+    koboRootTgzPath,
     text,
 } from './test-helpers.js';
 
@@ -42,8 +42,8 @@ test('executeNickelMenuRemoval writes uninstall tgz, removes NickelMenu assets, 
     });
 
     assert.deepEqual(device.writePaths(), [
-        TGZ_PATH,
-        pathString(NICKELMENU_UNINSTALL_MARKER_PATH),
+        koboRootTgzPath,
+        pathString(nickelMenuUninstallMarkerPath),
     ]);
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
@@ -51,7 +51,7 @@ test('executeNickelMenuRemoval writes uninstall tgz, removes NickelMenu assets, 
     ]);
     assert.deepEqual(device.removalFor('.adds/nm').options, { recursive: true });
     assert.deepEqual(device.removalFor('.adds/scripts').options, { recursive: true });
-    assert.equal(device.writeFor(pathString(NICKELMENU_UNINSTALL_MARKER_PATH)).data.length, 0);
+    assert.equal(device.writeFor(pathString(nickelMenuUninstallMarkerPath)).data.length, 0);
     assert.deepEqual(progress.messages, [
         'Writing KoboRoot.tgz...',
         'Removing NickelMenu assets...',
@@ -94,8 +94,8 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
     });
 
     assert.deepEqual(device.writePaths(), [
-        TGZ_PATH,
-        pathString(NICKELMENU_UNINSTALL_MARKER_PATH),
+        koboRootTgzPath,
+        pathString(nickelMenuUninstallMarkerPath),
     ]);
     assert.deepEqual(device.removePaths(), [
         '.adds/scripts',
@@ -115,7 +115,7 @@ test('executeNickelMenuRemoval removes sync exclusions only when requested', asy
     ].join('\n');
     const device = new RecordingDevice({
         textFiles: {
-            [CONF_PATH]: originalConf,
+            [koboEReaderConfPath]: originalConf,
         },
     });
 
@@ -125,7 +125,7 @@ test('executeNickelMenuRemoval removes sync exclusions only when requested', asy
         shouldRemoveSyncExclusions: async () => true,
     });
 
-    assert.equal(text(device.writeFor(CONF_PATH).data), [
+    assert.equal(text(device.writeFor(koboEReaderConfPath).data), [
         '[FeatureSettings]',
         'Foo=bar',
         '',
@@ -142,7 +142,7 @@ test('executeNickelMenuRemoval keeps sync exclusions when requested', async () =
     ].join('\n');
     const device = new RecordingDevice({
         textFiles: {
-            [CONF_PATH]: originalConf,
+            [koboEReaderConfPath]: originalConf,
         },
     });
 
@@ -152,12 +152,12 @@ test('executeNickelMenuRemoval keeps sync exclusions when requested', async () =
         shouldRemoveSyncExclusions: async () => false,
     });
 
-    assert.equal(device.writeFor(CONF_PATH), undefined);
+    assert.equal(device.writeFor(koboEReaderConfPath), undefined);
 });
 
 test('executeNickelMenuRemoval stops before removals if KoboRoot.tgz write fails', async () => {
     const installer = createInstaller();
-    const device = new RecordingDevice({ failWritePath: TGZ_PATH });
+    const device = new RecordingDevice({ failWritePath: koboRootTgzPath });
 
     await assert.rejects(
         () => executeNickelMenuRemoval({

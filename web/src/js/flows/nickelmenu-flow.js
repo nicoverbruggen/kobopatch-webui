@@ -18,8 +18,8 @@
 import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavLabels, setNavStep } from '../nav.js';
-import { ALL_FEATURES, getExcludeSyncFoldersLine } from '../../nickelmenu/installer.js';
-import { executeNickelMenuRemoval } from '../use-cases/nickelmenu-removal.js';
+import { NICKELMENU_FEATURES, getExcludeSyncFoldersLine } from '../../nickelmenu/installer.js';
+import { executeNickelMenuRemoval } from '../../nickelmenu/uninstaller.js';
 import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 
@@ -78,11 +78,11 @@ export function initNickelMenu(state) {
     let nmBackupChoice = null;
 
     // --- Feature checkboxes ---
-    // Renders one checkbox per available feature from ALL_FEATURES.
+    // Renders one checkbox per available feature from NICKELMENU_FEATURES.
     // Required features are checked and disabled; others use their default.
 
     function renderFeatureCheckboxes() {
-        const items = ALL_FEATURES
+        const items = NICKELMENU_FEATURES
             .filter(f => f.available !== false)
             .map(f => ({
                 name: 'nm-cfg-' + f.id,
@@ -148,7 +148,7 @@ export function initNickelMenu(state) {
 
     /** Return all features the user has selected for installation. */
     function getSelectedFeatures() {
-        return ALL_FEATURES.filter(f => {
+        return NICKELMENU_FEATURES.filter(f => {
             if (f.available === false) return false;
             if (f.required) return true;
             const checkbox = $q(`input[name="nm-cfg-${f.id}"]`);
@@ -258,7 +258,7 @@ export function initNickelMenu(state) {
 
                 // Scan for removable extras (only once per session).
                 if (detectedUninstallFeatures.length === 0) {
-                    for (const feature of ALL_FEATURES) {
+                    for (const feature of NICKELMENU_FEATURES) {
                         if (!feature.uninstall) continue;
                         for (const detectPath of feature.uninstall.detect) {
                             if (await state.device.pathExists(detectPath)) {

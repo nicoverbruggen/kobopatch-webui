@@ -8,12 +8,12 @@ import customMenu from '../../src/nickelmenu/features/custom-menu/index.js';
 import excludeCalibre from '../../src/nickelmenu/features/exclude-calibre/index.js';
 import hideNotices from '../../src/nickelmenu/features/hide-notices/index.js';
 import {
-    CONF_PATH,
     RecordingDevice,
-    TGZ_PATH,
     bytes,
     createInstaller,
     createProgressRecorder,
+    koboEReaderConfPath,
+    koboRootTgzPath,
     text,
     useCustomMenuAssetFetch,
 } from './test-helpers.js';
@@ -26,8 +26,8 @@ test('installToDevice with no features writes only NickelMenu KoboRoot.tgz', asy
 
     await installer.installToDevice(device, [], progress);
 
-    assert.deepEqual(device.writePaths(), [TGZ_PATH]);
-    assert.deepEqual(device.writeFor(TGZ_PATH).data, tgz);
+    assert.deepEqual(device.writePaths(), [koboRootTgzPath]);
+    assert.deepEqual(device.writeFor(koboRootTgzPath).data, tgz);
     assert.deepEqual(progress.messages, [
         'Writing KoboRoot.tgz...',
         'Done.',
@@ -39,7 +39,7 @@ test('installToDevice with features updates eReader config and writes feature fi
     const installer = createInstaller();
     const device = new RecordingDevice({
         textFiles: {
-            [CONF_PATH]: '[ApplicationPreferences]\nCurrentLocale=en_US\n',
+            [koboEReaderConfPath]: '[ApplicationPreferences]\nCurrentLocale=en_US\n',
         },
     });
 
@@ -50,14 +50,14 @@ test('installToDevice with features updates eReader config and writes feature fi
     }
 
     assert.deepEqual(device.writePaths(), [
-        TGZ_PATH,
-        CONF_PATH,
+        koboRootTgzPath,
+        koboEReaderConfPath,
         '.adds/nm/items',
         '.adds/nm/.cog.png',
         '.adds/scripts/legibility_status.sh',
         '.adds/scripts/toggle_wk_rendering.sh',
     ]);
-    assert.match(text(device.writeFor(CONF_PATH).data), /^\[ApplicationPreferences\]\nCurrentLocale=en_US\n\n\[FeatureSettings\]\nExcludeSyncFolders=/);
+    assert.match(text(device.writeFor(koboEReaderConfPath).data), /^\[ApplicationPreferences\]\nCurrentLocale=en_US\n\n\[FeatureSettings\]\nExcludeSyncFolders=/);
     assert.equal(text(device.writeFor('.adds/nm/items').data), 'menu_item :main :base');
 });
 
@@ -68,11 +68,11 @@ test('installToDevice uses the calibre sync exclusion when exclude-calibre is se
     await installer.installToDevice(device, [excludeCalibre], createProgressRecorder());
 
     assert.deepEqual(device.writePaths(), [
-        TGZ_PATH,
-        CONF_PATH,
+        koboRootTgzPath,
+        koboEReaderConfPath,
     ]);
     assert.match(
-        text(device.writeFor(CONF_PATH).data),
+        text(device.writeFor(koboEReaderConfPath).data),
         /^ExcludeSyncFolders=\(calibre\|/m
     );
 });
@@ -99,7 +99,7 @@ test('installToDevice writes post-processed NickelMenu items as bytes', async ()
 
 test('installToDevice stops before config or feature writes if KoboRoot.tgz write fails', async () => {
     const installer = createInstaller();
-    const device = new RecordingDevice({ failWritePath: TGZ_PATH });
+    const device = new RecordingDevice({ failWritePath: koboRootTgzPath });
 
     await assert.rejects(
         () => installer.installToDevice(device, [excludeCalibre], createProgressRecorder()),
@@ -122,8 +122,8 @@ test('installToDevice stops writing remaining feature files after a feature writ
         restoreFetch();
     }
     assert.deepEqual(device.writePaths(), [
-        TGZ_PATH,
-        CONF_PATH,
+        koboRootTgzPath,
+        koboEReaderConfPath,
     ]);
 });
 
