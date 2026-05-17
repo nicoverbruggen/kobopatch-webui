@@ -6,13 +6,35 @@ on:
     tags: ['v*']
 
 jobs:
-  build-and-test:
+  unit-and-lint:
+    name: Unit tests and lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
-          fetch-depth: 2
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+  wasm-checks:
+    name: WASM build and Go tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -24,16 +46,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install jq
-        run: sudo apt-get install -y jq
-
-      - name: Run web unit tests
-        run: |
-          npm install
-          npm run test:unit
 
       - name: Clone kobopatch source
         run: npm run setup:wasm
@@ -59,21 +71,36 @@ jobs:
           fi
           GOOS=js GOARCH=wasm go test -exec="$EXEC" ./...
 
-      - name: Check if integration test is needed
-        id: check-e2e
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -qE '^(src/|tests/|tools/|scripts/|patches/|package.json|package-lock.json|nixpacks.toml|\.github/workflows/)'; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          fi
+  assets:
+    name: Firmware and installable assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Set cache date
+        id: cache-date
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache firmware and installable assets
+        uses: actions/cache@v4
+        with:
+          path: |
+            tests/e2e/cached_assets
+            src/assets/KF_Readerly.zip
+            src/assets/koreader-kobo.zip
+            src/assets/koreader-release.json
+          key: firmware-installables-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
 
       - name: Download test firmware
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           mkdir -p tests/e2e/cached_assets
           node -e "var c=require('./tests/e2e/firmware-config'); console.log(JSON.stringify([c.primary, c.secondary]))" | jq -c '.[]' | while IFS= read -r entry; do
@@ -86,24 +113,142 @@ jobs:
             fi
           done
 
-      - name: Build web app
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: npm install && npm run build
-
-      - name: Full integration test (WASM)
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: npm run test:wasm
-
       - name: Set up installable assets
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: npm run setup:installables
 
+      - name: Upload assets for this workflow run
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-installable-assets
+          path: |
+            tests/e2e/cached_assets
+            src/assets/KF_Readerly.zip
+            src/assets/koreader-kobo.zip
+            src/assets/koreader-release.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  wasm-integration:
+    name: WASM integration
+    runs-on: ubuntu-latest
+    needs: assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download assets
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-installable-assets
+          path: .
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache-dependency-path: tools/kobopatch-wasm/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Clone kobopatch source
+        run: npm run setup:wasm
+
+      - name: Build WASM binary
+        run: npm run build:wasm
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Full integration test
+        run: npm run test:wasm
+
+  patch-blacklist:
+    name: Patch blacklist check
+    runs-on: ubuntu-latest
+    needs: assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download assets
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-installable-assets
+          path: .
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache-dependency-path: tools/kobopatch-wasm/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Clone kobopatch source
+        run: npm run setup:wasm
+
+      - name: Check patch blacklist
+        run: npm run test:patches:check
+
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    needs: assets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download assets
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-installable-assets
+          path: .
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
+          cache-dependency-path: tools/kobopatch-wasm/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Fresh E2E integration test
+        run: npm run test:e2e:fresh
+
+  download-url-check:
+    name: Firmware download URL check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
       - name: Validate download URLs
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
         run: |
           cd tests/e2e
           ./validate-dl-urls.sh
-
-      - name: Full integration test (Playwright)
-        if: steps.check-e2e.outputs.run == 'true' && env.GITEA_ACTIONS != 'true'
-        run: npm run test:e2e
