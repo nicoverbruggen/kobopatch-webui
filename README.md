@@ -3,32 +3,47 @@
 
 # KoboPatch Web UI
 
-A web application for customising Kobo e-readers. It supports two modes:
+A web application for customising Kobo e-readers. It supports two modes.
 
-- **NickelMenu** — installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config) (custom menus, fonts, screensavers, UI tweaks). Works with most Kobo devices regardless of software version. Can also remove NickelMenu from a connected device.
-  - <u>The safest patch to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
-  - You can optionally install KOReader using this method, too.
-  - Will automatically uninstall itself if Kobo releases an incompatible update in the future, which may happen with software v5.x at some point.
+## Mode A: NickelMenu
 
-- **Custom patches** — applies community [kobopatch](https://github.com/pgaskin/kobopatch) patches to your Kobo's system software. Requires a supported software version and device model, which is currently limited to more recent devices.
-  - A <u>more experimental solution</u> -- you need to choose what tweaks to apply.
-  - These changes are wiped when system updates are released. Requires re-patching when system updates are installed.
-  - Gives you a lot of customization options, but not all of them may work correctly, and not all devices are supported.
+**This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config).** 
 
-## Prerequisites
+This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers and even KOReader if you'd like.  (You can select which specific tweaks to apply.)
 
-Required dependencies: `nodejs`, `jq`, `git`
+Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
-**Note**: Go is required for the WASM build, but downloaded automatically if not installed.
+- <u>This is easily the safest mod to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
+- You can optionally install **KOReader** using this method, too.
+- Recommended for everyone. Easy to uninstall, too.
+
+## Mode B: Custom Patches
+
+**This mode applies community [kobopatch](https://github.com/pgaskin/kobopatch) patches to your Kobo's system software.**
+
+You can combine with with option A, if you'd like, but this is a more involved process. This requires a supported software version and device model, which is currently limited to more recent devices.
+
+- This is a <u>more experimental mod</u>: you need to choose what tweaks to apply.
+- Changes made by these patches are usually reset when system updates are released. That means you must re-patch whenever your device is updated.
+- Gives you a lot of customization options, but not all of them may work correctly, and not all devices are supported.
+- Recommended for advanced users and those interested in more technical tweaks. For tinkerers.
+
+## Hosted version
+
+**Want to patch your device?** You don't need to set this project up yourself. I'm hosting the project here: [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be).
+
+Please read the instructions carefully. I've done my best to make this as user-friendly and safe as possible, but there's always a small risk when applying custom mods to your devices.
+
+Here's the obligatory legal disclaimer:
+
+> [!NOTE]
+> This project is not affiliated with Rakuten Kobo Inc. Patching modifies system files on your Kobo and will void your warranty. If something goes wrong, you may need to [manually reset your device](https://help.kobo.com/hc/en-us/articles/360017605314).
 
 ## How it works
 
 The app uses the **Filesystem Access API** (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection with a downloadable ZIP on other browsers.
 
 If you choose to apply custom patches, **patching happens fully client-side** — no backend needed, can be hosted as a static site. Patches are community-contributed via the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) and need to be manually updated when new Kobo software versions come out.
-
-> [!NOTE]
-> This project is not affiliated with Rakuten Kobo Inc. Patching modifies system files on your Kobo and will void your warranty. If something goes wrong, you may need to [manually reset your device](https://help.kobo.com/hc/en-us/articles/360017605314).
 
 ## Device support
 
@@ -55,25 +70,9 @@ If you want to apply **custom patches**:
 
 ## Technical information
 
-Architecture, file structure, build internals, and detailed testing notes live in [PROJECT.md](PROJECT.md).
+**Note:** This project was built with some assistance of agentic coding tools, some local and some hosted.
 
-## Analytics
-
-The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses optional, privacy-focused analytics via [Umami](https://umami.is) to understand how the tool is used. No personal identifiers are collected. See the "Privacy" link in the footer for details. The following events are tracked:
-
-- **flow-start** — how the user started (manual download or device connection)
-- **nm-option** — which NickelMenu option was selected (preset, NickelMenu only, or removal)
-- **nm-koreader-addon** — whether KOReader was selected for installation
-- **nm-simplified-home** — whether simplified home screen features were selected
-- **nm-basic-tabs** — whether the basic tab bar option was selected
-- **flow-end** — how the flow ended (write, download, or removal outcome for NickelMenu, custom patches, and restore)
-- **feedback** — thumbs up/down response to "Did you find it easy to use this wizard?" shown on done screens
-
-Analytics are disabled for local and self-hosted installs. They activate only when `UMAMI_WEBSITE_ID` and `UMAMI_SCRIPT_URL` environment variables are set on the server. To test the analytics UI locally without sending any data:
-
-```bash
-make serve-fake-analytics
-```
+More relevant notes on architecture, file structure, build internals, and detailed testing notes live in [PROJECT.md](PROJECT.md).
 
 ## Credits
 

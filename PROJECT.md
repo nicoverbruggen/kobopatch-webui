@@ -2,6 +2,12 @@
 
 Maintainer-oriented notes for the KoboPatch Web UI codebase.
 
+## Prerequisites
+
+Required dependencies: `nodejs`, `jq`, `git`
+
+**Note**: Go is required for the WASM build, but downloaded automatically if not installed.
+
 ## File structure
 
 ```text
@@ -239,3 +245,42 @@ The WASM patcher performs several checks on each patched binary before including
 - **File size sanity check** — the patched binary must be exactly the same size as the input. kobopatch does in-place byte replacement, so any size change indicates corruption.
 - **ELF header validation** — verifies the magic bytes (`\x7fELF`), 32-bit class, little-endian encoding, and ARM machine type (`0x28`) are intact after patching.
 - **Archive consistency check** — after building the output tar.gz, re-reads the entire archive and verifies the sum of entry sizes matches what was written.
+
+## Running locally
+
+```bash
+make serve
+```
+
+This serves the app at `http://localhost:8888`. The script automatically:
+
+1. Sets up NickelMenu, KOReader, and Readerly assets if missing
+2. Builds the JS bundle (`web/dist/bundle.js`)
+3. Builds the WASM binary if missing (`web/dist/wasm/kobopatch.wasm`)
+
+You can delete the entire `web/dist/` folder and re-run `make serve` to regenerate everything.
+
+To automatically rebuild when source files change:
+
+```bash
+make dev
+```
+
+
+## Analytics
+
+The hosted version at [kp.nicoverbruggen.be](https://kp.nicoverbruggen.be) uses optional, privacy-focused analytics via [Umami](https://umami.is) to understand how the tool is used. No personal identifiers are collected. See the "Privacy" link in the footer for details. The following events are tracked:
+
+- **flow-start** — how the user started (manual download or device connection)
+- **nm-option** — which NickelMenu option was selected (preset, NickelMenu only, or removal)
+- **nm-koreader-addon** — whether KOReader was selected for installation
+- **nm-simplified-home** — whether simplified home screen features were selected
+- **nm-basic-tabs** — whether the basic tab bar option was selected
+- **flow-end** — how the flow ended (write, download, or removal outcome for NickelMenu, custom patches, and restore)
+- **feedback** — thumbs up/down response to "Did you find it easy to use this wizard?" shown on done screens
+
+Analytics are disabled for local and self-hosted installs. They activate only when `UMAMI_WEBSITE_ID` and `UMAMI_SCRIPT_URL` environment variables are set on the server. To test the analytics UI locally without sending any data:
+
+```bash
+make serve-fake-analytics
+```
