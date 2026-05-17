@@ -19,6 +19,7 @@ import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../dom.js';
 import { showStep, setNavLabels, setNavStep } from '../nav.js';
 import { ALL_FEATURES, getExcludeSyncFoldersLine } from '../../nickelmenu/installer.js';
+import { executeNickelMenuRemoval } from '../use-cases/nickelmenu-removal.js';
 import { TL } from '../strings.js';
 import { isEnabled as analyticsEnabled, track } from '../analytics.js';
 
@@ -531,44 +532,13 @@ export function initNickelMenu(state) {
 
         try {
             if (state.nickelMenuOption === 'remove') {
-                // Removal flow: write uninstall tgz, clean up assets, remove extras.
-                await state.nmInstaller.loadNickelMenu(progressFn);
-                nmProgress.textContent = 'Writing KoboRoot.tgz...';
-                const tgz = await state.nmInstaller.getKoboRootTgz();
-                await state.device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
-                nmProgress.textContent = 'Removing NickelMenu assets...';
-                try {
-                    await state.device.removeEntry(['.adds', 'nm'], { recursive: true });
-                } catch (err) {
-                    console.warn('Could not remove .adds/nm:', err);
-                }
-                try {
-                    await state.device.removeEntry(['.adds', 'scripts'], { recursive: true });
-                } catch (err) {
-                    console.warn('Could not remove .adds/scripts:', err);
-                }
-                // Marker tells NickelMenu to finish uninstalling on next reboot.
-                nmProgress.textContent = 'Creating uninstall marker...';
-                await state.device.writeFile(['.adds', 'nm', 'uninstall'], new Uint8Array(0));
-
-                // Remove any extras the user opted to clean up.
-                const featuresToRemove = getSelectedUninstallFeatures();
-                for (const feature of featuresToRemove) {
-                    nmProgress.textContent = 'Removing ' + feature.uninstall.title + '...';
-                    for (const entry of feature.uninstall.paths) {
-                        try {
-                            await state.device.removeEntry(entry.path, { recursive: !!entry.recursive });
-                        } catch (err) {
-                            console.warn(`Could not remove ${entry.path.join('/')}:`, err);
-                        }
-                    }
-                }
-
-                if (!await hasAddsDirectoriesOtherThanNickelMenu()) {
-                    nmProgress.textContent = 'Removing Kobo eReader.conf sync exclusions...';
-                    await state.nmInstaller.removeExcludeSyncFolders(state.device);
-                }
-
+                await executeNickelMenuRemoval({
+                    device: state.device,
+                    installer: state.nmInstaller,
+                    featuresToRemove: getSelectedUninstallFeatures(),
+                    shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesOtherThanNickelMenu(),
+                    onProgress: progressFn,
+                });
                 showNmDone('remove');
                 return;
             }
