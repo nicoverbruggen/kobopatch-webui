@@ -32,6 +32,12 @@ jobs:
       - name: Install jq
         run: sudo apt-get install -y jq
 
+      - name: Run web unit tests
+        run: |
+          cd web
+          npm install
+          npm run test:unit
+
       - name: Clone kobopatch source
         run: make setup-wasm
 

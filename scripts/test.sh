@@ -78,6 +78,10 @@ echo "=== Linting ==="
 cd "$PROJECT_DIR/web" && npx eslint .
 
 echo ""
+echo "=== Running unit tests ==="
+cd "$PROJECT_DIR/web" && npm run test:unit
+
+echo ""
 echo "=== Building web app ==="
 cd "$PROJECT_DIR/web" && node build.mjs
 

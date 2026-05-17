@@ -1,4 +1,4 @@
-.PHONY: serve serve-fake-analytics dev test test-headed test-e2e test-wasm test-patches setup-installables setup-wasm build-wasm screenshots
+.PHONY: serve serve-fake-analytics dev test test-headed test-unit test-e2e test-wasm test-patches setup-installables setup-wasm build-wasm screenshots
 
 serve:
 	bash scripts/serve-locally.sh
@@ -14,6 +14,9 @@ test:
 
 test-headed:
 	bash scripts/test.sh --headed
+
+test-unit:
+	npm --prefix web run test:unit
 
 test-e2e:
 	bash tests/run-e2e.sh
