@@ -11,9 +11,9 @@ cmds = [
     "npm run build:wasm",
     "npm run setup:installables",
     "npm run build",
-    "node scripts/validate-dist.mjs",
+    "npm run validate:dist",
 ]
 
 [start]
 # TODO: replace simple node server with something better
-cmd = "node scripts/serve.mjs"
+cmd = "npm start"

@@ -49,9 +49,9 @@ tools/
 
 scripts/
   build.mjs                     # esbuild build script + asset copy
-  serve.mjs                     # Static file server (used in production + local)
+  serve-dist.mjs                # Static server for existing dist output
   test.mjs                      # Runs all tests
-  serve-locally.mjs             # Serves app at localhost:8888
+  serve-local.mjs               # Sets up, builds, and serves locally
   validate-dist.mjs             # Validates all required dist resources exist
 ```
 
@@ -130,7 +130,9 @@ npm run test:e2e
 npm run test:e2e:fresh
 npm run test:wasm
 npm run test:patches
+npm run test:patches:check
 npm run screenshots
+npm run validate:dist
 ```
 
 `npm run test:e2e:fresh` removes `dist`, rebuilds the app plus the WASM artifact used by the UI, and then runs Playwright without the standalone WASM integration or patch blacklist checks. This is the preferred verification after feature work.

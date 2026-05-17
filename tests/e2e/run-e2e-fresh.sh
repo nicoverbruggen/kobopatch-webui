@@ -34,7 +34,7 @@ echo "Building web app..."
 npm --prefix "$APP_DIR" run build
 
 echo "Validating dist resources..."
-node "$APP_DIR/scripts/validate-dist.mjs"
+npm --prefix "$APP_DIR" run validate:dist
 
 echo "Running fresh E2E integration tests..."
 "$APP_DIR/tests/e2e/run-e2e.sh" "$@"

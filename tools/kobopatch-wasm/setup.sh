@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 KOBOPATCH_DIR="$SCRIPT_DIR/kobopatch-src"
+KOBOPATCH_REF="6189c54"
 GO_VERSION="1.23.12"
 LOCAL_GO_DIR="$SCRIPT_DIR/go"
 
@@ -33,16 +34,20 @@ else
     export PATH="$LOCAL_GO_DIR/bin:$PATH"
 fi
 
-if [ -d "$KOBOPATCH_DIR" ]; then
-    echo "Updating kobopatch source..."
+if [ -d "$KOBOPATCH_DIR/.git" ]; then
+    echo "Preparing kobopatch source..."
     cd "$KOBOPATCH_DIR"
-    git pull
 else
     echo "Cloning kobopatch source..."
+    rm -rf "$KOBOPATCH_DIR"
     git clone https://github.com/pgaskin/kobopatch.git "$KOBOPATCH_DIR"
     cd "$KOBOPATCH_DIR"
-    git checkout 6189c54 # update this as updates come out
 fi
+
+if ! git cat-file -e "${KOBOPATCH_REF}^{commit}" 2>/dev/null; then
+    git fetch origin "$KOBOPATCH_REF"
+fi
+git checkout --detach "$KOBOPATCH_REF" # update this as updates come out
 
 echo ""
 echo "Done. kobopatch source is at: $KOBOPATCH_DIR"

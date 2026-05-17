@@ -95,10 +95,10 @@ console.log('\n=== Building web app ===');
 await run('node', ['scripts/build.mjs']);
 
 console.log('\n=== Validating dist resources ===');
-await run('node', ['scripts/validate-dist.mjs']);
+await run('npm', ['run', 'validate:dist']);
 
 console.log('\n=== Checking patches/blacklist.json is up to date ===');
-await run(join(toolsDir, 'kobopatch-wasm/test-patches.sh'), ['--check']);
+await run('npm', ['run', 'test:patches:check']);
 
 console.log('\n=== Running WASM integration test ===');
 const primaryFirmware = join(cachedAssets, `kobo-update-${firmwareConfig.primary.version}.zip`);

@@ -25,7 +25,7 @@ module.exports = defineConfig({
     },
   },
   webServer: {
-    command: `cd ${JSON.stringify(appDir)} && PORT=8889 node scripts/serve.mjs`,
+    command: `cd ${JSON.stringify(appDir)} && PORT=8889 node scripts/serve-dist.mjs`,
     port: 8889,
     reuseExistingServer: true,
   },

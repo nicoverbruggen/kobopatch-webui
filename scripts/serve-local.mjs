@@ -52,7 +52,7 @@ if (!existsSync(join(distDir, 'wasm/kobopatch.wasm'))) {
 
 if (devMode) {
   console.log('Serving at http://localhost:8888 (dev mode, watching for changes)');
-  const server = spawnLongRunning('node', ['scripts/serve.mjs'], { env: { NO_CACHE: '1' } });
+  const server = spawnLongRunning('node', ['scripts/serve-dist.mjs'], { env: { NO_CACHE: '1' } });
   const stopServer = () => {
     if (!server.killed) server.kill();
   };
@@ -68,5 +68,5 @@ if (devMode) {
   await run('node', ['scripts/build.mjs', '--watch']);
 } else {
   console.log('Serving at http://localhost:8888');
-  await run('node', ['scripts/serve.mjs']);
+  await run('node', ['scripts/serve-dist.mjs']);
 }
