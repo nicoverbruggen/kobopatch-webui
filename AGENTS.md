@@ -8,7 +8,7 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 - `src/js/app.js` is the orchestrator. It owns shared state, device connection, mode selection, error recovery, and dialogs.
 - `src/js/flows/` contains the user journeys. Keep flow-specific behavior inside the relevant flow file.
 - `src/js/nickelmenu/` contains NickelMenu domain logic. Installer code belongs in `installer.js`, removal code belongs in `uninstaller.js`, and feature modules belong in `features/`.
-- `src/assets/` contains external installable assets such as NickelMenu, KOReader, and Readerly archives.
+- `src/assets/` contains external installable assets. KOReader and Readerly archives are downloaded by `npm run setup:installables` and ignored by git.
 - `src/js/kobo/` contains Kobo device/version/firmware URL/configuration logic. Keep File System Access wrappers in `device.js`, pure version parsing in `version.js`, and `Kobo eReader.conf` parsing plus `ExcludeSyncFolders` generation in `configuration.js` and `sync-exclusions.js`.
 - `src/js/shell/` contains app-shell helpers shared by flows, such as DOM utilities, navigation, strings, and analytics.
 - `src/js/patches/` contains custom patch UI and runner code.

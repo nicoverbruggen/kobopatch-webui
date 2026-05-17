@@ -12,6 +12,11 @@ tools/kobopatch-wasm/wasm_exec.js
 # Generated files in src (written by build scripts, regenerated on demand)
 src/js/wasm_exec.js
 
+# Downloaded installable assets
+src/assets/KF_Readerly.zip
+src/assets/koreader-kobo.zip
+src/assets/koreader-release.json
+
 # Build output
 dist/
 test-results/
