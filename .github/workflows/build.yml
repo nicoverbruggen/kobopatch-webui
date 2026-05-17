@@ -71,6 +71,8 @@ jobs:
   assets:
     name: Firmware and installable assets
     runs-on: ubuntu-latest
+    outputs:
+      cache-date: ${{ steps.cache-date.outputs.date }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -111,19 +113,6 @@ jobs:
       - name: Set up installable assets
         run: npm run setup:installables
 
-      - name: Upload assets for this workflow run
-        uses: actions/upload-artifact@v7
-        with:
-          name: firmware-installable-assets
-          path: |
-            tests/e2e/cached_assets
-            src/assets/KF_Readerly.zip
-            src/assets/koreader-kobo.zip
-            src/assets/koreader-release.json
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 1
-
   wasm-integration:
     name: WASM integration
     runs-on: ubuntu-latest
@@ -132,11 +121,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Download assets
-        uses: actions/download-artifact@v7
+      - name: Restore firmware and installable assets
+        uses: actions/cache/restore@v5
         with:
-          name: firmware-installable-assets
-          path: .
+          path: |
+            tests/e2e/cached_assets
+            src/assets/KF_Readerly.zip
+            src/assets/koreader-kobo.zip
+            src/assets/koreader-release.json
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          fail-on-cache-miss: true
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -176,11 +170,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Download assets
-        uses: actions/download-artifact@v7
+      - name: Restore firmware and installable assets
+        uses: actions/cache/restore@v5
         with:
-          name: firmware-installable-assets
-          path: .
+          path: |
+            tests/e2e/cached_assets
+            src/assets/KF_Readerly.zip
+            src/assets/koreader-kobo.zip
+            src/assets/koreader-release.json
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          fail-on-cache-miss: true
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -208,11 +207,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Download assets
-        uses: actions/download-artifact@v7
+      - name: Restore firmware and installable assets
+        uses: actions/cache/restore@v5
         with:
-          name: firmware-installable-assets
-          path: .
+          path: |
+            tests/e2e/cached_assets
+            src/assets/KF_Readerly.zip
+            src/assets/koreader-kobo.zip
+            src/assets/koreader-release.json
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/firmware-config.js', 'tools/installables/setup.sh') }}
+          fail-on-cache-miss: true
 
       - name: Set up Go
         uses: actions/setup-go@v6
