@@ -109,13 +109,14 @@ npm run setup:installables
 
 This downloads NickelMenu, KOReader, and Readerly assets into `src/assets/`. KOReader and Readerly archives are ignored local assets. Each asset is skipped if already present; pass `--force` to `tools/installables/setup.sh` to re-download all.
 
-To update KOReader on a running production container without a full rebuild:
+To update KOReader or Readerly on a running production container without a full rebuild:
 
 ```bash
 tools/installables/update-koreader.sh
+tools/installables/update-readerly.sh
 ```
 
-This downloads the latest release directly into `dist/assets/`, skipping the build step.
+These download the latest releases directly into `dist/assets/`, skipping the build step.
 
 ## Testing
 
