@@ -196,21 +196,30 @@
 
         <!-- Step 2: Mode selection -->
         <section id="step-mode" class="step" hidden>
-            <p>What would you like to do?</p>
+            <p>Do you want to tweak your device or apply system patches? You cannot do both at once, so you will need to choose.</p>
             <div class="selection-cards" role="radiogroup" aria-label="Mode selection">
                 <label class="selection-card selection-card--recommended">
                     <input type="radio" name="mode" value="nickelmenu">
                     <div class="selection-card-body">
-                        <div class="selection-card-title">Install or remove NickelMenu</div>
+                        <div class="selection-card-title">Tweak my device with NickelMenu</div>
                         <div class="recommended-label">Recommended</div>
                         <div class="selection-card-desc">Installs a custom menu and various tweaks for your device. Works with most Kobo devices. The safest solution, as it has a lot of error checking and a failsafe mechanism which will automatically uninstall it as a last resort. </div>
+                        <div class="selection-card-notes">
+                            <div class="selection-card-note">For everyone</div>
+                            <div class="selection-card-note">Offers uninstallation option</div>
+                            <div class="selection-card-note">Optionally install KOReader</div>
+                        </div>
                     </div>
                 </label>
                 <label class="selection-card">
                     <input type="radio" name="mode" value="patches">
                     <div class="selection-card-body">
-                        <div class="selection-card-title">Custom Patches</div>
-                        <div class="selection-card-desc">Apply community patches to your Kobo's system software. Requires a supported software version and supported device.</div>
+                        <div class="selection-card-title">Patch system software</div>
+                        <div class="selection-card-desc">Apply community patches to your Kobo's system software or restore the original software. Requires a supported software version and supported device.</div>
+                        <div class="selection-card-notes">
+                            <div class="selection-card-note selection-card-note--warning">For advanced users</div>
+                            <div class="selection-card-note selection-card-note--warning">Requires reinstall after updates</div>
+                        </div>
                     </div>
                 </label>
             </div>
@@ -223,20 +232,20 @@
 
         <!-- Step 2b: NickelMenu configuration -->
         <section id="step-nickelmenu" class="step" hidden>
-            <p>Choose what to do with your Kobo.</p>
+            <p>How would you like to configure NickelMenu?</p>
             <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
                 <label class="selection-card">
                     <input type="radio" name="nm-option" value="preset">
                     <div class="selection-card-body">
-                        <div class="selection-card-title">Install NickelMenu with preset</div>
-                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You get to decide which optional features you'd like to enable.</div>
+                        <div class="selection-card-title">Install with preset (and customize)</div>
+                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You also get to decide which extra optional features you'd like to enable, including enabling some home screen tweaks and installing KOReader, among others.</div>
                     </div>
                 </label>
                 <label class="selection-card">
                     <input type="radio" name="nm-option" value="nickelmenu-only">
                     <div class="selection-card-body">
-                        <div class="selection-card-title">Install NickelMenu only</div>
-                        <div class="selection-card-desc">Installs just NickelMenu without any configuration. You can set it up yourself later.</div>
+                        <div class="selection-card-title">Barebones install</div>
+                        <div class="selection-card-desc">Installs <u>only</u> NickelMenu without any configuration or preset. You will need to set it up yourself later by editing the `.adds/nm/items` file. For tinkerers.</div>
                     </div>
                 </label>
                 <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">

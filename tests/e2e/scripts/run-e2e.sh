@@ -57,6 +57,14 @@ if [ ! -f "$DIST_DIR/wasm/kobopatch.wasm" ]; then
     exit 1
 fi
 
+# Guard against a dev build of dist/ — the build suite asserts minified output
+# (e.g. <style>:root{...}), so a dev/watch build would spuriously fail.
+if ! grep -q '<style>:root{' "$DIST_DIR/index.html"; then
+    echo "ERROR: dist/ looks like a dev build (critical CSS isn't minified)."
+    echo "Run 'npm run build' for a production build, or use 'npm run test:e2e:fresh'."
+    exit 1
+fi
+
 # Set up installable assets if not present.
 "$APP_DIR/tools/installables/setup.sh"
 

@@ -1243,6 +1243,15 @@ test.describe('Custom patches', () => {
 
     await page.click('#btn-manual');
     await expect(page.locator('#step-mode')).not.toBeHidden();
+    await expect(page.locator('#step-mode .selection-card-title').first()).toHaveText('Tweak my device with NickelMenu');
+    await expect(page.locator('#step-mode .selection-card-note')).toHaveText([
+      'For everyone',
+      'Offers uninstallation option',
+      'Optionally install KOReader',
+      'For advanced users',
+      'Requires reinstall after updates',
+    ]);
+    await expect(page.locator('#step-mode .selection-card-desc').nth(1)).toContainText('restore the original software');
 
     // Both modes should be available in manual mode
     await expect(page.locator('input[name="mode"][value="patches"]')).not.toBeDisabled();

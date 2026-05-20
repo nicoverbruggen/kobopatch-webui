@@ -58,6 +58,32 @@
     line-height: 1.5;
 }
 
+.selection-card-notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.55rem;
+}
+
+.selection-card-note {
+    display: flex;
+    align-items: center;
+    padding: 0.18rem 0.45rem;
+    border: 1px solid var(--info-border);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--info-bg) 45%, transparent);
+    color: var(--info-text);
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.25;
+}
+
+.selection-card-note--warning {
+    border-color: var(--warning-border);
+    background: color-mix(in srgb, var(--warning-bg) 55%, transparent);
+    color: var(--warning-text);
+}
+
 .recommended-label {
     font-size: 0.7rem;
     font-weight: 600;

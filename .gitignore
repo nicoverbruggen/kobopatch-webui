@@ -47,3 +47,6 @@ proposals/
 
 # Claude
 .claude
+
+# JetBrains
+.idea
