@@ -17,7 +17,7 @@ echo "Removing existing dist..."
 rm -rf "$DIST_DIR"
 
 echo "Setting up installable assets..."
-"$APP_DIR/tools/installables/setup.sh"
+node "$APP_DIR/tools/installables/installables.mjs" --src --skip-if-present
 
 if [ ! -d "$WASM_SRC_DIR" ]; then
     echo "Setting up kobopatch source..."

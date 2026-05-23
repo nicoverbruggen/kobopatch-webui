@@ -107,16 +107,20 @@ Set up installable assets:
 npm run setup:installables
 ```
 
-This downloads NickelMenu, KOReader, and Readerly assets into `src/assets/`. KOReader and Readerly archives are ignored local assets. Each asset is skipped if already present; pass `--force` to `tools/installables/setup.sh` to re-download all.
+This downloads NickelMenu, KOReader, and Readerly assets into `src/assets/`. KOReader and Readerly archives are ignored local assets. Each asset is skipped if already present; pass `--force` to re-download all.
 
-To update KOReader or Readerly on a running production container without a full rebuild:
+To update assets between fixed deployments (e.g. on a running production container):
 
 ```bash
-tools/installables/update-koreader.sh
-tools/installables/update-readerly.sh
+npm run update:installables                                 # refresh all installables in both src/assets/ and dist/assets/
+node tools/installables/installables.mjs --src --dist --only=koreader
+node tools/installables/installables.mjs --src --dist --only=readerly
+node tools/installables/installables.mjs --src --dist --only=nickelmenu
 ```
 
-These download the latest releases directly into `dist/assets/`, skipping the build step.
+`update:installables` checks each release upstream and only downloads when the resolved version differs from the local `<name>-release.json`. Updating both folders keeps the dev/build source (`src/assets/`) in sync with the live serving directory (`dist/assets/`), so the next rebuild won't regress to an older release. Set `GITHUB_TOKEN` in the environment if you hit GitHub's unauthenticated API rate limit.
+
+The setup variant (`npm run setup:installables`) instead passes `--skip-if-present` and only fetches missing archives — that's what `npm run serve`, the test runners, and CI use to avoid hitting GitHub on every invocation.
 
 ## Testing
 

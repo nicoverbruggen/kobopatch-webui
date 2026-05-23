@@ -77,7 +77,7 @@ if (!existsSync(join(toolsDir, 'kobopatch-wasm/kobopatch-src'))) {
   await run(join(toolsDir, 'kobopatch-wasm/setup.sh'), []);
 }
 
-await run(join(toolsDir, 'installables/setup.sh'), []);
+await run('node', [join(toolsDir, 'installables/installables.mjs'), '--src', '--skip-if-present']);
 
 console.log('=== Installing dependencies ===');
 await run('npm', ['install']);

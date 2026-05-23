@@ -66,7 +66,7 @@ if ! grep -q '<style>:root{' "$DIST_DIR/index.html"; then
 fi
 
 # Set up installable assets if not present.
-"$APP_DIR/tools/installables/setup.sh"
+node "$APP_DIR/tools/installables/installables.mjs" --src --skip-if-present
 
 if [ -d "$STALE_TEST_NODE_MODULES" ]; then
     echo "Removing stale tests/node_modules from the former E2E npm package..."

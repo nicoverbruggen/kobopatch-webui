@@ -36,7 +36,7 @@ if (process.argv.includes('--fake-analytics')) {
   process.env.UMAMI_SCRIPT_URL = 'data:,';
 }
 
-await run(join(appDir, 'tools/installables/setup.sh'), []);
+await run('node', [join(appDir, 'tools/installables/installables.mjs'), '--src', '--skip-if-present']);
 
 console.log('Building JS bundle...');
 await run('npm', ['install', '--silent']);

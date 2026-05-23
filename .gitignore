@@ -15,8 +15,10 @@ src/js/wasm_exec.js
 # Downloaded installable assets
 src/assets/KF_Readerly.zip
 src/assets/koreader-kobo.zip
-src/assets/koreader-release.json
 src/assets/NickelMenu.zip
+src/assets/koreader-release.json
+src/assets/nickelmenu-release.json
+src/assets/readerly-release.json
 
 # Build output
 dist/
