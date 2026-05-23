@@ -4,6 +4,10 @@ import assert from 'node:assert/strict';
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import {
+    buildExcludeSyncFoldersLine,
+    legacyBrokenExcludeSyncFoldersLines,
+} from '../../src/js/kobo/sync-exclusions.js';
+import {
     executeNickelMenuRemoval,
     hasAddsDirectoriesRequiringSyncExclusions,
     nickelMenuUninstallMarkerPath,
@@ -225,6 +229,36 @@ test('executeNickelMenuRemoval keeps sync exclusions when requested', async () =
     });
 
     assert.equal(device.writeFor(koboEReaderConfPath), undefined);
+});
+
+test('executeNickelMenuRemoval repairs persisted legacy malformed sync exclusions to the default line', async () => {
+    const installer = createInstaller();
+    const originalConf = [
+        '[FeatureSettings]',
+        legacyBrokenExcludeSyncFoldersLines.calibre,
+        'Foo=bar',
+        '',
+    ].join('\n');
+    const device = new RecordingDevice({
+        textFiles: {
+            [koboEReaderConfPath]: originalConf,
+        },
+    });
+
+    await executeNickelMenuRemoval({
+        device,
+        installer,
+        cleanupFeatures: [customMenu],
+        shouldRemoveSyncExclusions: async () => false,
+    });
+
+    const updated = text(device.writeFor(koboEReaderConfPath).data);
+    assert.equal(updated, [
+        '[FeatureSettings]',
+        buildExcludeSyncFoldersLine(),
+        'Foo=bar',
+        '',
+    ].join('\n'));
 });
 
 test('executeNickelMenuRemoval stops before removals if KoboRoot.tgz write fails', async () => {

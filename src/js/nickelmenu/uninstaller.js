@@ -79,6 +79,8 @@ async function executeNickelMenuRemoval({
     if (await shouldRemoveSyncExclusions()) {
         onProgress('Removing Kobo eReader.conf sync exclusions...');
         await installer.removeExcludeSyncFolders(device);
+    } else {
+        await installer.repairLegacyExcludeSyncFolders(device);
     }
 }
 

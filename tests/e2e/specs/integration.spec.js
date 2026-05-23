@@ -744,6 +744,35 @@ test.describe('NickelMenu', () => {
     expect(confAfter).toContain(EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE);
   });
 
+  test('with device — remove NickelMenu repairs persisted legacy sync exclusions when another .adds directory remains', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      eReaderConf: '[General]\nsome=setting\n[FeatureSettings]\n' + LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n',
+      extraAddsDirs: ['kobocloud'],
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="remove"]');
+    await page.click('#btn-nm-next');
+    await skipNmBackup(page);
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    expect(await mockPathExists(page, '.adds', 'nm', 'uninstall')).toBe(true);
+    expect(await mockPathExists(page, '.adds', 'kobocloud')).toBe(true);
+
+    const confAfter = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confAfter).not.toContain(LEGACY_BROKEN_EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE);
+    expect(confAfter).not.toContain('ExcludeSyncFolders=(calibre|');
+    expect(confAfter).toContain(EXCLUDE_SYNC_FOLDERS_LINE);
+    expect(confAfter).toContain('some=setting');
+  });
+
   test('with device — remove NickelMenu removes sync exclusions when only scripts also existed', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

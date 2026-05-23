@@ -14,7 +14,10 @@ import hideRow2Col2 from './features/hide-row2col2/index.js';
 import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
-import { buildExcludeSyncFoldersLine } from '../kobo/sync-exclusions.js';
+import {
+    buildExcludeSyncFoldersLine,
+    legacyBrokenExcludeSyncFoldersLines,
+} from '../kobo/sync-exclusions.js';
 
 export function getExcludeSyncFoldersLine(features = []) {
     return buildExcludeSyncFoldersLine({
@@ -201,6 +204,26 @@ export class NickelMenuInstaller {
         if (!content || !content.includes('ExcludeSyncFolders')) return;
 
         const updated = removeExcludeSyncFoldersLine(content);
+        if (updated !== content) {
+            await device.writeFile(confPath, new TextEncoder().encode(updated));
+        }
+    }
+
+    /**
+     * Replace legacy malformed ExcludeSyncFolders values with the default
+     * generated line when uninstall keeps sync exclusions in place.
+     */
+    async repairLegacyExcludeSyncFolders(device) {
+        const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
+        const content = await device.readFile(confPath);
+        if (!content || !content.includes('ExcludeSyncFolders')) return;
+
+        let updated = content;
+        for (const line of Object.values(legacyBrokenExcludeSyncFoldersLines)) {
+            if (!updated.includes(line)) continue;
+            updated = setExcludeSyncFoldersLine(updated, buildExcludeSyncFoldersLine());
+        }
+
         if (updated !== content) {
             await device.writeFile(confPath, new TextEncoder().encode(updated));
         }
