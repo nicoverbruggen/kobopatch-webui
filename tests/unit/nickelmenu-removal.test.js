@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import {
     executeNickelMenuRemoval,
+    hasAddsDirectoriesRequiringSyncExclusions,
     nickelMenuUninstallMarkerPath,
 } from '../../src/js/nickelmenu/uninstaller.js';
 import {
@@ -28,6 +29,18 @@ function createWarnRecorder() {
 function pathString(pathParts) {
     return pathParts.join('/');
 }
+
+test('hasAddsDirectoriesRequiringSyncExclusions ignores NickelMenu and scripts directories', () => {
+    assert.equal(hasAddsDirectoriesRequiringSyncExclusions([
+        { name: 'nm', kind: 'directory' },
+        { name: 'scripts', kind: 'directory' },
+    ]), false);
+
+    assert.equal(hasAddsDirectoriesRequiringSyncExclusions([
+        { name: 'nm', kind: 'directory' },
+        { name: 'koreader', kind: 'directory' },
+    ]), true);
+});
 
 test('executeNickelMenuRemoval writes uninstall tgz, removes NickelMenu assets, and creates uninstall marker', async () => {
     const installer = createInstaller();

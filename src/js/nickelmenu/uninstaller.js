@@ -4,6 +4,13 @@ const nickelMenuAssetPaths = [
     ['.adds', 'scripts'],
 ];
 const nickelMenuUninstallMarkerPath = ['.adds', 'nm', 'uninstall'];
+const syncExclusionIgnoredAddsDirectories = new Set(['nm', 'scripts']);
+
+function hasAddsDirectoriesRequiringSyncExclusions(entries = []) {
+    return entries.some(entry =>
+        entry.kind === 'directory' && !syncExclusionIgnoredAddsDirectories.has(entry.name)
+    );
+}
 
 async function removeOptionalEntry(device, path, options, logger) {
     try {
@@ -50,6 +57,7 @@ async function executeNickelMenuRemoval({
 
 export {
     executeNickelMenuRemoval,
+    hasAddsDirectoriesRequiringSyncExclusions,
     nickelMenuAssetPaths,
     nickelMenuTgzPath,
     nickelMenuUninstallMarkerPath,

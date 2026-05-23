@@ -19,7 +19,10 @@ import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../shell/dom.js';
 import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
 import { NICKELMENU_FEATURES, getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
-import { executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
+import {
+    executeNickelMenuRemoval,
+    hasAddsDirectoriesRequiringSyncExclusions,
+} from '../nickelmenu/uninstaller.js';
 import { TL } from '../shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from '../shell/analytics.js';
 
@@ -141,9 +144,9 @@ export function initNickelMenu(state) {
         });
     }
 
-    async function hasAddsDirectoriesOtherThanNickelMenu() {
+    async function hasAddsDirectoriesRequiringSyncExclusionsOnDevice() {
         const entries = await state.device.listDirectory(['.adds']);
-        return entries.some(entry => entry.kind === 'directory' && entry.name !== 'nm');
+        return hasAddsDirectoriesRequiringSyncExclusions(entries);
     }
 
     /** Return all features the user has selected for installation. */
@@ -536,7 +539,7 @@ export function initNickelMenu(state) {
                     device: state.device,
                     installer: state.nmInstaller,
                     featuresToRemove: getSelectedUninstallFeatures(),
-                    shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesOtherThanNickelMenu(),
+                    shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesRequiringSyncExclusionsOnDevice(),
                     onProgress: progressFn,
                 });
                 showNmDone('remove');
