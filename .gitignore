@@ -16,6 +16,7 @@ src/js/wasm_exec.js
 src/assets/KF_Readerly.zip
 src/assets/koreader-kobo.zip
 src/assets/koreader-release.json
+src/assets/NickelMenu.zip
 
 # Build output
 dist/
