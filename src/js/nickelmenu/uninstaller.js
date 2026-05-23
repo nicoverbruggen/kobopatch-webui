@@ -1,10 +1,9 @@
 const nickelMenuTgzPath = ['.kobo', 'KoboRoot.tgz'];
-const nickelMenuAssetPaths = [
+const nickelMenuRecursiveAssetPaths = [
     ['.adds', 'nm'],
-    ['.adds', 'scripts'],
 ];
 const nickelMenuUninstallMarkerPath = ['.adds', 'nm', 'uninstall'];
-const syncExclusionIgnoredAddsDirectories = new Set(['nm', 'scripts']);
+const syncExclusionIgnoredAddsDirectories = new Set(['nm']);
 
 function hasAddsDirectoriesRequiringSyncExclusions(entries = []) {
     return entries.some(entry =>
@@ -20,10 +19,34 @@ async function removeOptionalEntry(device, path, options, logger) {
     }
 }
 
+async function removeCleanupParentDirsIfEmpty(device, cleanup, logger) {
+    for (const path of cleanup.removeParentDirsIfEmpty || []) {
+        if (!await device.pathExists(path)) continue;
+
+        const remainingEntries = await device.listDirectory(path);
+        if (remainingEntries.length === 0) {
+            await removeOptionalEntry(device, path, {}, logger);
+        }
+    }
+}
+
+async function executeFeatureCleanup(device, feature, logger) {
+    const cleanup = feature.cleanup;
+    if (!cleanup) return;
+
+    for (const entry of cleanup.paths || []) {
+        const path = typeof entry === 'string' ? entry.split('/') : entry.path;
+        const options = typeof entry === 'string' ? {} : { recursive: !!entry.recursive };
+        await removeOptionalEntry(device, path, options, logger);
+    }
+
+    await removeCleanupParentDirsIfEmpty(device, cleanup, logger);
+}
+
 async function executeNickelMenuRemoval({
     device,
     installer,
-    featuresToRemove = [],
+    cleanupFeatures = [],
     shouldRemoveSyncExclusions,
     onProgress = () => {},
     logger = console,
@@ -35,18 +58,22 @@ async function executeNickelMenuRemoval({
     await device.writeFile(nickelMenuTgzPath, tgz);
 
     onProgress('Removing NickelMenu assets...');
-    for (const path of nickelMenuAssetPaths) {
+    for (const path of nickelMenuRecursiveAssetPaths) {
         await removeOptionalEntry(device, path, { recursive: true }, logger);
+    }
+
+    const alwaysCleanupFeatures = cleanupFeatures.filter(feature => feature.cleanup?.mode === 'always');
+    for (const feature of alwaysCleanupFeatures) {
+        await executeFeatureCleanup(device, feature, logger);
     }
 
     onProgress('Creating uninstall marker...');
     await device.writeFile(nickelMenuUninstallMarkerPath, new Uint8Array(0));
 
-    for (const feature of featuresToRemove) {
-        onProgress('Removing ' + feature.uninstall.title + '...');
-        for (const entry of feature.uninstall.paths) {
-            await removeOptionalEntry(device, entry.path, { recursive: !!entry.recursive }, logger);
-        }
+    const optionalCleanupFeatures = cleanupFeatures.filter(feature => feature.cleanup?.mode !== 'always');
+    for (const feature of optionalCleanupFeatures) {
+        onProgress('Removing ' + feature.cleanup.title + '...');
+        await executeFeatureCleanup(device, feature, logger);
     }
 
     if (await shouldRemoveSyncExclusions()) {
@@ -58,7 +85,7 @@ async function executeNickelMenuRemoval({
 export {
     executeNickelMenuRemoval,
     hasAddsDirectoriesRequiringSyncExclusions,
-    nickelMenuAssetPaths,
+    nickelMenuRecursiveAssetPaths,
     nickelMenuTgzPath,
     nickelMenuUninstallMarkerPath,
 };

@@ -74,9 +74,9 @@ export function initNickelMenu(state) {
     const nmPresetConflictList = $('nm-preset-conflict-list');
     const nmPresetConflictAck = $('nm-preset-conflict-ack');
 
-    // Features detected on the device that can be cleaned up during removal
-    // (e.g. KOReader). Populated by checkNickelMenuInstalled().
-    let detectedUninstallFeatures = [];
+    // Features detected on the device that can optionally be cleaned up during
+    // removal (e.g. KOReader). Populated by checkNickelMenuInstalled().
+    let detectedOptionalCleanupFeatures = [];
     let detectedPresetConflicts = [];
     let nmBackupChoice = null;
 
@@ -102,15 +102,15 @@ export function initNickelMenu(state) {
     // When removing NickelMenu, shows checkboxes for any detected extras
     // (like KOReader) so the user can opt into cleaning those up too.
 
-    function renderUninstallCheckboxes() {
-        if (detectedUninstallFeatures.length === 0) {
+    function renderCleanupCheckboxes() {
+        if (detectedOptionalCleanupFeatures.length === 0) {
             nmUninstallOptions.innerHTML = '';
             return;
         }
-        const items = detectedUninstallFeatures.map(f => ({
+        const items = detectedOptionalCleanupFeatures.map(f => ({
             name: 'nm-uninstall-' + f.id,
-            title: 'Also remove ' + f.uninstall.title,
-            description: f.uninstall.description,
+            title: 'Also remove ' + f.cleanup.title,
+            description: f.cleanup.description,
             checked: true,
         }));
         renderNmCheckboxList(nmUninstallOptions, items);
@@ -118,7 +118,7 @@ export function initNickelMenu(state) {
 
     /** Clear removal state when returning to mode selection. */
     function resetNickelMenuState() {
-        detectedUninstallFeatures = [];
+        detectedOptionalCleanupFeatures = [];
         detectedPresetConflicts = [];
         nmUninstallOptions.hidden = true;
         nmUninstallOptions.innerHTML = '';
@@ -136,12 +136,16 @@ export function initNickelMenu(state) {
         }
     }
 
-    /** Return only the uninstall features whose checkboxes are checked. */
-    function getSelectedUninstallFeatures() {
-        return detectedUninstallFeatures.filter(f => {
+    /** Return only the optional cleanup features whose checkboxes are checked. */
+    function getSelectedOptionalCleanupFeatures() {
+        return detectedOptionalCleanupFeatures.filter(f => {
             const cb = $q(`input[name="nm-uninstall-${f.id}"]`);
             return cb && cb.checked;
         });
+    }
+
+    function getAlwaysCleanupFeatures() {
+        return NICKELMENU_FEATURES.filter(f => f.cleanup?.mode === 'always');
     }
 
     async function hasAddsDirectoriesRequiringSyncExclusionsOnDevice() {
@@ -260,17 +264,17 @@ export function initNickelMenu(state) {
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
 
                 // Scan for removable extras (only once per session).
-                if (detectedUninstallFeatures.length === 0) {
+                if (detectedOptionalCleanupFeatures.length === 0) {
                     for (const feature of NICKELMENU_FEATURES) {
-                        if (!feature.uninstall) continue;
-                        for (const detectPath of feature.uninstall.detect) {
+                        if (feature.cleanup?.mode !== 'optional') continue;
+                        for (const detectPath of feature.cleanup.detect) {
                             if (await state.device.pathExists(detectPath)) {
-                                detectedUninstallFeatures.push(feature);
+                                detectedOptionalCleanupFeatures.push(feature);
                                 break;
                             }
                         }
                     }
-                    renderUninstallCheckboxes();
+                    renderCleanupCheckboxes();
                 }
                 return;
             } catch {
@@ -336,7 +340,7 @@ export function initNickelMenu(state) {
 
     for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
         radio.addEventListener('change', () => {
-            nmUninstallOptions.hidden = radio.value !== 'remove' || !radio.checked || detectedUninstallFeatures.length === 0;
+            nmUninstallOptions.hidden = radio.value !== 'remove' || !radio.checked || detectedOptionalCleanupFeatures.length === 0;
             updateNmNavLabelsForOption(radio.value);
             btnNmNext.disabled = false;
         });
@@ -346,7 +350,7 @@ export function initNickelMenu(state) {
     async function goToNickelMenuConfig() {
         await checkNickelMenuInstalled();
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
-        nmUninstallOptions.hidden = !currentOption || currentOption.value !== 'remove' || detectedUninstallFeatures.length === 0;
+        nmUninstallOptions.hidden = !currentOption || currentOption.value !== 'remove' || detectedOptionalCleanupFeatures.length === 0;
         btnNmNext.disabled = !currentOption;
         updateNmNavLabelsForOption(currentOption?.value);
         showStep(stepNickelMenu);
@@ -478,10 +482,10 @@ export function initNickelMenu(state) {
 
         if (state.nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
-            const featuresToRemove = getSelectedUninstallFeatures();
+            const optionalCleanupFeatures = getSelectedOptionalCleanupFeatures();
             populateList(list, [
                 TL.STATUS.NM_REMOVE_NICKELMENU,
-                ...featuresToRemove.map(f => f.uninstall.title + ' will also be removed'),
+                ...optionalCleanupFeatures.map(f => f.cleanup.title + ' will also be removed'),
             ]);
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
@@ -538,7 +542,10 @@ export function initNickelMenu(state) {
                 await executeNickelMenuRemoval({
                     device: state.device,
                     installer: state.nmInstaller,
-                    featuresToRemove: getSelectedUninstallFeatures(),
+                    cleanupFeatures: [
+                        ...getAlwaysCleanupFeatures(),
+                        ...getSelectedOptionalCleanupFeatures(),
+                    ],
                     shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesRequiringSyncExclusionsOnDevice(),
                     onProgress: progressFn,
                 });

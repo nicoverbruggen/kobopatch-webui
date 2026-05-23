@@ -9,7 +9,8 @@ export default {
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 
-    uninstall: {
+    cleanup: {
+        mode: 'optional',
         title: 'KOReader',
         description: 'Removes the KOReader app directory (.adds/koreader/).',
         detect: [['.adds', 'koreader']],

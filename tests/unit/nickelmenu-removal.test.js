@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import {
     executeNickelMenuRemoval,
@@ -30,11 +31,15 @@ function pathString(pathParts) {
     return pathParts.join('/');
 }
 
-test('hasAddsDirectoriesRequiringSyncExclusions ignores NickelMenu and scripts directories', () => {
+test('hasAddsDirectoriesRequiringSyncExclusions ignores only the NickelMenu directory', () => {
+    assert.equal(hasAddsDirectoriesRequiringSyncExclusions([
+        { name: 'nm', kind: 'directory' },
+    ]), false);
+
     assert.equal(hasAddsDirectoriesRequiringSyncExclusions([
         { name: 'nm', kind: 'directory' },
         { name: 'scripts', kind: 'directory' },
-    ]), false);
+    ]), true);
 
     assert.equal(hasAddsDirectoriesRequiringSyncExclusions([
         { name: 'nm', kind: 'directory' },
@@ -42,14 +47,21 @@ test('hasAddsDirectoriesRequiringSyncExclusions ignores NickelMenu and scripts d
     ]), true);
 });
 
-test('executeNickelMenuRemoval writes uninstall tgz, removes NickelMenu assets, and creates uninstall marker', async () => {
+test('executeNickelMenuRemoval removes NickelMenu assets, preset scripts, and creates uninstall marker', async () => {
     const installer = createInstaller();
-    const device = new RecordingDevice();
+    const device = new RecordingDevice({
+        existingEntries: [
+            '.adds/nm',
+            '.adds/scripts',
+            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+        ],
+    });
     const progress = createProgressRecorder();
 
     await executeNickelMenuRemoval({
         device,
         installer,
+        cleanupFeatures: [customMenu],
         shouldRemoveSyncExclusions: async () => false,
         onProgress: progress,
     });
@@ -60,10 +72,12 @@ test('executeNickelMenuRemoval writes uninstall tgz, removes NickelMenu assets, 
     ]);
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
+        '.adds/scripts/legibility_status.sh',
+        '.adds/scripts/toggle_wk_rendering.sh',
         '.adds/scripts',
     ]);
     assert.deepEqual(device.removalFor('.adds/nm').options, { recursive: true });
-    assert.deepEqual(device.removalFor('.adds/scripts').options, { recursive: true });
+    assert.deepEqual(device.removalFor('.adds/scripts').options, {});
     assert.equal(device.writeFor(pathString(nickelMenuUninstallMarkerPath)).data.length, 0);
     assert.deepEqual(progress.messages, [
         'Writing KoboRoot.tgz...',
@@ -74,17 +88,26 @@ test('executeNickelMenuRemoval writes uninstall tgz, removes NickelMenu assets, 
 
 test('executeNickelMenuRemoval removes selected feature cleanup paths only', async () => {
     const installer = createInstaller();
-    const device = new RecordingDevice();
+    const device = new RecordingDevice({
+        existingEntries: [
+            '.adds/nm',
+            '.adds/scripts',
+            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: '.kobo/screensaver/moon.png', kind: 'file' },
+        ],
+    });
 
     await executeNickelMenuRemoval({
         device,
         installer,
-        featuresToRemove: [screensaver],
+        cleanupFeatures: [customMenu, screensaver],
         shouldRemoveSyncExclusions: async () => false,
     });
 
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
+        '.adds/scripts/legibility_status.sh',
+        '.adds/scripts/toggle_wk_rendering.sh',
         '.adds/scripts',
         '.kobo/screensaver/moon.png',
     ]);
@@ -94,6 +117,11 @@ test('executeNickelMenuRemoval removes selected feature cleanup paths only', asy
 test('executeNickelMenuRemoval ignores optional missing removal paths and continues', async () => {
     const installer = createInstaller();
     const device = new RecordingDevice({
+        existingEntries: [
+            '.adds/scripts',
+            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: '.kobo/screensaver/moon.png', kind: 'file' },
+        ],
         failRemovePaths: ['.adds/nm', '.kobo/screensaver/moon.png'],
     });
     const logger = createWarnRecorder();
@@ -101,7 +129,7 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
     await executeNickelMenuRemoval({
         device,
         installer,
-        featuresToRemove: [screensaver],
+        cleanupFeatures: [customMenu, screensaver],
         shouldRemoveSyncExclusions: async () => false,
         logger,
     });
@@ -111,11 +139,40 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
         pathString(nickelMenuUninstallMarkerPath),
     ]);
     assert.deepEqual(device.removePaths(), [
+        '.adds/scripts/legibility_status.sh',
+        '.adds/scripts/toggle_wk_rendering.sh',
         '.adds/scripts',
     ]);
     assert.equal(logger.messages.length, 2);
     assert.match(logger.messages[0][0], /Could not remove \.adds\/nm/);
     assert.match(logger.messages[1][0], /Could not remove \.kobo\/screensaver\/moon\.png/);
+});
+
+test('executeNickelMenuRemoval keeps .adds/scripts when non-owned files remain', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({
+        existingEntries: [
+            '.adds/nm',
+            '.adds/scripts',
+            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: '.adds/scripts/user-script.sh', kind: 'file' },
+        ],
+    });
+
+    await executeNickelMenuRemoval({
+        device,
+        installer,
+        cleanupFeatures: [customMenu],
+        shouldRemoveSyncExclusions: async () => false,
+    });
+
+    assert.equal(await device.pathExists(['.adds', 'scripts']), true);
+    assert.equal(await device.pathExists(['.adds', 'scripts', 'user-script.sh']), true);
+    assert.deepEqual(device.removePaths(), [
+        '.adds/nm',
+        '.adds/scripts/legibility_status.sh',
+        '.adds/scripts/toggle_wk_rendering.sh',
+    ]);
 });
 
 test('executeNickelMenuRemoval removes sync exclusions only when requested', async () => {
@@ -135,6 +192,7 @@ test('executeNickelMenuRemoval removes sync exclusions only when requested', asy
     await executeNickelMenuRemoval({
         device,
         installer,
+        cleanupFeatures: [customMenu],
         shouldRemoveSyncExclusions: async () => true,
     });
 
@@ -162,6 +220,7 @@ test('executeNickelMenuRemoval keeps sync exclusions when requested', async () =
     await executeNickelMenuRemoval({
         device,
         installer,
+        cleanupFeatures: [customMenu],
         shouldRemoveSyncExclusions: async () => false,
     });
 
@@ -176,7 +235,7 @@ test('executeNickelMenuRemoval stops before removals if KoboRoot.tgz write fails
         () => executeNickelMenuRemoval({
             device,
             installer,
-            featuresToRemove: [screensaver],
+            cleanupFeatures: [customMenu, screensaver],
             shouldRemoveSyncExclusions: async () => true,
         }),
         /Refusing write to \.kobo\/KoboRoot\.tgz/
@@ -202,7 +261,7 @@ test('executeNickelMenuRemoval stops before removals when NickelMenu zip is miss
         () => executeNickelMenuRemoval({
             device,
             installer,
-            featuresToRemove: [screensaver],
+            cleanupFeatures: [customMenu, screensaver],
             shouldRemoveSyncExclusions: async () => true,
         }),
         /KoboRoot\.tgz not found/
