@@ -22,6 +22,7 @@ const defaultConfig = {
   hasCalibreExclude: false,
   eReaderConf: null,
   extraAddsDirs: [],
+  extraAddsFiles: [],
   rootFolders: [],
 };
 
@@ -83,6 +84,18 @@ async function injectMockDevice(page, opts = {}) {
       filesystem['.adds'][folderName] = dir();
     }
 
+    for (const entry of config.extraAddsFiles) {
+      if (!filesystem['.adds']) filesystem['.adds'] = dir();
+      const parts = Array.isArray(entry) ? entry : entry.path;
+      const content = Array.isArray(entry) ? '' : (entry.content || '');
+      let current = filesystem['.adds'];
+      for (const part of parts.slice(0, -1)) {
+        if (!current[part]) current[part] = dir();
+        current = current[part];
+      }
+      current[parts[parts.length - 1]] = file(content);
+    }
+
     if (config.hasReaderlyFonts) {
       filesystem['fonts'] = dir({
         'KF_Readerly-Regular.ttf': file(),
@@ -105,6 +118,7 @@ async function injectMockDevice(page, opts = {}) {
 
     window.__mockFS = filesystem;
     window.__mockWrittenFiles = {};
+    window.__mockRemovedEntries = [];
 
     function makeFileHandle(dirNode, fileName, pathPrefix) {
       return {
@@ -158,8 +172,17 @@ async function injectMockDevice(page, opts = {}) {
           }
           throw new DOMException('Not found: ' + childName, 'NotFoundError');
         },
-        removeEntry: async (childName) => {
-          if (node[childName]) {
+        removeEntry: async (childName, opts2 = {}) => {
+          const child = node[childName];
+          if (child) {
+            if (child._type === 'dir' && !opts2.recursive) {
+              const childEntries = Object.keys(child).filter(name => name !== '_type');
+              if (childEntries.length > 0) {
+                throw new DOMException('Directory not empty: ' + childName, 'InvalidModificationError');
+              }
+            }
+            const fullPath = currentPath ? currentPath + '/' + childName : childName;
+            window.__mockRemovedEntries.push({ path: fullPath, recursive: !!opts2.recursive });
             delete node[childName];
             return;
           }
@@ -263,6 +286,10 @@ async function getWrittenFiles(page) {
   return page.evaluate(() => Object.keys(window.__mockWrittenFiles));
 }
 
+async function getRemovedEntries(page) {
+  return page.evaluate(() => window.__mockRemovedEntries);
+}
+
 module.exports = {
   injectMockDevice,
   connectMockDevice,
@@ -271,4 +298,5 @@ module.exports = {
   readMockFile,
   mockPathExists,
   getWrittenFiles,
+  getRemovedEntries,
 };

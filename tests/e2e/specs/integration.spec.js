@@ -770,6 +770,71 @@ test.describe('NickelMenu', () => {
     expect(confAfter).toContain('some=setting');
   });
 
+  test('with device — remove NickelMenu removes preset scripts and deletes .adds/scripts when it becomes empty', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      hasCalibreExclude: true,
+      extraAddsDirs: ['scripts'],
+      extraAddsFiles: [
+        { path: ['scripts', 'legibility_status.sh'], content: '#!/bin/sh\nlegibility' },
+        { path: ['scripts', 'toggle_wk_rendering.sh'], content: '#!/bin/sh\ntoggle' },
+      ],
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="remove"]');
+    await page.click('#btn-nm-next');
+    await skipNmBackup(page);
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    expect(await mockPathExists(page, '.adds', 'scripts', 'legibility_status.sh')).toBe(false);
+    expect(await mockPathExists(page, '.adds', 'scripts', 'toggle_wk_rendering.sh')).toBe(false);
+    expect(await mockPathExists(page, '.adds', 'scripts')).toBe(false);
+
+    const confAfter = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confAfter).not.toContain('ExcludeSyncFolders');
+    expect(confAfter).toContain('some=setting');
+  });
+
+  test('with device — remove NickelMenu keeps .adds/scripts and sync exclusions when user scripts remain', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      hasCalibreExclude: true,
+      extraAddsDirs: ['scripts'],
+      extraAddsFiles: [
+        { path: ['scripts', 'legibility_status.sh'], content: '#!/bin/sh\nlegibility' },
+        { path: ['scripts', 'toggle_wk_rendering.sh'], content: '#!/bin/sh\ntoggle' },
+        { path: ['scripts', 'user-script.sh'], content: '#!/bin/sh\necho user' },
+      ],
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="remove"]');
+    await page.click('#btn-nm-next');
+    await skipNmBackup(page);
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    expect(await mockPathExists(page, '.adds', 'scripts', 'legibility_status.sh')).toBe(false);
+    expect(await mockPathExists(page, '.adds', 'scripts', 'toggle_wk_rendering.sh')).toBe(false);
+    expect(await mockPathExists(page, '.adds', 'scripts', 'user-script.sh')).toBe(true);
+    expect(await mockPathExists(page, '.adds', 'scripts')).toBe(true);
+
+    const confAfter = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confAfter).toContain(EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE);
+  });
+
   test('with device — remove NickelMenu with feature cleanup', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
