@@ -4,6 +4,7 @@ import { join } from 'path';
 import { createHash } from 'crypto';
 import { execSync } from 'child_process';
 import JSZip from 'jszip';
+import { generateVersion } from './version-generate.mjs';
 
 const appDir = join(import.meta.dirname, '..');
 const srcDir = join(appDir, 'src');
@@ -139,10 +140,7 @@ async function build() {
     let versionStr = 'unknown';
     let versionLink = 'https://github.com/nicoverbruggen/kobopatch-webui';
     try {
-        const fullHash = process.env.SOURCE_COMMIT
-            ?? String(execSync('git rev-parse HEAD', { cwd: appDir })).trim();
-        versionStr = fullHash.slice(0, 7);
-        versionLink = `https://github.com/nicoverbruggen/kobopatch-webui/tree/${fullHash}`;
+        ({ versionStr, versionLink } = await generateVersion());
     } catch {}
 
     // Generate cache-busted index.html

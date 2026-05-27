@@ -21,7 +21,8 @@
     "test:patches:check": "bash tools/kobopatch-wasm/test-patches.sh --check",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:wasm": "bash tools/kobopatch-wasm/test-integration.sh",
-    "validate:dist": "node scripts/validate-dist.mjs"
+    "validate:dist": "node scripts/validate-dist.mjs",
+    "version:generate": "node scripts/version-generate.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

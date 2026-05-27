@@ -22,6 +22,7 @@ src/assets/readerly-release.json
 
 # Build output
 dist/
+.version.json
 test-results/
 
 # Node
