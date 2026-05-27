@@ -6,17 +6,17 @@
 module.exports = {
   // Modern Kobo devices w/ more recent chipset (Libra Color, Clara Color, Clara BW)
   primary: {
-    version: '4.45.23684',
+    version: '4.45.23697',
     shortVersion: '4.45',
-    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Apr2026/kobo-update-4.45.23684.zip',
+    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/May2026/kobo-update-4.45.23697.zip',
     patches: 'patches_4.45.zip',
     patchesSource: '4.45',
   },
   // Older Kobo devices (older chipset, sometimes SD card as storage, etc.)
   secondary: {
-    version: '4.38.23684',
+    version: '4.38.23697',
     shortVersion: '4.38',
-    url: 'https://ereaderfiles.kobo.com/firmwares/kobo9/Apr2026/kobo-update-4.38.23684.zip',
+    url: 'https://ereaderfiles.kobo.com/firmwares/kobo9/May2026/kobo-update-4.38.23697.zip',
     patches: 'patches_4.38.zip',
     patchesSource: '4.38',
   },
