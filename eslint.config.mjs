@@ -52,6 +52,12 @@ export default [
         },
     },
     {
-        ignores: ['src/js/wasm_exec.js', 'dist/**', 'node_modules/**'],
+        ignores: [
+            'src/js/wasm_exec.js',
+            'dist/**',
+            'node_modules/**',
+            'tools/kobopatch-wasm/go/**',
+            'tools/kobopatch-wasm/kobopatch-src/**',
+        ],
     },
 ];

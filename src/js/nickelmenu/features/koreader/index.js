@@ -9,6 +9,20 @@ export default {
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 
+    reviewNotices: [
+        {
+            type: 'warning',
+            title: 'Known issue with KOReader',
+            paragraphs: [
+                'KOReader has a known issue where exiting while Bluetooth is enabled may cause NickelMenu to uninstall itself. Use KOReader\'s reboot option instead, or turn Bluetooth off before exiting.',
+            ],
+            link: {
+                label: 'Learn more',
+                href: 'https://github.com/koreader/koreader/issues/12739',
+            },
+        },
+    ],
+
     cleanup: {
         mode: 'optional',
         title: 'KOReader',

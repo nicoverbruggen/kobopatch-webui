@@ -24,6 +24,16 @@ const dismissMobileModal = async (page) => {
   }
 };
 
+const makeKOReaderAvailable = async (page) => {
+  await page.route('**/assets/koreader-release.json', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ version: 'v2026.03' }),
+    });
+  });
+};
+
 // ============================================================
 // 1. Manual NickelMenu flow
 // ============================================================
@@ -93,6 +103,33 @@ test('manual nickelmenu remove', async ({ page }, testInfo) => {
   await page.click('#btn-nm-next');
   await expect(page.locator('#step-nm-manual-remove')).not.toBeHidden();
   await shot(page, dir, '02a-nickelmenu-manual-remove', testInfo);
+});
+
+test('manual nickelmenu review notices', async ({ page }, testInfo) => {
+  const dir = 'manual-nickelmenu';
+
+  await makeKOReaderAvailable(page);
+  await page.goto('/');
+  await dismissMobileModal(page);
+
+  await page.click('#btn-manual');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+  await page.check('input[name="nm-cfg-koreader"]');
+  await page.click('#btn-nm-features-next');
+
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  await page.click('#btn-nm-backup-next');
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+  await shot(page, dir, '05a-nickelmenu-review-notices', testInfo);
 });
 
 // ============================================================

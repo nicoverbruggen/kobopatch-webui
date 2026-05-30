@@ -163,6 +163,46 @@ export function initNickelMenu(state) {
         });
     }
 
+    function getFeatureReviewNotices(features) {
+        return features.flatMap(feature => feature.reviewNotices || []);
+    }
+
+    function renderReviewNotices(container, notices) {
+        container.innerHTML = '';
+        container.hidden = notices.length === 0;
+
+        for (const notice of notices) {
+            const banner = document.createElement('div');
+            banner.className = `banner banner--${notice.type || 'info'}`;
+
+            if (notice.title) {
+                const heading = document.createElement('div');
+                heading.className = 'banner-heading';
+                heading.textContent = notice.title;
+                banner.appendChild(heading);
+            }
+
+            for (const paragraphText of notice.paragraphs || []) {
+                const paragraph = document.createElement('p');
+                paragraph.textContent = paragraphText;
+                banner.appendChild(paragraph);
+            }
+
+            if (notice.link) {
+                const paragraph = document.createElement('p');
+                const link = document.createElement('a');
+                link.href = notice.link.href;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = notice.link.label;
+                paragraph.append('See ', link, ' for details.');
+                banner.appendChild(paragraph);
+            }
+
+            container.appendChild(banner);
+        }
+    }
+
     function shouldOfferNmBackup() {
         return !state.manualMode && !!state.device.directoryHandle;
     }
@@ -479,6 +519,7 @@ export function initNickelMenu(state) {
     async function goToNmReview() {
         const summary = $('nm-review-summary');
         const list = $('nm-review-list');
+        const reviewNotices = $('nm-review-notices');
 
         if (state.nickelMenuOption === 'remove') {
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
@@ -490,12 +531,15 @@ export function initNickelMenu(state) {
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
+            renderReviewNotices(reviewNotices, []);
         } else {
             // "nickelmenu-only" or "preset" — both install NickelMenu.
             summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
             const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ];
+            let features = [];
             if (state.nickelMenuOption === 'preset') {
-                for (const feature of getSelectedFeatures()) {
+                features = getSelectedFeatures();
+                for (const feature of features) {
                     items.push(feature.title);
                 }
             }
@@ -503,6 +547,7 @@ export function initNickelMenu(state) {
             btnNmWrite.hidden = false;
             btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             btnNmDownload.hidden = false;
+            renderReviewNotices(reviewNotices, getFeatureReviewNotices(features));
         }
 
         // "Write to Kobo" is only available when a device is connected.

@@ -10,6 +10,17 @@
     line-height: 1.5;
 }
 
+.step .banner p {
+    color: inherit;
+    margin-bottom: 0.55rem;
+    font-size: inherit;
+    line-height: inherit;
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
 .banner-heading {
     font-size: 0.7rem;
     font-weight: 700;
@@ -69,6 +80,37 @@
 
 .install-instructions .banner--warning { margin-bottom: 0.75rem; }
 .install-instructions .banner--success { margin-top: 0; }
+
+.review-notices {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+
+    & .banner {
+        padding: 0.65rem 0.8rem;
+        background: var(--card-bg);
+        border-color: var(--border-light);
+        color: var(--text-secondary);
+        font-size: 0.80rem;
+        line-height: 1.45;
+        box-shadow: var(--shadow);
+
+        & a {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+    }
+
+    & .banner-heading {
+        color: var(--text);
+        font-size: 0.66rem;
+        margin-bottom: 0.25rem;
+    }
+
+    & p {
+        margin-bottom: 0.4rem;
+    }
+}
 
 .step .banner--success { margin-top: 1rem; }
 

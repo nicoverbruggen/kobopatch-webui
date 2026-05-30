@@ -85,3 +85,18 @@
 #nm-preset-conflict-list {
     margin-top: 1rem;
 }
+
+#step-nm-review #nm-review-list {
+    margin-bottom: 1rem;
+    padding: 0 0 0 1.35rem;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-size: 0.88rem;
+    line-height: 1.55;
+
+    & li {
+        padding: 0.02rem 0;
+    }
+}

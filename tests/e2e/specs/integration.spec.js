@@ -83,6 +83,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
     await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-notices')).toBeHidden();
 
     // Write button should be hidden in manual mode
     await expect(page.locator('#btn-nm-write')).toBeHidden();
@@ -159,6 +160,10 @@ test.describe('NickelMenu', () => {
     // Review step — should list KOReader
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+    await expect(page.locator('#nm-review-notices')).toBeVisible();
+    await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+    await expect(page.locator('#nm-review-notices')).toContainText('using Exit while Bluetooth is enabled');
+    await expect(page.locator('#nm-review-notices')).toContainText('Bluetooth');
 
     // Download
     const [download] = await Promise.all([
@@ -208,6 +213,9 @@ test.describe('NickelMenu', () => {
 
     // Review step
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+    await expect(page.locator('#nm-review-notices')).toBeVisible();
+    await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+    await expect(page.locator('#nm-review-notices')).toContainText('using Exit while Bluetooth is enabled');
 
     // Write to device
     await page.click('#btn-nm-write');
