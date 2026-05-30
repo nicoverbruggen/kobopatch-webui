@@ -162,8 +162,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
     await expect(page.locator('#nm-review-notices')).toBeVisible();
     await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
-    await expect(page.locator('#nm-review-notices')).toContainText('using Exit while Bluetooth is enabled');
-    await expect(page.locator('#nm-review-notices')).toContainText('Bluetooth');
+    await expect(page.locator('#nm-review-notices')).toContainText('while Bluetooth is enabled');
+    await expect(page.locator('#nm-review-notices')).toContainText('NickelMenu to uninstall itself');
 
     // Download
     const [download] = await Promise.all([
@@ -215,7 +215,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
     await expect(page.locator('#nm-review-notices')).toBeVisible();
     await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
-    await expect(page.locator('#nm-review-notices')).toContainText('using Exit while Bluetooth is enabled');
+    await expect(page.locator('#nm-review-notices')).toContainText('while Bluetooth is enabled');
+    await expect(page.locator('#nm-review-notices')).toContainText('NickelMenu to uninstall itself');
 
     // Write to device
     await page.click('#btn-nm-write');
