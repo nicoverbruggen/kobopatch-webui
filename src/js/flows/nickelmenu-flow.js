@@ -144,6 +144,14 @@ export function initNickelMenu(state) {
         });
     }
 
+    /** Detected optional features the user chose NOT to remove (kept on device). */
+    function getKeptOptionalCleanupFeatures() {
+        return detectedOptionalCleanupFeatures.filter(f => {
+            const cb = $q(`input[name="nm-uninstall-${f.id}"]`);
+            return cb && !cb.checked;
+        });
+    }
+
     function getAlwaysCleanupFeatures() {
         return NICKELMENU_FEATURES.filter(f => f.cleanup?.mode === 'always');
     }
@@ -531,7 +539,13 @@ export function initNickelMenu(state) {
         const summary = $('nm-review-summary');
         const listLabel = $('nm-review-list-label');
         const list = $('nm-review-list');
+        const keptCard = $('nm-review-kept');
+        const keptLabel = $('nm-review-kept-label');
+        const keptList = $('nm-review-kept-list');
         const reviewNotices = $('nm-review-notices');
+
+        // Removal is destructive, so colour the action button and list markers red.
+        $('step-nm-review').classList.toggle('review--removal', state.nickelMenuOption === 'remove');
 
         if (state.nickelMenuOption === 'remove') {
             // Describe what removal does, then label the list — NickelMenu plus
@@ -544,6 +558,12 @@ export function initNickelMenu(state) {
                 TL.STATUS.NM_REMOVAL_NICKELMENU,
                 ...optionalCleanupFeatures.map(f => f.cleanup.title),
             ]);
+            // Surface any detected optional features the user chose to keep in a
+            // separate card, so it's clear they won't be touched.
+            const keptFeatures = getKeptOptionalCleanupFeatures();
+            populateList(keptList, keptFeatures.map(f => f.cleanup.title));
+            keptLabel.textContent = TL.STATUS.NM_KEPT_FEATURES;
+            keptCard.hidden = keptFeatures.length === 0;
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
@@ -553,6 +573,7 @@ export function initNickelMenu(state) {
             // doubles as the description here, so no separate paragraph is shown.
             summary.hidden = true;
             summary.textContent = '';
+            keptCard.hidden = true;
             listLabel.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
             const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ];
             let features = [];

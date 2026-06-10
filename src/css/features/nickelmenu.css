@@ -113,14 +113,10 @@
     color: var(--text);
 }
 
-#step-nm-review #nm-review-list {
+#step-nm-review .review-list {
     margin: 0;
     padding: 0;
     list-style: none;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
     font-size: 0.88rem;
     line-height: 1.5;
     color: var(--text);
@@ -128,7 +124,7 @@
     & li {
         position: relative;
         padding: 0.28rem 0 0.28rem 1.5rem;
-        border-top: 1px solid var(--border-light);
+        border-top: 1px dotted var(--border);
 
         &:first-child {
             border-top: 0;
@@ -151,4 +147,21 @@
     font-size: 0.82rem;
     color: var(--text-secondary);
     line-height: 1.5;
+}
+
+/* Removal review: this is a destructive action, so the list markers and the
+   confirm button turn red. */
+#step-nm-review.review--removal #nm-review-list li::before {
+    color: var(--error-text);
+}
+
+#step-nm-review.review--removal #btn-nm-write {
+    background: var(--error-text);
+    border-color: var(--error-text);
+    color: #fff;
+
+    &:hover {
+        background: #7f1717;
+        border-color: #7f1717;
+    }
 }

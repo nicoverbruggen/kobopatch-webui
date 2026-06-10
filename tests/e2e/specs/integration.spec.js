@@ -985,6 +985,72 @@ test.describe('NickelMenu', () => {
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
   });
 
+  test('with device — removal review lists kept features separately from removals', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      hasKOReader: true,
+      hasReaderlyFonts: true,
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await page.click('input[name="nm-option"][value="remove"]');
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+
+    // Keep Readerly fonts; remove KOReader alongside NickelMenu.
+    await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
+
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await skipNmBackup(page);
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+
+    // Removals list covers NickelMenu + the feature kept for removal, not the kept one.
+    const removals = page.locator('#nm-review-list');
+    await expect(removals).toContainText('NickelMenu');
+    await expect(removals).toContainText('KOReader');
+    await expect(removals).not.toContainText('Readerly');
+
+    // Kept card surfaces the feature left installed, and only that one.
+    const keptCard = page.locator('#nm-review-kept');
+    await expect(keptCard).toBeVisible();
+    await expect(keptCard).toContainText('will be kept');
+    const keptList = page.locator('#nm-review-kept-list');
+    await expect(keptList).toContainText('Readerly fonts');
+    await expect(keptList).not.toContainText('KOReader');
+  });
+
+  test('with device — removal review hides the kept card when nothing is kept', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      hasKOReader: true,
+      hasReaderlyFonts: true,
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await page.click('input[name="nm-option"][value="remove"]');
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+
+    // Leave every cleanup checkbox checked so nothing is kept.
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await skipNmBackup(page);
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-kept')).toBeHidden();
+  });
+
   test('with device — remove NickelMenu removes sync exclusions after selected .adds features are cleaned up', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

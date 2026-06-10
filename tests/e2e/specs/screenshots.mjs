@@ -371,8 +371,10 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
 
   await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
   await page.click('input[name="nm-option"][value="remove"]');
-  // Optional-feature cleanup checkboxes are pre-checked when detected; keep them.
+  // Optional-feature cleanup checkboxes are pre-checked when detected. Uncheck
+  // Readerly fonts so the review shows it under "Kept on your device:".
   await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+  await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
   await page.click('#btn-nm-next');
 
   // Connected remove goes through backup → review (no manual-remove step).
@@ -384,6 +386,54 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
 
   await expect(page.locator('#step-nm-review')).not.toBeHidden();
   await shot(page, dir, '08c-nickelmenu-removal-review', testInfo);
+});
+
+// ============================================================
+// 5b-3. Connected NickelMenu — removal review with no kept features
+// ============================================================
+
+test('connected nickelmenu removal review (no kept features)', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  // NickelMenu plus optional features, all left checked for removal, so the
+  // review has no "kept" card.
+  await injectMockDevice(page, {
+    hasNickelMenu: true,
+    hasKOReader: true,
+    hasReaderlyFonts: true,
+  });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+  await page.click('input[name="nm-option"][value="remove"]');
+  // Leave every cleanup checkbox checked so nothing is kept.
+  await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+  await page.click('#btn-nm-next');
+
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  if (await page.locator('#nm-backup-options').isVisible()) {
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+  }
+  await page.click('#btn-nm-backup-next');
+
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await expect(page.locator('#nm-review-kept')).toBeHidden();
+  await shot(page, dir, '08d-nickelmenu-removal-review-no-kept', testInfo);
 });
 
 // ============================================================
