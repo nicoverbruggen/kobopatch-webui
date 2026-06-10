@@ -232,6 +232,63 @@ test.describe('NickelMenu', () => {
     expect(koreaderDirExists, '.adds/koreader/ should exist').toBe(true);
   });
 
+  test('with device — preset warns about Dark Mode on unsupported devices', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    // Kobo Aura HD (N204) is an older model that does not support Dark mode.
+    await connectMockDevice(page, {
+      serial: 'N204E0000000000',
+      expectedModel: 'Kobo Aura HD',
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    // Pick the preset and continue to feature selection.
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    // The Dark Mode warning appears on the review step for this device.
+    await expect(page.locator('#nm-review-notices')).toContainText('Dark Mode is not supported');
+    await expect(page.locator('#nm-review-notices')).toContainText('Kobo Aura HD');
+
+    // Writing to the device drops the Dark Mode line from .adds/nm/items.
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+
+    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    expect(items).toContain('# Unsupported on your device so this line is commented out.');
+    expect(items).toMatch(/# menu_item :reader :Dark Mode\b.*:dark_mode/);
+    // The Dark Mode line must not remain active (uncommented).
+    expect(items).not.toMatch(/^menu_item :reader :Dark Mode\b.*:dark_mode/m);
+  });
+
+  test('with device — preset does not warn about Dark Mode on supported devices', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    // The default mock device is a Kobo Libra Colour, which supports Dark mode.
+    await connectMockDevice(page);
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    // No Dark Mode warning on a device that supports it.
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-notices')).not.toContainText('Dark Mode is not supported');
+  });
+
   test('with device — preset is blocked when conflicting add-ons are already installed', async ({ page }) => {
     await connectMockDevice(page, {
       hasNickelDbus: true,

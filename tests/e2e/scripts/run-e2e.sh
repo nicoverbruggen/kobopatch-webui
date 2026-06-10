@@ -22,6 +22,8 @@ APP_DIR="$(cd "$E2E_DIR/../.." && pwd)"
 DIST_DIR="$APP_DIR/dist"
 STALE_TEST_NODE_MODULES="$APP_DIR/tests/e2e/node_modules"
 
+source "$SCRIPT_DIR/env.sh"
+
 PLAYWRIGHT_ARGS=("--reporter=list")
 
 while [[ $# -gt 0 ]]; do

@@ -10,14 +10,14 @@ module.exports = defineConfig({
       use: {
         ...base.use,
         viewport: { width: 393, height: 852 },
-        deviceScaleFactor: 3,
+        deviceScaleFactor: 2,
         isMobile: true,
         hasTouch: true,
       },
     },
     {
       name: 'desktop',
-      use: { ...base.use, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 3 },
+      use: { ...base.use, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 },
     },
   ],
 });

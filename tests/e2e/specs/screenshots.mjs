@@ -292,6 +292,53 @@ test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
 });
 
 // ============================================================
+// 5b. Connected NickelMenu — older device + KOReader (two review warnings)
+// ============================================================
+
+test('connected nickelmenu review notices — older device + KOReader', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+
+  await makeKOReaderAvailable(page);
+  await page.goto('/');
+  await dismissMobileModal(page);
+
+  // Kobo Aura HD (N204) is an older model with no Dark mode support, so the
+  // preset drops the Dark Mode item and warns about it. Combined with KOReader's
+  // known-issue notice, the review step shows two warnings.
+  await injectMockDevice(page, { serial: 'N204E0000000000' });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+
+  // Enable KOReader so a second warning joins the Dark Mode one at review.
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+  await page.check('input[name="nm-cfg-koreader"]');
+  await page.click('#btn-nm-features-next');
+
+  // Backup → review
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  if (await page.locator('#nm-backup-options').isVisible()) {
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+  }
+  await page.click('#btn-nm-backup-next');
+
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await expect(page.locator('#nm-review-notices')).toContainText('Dark Mode is not supported');
+  await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+  await shot(page, dir, '08b-nickelmenu-review-two-warnings', testInfo);
+});
+
+// ============================================================
 // 6. Connected Patches flow
 // ============================================================
 

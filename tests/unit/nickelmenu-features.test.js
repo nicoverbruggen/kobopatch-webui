@@ -102,6 +102,55 @@ test('NickelMenu post-process features preserve launcher ordering', () => {
     assert.match(items, /menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n$/);
 });
 
+const AURA_HD = { serialPrefix: 'N204', model: 'Kobo Aura HD' };       // no Dark mode
+const LIBRA_COLOUR = { serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
+
+function itemsFiles(...lines) {
+    return [{ path: '.adds/nm/items', data: lines.join('\n') }];
+}
+
+function itemsText(files) {
+    return files.find(f => f.path === '.adds/nm/items').data;
+}
+
+test('custom menu comments out Dark Mode on unsupported devices', () => {
+    const files = itemsFiles(
+        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
+        'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode',
+    );
+
+    const result = itemsText(customMenu.postProcess(files, { deviceInfo: AURA_HD }));
+
+    assert.match(
+        result,
+        /# Unsupported on your device so this line is commented out\.\n# menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode/
+    );
+    // Unrelated items are left untouched.
+    assert.match(result, /^menu_item :main :Screenshots/m);
+});
+
+test('custom menu leaves Dark Mode intact on supported devices', () => {
+    const files = itemsFiles('menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+    const result = itemsText(customMenu.postProcess(files, { deviceInfo: LIBRA_COLOUR }));
+    assert.equal(result, 'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+});
+
+test('custom menu leaves Dark Mode intact when the device is unknown (e.g. manual mode)', () => {
+    const files = itemsFiles('menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+    const result = itemsText(customMenu.postProcess(files, {}));
+    assert.equal(result, 'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+});
+
+test('custom menu reviewNotices warns only on unsupported devices', () => {
+    assert.deepEqual(customMenu.reviewNotices({ deviceInfo: LIBRA_COLOUR }), []);
+    assert.deepEqual(customMenu.reviewNotices({}), []);
+
+    const notices = customMenu.reviewNotices({ deviceInfo: AURA_HD });
+    assert.equal(notices.length, 1);
+    assert.equal(notices[0].type, 'warning');
+    assert.match(notices[0].paragraphs[0], /Kobo Aura HD/);
+});
+
 test('custom menu install fetches the real preset asset paths', async () => {
     const requested = [];
     const assets = new Map([

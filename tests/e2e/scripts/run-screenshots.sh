@@ -13,6 +13,8 @@ APP_DIR="$(cd "$E2E_DIR/../.." && pwd)"
 PLAYWRIGHT="$APP_DIR/node_modules/.bin/playwright"
 STALE_TEST_NODE_MODULES="$APP_DIR/tests/e2e/node_modules"
 
+source "$SCRIPT_DIR/env.sh"
+
 cd "$E2E_DIR"
 rm -rf screenshots
 
