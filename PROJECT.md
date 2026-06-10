@@ -107,7 +107,7 @@ Set up installable assets:
 npm run setup:installables
 ```
 
-This downloads NickelMenu, KOReader, and Readerly assets into `src/assets/`. KOReader and Readerly archives are ignored local assets. Each asset is skipped if already present; pass `--force` to re-download all.
+This downloads NickelMenu, KOReader, and the font assets (Readerly, Libron, Cartisse) into `src/assets/`. KOReader and the font archives are ignored local assets. Each asset is skipped if already present; pass `--force` to re-download all.
 
 To update assets between fixed deployments (e.g. on a running production container):
 
