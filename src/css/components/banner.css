@@ -86,29 +86,48 @@
     gap: 0.6rem;
     margin-bottom: 1rem;
 
+    /* These notices are informational FYIs, not blocking errors. Present them
+       as quiet neutral cards with a small colored left accent (kept from the
+       notice's own type) rather than loud, fully-filled alert banners, so two
+       stacked notices inform without feeling alarming. The left border color
+       is inherited from the .banner--warning/--info type; only the other three
+       sides and the fill are neutralised here. */
     & .banner {
-        padding: 0.65rem 0.8rem;
+        padding: 0.75rem 0.9rem;
         background: var(--card-bg);
-        border-color: var(--border-light);
+        border-top-color: var(--border-light);
+        border-right-color: var(--border-light);
+        border-bottom-color: var(--border-light);
+        border-left-width: 3px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        line-height: 1.5;
         color: var(--text-secondary);
-        font-size: 0.80rem;
-        line-height: 1.45;
-        box-shadow: var(--shadow);
-
-        & a {
-            color: var(--primary);
-            text-decoration: underline;
-        }
+        box-shadow: none;
     }
 
     & .banner-heading {
-        color: var(--text);
-        font-size: 0.66rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
         margin-bottom: 0.25rem;
+        color: var(--text);
     }
 
-    & p {
-        margin-bottom: 0.4rem;
+    & .banner p {
+        margin-bottom: 0.35rem;
+        color: var(--text-secondary);
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    & .banner a {
+        color: var(--text);
+        text-decoration: underline;
+        font-weight: 500;
     }
 }
 

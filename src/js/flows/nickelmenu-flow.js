@@ -526,24 +526,34 @@ export function initNickelMenu(state) {
     // the appropriate action buttons (write to device / download).
 
     async function goToNmReview() {
+        // The summary card holds an optional descriptive paragraph, a bold label
+        // introducing the list, then the list of items that will be applied.
         const summary = $('nm-review-summary');
+        const listLabel = $('nm-review-list-label');
         const list = $('nm-review-list');
         const reviewNotices = $('nm-review-notices');
 
         if (state.nickelMenuOption === 'remove') {
+            // Describe what removal does, then label the list — NickelMenu plus
+            // any optional features the user also chose to uninstall.
             summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
+            summary.hidden = false;
+            listLabel.textContent = TL.STATUS.NM_SELECTED_REMOVALS;
             const optionalCleanupFeatures = getSelectedOptionalCleanupFeatures();
             populateList(list, [
-                TL.STATUS.NM_REMOVE_NICKELMENU,
-                ...optionalCleanupFeatures.map(f => f.cleanup.title + ' will also be removed'),
+                TL.STATUS.NM_REMOVAL_NICKELMENU,
+                ...optionalCleanupFeatures.map(f => f.cleanup.title),
             ]);
             btnNmWrite.hidden = state.manualMode;
             btnNmWrite.textContent = TL.BUTTON.REMOVE_FROM_KOBO;
             btnNmDownload.hidden = true;
             renderReviewNotices(reviewNotices, []);
         } else {
-            // "nickelmenu-only" or "preset" — both install NickelMenu.
-            summary.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
+            // "nickelmenu-only" or "preset" — both install NickelMenu. The label
+            // doubles as the description here, so no separate paragraph is shown.
+            summary.hidden = true;
+            summary.textContent = '';
+            listLabel.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
             const items = [TL.STATUS.NM_NICKEL_ROOT_TGZ];
             let features = [];
             if (state.nickelMenuOption === 'preset') {

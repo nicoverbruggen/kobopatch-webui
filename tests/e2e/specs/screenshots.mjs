@@ -339,6 +339,76 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 });
 
 // ============================================================
+// 5b-2. Connected NickelMenu — removal review
+// ============================================================
+
+test('connected nickelmenu removal review', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  // NickelMenu already installed, plus optional features that can be removed
+  // alongside it, so the review lists more than one "Selected removals:" entry.
+  await injectMockDevice(page, {
+    hasNickelMenu: true,
+    hasKOReader: true,
+    hasReaderlyFonts: true,
+  });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+  await page.click('input[name="nm-option"][value="remove"]');
+  // Optional-feature cleanup checkboxes are pre-checked when detected; keep them.
+  await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+  await page.click('#btn-nm-next');
+
+  // Connected remove goes through backup → review (no manual-remove step).
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  if (await page.locator('#nm-backup-options').isVisible()) {
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+  }
+  await page.click('#btn-nm-backup-next');
+
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await shot(page, dir, '08c-nickelmenu-removal-review', testInfo);
+});
+
+// ============================================================
+// 5c. Busy indicator (install in progress)
+// ============================================================
+
+test('connected nickelmenu installing (busy indicator)', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+
+  // The install step is transient, so force it visible with a representative
+  // progress message to capture the busy-indicator styling on its own.
+  await page.evaluate(() => {
+    for (const step of document.querySelectorAll('.step')) step.hidden = true;
+    document.getElementById('step-nm-installing').hidden = false;
+    document.getElementById('nm-progress').textContent = 'Writing files to Kobo (3 of 12)...';
+  });
+
+  await expect(page.locator('#step-nm-installing .busy-indicator')).toBeVisible();
+  await shot(page, dir, '09a-nickelmenu-installing', testInfo);
+});
+
+// ============================================================
 // 6. Connected Patches flow
 // ============================================================
 

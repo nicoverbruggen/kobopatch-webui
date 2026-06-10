@@ -86,17 +86,69 @@
     margin-top: 1rem;
 }
 
-#step-nm-review #nm-review-list {
+/* Review step: group the "what will be installed" summary into one card so it
+   reads as a distinct block, separate from the informational notices below. */
+.review-summary {
     margin-bottom: 1rem;
-    padding: 0 0 0 1.35rem;
+    padding: 1rem 1.15rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+/* Optional explanatory paragraph (e.g. what removal does) shown above the
+   list label. Quieter than the label so the label still introduces the list. */
+.review-summary-desc {
+    margin: 0 0 0.75rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.review-summary-heading {
+    margin: 0 0 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+#step-nm-review #nm-review-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
     background: transparent;
     border: 0;
     border-radius: 0;
     box-shadow: none;
     font-size: 0.88rem;
-    line-height: 1.55;
+    line-height: 1.5;
+    color: var(--text);
 
     & li {
-        padding: 0.02rem 0;
+        position: relative;
+        padding: 0.28rem 0 0.28rem 1.5rem;
+        border-top: 1px solid var(--border-light);
+
+        &:first-child {
+            border-top: 0;
+        }
+
+        /* Forward arrow marks a pending change (not a completed one). */
+        &::before {
+            content: "\2192"; /* → */
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 700;
+        }
     }
+}
+
+/* Quiet closing note before the action buttons. */
+.review-footnote {
+    margin: 0 0 1.25rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
 }

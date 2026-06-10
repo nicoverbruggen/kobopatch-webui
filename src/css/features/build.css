@@ -5,7 +5,7 @@
     margin-top: 1.25rem;
 }
 
-/* Build header (spinner + progress text) */
+/* Build header (spinner + progress text) — sits above the build log */
 .build-header {
     display: flex;
     align-items: center;
@@ -16,6 +16,40 @@
         margin-bottom: 0;
         font-weight: 500;
         color: var(--text);
+    }
+}
+
+/* Standalone busy state (e.g. while writing files to the Kobo) */
+.busy-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+
+    & .spinner {
+        width: 40px;
+        height: 40px;
+        border-width: 3px;
+    }
+
+    & .busy-status {
+        margin: 0;
+        font-weight: 600;
+        font-size: 0.98rem;
+        color: var(--text);
+    }
+
+    & .busy-hint {
+        margin: 0;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
     }
 }
 

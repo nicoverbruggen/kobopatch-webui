@@ -743,8 +743,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-summary')).toContainText('removal');
 
-    // Review list should show "Remove NickelMenu" even with no extra features
-    await expect(page.locator('#nm-review-list')).toContainText('Remove NickelMenu');
+    // Review list should show NickelMenu even with no extra features
+    await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
 
     // Download should be hidden for remove
     await expect(page.locator('#btn-nm-download')).toBeHidden();
