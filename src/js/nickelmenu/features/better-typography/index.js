@@ -8,6 +8,7 @@
 //     are part of the install, so we don't point at a font that isn't there.
 const ADDITIONAL_FONTS_ID = 'additional-fonts';
 const DEFAULT_FONT_FAMILY = 'KF Libron';
+const WEBKIT_RENDERING = { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' };
 
 export default {
     id: 'better-typography',
@@ -16,12 +17,25 @@ export default {
     description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. When the additional fonts are also installed, KF Libron is set as the default reading font.',
     default: true,
 
+    // Only the WebKit rendering tweak is owned by this feature for removal — the
+    // alignment and reading font are general preferences we don't claw back. The
+    // feature is "present" when the WebKit setting is in the conf, and reverting
+    // just removes that line (leaving the user's other reading settings alone).
+    cleanup: {
+        mode: 'optional',
+        title: 'Better typography',
+        removeLabel: 'Turn off optimized WebKit rendering',
+        description: 'Removes the webkitTextRendering setting from Kobo eReader.conf. Your text alignment and reading font are left as they are.',
+        detectConf: [WEBKIT_RENDERING],
+        revertConf: [{ ...WEBKIT_RENDERING, revertTo: null }],
+    },
+
     // Declarative Kobo eReader.conf changes, applied by the installer when a
     // device is connected. Receives the selected features so the default font is
     // only set when the additional fonts are actually being installed.
     confSettings(ctx = {}) {
         const settings = [
-            { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' },
+            WEBKIT_RENDERING,
             { section: 'Reading', key: 'readingAlignment', value: 'Left' },
         ];
 

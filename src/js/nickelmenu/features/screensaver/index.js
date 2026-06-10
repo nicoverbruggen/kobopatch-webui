@@ -25,6 +25,7 @@ export default {
     cleanup: {
         mode: 'optional',
         title: 'Screensaver',
+        removeLabel: 'Remove the sample screensaver image',
         description: 'Removes the custom screensaver image (moon.png).',
         detect: [['.kobo', 'screensaver', 'moon.png']],
         paths: [

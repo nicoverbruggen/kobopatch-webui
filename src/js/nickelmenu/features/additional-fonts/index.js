@@ -19,6 +19,7 @@ export default {
     cleanup: {
         mode: 'optional',
         title: 'Additional fonts',
+        removeLabel: 'Remove the bundled fonts (Readerly, Libron, Cartisse)',
         description: 'Removes the Readerly, Libron and Cartisse font files from your device.',
         detect: [
             ['fonts', 'KF_Readerly-Regular.ttf'],

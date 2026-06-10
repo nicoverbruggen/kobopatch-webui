@@ -28,6 +28,7 @@ export default {
     cleanup: {
         mode: 'optional',
         title: 'KOReader',
+        removeLabel: 'Remove the KOReader app (.adds/koreader)',
         description: 'Removes the KOReader app directory (.adds/koreader/).',
         detect: [['.adds', 'koreader']],
         paths: [

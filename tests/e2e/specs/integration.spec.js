@@ -1045,6 +1045,8 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
     await expect(page.locator('input[name="nm-uninstall-additional-fonts"]')).toBeChecked();
     await expect(page.locator('input[name="nm-uninstall-screensaver"]')).toBeChecked();
+    // Better typography wasn't applied (no webkit setting in conf), so it's absent.
+    await expect(page.locator('input[name="nm-uninstall-better-typography"]')).toHaveCount(0);
 
     // Uncheck screensaver (keep it)
     await page.uncheck('input[name="nm-uninstall-screensaver"]');
@@ -1077,6 +1079,65 @@ test.describe('NickelMenu', () => {
 
     // Screensaver should NOT be removed (unchecked)
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
+  });
+
+  test('with device — better typography is detected by its conf setting and reverts only the WebKit tweak', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    // NickelMenu installed, with the better-typography settings already applied.
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      eReaderConf: '[General]\nsome=setting\n[Reading]\nwebkitTextRendering=optimizeLegibility\nreadingAlignment=Left\nreadingFontFamily=KF Libron\n',
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="remove"]');
+
+    // Detected via its conf setting, offered for removal with its own label.
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-uninstall-better-typography"]')).toBeChecked();
+    await expect(page.locator('#nm-uninstall-options')).toContainText('Turn off optimized WebKit rendering');
+
+    await page.click('#btn-nm-next');
+    await skipNmBackup(page);
+    await expect(page.locator('#nm-review-list')).toContainText('Better typography');
+
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    // Only the WebKit setting is removed; alignment and reading font are kept.
+    const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(conf).not.toContain('webkitTextRendering');
+    expect(conf).toContain('readingAlignment=Left');
+    expect(conf).toContain('readingFontFamily=KF Libron');
+  });
+
+  test('with device — better typography is left alone when its removal is unchecked', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: true,
+      eReaderConf: '[General]\nsome=setting\n[Reading]\nwebkitTextRendering=optimizeLegibility\n',
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="remove"]');
+
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await page.uncheck('input[name="nm-uninstall-better-typography"]');
+
+    await page.click('#btn-nm-next');
+    await skipNmBackup(page);
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    // Unchecked, so the WebKit setting remains.
+    const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(conf).toContain('webkitTextRendering=optimizeLegibility');
   });
 
   test('with device — removal review lists kept features separately from removals', async ({ page }) => {

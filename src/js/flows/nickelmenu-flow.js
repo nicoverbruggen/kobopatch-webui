@@ -23,6 +23,7 @@ import {
     executeNickelMenuRemoval,
     hasAddsDirectoriesRequiringSyncExclusions,
 } from '../nickelmenu/uninstaller.js';
+import { getConfSetting } from '../kobo/configuration.js';
 import { TL } from '../shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from '../shell/analytics.js';
 
@@ -110,7 +111,8 @@ export function initNickelMenu(state) {
         }
         const items = detectedOptionalCleanupFeatures.map(f => ({
             name: 'nm-uninstall-' + f.id,
-            title: 'Also remove ' + f.cleanup.title,
+            // Each feature declares how its own removal is phrased.
+            title: f.cleanup.removeLabel ?? ('Remove ' + f.cleanup.title),
             description: f.cleanup.description,
             checked: true,
         }));
@@ -155,6 +157,21 @@ export function initNickelMenu(state) {
 
     function getAlwaysCleanupFeatures() {
         return NICKELMENU_FEATURES.filter(f => f.cleanup?.mode === 'always');
+    }
+
+    /**
+     * Whether an optional cleanup feature is present on the connected device,
+     * detected by its files (cleanup.detect) or by a Kobo eReader.conf setting it
+     * applied (cleanup.detectConf), matched against the already-read conf content.
+     */
+    async function isOptionalCleanupPresent(cleanup, conf) {
+        for (const detectPath of cleanup.detect || []) {
+            if (await state.device.pathExists(detectPath)) return true;
+        }
+        for (const { section, key, value } of cleanup.detectConf || []) {
+            if (getConfSetting(conf, section, key) === value) return true;
+        }
+        return false;
     }
 
     async function hasAddsDirectoriesRequiringSyncExclusionsOnDevice() {
@@ -359,15 +376,16 @@ export function initNickelMenu(state) {
                 removeOption.classList.remove('selection-card--disabled');
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
 
-                // Scan for removable extras (only once per session).
+                // Scan for removable extras (only once per session). A feature is
+                // detectable by file paths (cleanup.detect) and/or by Kobo
+                // eReader.conf settings it applied (cleanup.detectConf).
                 if (detectedOptionalCleanupFeatures.length === 0) {
+                    const conf = await state.device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']) || '';
                     for (const feature of NICKELMENU_FEATURES) {
-                        if (feature.cleanup?.mode !== 'optional') continue;
-                        for (const detectPath of feature.cleanup.detect) {
-                            if (await state.device.pathExists(detectPath)) {
-                                detectedOptionalCleanupFeatures.push(feature);
-                                break;
-                            }
+                        const cleanup = feature.cleanup;
+                        if (cleanup?.mode !== 'optional') continue;
+                        if (await isOptionalCleanupPresent(cleanup, conf)) {
+                            detectedOptionalCleanupFeatures.push(feature);
                         }
                     }
                     renderCleanupCheckboxes();

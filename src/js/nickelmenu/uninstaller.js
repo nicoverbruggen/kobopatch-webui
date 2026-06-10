@@ -1,3 +1,6 @@
+import { getConfSetting, removeConfSetting, setConfSetting } from '../kobo/configuration.js';
+
+const eReaderConfPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
 const nickelMenuTgzPath = ['.kobo', 'KoboRoot.tgz'];
 const nickelMenuRecursiveAssetPaths = [
     ['.adds', 'nm'],
@@ -30,6 +33,32 @@ async function removeCleanupParentDirsIfEmpty(device, cleanup, logger) {
     }
 }
 
+/**
+ * Undo a feature's Kobo eReader.conf changes. Each entry only reverts when the
+ * current value still matches what the feature set, so user customisations made
+ * afterwards are never clobbered. `revertTo: null` removes the line entirely;
+ * any string (including '') sets the key to that value.
+ */
+async function applyConfReverts(device, cleanup) {
+    if (!cleanup.revertConf?.length) return;
+
+    let content = await device.readFile(eReaderConfPath);
+    if (!content) return;
+
+    let changed = false;
+    for (const { section, key, value, revertTo } of cleanup.revertConf) {
+        if (getConfSetting(content, section, key) !== value) continue;
+        content = (revertTo === null || revertTo === undefined)
+            ? removeConfSetting(content, section, key)
+            : setConfSetting(content, section, key, revertTo);
+        changed = true;
+    }
+
+    if (changed) {
+        await device.writeFile(eReaderConfPath, new TextEncoder().encode(content));
+    }
+}
+
 async function executeFeatureCleanup(device, feature, logger) {
     const cleanup = feature.cleanup;
     if (!cleanup) return;
@@ -41,6 +70,7 @@ async function executeFeatureCleanup(device, feature, logger) {
     }
 
     await removeCleanupParentDirsIfEmpty(device, cleanup, logger);
+    await applyConfReverts(device, cleanup);
 }
 
 async function executeNickelMenuRemoval({

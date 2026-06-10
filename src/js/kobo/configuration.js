@@ -117,6 +117,17 @@ function setConfSetting(content = '', sectionName, key, value) {
     return joinConfLines(lines, newline, hadTrailingNewline);
 }
 
+function getConfSetting(content = '', sectionName, key) {
+    const lines = splitConfLines(content);
+    const bounds = findSectionBounds(lines, sectionName);
+    if (!bounds) return undefined;
+
+    const settingLines = findSettingLines(lines, bounds, key);
+    if (settingLines.length === 0) return undefined;
+
+    return parseSettingLine(lines[settingLines[0]])?.value ?? '';
+}
+
 function removeConfSetting(content = '', sectionName, key) {
     const newline = detectNewline(content);
     const hadTrailingNewline = content.endsWith('\n');
@@ -225,8 +236,10 @@ function removeExcludeSyncFoldersLine(content) {
 
 export {
     createExcludeSyncFoldersMatcher,
+    getConfSetting,
     parseKoboConfiguration,
     parseExcludeSyncFoldersLine,
+    removeConfSetting,
     removeExcludeSyncFoldersLine,
     setConfSetting,
     setExcludeSyncFoldersLine,

@@ -7,8 +7,11 @@ import {
 } from '../../src/js/kobo/sync-exclusions.js';
 import {
     createExcludeSyncFoldersMatcher,
+    getConfSetting,
     parseKoboConfiguration,
+    removeConfSetting,
     removeExcludeSyncFoldersLine,
+    setConfSetting,
     setExcludeSyncFoldersLine,
     validateExcludeSyncFoldersLine,
 } from '../../src/js/kobo/configuration.js';
@@ -49,6 +52,30 @@ test('parseKoboConfiguration trims setting whitespace and keeps equals signs in 
     ].join('\n'));
 
     assert.equal(parsed.sections[0].settings.ExcludeSyncFolders.value, '(foo=bar)');
+});
+
+test('getConfSetting reads a value, empty string, or undefined when absent', () => {
+    const conf = '[General]\nx=1\n[Reading]\nwebkitTextRendering=optimizeLegibility\nreadingAlignment=\n';
+    assert.equal(getConfSetting(conf, 'Reading', 'webkitTextRendering'), 'optimizeLegibility');
+    assert.equal(getConfSetting(conf, 'Reading', 'readingAlignment'), '');
+    assert.equal(getConfSetting(conf, 'Reading', 'readingFontFamily'), undefined);
+    assert.equal(getConfSetting(conf, 'Missing', 'x'), undefined);
+});
+
+test('setConfSetting updates an existing empty key in place', () => {
+    const conf = '[General]\nx=1\n[Reading]\nreadingAlignment=\nreadingFontFamily=\n';
+    const updated = setConfSetting(conf, 'Reading', 'readingAlignment', 'Left');
+    assert.match(updated, /readingAlignment=Left/);
+    assert.doesNotMatch(updated, /readingAlignment=\n/);
+    assert.match(updated, /readingFontFamily=\n/);
+});
+
+test('removeConfSetting drops a key and leaves the rest of the section intact', () => {
+    const conf = '[General]\nx=1\n[Reading]\nwebkitTextRendering=optimizeLegibility\nreadingAlignment=Left\n';
+    const updated = removeConfSetting(conf, 'Reading', 'webkitTextRendering');
+    assert.doesNotMatch(updated, /webkitTextRendering/);
+    assert.match(updated, /readingAlignment=Left/);
+    assert.match(updated, /\[Reading\]/);
 });
 
 test('setExcludeSyncFoldersLine inserts FeatureSettings when it is missing', () => {
