@@ -1,8 +1,25 @@
+// The Tweak-menu entry that toggles the screensaver on/off. Added to the
+// NickelMenu items file only when this feature is installed, so the menu never
+// offers a toggle for a screensaver that isn't there.
+const SCREENSAVER_MENU_ITEM = [
+    'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
+    '      chain_failure : skip : 3',
+    '      chain_success : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.disabled/screensaver /mnt/onboard/.kobo/screensaver',
+    '      chain_success : dbg_toast : Screensaver is now ON.',
+    '      chain_always : skip : -1',
+    '      chain_failure : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.kobo/screensaver /mnt/onboard/.disabled/screensaver',
+    '      chain_success : dbg_toast : Screensaver is now OFF.',
+];
+
+// The item is inserted right after the Tweak menu header so it keeps its
+// original position at the top of the menu.
+const MENU_HEADER_PATTERN = /^experimental :menu_main_15505_icon\b/;
+
 export default {
     id: 'screensaver',
-    section: 'Extras',
-    title: 'Copy screensaver',
-    description: 'Copies a screensaver to .kobo/screensaver. Depending on your configuration, it will now be displayed instead of your current read. You can always add your own in the .kobo/screensaver folder, and choosing Tweak > Screensaver will let you toggle it off.',
+    section: 'Advanced',
+    title: 'Copy sample screensaver',
+    description: 'Copies a sample screensaver to .kobo/screensaver and adds a new item to the Tweak menu to toggle the screensaver on or off. You can always add extra screensavers in the .kobo/screensaver folder.',
     default: false,
 
     cleanup: {
@@ -19,5 +36,20 @@ export default {
         return [
             { path: '.kobo/screensaver/moon.png', data: await ctx.asset('moon.png') },
         ];
+    },
+
+    // postProcess only runs when this feature is selected, so the toggle is added
+    // exactly when the screensaver image is also installed.
+    postProcess(files) {
+        const items = files.find(f => f.path === '.adds/nm/items');
+        if (!items || typeof items.data !== 'string') return files;
+
+        const lines = items.data.split('\n');
+        const headerIndex = lines.findIndex(line => MENU_HEADER_PATTERN.test(line));
+        const insertAt = headerIndex === -1 ? lines.length : headerIndex + 1;
+        lines.splice(insertAt, 0, '', ...SCREENSAVER_MENU_ITEM);
+        items.data = lines.join('\n');
+
+        return files;
     },
 };

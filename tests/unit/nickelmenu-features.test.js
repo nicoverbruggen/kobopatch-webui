@@ -6,7 +6,9 @@ import JSZip from 'jszip';
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import hideNotices from '../../src/js/nickelmenu/features/hide-notices/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
-import readerlyFonts from '../../src/js/nickelmenu/features/readerly-fonts/index.js';
+import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
+import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
+import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import { createResponse, text } from './test-helpers.js';
 
@@ -32,27 +34,54 @@ async function withMockFetch(responses, fn) {
     }
 }
 
-test('Readerly font install strips ZIP directories and ignores non-font files', async () => {
-    const zipData = await createZip({
-        'Readerly/KF_Readerly-Regular.ttf': 'regular font',
-        'Readerly/KF_Readerly-Bold.ttf': 'bold font',
+test('Additional Fonts install bundles all three families, strips ZIP dirs and ignores non-font files', async () => {
+    const readerlyZip = await createZip({
+        'Readerly/KF_Readerly-Regular.ttf': 'readerly regular',
+        'Readerly/KF_Readerly-Bold.ttf': 'readerly bold',
         'Readerly/LICENSE.txt': 'license',
         '__MACOSX/KF_Readerly-Italic.ttf': 'ignored directory prefix still stripped',
     });
+    const libronZip = await createZip({
+        'KF_Libron-Regular.ttf': 'libron regular',
+    });
+    const cartisseZip = await createZip({
+        'KF_Cartisse-Regular.ttf': 'cartisse regular',
+    });
 
     await withMockFetch(new Map([
-        ['/assets/KF_Readerly.zip', createResponse(zipData)],
+        ['/assets/KF_Readerly.zip', createResponse(readerlyZip)],
+        ['/assets/KF_Libron.zip', createResponse(libronZip)],
+        ['/assets/KF_Cartisse.zip', createResponse(cartisseZip)],
     ]), async () => {
-        const files = await readerlyFonts.install({ progress() {} });
+        const files = await additionalFonts.install({ progress() {} });
 
         assert.deepEqual(files.map(file => file.path), [
             'fonts/KF_Readerly-Regular.ttf',
             'fonts/KF_Readerly-Bold.ttf',
             'fonts/KF_Readerly-Italic.ttf',
+            'fonts/KF_Libron-Regular.ttf',
+            'fonts/KF_Cartisse-Regular.ttf',
         ]);
-        assert.equal(text(files[0].data), 'regular font');
+        assert.equal(text(files[0].data), 'readerly regular');
         assert.ok(files.every(file => file.data instanceof Uint8Array));
     });
+});
+
+test('Better Typography sets reading rendering and alignment; default font only when fonts are installed', () => {
+    const readingDefaults = [
+        { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' },
+        { section: 'Reading', key: 'readingAlignment', value: 'Left' },
+    ];
+
+    // Without the additional fonts, the default reading font is left untouched.
+    assert.deepEqual(betterTypography.confSettings({ features: [] }), readingDefaults);
+    assert.deepEqual(betterTypography.confSettings(), readingDefaults);
+
+    // With the additional fonts selected, KF Libron becomes the default font.
+    assert.deepEqual(
+        betterTypography.confSettings({ features: [{ id: 'additional-fonts' }] }),
+        [...readingDefaults, { section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' }],
+    );
 });
 
 test('KOReader install maps ZIP files under .adds/koreader', async () => {
@@ -139,6 +168,26 @@ test('custom menu leaves Dark Mode intact when the device is unknown (e.g. manua
     const files = itemsFiles('menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
     const result = itemsText(customMenu.postProcess(files, {}));
     assert.equal(result, 'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+});
+
+test('screensaver feature inserts its Tweak menu toggle right after the menu header', () => {
+    const files = itemsFiles(
+        'experimental :menu_main_15505_label :Tweak',
+        'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
+        '',
+        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
+    );
+
+    const result = itemsText(screensaver.postProcess(files));
+    const lines = result.split('\n');
+
+    // The toggle is added immediately below the icon header (its original spot).
+    const headerIndex = lines.findIndex(l => /menu_main_15505_icon/.test(l));
+    assert.equal(lines[headerIndex + 1], '');
+    assert.equal(lines[headerIndex + 2], 'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
+    assert.match(result, /Screensaver is now ON/);
+    // Existing items are preserved.
+    assert.match(result, /^menu_item :main :Screenshots/m);
 });
 
 test('custom menu reviewNotices warns only on unsupported devices', () => {

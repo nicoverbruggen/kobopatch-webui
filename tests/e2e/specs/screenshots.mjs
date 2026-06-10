@@ -357,7 +357,7 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
   await injectMockDevice(page, {
     hasNickelMenu: true,
     hasKOReader: true,
-    hasReaderlyFonts: true,
+    hasAdditionalFonts: true,
   });
 
   await page.click('#btn-connect');
@@ -372,9 +372,9 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
   await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
   await page.click('input[name="nm-option"][value="remove"]');
   // Optional-feature cleanup checkboxes are pre-checked when detected. Uncheck
-  // Readerly fonts so the review shows it under "Kept on your device:".
+  // the additional fonts so the review shows them under the "kept" card.
   await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
-  await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
+  await page.uncheck('input[name="nm-uninstall-additional-fonts"]');
   await page.click('#btn-nm-next');
 
   // Connected remove goes through backup → review (no manual-remove step).
@@ -407,7 +407,7 @@ test('connected nickelmenu removal review (no kept features)', async ({ page }, 
   await injectMockDevice(page, {
     hasNickelMenu: true,
     hasKOReader: true,
-    hasReaderlyFonts: true,
+    hasAdditionalFonts: true,
   });
 
   await page.click('#btn-connect');

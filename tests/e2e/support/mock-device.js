@@ -2,6 +2,11 @@ const { expect } = require('@playwright/test');
 
 const EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE = String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`;
 
+// A real Kobo eReader.conf ships a [Reading] section with these keys present but
+// empty. Including them lets tests verify that better-typography updates them in
+// place (and leaves them untouched when the option isn't selected).
+const READING_DEFAULTS = '[Reading]\nreadingAlignment=\nreadingFontFamily=\n';
+
 /**
  * Inject a mock File System Access API into the page, simulating a Kobo Libra Color.
  * The mock provides:
@@ -17,7 +22,7 @@ const defaultConfig = {
   hasNickelDbus: false,
   hasNickelSeries: false,
   hasNickelClock: false,
-  hasReaderlyFonts: false,
+  hasAdditionalFonts: false,
   hasScreensaver: false,
   hasCalibreExclude: false,
   eReaderConf: null,
@@ -29,8 +34,8 @@ const defaultConfig = {
 async function injectMockDevice(page, opts = {}) {
   const config = { ...defaultConfig, ...opts };
   config.eReaderConf = config.eReaderConf ?? (config.hasCalibreExclude
-    ? '[General]\nsome=setting\n[FeatureSettings]\n' + EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n'
-    : '[General]\nsome=setting\n');
+    ? '[General]\nsome=setting\n[FeatureSettings]\n' + EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n' + READING_DEFAULTS
+    : '[General]\nsome=setting\n' + READING_DEFAULTS);
 
   await page.evaluate((config) => {
     const file = (content = '') => ({ _type: 'file', content });
@@ -96,12 +101,20 @@ async function injectMockDevice(page, opts = {}) {
       current[parts[parts.length - 1]] = file(content);
     }
 
-    if (config.hasReaderlyFonts) {
+    if (config.hasAdditionalFonts) {
       filesystem['fonts'] = dir({
         'KF_Readerly-Regular.ttf': file(),
         'KF_Readerly-Italic.ttf': file(),
         'KF_Readerly-Bold.ttf': file(),
         'KF_Readerly-BoldItalic.ttf': file(),
+        'KF_Libron-Regular.ttf': file(),
+        'KF_Libron-Italic.ttf': file(),
+        'KF_Libron-Bold.ttf': file(),
+        'KF_Libron-BoldItalic.ttf': file(),
+        'KF_Cartisse-Regular.ttf': file(),
+        'KF_Cartisse-Italic.ttf': file(),
+        'KF_Cartisse-Bold.ttf': file(),
+        'KF_Cartisse-BoldItalic.ttf': file(),
       });
     }
 

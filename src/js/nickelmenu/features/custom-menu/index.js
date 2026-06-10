@@ -29,9 +29,9 @@ const presetScripts = [
 
 const customMenu = {
     id: 'custom-menu',
-    section: 'Required components',
+    section: 'Interface tweaks',
     title: 'Set up NickelMenu preset',
-    description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak". (Preset made by the author of this website.)',
+    description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak".',
     default: true,
     required: true,
     cleanup: {

@@ -47,46 +47,56 @@ export function populateSelect(selectEl, placeholder, items) {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, sectionTitle?: string, sectionDescription?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, hint?: string, sectionTitle?: string, sectionDescription?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
-    let currentSectionKey = null;
-    let currentTarget = container;
+
+    // Determine the ordered, unique section titles so the last one can start
+    // collapsed (less-popular "Advanced" options are tucked away by default).
+    const sectionOrder = [];
+    for (const item of items) {
+        const key = item.sectionTitle || '';
+        if (key && !sectionOrder.includes(key)) sectionOrder.push(key);
+    }
+    const lastSection = sectionOrder[sectionOrder.length - 1] || null;
+    const sectionBodies = new Map();
 
     for (const item of items) {
-        const nextSectionKey = item.sectionTitle || '';
-        if (nextSectionKey && nextSectionKey !== currentSectionKey) {
-            const section = document.createElement('section');
-            section.className = 'nm-config-section';
+        let currentTarget = container;
+        const sectionKey = item.sectionTitle || '';
 
-            const heading = document.createElement('div');
-            heading.className = 'nm-config-section-heading';
+        if (sectionKey) {
+            if (!sectionBodies.has(sectionKey)) {
+                // Sections are collapsible; every section is open except the last.
+                const section = document.createElement('details');
+                section.className = 'nm-config-section';
+                section.open = sectionKey !== lastSection;
 
-            const title = document.createElement('h3');
-            title.className = 'nm-config-section-title';
-            title.textContent = item.sectionTitle;
-            heading.appendChild(title);
+                const heading = document.createElement('summary');
+                heading.className = 'nm-config-section-heading';
 
-            if (item.sectionDescription) {
-                const desc = document.createElement('p');
-                desc.className = 'nm-config-section-desc';
-                desc.textContent = item.sectionDescription;
-                heading.appendChild(desc);
+                const title = document.createElement('h3');
+                title.className = 'nm-config-section-title';
+                title.textContent = item.sectionTitle;
+                heading.appendChild(title);
+
+                if (item.sectionDescription) {
+                    const desc = document.createElement('p');
+                    desc.className = 'nm-config-section-desc';
+                    desc.textContent = item.sectionDescription;
+                    heading.appendChild(desc);
+                }
+
+                const itemsWrap = document.createElement('div');
+                itemsWrap.className = 'nm-config-section-items';
+
+                section.appendChild(heading);
+                section.appendChild(itemsWrap);
+                container.appendChild(section);
+                sectionBodies.set(sectionKey, itemsWrap);
             }
-
-            const itemsWrap = document.createElement('div');
-            itemsWrap.className = 'nm-config-section-items';
-
-            section.appendChild(heading);
-            section.appendChild(itemsWrap);
-            container.appendChild(section);
-
-            currentSectionKey = nextSectionKey;
-            currentTarget = itemsWrap;
-        } else if (!nextSectionKey) {
-            currentSectionKey = null;
-            currentTarget = container;
+            currentTarget = sectionBodies.get(sectionKey);
         }
 
         const label = document.createElement('label');
@@ -113,8 +123,48 @@ export function renderNmCheckboxList(container, items) {
         textDiv.appendChild(descSpan);
         label.appendChild(input);
         label.appendChild(textDiv);
+
+        // Optional "learn more" badge. A hint that looks like a URL opens in a new
+        // tab; any other hint is treated as text and shown in a popup. Both are
+        // interactive content, so a click opens them rather than toggling the box.
+        if (item.hint) {
+            const isUrl = /^https?:\/\//i.test(item.hint);
+            const help = document.createElement(isUrl ? 'a' : 'button');
+            help.className = 'nm-config-help';
+            help.textContent = '?';
+            help.setAttribute('aria-label', `More about ${item.title}`);
+
+            if (isUrl) {
+                help.href = item.hint;
+                help.target = '_blank';
+                help.rel = 'noopener';
+                help.title = 'Learn more';
+                help.addEventListener('click', event => event.stopPropagation());
+            } else {
+                help.type = 'button';
+                help.title = 'Show details';
+                help.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showHint(item.title, item.hint);
+                });
+            }
+            label.appendChild(help);
+        }
+
         currentTarget.appendChild(label);
     }
+}
+
+/** Show a text hint in the shared hint dialog (used by feature "?" badges). */
+export function showHint(title, text) {
+    const dialog = document.getElementById('hint-dialog');
+    const body = document.getElementById('hint-dialog-text');
+    if (!dialog || !body) return;
+    const heading = document.getElementById('hint-dialog-title');
+    if (heading && title) heading.textContent = title;
+    body.textContent = text;
+    dialog.showModal();
 }
 
 /** Populate a <ul>/<ol> with text items, clearing existing content. */

@@ -34,6 +34,18 @@ const INSTALLABLES = [
         versionFile: 'readerly-release.json',
         fetchLatest: () => fetchLatestRelease('nicoverbruggen/readerly', (n) => n === 'KF_Readerly.zip'),
     },
+    {
+        name: 'libron',
+        asset: 'KF_Libron.zip',
+        versionFile: 'libron-release.json',
+        fetchLatest: () => fetchLatestRelease('nicoverbruggen/libron', (n) => n === 'KF_Libron.zip'),
+    },
+    {
+        name: 'cartisse',
+        asset: 'KF_Cartisse.zip',
+        versionFile: 'cartisse-release.json',
+        fetchLatest: () => fetchLatestRelease('nicoverbruggen/cartisse', (n) => n === 'KF_Cartisse.zip'),
+    },
 ];
 
 async function fetchLatestRelease(repo, matcher) {

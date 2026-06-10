@@ -387,6 +387,8 @@
                         Find the <code>[FeatureSettings]</code> section (or add it at the end of the file) and add the following line <strong>inside</strong> that section (do not replace the entire file):<br>
                         <code id="nm-download-conf-line"></code><br>
                         <span id="nm-download-conf-desc"></span></li>
+                    <li id="nm-download-conf-settings-step" hidden>In the same <strong>.kobo/Kobo/Kobo eReader.conf</strong>, apply the following settings (replace any existing lines that have the same key):
+                        <div id="nm-download-conf-settings"></div></li>
                     <li id="nm-download-reboot-step" hidden><strong>Safely eject</strong> the Kobo, then power it off by holding the power button until it says "Powered off". Press the power button again to boot it back up. The config change takes effect after reboot. Reconnect the Kobo via USB afterwards.</li>
                     <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure. Make sure hidden folders like <code>.kobo</code> and <code>.adds</code> are also copied.</li>
                     <li><strong>Safely eject</strong> the Kobo &mdash; do not just unplug the cable.</li>
@@ -600,6 +602,18 @@
                     number, firmware version, IP address, and browsing behaviour are never recorded by the
                     analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
                 </p>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="hint-dialog" class="modal" aria-labelledby="hint-dialog-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="hint-dialog-title">Good to know</h2>
+                <button id="btn-hint-close" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="hint-dialog-text"></p>
             </div>
         </div>
     </dialog>

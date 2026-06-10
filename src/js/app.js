@@ -562,6 +562,14 @@ function setupDialog(dialogId, openBtnId, closeBtnId) {
 
 setupDialog('how-it-works-dialog', 'btn-how-it-works', 'btn-close-dialog');
 
+// Hint dialog: opened programmatically from feature "?" badges that carry a
+// text hint. Only the close button and backdrop need wiring here.
+const hintDialog = $('hint-dialog');
+$('btn-hint-close').addEventListener('click', () => hintDialog.close());
+hintDialog.addEventListener('click', (e) => {
+    if (e.target === hintDialog) hintDialog.close();
+});
+
 // Privacy dialog is only shown when analytics are enabled.
 if (analyticsEnabled()) {
     $('btn-privacy').hidden = false;

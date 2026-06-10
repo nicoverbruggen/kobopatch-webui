@@ -5,7 +5,7 @@ export default {
     id: 'koreader',
     section: 'KOReader',
     title: 'Install KOReader',
-    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. Installing this requires many files to be copied and that can take a bit, so please be patient when transferring this to your Kobo. You can start KOReader via the Tweak menu, it does not replace the built-in reader functionality.',
+    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can start KOReader via the Tweak menu, it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 

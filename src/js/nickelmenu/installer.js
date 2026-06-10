@@ -2,11 +2,13 @@ import JSZip from 'jszip';
 import { fetchOrThrow } from '../shell/dom.js';
 import {
     removeExcludeSyncFoldersLine,
+    setConfSetting,
     setExcludeSyncFoldersLine,
 } from '../kobo/configuration.js';
 
 import customMenu from './features/custom-menu/index.js';
-import readerlyFonts from './features/readerly-fonts/index.js';
+import additionalFonts from './features/additional-fonts/index.js';
+import betterTypography from './features/better-typography/index.js';
 import koreader from './features/koreader/index.js';
 import simplifyTabs from './features/simplify-tabs/index.js';
 import hideRecommendations from './features/hide-recommendations/index.js';
@@ -36,9 +38,12 @@ export const NICKELMENU_FEATURES = [
     hideRecommendations,
     hideRow2Col2,
     hideNotices,
-    readerlyFonts,
-    screensaver,
+    additionalFonts,
+    betterTypography,
     koreader,
+    // "Advanced" section — less common power-user options, rendered last and
+    // collapsed by default in the feature selection step.
+    screensaver,
     excludeCalibre,
 ];
 
@@ -113,7 +118,8 @@ export class NickelMenuInstaller {
         }
 
         // Run postProcess() for features that have it. Device info lets features
-        // adapt their output to the connected hardware (e.g. drop Dark Mode).
+        // adapt their output to the connected hardware (e.g. drop Dark Mode); a
+        // feature can also add its own menu items (e.g. the Screensaver toggle).
         for (const feature of features) {
             if (!feature.postProcess) continue;
             const ctx = createContext(feature, progressFn, deviceInfo);
@@ -193,10 +199,22 @@ export class NickelMenuInstaller {
     async updateEReaderConf(device, features = []) {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
         const settingLine = getExcludeSyncFoldersLine(features);
-        const content = setExcludeSyncFoldersLine(
+        let content = setExcludeSyncFoldersLine(
             await device.readFile(confPath) || '',
             settingLine
         );
+
+        // Apply any Kobo eReader.conf settings declared by selected features
+        // (e.g. better-typography's reading/rendering preferences). Features pass
+        // the full selection so they can adapt (e.g. only set a default font when
+        // the fonts are also being installed).
+        const settingsCtx = { deviceInfo: device.deviceInfo, features };
+        for (const feature of features) {
+            if (!feature.confSettings) continue;
+            for (const { section, key, value } of feature.confSettings(settingsCtx)) {
+                content = setConfSetting(content, section, key, value);
+            }
+        }
 
         await device.writeFile(confPath, new TextEncoder().encode(content));
     }

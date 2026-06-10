@@ -12,8 +12,32 @@
     background: color-mix(in srgb, white 75%, var(--secondary-light, #f3f4f6) 25%);
 }
 
+/* Collapsible section header (the <summary> of the section's <details>). */
 .nm-config-section-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
     margin-bottom: 0.15rem;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+        display: none;
+    }
+
+    /* Disclosure chevron that rotates when the section is open. */
+    &::before {
+        content: "\203A"; /* › */
+        order: 2;
+        margin-left: auto;
+        color: var(--primary);
+        font-weight: 700;
+        transition: transform 0.15s ease;
+    }
+}
+
+.nm-config-section[open] > .nm-config-section-heading::before {
+    transform: rotate(90deg);
 }
 
 .nm-config-section-title {
@@ -61,6 +85,36 @@
 
 .nm-config-text {
     user-select: none;
+}
+
+/* "Learn more" badge shown for features that declare a hint (url or text). */
+.nm-config-help {
+    flex-shrink: 0;
+    margin-left: auto;
+    margin-top: 0.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--primary);
+    background: none;
+    color: var(--primary);
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    cursor: help;
+
+    &:hover {
+        background: var(--primary);
+        color: #fff;
+        text-decoration: none;
+    }
 }
 
 .nm-config-title {

@@ -91,6 +91,7 @@ export function initNickelMenu(state) {
                 name: 'nm-cfg-' + f.id,
                 title: f.title + (f.required ? ' (required)' : '') + (f.version ? ' ' + f.version : ''),
                 description: f.description,
+                hint: f.hint,
                 sectionTitle: f.section,
                 checked: f.required || f.default,
                 disabled: f.required,
@@ -182,6 +183,44 @@ export function initNickelMenu(state) {
         return features.flatMap(feature =>
             feature.reviewNotices ? feature.reviewNotices(ctx) : []
         );
+    }
+
+    /**
+     * Collect declarative Kobo eReader.conf settings from the selected features.
+     * The installer applies these directly on a connected device; in manual
+     * download mode they are surfaced as copy-paste instructions instead.
+     */
+    function getFeatureConfSettings(features) {
+        const ctx = { deviceInfo: state.device.deviceInfo ?? null, features };
+        return features.flatMap(feature =>
+            feature.confSettings ? feature.confSettings(ctx) : []
+        );
+    }
+
+    /** Render feature conf settings as per-section copy-paste lines. */
+    function renderDownloadConfSettings(container, settings) {
+        container.innerHTML = '';
+
+        // Group settings by conf section, preserving first-seen order.
+        const sections = new Map();
+        for (const { section, key, value } of settings) {
+            if (!sections.has(section)) sections.set(section, []);
+            sections.get(section).push(`${key}=${value}`);
+        }
+
+        for (const [section, lines] of sections) {
+            const intro = document.createElement('p');
+            const sectionCode = document.createElement('code');
+            sectionCode.textContent = `[${section}]`;
+            intro.append('In the ', sectionCode, ' section (add it if it is missing):');
+            container.appendChild(intro);
+
+            for (const line of lines) {
+                const lineCode = document.createElement('code');
+                lineCode.textContent = line;
+                container.append(lineCode, document.createElement('br'));
+            }
+        }
     }
 
     function renderReviewNotices(container, notices) {
@@ -695,6 +734,11 @@ export function initNickelMenu(state) {
             $('nm-download-conf-desc').textContent = hasExcludeCalibre
                 ? 'This prevents new books in the calibre folder from showing up in Kobo\'s list of books. Move Calibre-transferred books into a "calibre" folder first.'
                 : 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
+            // Feature-declared conf settings (e.g. better-typography) can't be
+            // written to a device in manual mode, so show them as instructions.
+            const confSettings = getFeatureConfSettings(features);
+            renderDownloadConfSettings($('nm-download-conf-settings'), confSettings);
+            $('nm-download-conf-settings-step').hidden = confSettings.length === 0;
             track('flow-end', { result: 'nm-download' });
         }
 

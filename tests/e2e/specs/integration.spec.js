@@ -6,7 +6,7 @@ const zlib = require('zlib');
 const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../support/paths');
-const { hasNickelMenuAssets, hasKOReaderAssets, hasReaderlyAssets, hasFirmwareZip } = require('../support/assets');
+const { hasNickelMenuAssets, hasKOReaderAssets, hasFontAssets, hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
 
@@ -24,6 +24,17 @@ async function skipNmBackup(page) {
   await page.click('#btn-nm-backup-next');
 }
 
+// Feature-selection sections are collapsible; the last ("Advanced") starts
+// collapsed, so open it before interacting with options it contains.
+async function openNmSection(page, title) {
+  const section = page.locator('details.nm-config-section', {
+    has: page.locator('.nm-config-section-title', { hasText: title }),
+  });
+  if (!(await section.evaluate(el => el.open))) {
+    await section.locator('summary').click();
+  }
+}
+
 
 // ============================================================
 // NickelMenu
@@ -32,7 +43,7 @@ async function skipNmBackup(page) {
 test.describe('NickelMenu', () => {
   test('no device — install with config via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     await goToManualMode(page);
 
@@ -52,11 +63,11 @@ test.describe('NickelMenu', () => {
 
     // Feature selection step
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
-    await expect(page.locator('#nm-config-options')).toContainText('Required components');
     await expect(page.locator('#nm-config-options')).toContainText('Interface tweaks');
+    await expect(page.locator('#nm-config-options')).toContainText('Text and typography');
 
     // Verify default checkbox states
-    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-screensaver"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-recommendations"]')).not.toBeChecked();
@@ -65,10 +76,14 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
+    // No feature declares a hint right now, so no "?" badge is shown.
+    await expect(page.locator('.nm-config-help')).toHaveCount(0);
+
     // Enable home screen hiding options and exclude-calibre for testing
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-row2col2"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
+    await openNmSection(page, 'Advanced');
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
@@ -82,7 +97,7 @@ test.describe('NickelMenu', () => {
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
     await expect(page.locator('#nm-review-notices')).toBeHidden();
 
     // Write button should be hidden in manual mode
@@ -115,7 +130,7 @@ test.describe('NickelMenu', () => {
     expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
     // Must contain NickelMenu items config
     expect(zipFiles).toContainEqual('.adds/nm/items');
-    // Must contain Readerly .ttf font files (readerly-fonts is checked by default)
+    // Must contain font .ttf files (Additional Fonts is checked by default)
     const fontFiles = zipFiles.filter(f => f.startsWith('fonts/') && f.endsWith('.ttf'));
     expect(fontFiles.length).toBeGreaterThan(0);
     // Must NOT contain screensaver (unchecked by default)
@@ -131,7 +146,7 @@ test.describe('NickelMenu', () => {
 
   test('no device — install with KOReader via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
     test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
 
     await goToManualMode(page);
@@ -189,7 +204,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with KOReader writes files to device', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
     test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
@@ -410,7 +425,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with config and write to Kobo', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
 
@@ -439,6 +454,7 @@ test.describe('NickelMenu', () => {
     await page.check('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
+    await openNmSection(page, 'Advanced');
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
@@ -447,7 +463,7 @@ test.describe('NickelMenu', () => {
     // Review step
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
     await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
@@ -467,9 +483,9 @@ test.describe('NickelMenu', () => {
     expect(writtenFiles, 'KoboRoot.tgz should be written').toContainEqual(expect.stringContaining('KoboRoot.tgz'));
     expect(writtenFiles, 'NickelMenu items should be written').toContainEqual(expect.stringContaining('items'));
 
-    // Verify Readerly font files were written (readerly-fonts is on by default)
+    // Verify font files were written (Additional Fonts is on by default)
     const fontFiles = writtenFiles.filter(f => f.includes('fonts/') && f.endsWith('.ttf'));
-    expect(fontFiles.length, 'Readerly .ttf fonts should be written').toBeGreaterThan(0);
+    expect(fontFiles.length, 'font .ttf files should be written').toBeGreaterThan(0);
 
     // Verify eReader.conf was updated with ExcludeSyncFolders including calibre exclusion
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
@@ -478,6 +494,12 @@ test.describe('NickelMenu', () => {
     // exclude-calibre is enabled -- calibre folder should be in the pattern
     expect(conf).toContain(EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE);
     expect(conf).not.toContain(QUADRUPLE_BACKSLASH_DOT);
+
+    // better-typography (on by default) applies its reading settings; with the
+    // additional fonts also installed, KF Libron becomes the default font.
+    expect(conf).toContain('webkitTextRendering=optimizeLegibility');
+    expect(conf).toContain('readingAlignment=Left');
+    expect(conf).toContain('readingFontFamily=KF Libron');
 
     // Verify NickelMenu items file exists and has expected modifications
     const items = await readMockFile(page, '.adds', 'nm', 'items');
@@ -488,11 +510,81 @@ test.describe('NickelMenu', () => {
     // With simplify-tabs enabled, TAB_CONFIG should be prepended
     expect(items).toContain('experimental :menu_main_15505_enabled: 1');
     expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
+    // Screensaver was not selected, so its toggle is absent from the menu.
+    expect(items).not.toContain('menu_item :main :Screensaver');
+  });
+
+  test('with device — selecting the screensaver adds its Tweak menu toggle and image', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
+
+    await connectMockDevice(page, { hasNickelMenu: false });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await openNmSection(page, 'Advanced');
+    await page.check('input[name="nm-cfg-screensaver"]');
+
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    // The toggle is inserted right after the Tweak menu header, and the sample
+    // screensaver image is written.
+    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    expect(items).toContain('menu_item :main :Screensaver :cmd_output');
+    expect(items).toMatch(/menu_main_15505_icon[^\n]*\n\nmenu_item :main :Screensaver/);
+    expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
+  });
+
+  test('with device — reading defaults are untouched when Better Typography is not selected', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
+
+    await connectMockDevice(page, { hasNickelMenu: false });
+
+    // Confirm the device starts with the empty Kobo reading defaults.
+    const confBefore = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confBefore).toContain('readingAlignment=\n');
+    expect(confBefore).toContain('readingFontFamily=\n');
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    // Turn off Better Typography (on by default); leave the fonts installing.
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-cfg-better-typography"]')).toBeChecked();
+    await page.uncheck('input[name="nm-cfg-better-typography"]');
+
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+    // The empty reading defaults must remain empty and no rendering line is added,
+    // even though the additional fonts were installed.
+    const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(conf).toContain('readingAlignment=\n');
+    expect(conf).toContain('readingFontFamily=\n');
+    expect(conf).not.toContain('readingAlignment=Left');
+    expect(conf).not.toContain('readingFontFamily=KF Libron');
+    expect(conf).not.toContain('webkitTextRendering');
   });
 
   test('with device — backup step can download important files before review', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     await connectMockDevice(page, { hasNickelMenu: true, hasCalibreExclude: true });
 
@@ -535,7 +627,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — install with config without exclude-calibre omits calibre from pattern', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     await connectMockDevice(page, { hasNickelMenu: false });
 
@@ -582,7 +674,7 @@ test.describe('NickelMenu', () => {
 
   test('with device — replaces existing calibre exclusion when checkbox is unchecked', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     // Start with a config that already has the calibre exclusion
     await connectMockDevice(page, { hasNickelMenu: false, hasCalibreExclude: true });
@@ -633,7 +725,7 @@ test.describe('NickelMenu', () => {
   ]) {
     test(`with device — repairs legacy malformed ${name} ExcludeSyncFolders value`, async ({ page }) => {
       test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-      test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+      test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
       await connectMockDevice(page, {
         hasNickelMenu: false,
@@ -651,6 +743,7 @@ test.describe('NickelMenu', () => {
       await page.click('#btn-nm-next');
 
       if (enableCalibre) {
+        await openNmSection(page, 'Advanced');
         await page.check('input[name="nm-cfg-exclude-calibre"]');
       }
 
@@ -936,7 +1029,7 @@ test.describe('NickelMenu', () => {
     await connectMockDevice(page, {
       hasNickelMenu: true,
       hasKOReader: true,
-      hasReaderlyFonts: true,
+      hasAdditionalFonts: true,
       hasScreensaver: true,
     });
 
@@ -950,7 +1043,7 @@ test.describe('NickelMenu', () => {
     // Uninstall checkboxes should appear for all 3 detected features
     await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
     await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
-    await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-uninstall-additional-fonts"]')).toBeChecked();
     await expect(page.locator('input[name="nm-uninstall-screensaver"]')).toBeChecked();
 
     // Uncheck screensaver (keep it)
@@ -960,10 +1053,10 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
     await skipNmBackup(page);
 
-    // Review should list KOReader and Readerly but not Screensaver
+    // Review should list KOReader and the additional fonts but not Screensaver
     await expect(page.locator('#nm-review-summary')).toContainText('removal');
     await expect(page.locator('#nm-review-list')).toContainText('KOReader');
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly');
+    await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
     await expect(page.locator('#nm-review-list')).not.toContainText('Screensaver');
 
     // Execute removal
@@ -977,9 +1070,10 @@ test.describe('NickelMenu', () => {
     // KOReader directory should be removed
     expect(await mockPathExists(page, '.adds', 'koreader')).toBe(false);
 
-    // Readerly fonts should be removed
+    // Additional font files should be removed across all three families
     expect(await mockPathExists(page, 'fonts', 'KF_Readerly-Regular.ttf')).toBe(false);
-    expect(await mockPathExists(page, 'fonts', 'KF_Readerly-Bold.ttf')).toBe(false);
+    expect(await mockPathExists(page, 'fonts', 'KF_Libron-Regular.ttf')).toBe(false);
+    expect(await mockPathExists(page, 'fonts', 'KF_Cartisse-Regular.ttf')).toBe(false);
 
     // Screensaver should NOT be removed (unchecked)
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
@@ -991,7 +1085,7 @@ test.describe('NickelMenu', () => {
     await connectMockDevice(page, {
       hasNickelMenu: true,
       hasKOReader: true,
-      hasReaderlyFonts: true,
+      hasAdditionalFonts: true,
     });
 
     await page.click('#btn-device-next');
@@ -1001,8 +1095,8 @@ test.describe('NickelMenu', () => {
     await page.click('input[name="nm-option"][value="remove"]');
     await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
 
-    // Keep Readerly fonts; remove KOReader alongside NickelMenu.
-    await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
+    // Keep the additional fonts; remove KOReader alongside NickelMenu.
+    await page.uncheck('input[name="nm-uninstall-additional-fonts"]');
 
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
@@ -1014,14 +1108,14 @@ test.describe('NickelMenu', () => {
     const removals = page.locator('#nm-review-list');
     await expect(removals).toContainText('NickelMenu');
     await expect(removals).toContainText('KOReader');
-    await expect(removals).not.toContainText('Readerly');
+    await expect(removals).not.toContainText('additional fonts', { ignoreCase: true });
 
     // Kept card surfaces the feature left installed, and only that one.
     const keptCard = page.locator('#nm-review-kept');
     await expect(keptCard).toBeVisible();
     await expect(keptCard).toContainText('will be kept');
     const keptList = page.locator('#nm-review-kept-list');
-    await expect(keptList).toContainText('Readerly fonts');
+    await expect(keptList).toContainText('additional fonts', { ignoreCase: true });
     await expect(keptList).not.toContainText('KOReader');
   });
 
@@ -1031,7 +1125,7 @@ test.describe('NickelMenu', () => {
     await connectMockDevice(page, {
       hasNickelMenu: true,
       hasKOReader: true,
-      hasReaderlyFonts: true,
+      hasAdditionalFonts: true,
     });
 
     await page.click('#btn-device-next');
@@ -1047,7 +1141,7 @@ test.describe('NickelMenu', () => {
     await skipNmBackup(page);
 
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
     await expect(page.locator('#nm-review-kept')).toBeHidden();
   });
 
@@ -1113,7 +1207,7 @@ test.describe('NickelMenu', () => {
     await connectMockDevice(page, {
       hasNickelMenu: true,
       hasKOReader: true,
-      hasReaderlyFonts: true,
+      hasAdditionalFonts: true,
     });
 
     await page.click('#btn-device-next');
@@ -1129,10 +1223,10 @@ test.describe('NickelMenu', () => {
     // Uninstall checkboxes should appear
     await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
     await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
-    await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-uninstall-additional-fonts"]')).toBeChecked();
 
     // Uncheck one option
-    await page.uncheck('input[name="nm-uninstall-readerly-fonts"]');
+    await page.uncheck('input[name="nm-uninstall-additional-fonts"]');
 
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
@@ -1151,13 +1245,13 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
     await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
     await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
-    // Readerly should still be unchecked (state preserved)
-    await expect(page.locator('input[name="nm-uninstall-readerly-fonts"]')).not.toBeChecked();
+    // Additional Fonts should still be unchecked (state preserved)
+    await expect(page.locator('input[name="nm-uninstall-additional-fonts"]')).not.toBeChecked();
   });
 
   test('no device — feature selections preserved through back navigation', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     await goToManualMode(page);
     await page.click('input[name="mode"][value="nickelmenu"]');
@@ -1168,10 +1262,10 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-    // Enable some features, disable readerly-fonts (on by default)
+    // Enable some features, disable Additional Fonts (on by default)
     await page.check('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
-    await page.uncheck('input[name="nm-cfg-readerly-fonts"]');
+    await page.uncheck('input[name="nm-cfg-additional-fonts"]');
 
     // Continue to review
     await page.click('#btn-nm-features-next');
@@ -1179,7 +1273,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('Simplify navigation tabs');
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen notices');
-    await expect(page.locator('#nm-review-list')).not.toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).not.toContainText('additional fonts', { ignoreCase: true });
 
     // Back to backup, then features — selections must be preserved
     await page.click('#btn-nm-review-back');
@@ -1188,7 +1282,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
-    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).not.toBeChecked();
 
     // Back to config and then forward again — still preserved
     await page.click('#btn-nm-features-back');
@@ -1197,7 +1291,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
-    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).not.toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).not.toBeChecked();
 
     // Now modify selections and verify review updates
     await page.uncheck('input[name="nm-cfg-simplify-tabs"]');
@@ -1211,7 +1305,7 @@ test.describe('NickelMenu', () => {
 
   test('no device — switching between preset and nickelmenu-only updates review', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-    test.skip(!hasReaderlyAssets(), 'Readerly assets not found (run npm run setup:installables)');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
     await goToManualMode(page);
     await page.click('input[name="mode"][value="nickelmenu"]');
@@ -1228,7 +1322,7 @@ test.describe('NickelMenu', () => {
     // Review should list features
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
 
     // Back to backup, back to features, back to config
     await page.click('#btn-nm-review-back');
@@ -1245,7 +1339,7 @@ test.describe('NickelMenu', () => {
     // Review should skip features step and show only NickelMenu
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (KoboRoot.tgz)');
-    await expect(page.locator('#nm-review-list')).not.toContainText('Readerly');
+    await expect(page.locator('#nm-review-list')).not.toContainText('additional fonts', { ignoreCase: true });
     await expect(page.locator('#nm-review-list')).not.toContainText('Hide home screen');
 
     // Back to backup, then config, switch back to preset
@@ -1259,12 +1353,12 @@ test.describe('NickelMenu', () => {
     // Features should still have previous selections
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await expect(page.locator('input[name="nm-cfg-hide-recommendations"]')).toBeChecked();
-    await expect(page.locator('input[name="nm-cfg-readerly-fonts"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).toBeChecked();
 
     // Review should show features again
     await page.click('#btn-nm-features-next');
     await skipNmBackup(page);
-    await expect(page.locator('#nm-review-list')).toContainText('Readerly fonts');
+    await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
     await expect(page.locator('#nm-review-list')).toContainText('Hide home screen recommendations');
   });
 });

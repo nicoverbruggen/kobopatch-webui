@@ -228,6 +228,7 @@ export {
     parseKoboConfiguration,
     parseExcludeSyncFoldersLine,
     removeExcludeSyncFoldersLine,
+    setConfSetting,
     setExcludeSyncFoldersLine,
     validateExcludeSyncFoldersLine,
     validateExcludeSyncFoldersRegex,
