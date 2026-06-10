@@ -163,8 +163,17 @@ export function initNickelMenu(state) {
         });
     }
 
+    /**
+     * Collect review notices for the given features. A feature declares
+     * `reviewNotices` as a `(ctx)` function returning its notices, resolved
+     * against device context so it can adapt to the connected Kobo (e.g.
+     * custom-menu's Dark Mode warning only applies to older hardware).
+     */
     function getFeatureReviewNotices(features) {
-        return features.flatMap(feature => feature.reviewNotices || []);
+        const ctx = { deviceInfo: state.device.deviceInfo };
+        return features.flatMap(feature =>
+            feature.reviewNotices ? feature.reviewNotices(ctx) : []
+        );
     }
 
     function renderReviewNotices(container, notices) {
@@ -613,7 +622,7 @@ export function initNickelMenu(state) {
                 await state.nmInstaller.installToDevice(state.device, features, progressFn);
                 showNmDone('written');
             } else {
-                state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn);
+                state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo);
                 showNmDone('download');
             }
         } catch (err) {

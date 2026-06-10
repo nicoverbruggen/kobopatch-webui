@@ -43,10 +43,13 @@ export const NICKELMENU_FEATURES = [
 ];
 
 /**
- * Create an asset-loading context for a given feature.
- * Assets are fetched at runtime from the feature's directory under /js/nickelmenu/features/<id>/.
+ * Create the context passed to a feature's installer-time hooks (`install` and
+ * `postProcess`). Every hook receives `deviceInfo` so features can adapt to the
+ * connected hardware; installer-time hooks additionally get `asset` and
+ * `progress`. Assets are fetched at runtime from the feature's directory under
+ * /js/nickelmenu/features/<id>/.
  */
-function createContext(feature, progressFn) {
+function createContext(feature, progressFn, deviceInfo = null) {
     const basePath = `js/nickelmenu/features/${feature.id}/`;
     return {
         async asset(relativePath) {
@@ -57,6 +60,7 @@ function createContext(feature, progressFn) {
         progress(msg) {
             progressFn(msg);
         },
+        deviceInfo,
     };
 }
 
@@ -90,13 +94,13 @@ export class NickelMenuInstaller {
      * @param {function} progressFn
      * @returns {{ path: string, data: Uint8Array|string }[]}
      */
-    async collectFiles(features, progressFn) {
+    async collectFiles(features, progressFn, deviceInfo = null) {
         let files = [];
 
         // Run install() for features that have it
         for (const feature of features) {
             if (!feature.install) continue;
-            const ctx = createContext(feature, progressFn);
+            const ctx = createContext(feature, progressFn, deviceInfo);
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
@@ -108,10 +112,12 @@ export class NickelMenuInstaller {
             itemsFile.data = new TextDecoder().decode(itemsFile.data);
         }
 
-        // Run postProcess() for features that have it
+        // Run postProcess() for features that have it. Device info lets features
+        // adapt their output to the connected hardware (e.g. drop Dark Mode).
         for (const feature of features) {
             if (!feature.postProcess) continue;
-            files = feature.postProcess(files);
+            const ctx = createContext(feature, progressFn, deviceInfo);
+            files = feature.postProcess(files, ctx);
         }
 
         // Re-encode items file back to Uint8Array
@@ -138,7 +144,7 @@ export class NickelMenuInstaller {
             await this.updateEReaderConf(device, features);
 
             // After that, collect all practical files that need to be copied
-            const files = await this.collectFiles(features, progressFn);
+            const files = await this.collectFiles(features, progressFn, device.deviceInfo);
             progressFn('Writing files to Kobo...');
 
             const totalFiles = files.length;
@@ -157,7 +163,7 @@ export class NickelMenuInstaller {
     /**
      * Build a zip for manual download.
      */
-    async buildDownloadZip(features, progressFn) {
+    async buildDownloadZip(features, progressFn, deviceInfo = null) {
         await this.loadNickelMenu(progressFn);
 
         progressFn('Building download package...');
@@ -167,7 +173,7 @@ export class NickelMenuInstaller {
         zip.file('.kobo/KoboRoot.tgz', tgz);
 
         if (features.length > 0) {
-            const files = await this.collectFiles(features, progressFn);
+            const files = await this.collectFiles(features, progressFn, deviceInfo);
             for (const { path, data } of files) {
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 zip.file(path, fileData);
