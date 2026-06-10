@@ -80,9 +80,9 @@ If you want to apply **custom patches**:
 
 ## Technical information
 
-**Note:** This project was built with some assistance of agentic coding tools, some local and some hosted.
+**Note:** This project was built with some assistance of agentic coding tools, some local and some hosted. The resulting project has been thoroughly tested by the author on various Kobo devices, including: Kobo Libra 2, Kobo Clara BW, Kobo Libra Color, Kobo Elipsa.
 
-More relevant notes on architecture, file structure, build internals, and detailed testing notes live in [PROJECT.md](PROJECT.md).
+More relevant notes on architecture, file structure, build internals, and detailed testing notes live in [PROJECT.md](PROJECT.md). Instructions for agentic coding tools live in [AGENTS.md](AGENTS.md), and should be read before work on features starts.
 
 ## Credits
 

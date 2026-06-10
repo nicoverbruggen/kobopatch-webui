@@ -155,6 +155,14 @@ bash tests/e2e/scripts/run-e2e.sh --headed --slow
 bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 ```
 
+### Screenshots
+
+`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `mobile` (393×852) and `desktop` (1280×900) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
+
+Each test in `screenshots.mjs` walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus an `edge-cases` group. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo), KOReader is made available via a `koreader-release.json` route mock, and firmware-dependent flows skip when the firmware zip is absent.
+
+Output lands in `tests/e2e/screenshots/{mobile,desktop}/{manual-nickelmenu,manual-patches,connected-nickelmenu,connected-patches,edge-cases}/` and is gitignored; the directory is wiped at the start of each run. File names are prefixed with an order number (`05-…`, `08b-…`) so they sort in flow order. To capture a new state, add or extend a test and drop a `shot(...)` call where you want the frame.
+
 ## Running Locally
 
 ```bash
