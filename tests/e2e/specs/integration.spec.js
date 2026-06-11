@@ -1189,6 +1189,9 @@ test.describe('NickelMenu', () => {
     await connectMockDevice(page, { signedIn: false });
     await goToNmFeatures(page);
 
+    // Also enable simplify-tabs, which force-enables the home tab — Sideloaded
+    // Mode must then comment that override out so the home tab is hidden.
+    await page.check('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-sideloaded-mode"]');
     await page.click('#btn-nm-features-next');
     await skipNmBackup(page);
@@ -1199,6 +1202,10 @@ test.describe('NickelMenu', () => {
     const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
     expect(conf).toContain('[ApplicationPreferences]');
     expect(conf).toContain('SideloadedMode=true');
+
+    // The home-tab override is commented out in the NickelMenu items file.
+    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    expect(items).toContain('# experimental :menu_main_15505_0_enabled: 1');
   });
 
   test('with device — removing Sideloaded Mode reverts the config setting', async ({ page }) => {

@@ -8,6 +8,27 @@
 // minimumVersion and is gated off on older devices in the config UI.
 const SIDELOADED_MODE = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' };
 
+// The NickelMenu items line that force-enables the home navigation tab (index 0
+// of the bottom tab bar). The simplify-tabs feature adds it. In Sideloaded Mode
+// there is no home screen, so this override must be removed for the home tab to
+// disappear — we comment it out rather than delete it, so it can be restored if
+// the build is re-run without Sideloaded Mode (or simply not selected at all).
+const HOME_TAB_PATTERN = /^\s*experimental\s*:\s*menu_main_15505_0_enabled\b/;
+
+// Comment out the home-tab override (if present and not already commented),
+// leaving an explanatory note above it. Re-running the build without this
+// feature regenerates the items file with the line restored.
+function hideHomeTab(items) {
+    return items
+        .split('\n')
+        .flatMap(line =>
+            HOME_TAB_PATTERN.test(line) && !line.trimStart().startsWith('#')
+                ? ['# Home tab hidden for Sideloaded Mode (no home screen when not signed in).', '# ' + line]
+                : [line]
+        )
+        .join('\n');
+}
+
 export default {
     id: 'sideloaded-mode',
     section: 'Advanced',
@@ -27,6 +48,16 @@ export default {
         description: 'Removes the SideloadedMode setting from your Kobo configuration. If you have not signed in, sign-in may be required again after a reboot.',
         detectConf: [SIDELOADED_MODE],
         revertConf: [{ ...SIDELOADED_MODE, revertTo: null }],
+    },
+
+    // Hide the home navigation tab by commenting out its force-enable override
+    // (added by simplify-tabs). A no-op when that line isn't present — without it
+    // Sideloaded Mode already hides the home tab on its own.
+    postProcess(files) {
+        const items = files.find(f => f.path === '.adds/nm/items');
+        if (!items || typeof items.data !== 'string') return files;
+        items.data = hideHomeTab(items.data);
+        return files;
     },
 
     // Declarative Kobo eReader.conf change, applied by the installer when a

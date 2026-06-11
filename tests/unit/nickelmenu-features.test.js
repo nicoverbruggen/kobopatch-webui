@@ -125,6 +125,28 @@ test('Sideloaded Mode sets SideloadedMode under ApplicationPreferences and decla
     ]);
 });
 
+test('Sideloaded Mode comments out the home-tab override so the home tab is hidden', () => {
+    // simplify-tabs force-enables the home tab; Sideloaded Mode must comment it out.
+    const files = itemsFiles(
+        'experimental :menu_main_15505_0_enabled: 1',
+        'experimental :menu_main_15505_1_label: Books',
+    );
+    const result = itemsText(sideloadedMode.postProcess(files));
+    const lines = result.split('\n');
+
+    assert.equal(lines[0], '# Home tab hidden for Sideloaded Mode (no home screen when not signed in).');
+    assert.equal(lines[1], '# experimental :menu_main_15505_0_enabled: 1');
+    // Other tab settings are left untouched.
+    assert.match(result, /^experimental :menu_main_15505_1_label: Books$/m);
+});
+
+test('Sideloaded Mode postProcess is a no-op when the home-tab override is absent', () => {
+    // Without simplify-tabs there is no override line; Sideloaded Mode hides the
+    // home tab on its own, so nothing in the items file changes.
+    const files = itemsFiles('menu_item :main :Reboot :power :reboot');
+    assert.equal(itemsText(sideloadedMode.postProcess(files)), 'menu_item :main :Reboot :power :reboot');
+});
+
 test('Sideloaded Mode cleanup detects and reverts only its own conf key', () => {
     const setting = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' };
     const { cleanup } = sideloadedMode;
