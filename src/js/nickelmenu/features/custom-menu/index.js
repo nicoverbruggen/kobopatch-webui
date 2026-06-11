@@ -50,27 +50,10 @@ const DARK_MODE = {
     lines: ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode'],
 };
 
-// Toggle items for the home-content / navigation-tab hiders. They are added only
-// when a feature declaring the matching capability flag is part of the install,
-// and run a universal script that flips every flag that kind of feature manages,
-// then reboots so NickelMenu re-reads the items file. The scripts live under
-// .adds/nm/scripts so NickelMenu removal's recursive delete cleans them up.
-const HIDDEN_HOME_SCRIPT_PATH = '.adds/nm/scripts/toggle_hidden_home.sh';
-const TABS_SCRIPT_PATH = '.adds/nm/scripts/toggle_tabs.sh';
-
-const HIDDEN_HOME_TOGGLE = {
-    id: 'toggle-hidden-home',
-    order: 92,
-    lines: ['menu_item :main :Show/hide home content :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
-};
-const TABS_TOGGLE = {
-    id: 'toggle-tabs',
-    order: 94,
-    lines: ['menu_item :main :Toggle navigation tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
-};
-
-const installsHomeContentToggle = (features = []) => features.some(f => f.hidesHomeContent);
-const installsTabsToggle = (features = []) => features.some(f => f.hidesTabs);
+// The toggle items for hidden home content and navigation tabs are owned by the
+// features that hide those things (hide-home-content and simplify-tabs), each of
+// which contributes its own menuItems entry and ships its own .adds/nm/scripts
+// script. custom-menu only owns the base Tweak menu below.
 
 const customMenu = {
     id: 'custom-menu',
@@ -102,33 +85,20 @@ const customMenu = {
         }];
     },
 
-    // Ship the menu icon, plus the toggle scripts for whichever hiders are part
-    // of the install. install() receives the selected features so it can decide
-    // which scripts to ship.
+    // Ship the Tweak menu icon.
     async install(ctx = {}) {
-        const files = [
+        return [
             { path: '.adds/nm/.cog.png', data: await ctx.asset('.cog.png') },
         ];
-        const features = ctx.features || [];
-        if (installsHomeContentToggle(features)) {
-            files.push({ path: HIDDEN_HOME_SCRIPT_PATH, data: await ctx.asset('scripts/toggle_hidden_home.sh') });
-        }
-        if (installsTabsToggle(features)) {
-            files.push({ path: TABS_SCRIPT_PATH, data: await ctx.asset('scripts/toggle_tabs.sh') });
-        }
-        return files;
     },
 
     // Contribute the base Tweak-menu entries. Dark Mode is dropped on unsupported
-    // devices, and the toggle items are added only when their feature is present.
+    // devices (left out of the menu entirely rather than commented out).
     menuItems(ctx = {}) {
         const entries = [...BASE_ITEMS];
         if (darkModeSupport(ctx.deviceInfo) !== 'unsupported') {
             entries.push(DARK_MODE);
         }
-        const features = ctx.features || [];
-        if (installsHomeContentToggle(features)) entries.push(HIDDEN_HOME_TOGGLE);
-        if (installsTabsToggle(features)) entries.push(TABS_TOGGLE);
         return entries;
     },
 };

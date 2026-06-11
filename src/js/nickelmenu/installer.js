@@ -11,9 +11,7 @@ import additionalFonts from './features/additional-fonts/index.js';
 import betterTypography from './features/better-typography/index.js';
 import koreader from './features/koreader/index.js';
 import simplifyTabs from './features/simplify-tabs/index.js';
-import hideRecommendations from './features/hide-recommendations/index.js';
-import hideRow2Col2 from './features/hide-row2col2/index.js';
-import hideNotices from './features/hide-notices/index.js';
+import { homeHiders } from './features/hide-home-content/index.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
 import sideloadedMode from './features/sideloaded-mode/index.js';
@@ -36,9 +34,7 @@ export function getExcludeSyncFoldersLine(features = []) {
 export const NICKELMENU_FEATURES = [
     customMenu,
     simplifyTabs,
-    hideRecommendations,
-    hideRow2Col2,
-    hideNotices,
+    ...homeHiders,
     additionalFonts,
     betterTypography,
     koreader,
@@ -83,9 +79,17 @@ function createContext(feature, progressFn, deviceInfo = null, features = []) {
 function buildItemsFile(features, deviceInfo) {
     const menuCtx = { deviceInfo, features };
     const entries = [];
+    const seenIds = new Set();
     for (const feature of features) {
         if (!feature.menuItems) continue;
-        entries.push(...feature.menuItems(menuCtx));
+        for (const entry of feature.menuItems(menuCtx)) {
+            // Several features can contribute the same shared entry — e.g. every
+            // home-content hider offers the one "Show/hide home content" toggle.
+            // Keep the first; the duplicates are identical.
+            if (seenIds.has(entry.id)) continue;
+            seenIds.add(entry.id);
+            entries.push(entry);
+        }
     }
     if (entries.length === 0) return null;
 
@@ -147,6 +151,15 @@ export class NickelMenuInstaller {
             const result = await feature.install(ctx);
             files.push(...result);
         }
+
+        // De-duplicate shared install files by path — e.g. several home-content
+        // hiders each ship the identical toggle script. Keep the first write.
+        const seenPaths = new Set();
+        files = files.filter(file => {
+            if (seenPaths.has(file.path)) return false;
+            seenPaths.add(file.path);
+            return true;
+        });
 
         // Assemble the NickelMenu items file from the features' menuItems hooks.
         // It is built as a string so postProcess features can still mutate it.

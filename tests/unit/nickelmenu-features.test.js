@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import JSZip from 'jszip';
 
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
-import hideNotices from '../../src/js/nickelmenu/features/hide-notices/index.js';
+import { homeHiders } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
 import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
@@ -12,6 +12,8 @@ import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { createResponse, text } from './test-helpers.js';
+
+const hideNotices = homeHiders.find(f => f.id === 'hide-notices');
 
 async function createZip(entries) {
     const zip = new JSZip();
@@ -280,39 +282,64 @@ test('custom menu install ships only the menu icon when no hiders are selected',
     assert.deepEqual(files.map(file => file.path), ['.adds/nm/.cog.png']);
 });
 
-test('custom menu ships the toggle scripts and adds toggle items when hiders are selected', async () => {
+test('home-content hiders share one toggle item and append distinct flags', () => {
+    // Every hider contributes the identical shared toggle entry (same id, same
+    // script), so the installer can de-duplicate them into a single Tweak item.
+    const toggleIds = homeHiders.map(h => h.menuItems()[0].id);
+    assert.deepEqual(toggleIds, ['toggle-hidden-home', 'toggle-hidden-home', 'toggle-hidden-home']);
+    assert.match(homeHiders[0].menuItems()[0].lines[0], /toggle_hidden_home\.sh$/);
+
+    // ...but each appends its own experimental flag to the items file.
+    const flags = homeHiders.map(h => {
+        const files = h.postProcess([{ path: '.adds/nm/items', data: '' }]);
+        return files.find(f => f.path === '.adds/nm/items').data.trim();
+    });
+    assert.deepEqual(flags, [
+        'experimental:hide_home_row1col2_enabled:1',
+        'experimental:hide_home_row2col2_enabled:1',
+        'experimental:hide_home_row3_enabled:1',
+    ]);
+});
+
+test('a home-content hider ships the shared toggle script to .adds/nm/scripts', async () => {
+    const originalFetch = globalThis.fetch;
+    let requestedUrl = null;
+    globalThis.fetch = async (url) => {
+        requestedUrl = url;
+        return { ok: true, async arrayBuffer() { return new TextEncoder().encode('toggle home').buffer; } };
+    };
+
+    try {
+        const files = await hideNotices.install();
+        assert.equal(requestedUrl, 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
+        assert.deepEqual(files.map(file => file.path), ['.adds/nm/scripts/toggle_hidden_home.sh']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('simplify-tabs owns its navigation-tab toggle script and item', async () => {
     const requested = [];
-    const features = [
-        { id: 'hide-notices', hidesHomeContent: true },
-        { id: 'simplify-tabs', hidesTabs: true },
-    ];
     const ctx = {
-        features,
         async asset(path) {
             requested.push(path);
             return new TextEncoder().encode('script');
         },
     };
 
-    const files = await customMenu.install(ctx);
+    const files = await simplifyTabs.install(ctx);
 
-    // The icon plus both toggle scripts, shipped under .adds/nm/scripts so the
-    // recursive NickelMenu removal cleans them up.
-    assert.deepEqual(requested, ['.cog.png', 'scripts/toggle_hidden_home.sh', 'scripts/toggle_tabs.sh']);
-    assert.deepEqual(files.map(file => file.path), [
-        '.adds/nm/.cog.png',
-        '.adds/nm/scripts/toggle_hidden_home.sh',
-        '.adds/nm/scripts/toggle_tabs.sh',
-    ]);
+    assert.deepEqual(requested, ['scripts/toggle_tabs.sh']);
+    assert.deepEqual(files.map(file => file.path), ['.adds/nm/scripts/toggle_tabs.sh']);
 
-    const toggleItems = customMenu.menuItems({ features }).filter(e => e.id.startsWith('toggle-'));
-    assert.deepEqual(toggleItems.map(e => e.id), ['toggle-hidden-home', 'toggle-tabs']);
-    assert.match(toggleItems[0].lines[0], /toggle_hidden_home\.sh$/);
-    assert.match(toggleItems[1].lines[0], /toggle_tabs\.sh$/);
+    const items = simplifyTabs.menuItems();
+    assert.deepEqual(items.map(e => e.id), ['toggle-tabs']);
+    assert.equal(items[0].order, 94);
+    assert.match(items[0].lines[0], /toggle_tabs\.sh$/);
 });
 
-test('custom menu omits the toggle items when no hiders are selected', () => {
+test('custom menu never contributes toggle items itself', () => {
+    // The toggles are owned by the hide-home-content and simplify-tabs features.
     const ids = customMenu.menuItems({ features: [{ id: 'koreader' }] }).map(e => e.id);
-    assert.ok(!ids.includes('toggle-hidden-home'));
-    assert.ok(!ids.includes('toggle-tabs'));
+    assert.ok(!ids.some(id => id.startsWith('toggle-')));
 });

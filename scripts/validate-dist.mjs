@@ -21,8 +21,8 @@ const required = [
   // Runtime-fetched NickelMenu feature assets (the items file is generated from
   // feature menuItems hooks, so it is no longer shipped as a static asset).
   'js/nickelmenu/features/custom-menu/.cog.png',
-  'js/nickelmenu/features/custom-menu/scripts/toggle_hidden_home.sh',
-  'js/nickelmenu/features/custom-menu/scripts/toggle_tabs.sh',
+  'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh',
+  'js/nickelmenu/features/simplify-tabs/scripts/toggle_tabs.sh',
 ];
 
 let missing = 0;

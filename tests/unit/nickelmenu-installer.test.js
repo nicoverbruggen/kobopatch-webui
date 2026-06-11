@@ -7,7 +7,7 @@ import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
 import { AuditLog } from '../../src/js/kobo/audit-log.js';
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import excludeCalibre from '../../src/js/nickelmenu/features/exclude-calibre/index.js';
-import hideNotices from '../../src/js/nickelmenu/features/hide-notices/index.js';
+import { homeHiders } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import {
     RecordingDevice,
     bytes,
@@ -18,6 +18,8 @@ import {
     text,
     useCustomMenuAssetFetch,
 } from './test-helpers.js';
+
+const hideNotices = homeHiders.find(f => f.id === 'hide-notices');
 
 test('installToDevice with no features writes only NickelMenu KoboRoot.tgz', async () => {
     const tgz = bytes('tgz payload');
@@ -100,8 +102,32 @@ test('installToDevice writes post-processed NickelMenu items as bytes', async ()
     const items = text(itemsWrite.data);
     // hide-notices appends its flag to the generated items file...
     assert.match(items, /experimental:hide_home_row3_enabled:1\n$/);
-    // ...and custom-menu adds the universal home-content toggle item.
+    // ...and contributes the shared home-content toggle item.
     assert.match(items, /toggle_hidden_home\.sh/);
+});
+
+test('installToDevice de-duplicates the shared home-content toggle across hiders', async () => {
+    const restoreFetch = useCustomMenuAssetFetch();
+    const installer = createInstaller();
+    const device = new RecordingDevice();
+    const hiders = homeHiders.filter(f => ['hide-recommendations', 'hide-notices'].includes(f.id));
+
+    try {
+        await installer.installToDevice(device, [customMenu, ...hiders], createProgressRecorder());
+    } finally {
+        restoreFetch();
+    }
+
+    // Two hiders each ship + contribute the same toggle, but it lands once.
+    const scriptWrites = device.writePaths().filter(path => path.endsWith('toggle_hidden_home.sh'));
+    assert.deepEqual(scriptWrites, ['.adds/nm/scripts/toggle_hidden_home.sh']);
+
+    const items = text(device.writeFor('.adds/nm/items').data);
+    const toggleCount = (items.match(/Show\/hide home content/g) || []).length;
+    assert.equal(toggleCount, 1);
+    // Both hiders' distinct flags are still appended.
+    assert.match(items, /experimental:hide_home_row1col2_enabled:1/);
+    assert.match(items, /experimental:hide_home_row3_enabled:1/);
 });
 
 test('installToDevice writes an audit log under .kobopatch-webui when an AuditLog is passed', async () => {
