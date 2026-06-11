@@ -25,15 +25,4 @@ export async function countKoboUsers(device) {
     );
 }
 
-/**
- * Whether the connected Kobo appears to be signed into an account. Returns
- * false only when we positively read zero user rows; an unreadable database
- * yields null (unknown) so we never wrongly claim a device isn't signed in.
- *
- * @returns {Promise<boolean|null>}
- */
-export async function isKoboSignedIn(device) {
-    const count = await countKoboUsers(device);
-    if (count === null) return null;
-    return count > 0;
-}
+

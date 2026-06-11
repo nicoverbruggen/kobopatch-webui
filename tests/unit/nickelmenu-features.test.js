@@ -227,6 +227,22 @@ test('NickelMenu postProcess features prepend tab config and append hide flags',
     assert.match(items, /menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n$/);
 });
 
+test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab override can be commented out', () => {
+    // simulate a generated items file with the tab config from simplify-tabs
+    const files = itemsFiles('experimental :menu_main_15505_label :Tweak', 'menu_item :main :Power :power :reboot');
+
+    const withTabs = simplifyTabs.postProcess(files);
+    const commented = sideloadedMode.postProcess(withTabs);
+    const items = itemsText(commented);
+
+    // The home-tab force-enable line (index 0) is commented out by sideloaded-mode
+    assert.match(items, /^# Home tab hidden for Sideload mode/);
+    assert.match(items, /^# experimental :menu_main_15505_0_enabled: 1/m);
+    // Other tab config and menu items are left untouched
+    assert.match(items, /^experimental :menu_main_15505_label :Tweak$/m);
+    assert.match(items, /menu_item :main :Power :power :reboot/);
+});
+
 const AURA_HD = { serialPrefix: 'N204', model: 'Kobo Aura HD' };       // no Dark mode
 const LIBRA_COLOUR = { serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
 

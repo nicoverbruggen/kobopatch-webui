@@ -50,14 +50,14 @@ export function revertableConfSettings(feature, ctx = {}) {
  */
 export const NICKELMENU_FEATURES = [
     customMenu,
-    simplifyTabs,
+    simplifyTabs,       // postProcess must run before sideloadedMode (home-tab override)
     ...homeHiders,
     additionalFonts,
     betterTypography,
     koreader,
     // "Advanced" section — less common power-user options, rendered last and
     // collapsed by default in the feature selection step.
-    sideloadedMode,
+    sideloadedMode,     // postProcess comments out the home-tab override added by simplifyTabs
     screensaver,
     excludeCalibre,
 ];
