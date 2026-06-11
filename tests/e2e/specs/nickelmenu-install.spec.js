@@ -122,12 +122,12 @@ test.describe('NickelMenu — install', () => {
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
     expect(itemsContent).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
 
-    // Selecting home-screen hiders adds the universal "Show/hide home content"
+    // Selecting home-screen hiders adds the universal "Toggle Minimal Home"
     // toggle item and ships its script under .adds/nm/scripts. The tabs toggle is
     // not added because simplify-tabs was left unchecked.
     expect(zipFiles).toContainEqual('.adds/nm/scripts/toggle_hidden_home.sh');
     expect(zipFiles).not.toContainEqual('.adds/nm/scripts/toggle_tabs.sh');
-    expect(itemsContent).toContain('menu_item :main :Show/hide home content :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh');
+    expect(itemsContent).toContain('menu_item :main :Toggle Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh');
   });
 
 
@@ -185,11 +185,11 @@ test.describe('NickelMenu — install', () => {
     // KOReader files should be present under .adds/koreader/
     expect(zipFiles.some(f => f.startsWith('.adds/koreader/'))).toBe(true);
     // KOReader launcher should be the first menu item, just below the Tweak
-    // tab header (order 5 in the generated items file).
+    // tab header (first in MENU_ITEM_ORDER after the header).
     const itemsContent = await zip.file('.adds/nm/items').async('string');
-    expect(itemsContent).toContain('menu_item:main:KOReader');
+    expect(itemsContent).toContain('menu_item:main:Open KOReader');
     const firstMenuItem = itemsContent.split('\n').find(line => line.startsWith('menu_item'));
-    expect(firstMenuItem.startsWith('menu_item:main:KOReader')).toBe(true);
+    expect(firstMenuItem.startsWith('menu_item:main:Open KOReader')).toBe(true);
   });
 
 
@@ -463,7 +463,7 @@ test.describe('NickelMenu — install', () => {
     expect(items).toContain('experimental :menu_main_15505_enabled: 1');
     expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
     // Screensaver was not selected, so its toggle is absent from the menu.
-    expect(items).not.toContain('menu_item :main :Screensaver');
+    expect(items).not.toContain('menu_item :main :Toggle Screensaver');
   });
 
 
@@ -489,11 +489,11 @@ test.describe('NickelMenu — install', () => {
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
 
-    // The toggle is inserted right after the Tweak menu header, and the sample
+    // The toggle is inserted directly below Toggle Screenshots, and the sample
     // screensaver image is written.
     const items = await readMockFile(page, '.adds', 'nm', 'items');
-    expect(items).toContain('menu_item :main :Screensaver :cmd_output');
-    expect(items).toMatch(/menu_main_15505_icon[^\n]*\n\nmenu_item :main :Screensaver/);
+    expect(items).toContain('menu_item :main :Toggle Screensaver :cmd_output');
+    expect(items).toMatch(/menu_item :main :Toggle Screenshots[^\n]*\n\nmenu_item :main :Toggle Screensaver/);
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
   });
 

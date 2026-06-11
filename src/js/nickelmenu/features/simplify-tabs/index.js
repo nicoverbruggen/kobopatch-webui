@@ -24,7 +24,7 @@ const TABS_TOGGLE_SCRIPT_PATH = '.adds/nm/scripts/toggle_tabs.sh';
 // ../menu-order.js.
 const TABS_TOGGLE = {
     id: 'toggle-tabs',
-    lines: ['menu_item :main :Toggle navigation tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
+    lines: ['menu_item :main :Toggle Minimal Tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
 };
 
 export default {
@@ -39,7 +39,7 @@ export default {
         return [{ path: TABS_TOGGLE_SCRIPT_PATH, data: await ctx.asset('scripts/toggle_tabs.sh') }];
     },
 
-    // Contribute the "Toggle navigation tabs" Tweak item.
+    // Contribute the "Toggle Minimal Tabs" Tweak item.
     menuItems() {
         return [TABS_TOGGLE];
     },

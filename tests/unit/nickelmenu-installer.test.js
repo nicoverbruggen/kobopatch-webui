@@ -62,7 +62,7 @@ test('installToDevice with features updates eReader config and writes feature fi
     // The items file is generated from the feature menuItems hooks.
     const items = text(device.writeFor('.adds/nm/items').data);
     assert.match(items, /^experimental :menu_main_15505_label :Tweak\n/);
-    assert.match(items, /^menu_item :main :Screenshots/m);
+    assert.match(items, /^menu_item :main :Toggle Screenshots/m);
     assert.match(items, /^menu_item :reader :Dark Mode/m);
 });
 
@@ -123,7 +123,7 @@ test('installToDevice de-duplicates the shared home-content toggle across hiders
     assert.deepEqual(scriptWrites, ['.adds/nm/scripts/toggle_hidden_home.sh']);
 
     const items = text(device.writeFor('.adds/nm/items').data);
-    const toggleCount = (items.match(/Show\/hide home content/g) || []).length;
+    const toggleCount = (items.match(/Toggle Minimal Home/g) || []).length;
     assert.equal(toggleCount, 1);
     // Both hiders' distinct flags are still appended.
     assert.match(items, /experimental:hide_home_row1col2_enabled:1/);

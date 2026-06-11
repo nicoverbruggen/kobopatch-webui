@@ -100,12 +100,12 @@ test('Better Typography ships the toggle script and contributes its Tweak menu i
     assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
     assert.deepEqual(installed.map(f => f.path), ['.adds/scripts/toggle_typography.sh']);
 
-    // menuItems() contributes the single "Typography Mode" entry; its position
+    // menuItems() contributes the single "Toggle Typography" entry; its position
     // (the old "Legibility Toggle" slot) is set in features/menu-order.js.
     const entries = betterTypography.menuItems();
     assert.deepEqual(entries, [{
         id: 'typography',
-        lines: ['menu_item :main :Typography Mode    :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh'],
+        lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh'],
     }]);
 });
 
@@ -150,7 +150,7 @@ test('Sideload mode cleanup detects and reverts only its own conf key', () => {
 test('KOReader contributes its launcher entry at the top of the menu', () => {
     assert.deepEqual(koreader.menuItems(), [{
         id: 'koreader',
-        lines: ['menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+        lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
     }]);
 });
 
@@ -248,7 +248,7 @@ test('screensaver feature contributes its Tweak menu toggle near the top of the 
 
     assert.equal(entries.length, 1);
     assert.equal(entries[0].id, 'screensaver');
-    assert.equal(entries[0].lines[0], 'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
+    assert.equal(entries[0].lines[0], 'menu_item :main :Toggle Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
     assert.ok(entries[0].lines.some(l => /Screensaver is now ON/.test(l)));
 });
 

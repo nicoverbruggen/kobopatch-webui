@@ -86,7 +86,7 @@ function buildItemsFile(features, deviceInfo) {
         if (!feature.menuItems) continue;
         for (const entry of feature.menuItems(menuCtx)) {
             // Several features can contribute the same shared entry — e.g. every
-            // home-content hider offers the one "Show/hide home content" toggle.
+            // home-content hider offers the one "Toggle Minimal Home" toggle.
             // Keep the first; the duplicates are identical.
             if (seenIds.has(entry.id)) continue;
             seenIds.add(entry.id);

@@ -5,18 +5,20 @@
 // item, add its id in the right place — no numbers to juggle.
 export const MENU_ITEM_ORDER = [
     'tweak-header',        // custom-menu: the "Tweak" tab header
-    'koreader',            // koreader: launch KOReader
-    'screensaver',         // screensaver: toggle the screensaver
-    'screenshots',         // custom-menu
-    'auto-usb',            // custom-menu
+    'koreader',            // koreader: Open KOReader
+    'screenshots',         // custom-menu: Toggle Screenshots
+    'screensaver',         // screensaver: Toggle Screensaver (below Screenshots)
+    'auto-usb',            // custom-menu: Toggle Auto USB
+    'typography',          // better-typography: Toggle Typography
+    'toggle-hidden-home',  // hide-home-content: Toggle Minimal Home
+    'toggle-tabs',         // simplify-tabs: Toggle Minimal Tabs
+    'invert-reboot',       // custom-menu: Invert Display
+    'sleep',               // custom-menu: Sleep Device
+    'reboot',              // custom-menu: Reboot Device
+    // Rescan books (:library) and Dark Mode (:reader) live in other NickelMenu
+    // sections, so their position among the :main items is irrelevant — pinned
+    // at the bottom.
     'rescan-books',        // custom-menu
-    'typography',          // better-typography: Typography Mode (old Legibility slot)
-    'ip-address',          // custom-menu
-    'invert-reboot',       // custom-menu
-    'sleep',               // custom-menu
-    'reboot',              // custom-menu
-    'toggle-hidden-home',  // hide-home-content: Show/hide home content
-    'toggle-tabs',         // simplify-tabs: Toggle navigation tabs
     'dark-mode',           // custom-menu (reader, supported devices only)
 ];
 

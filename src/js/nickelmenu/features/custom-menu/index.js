@@ -16,22 +16,18 @@ const HEADER = {
 
 const BASE_ITEMS = [
     HEADER,
-    { id: 'screenshots', lines: ['menu_item :main :Screenshots        :nickel_setting     :toggle :screenshots'] },
-    { id: 'auto-usb', lines: ['menu_item :main :Auto USB           :nickel_setting     :toggle :auto_usb_gadget'] },
+    { id: 'screenshots', lines: ['menu_item :main :Toggle Screenshots :nickel_setting :toggle :screenshots'] },
+    { id: 'auto-usb', lines: ['menu_item :main :Toggle Auto USB :nickel_setting :toggle :auto_usb_gadget'] },
     { id: 'rescan-books', lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
-    {
-        id: 'ip-address',
-        lines: ["menu_item :main    :IP Address      :cmd_output         :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'"],
-    },
     {
         id: 'invert-reboot',
         lines: [
-            'menu_item :main :Invert & Reboot    :nickel_setting :toggle: invert',
+            'menu_item :main :Invert Display :nickel_setting :toggle: invert',
             '    chain_success :power :reboot',
         ],
     },
-    { id: 'sleep', lines: ['menu_item :main :Sleep              :power              :sleep'] },
-    { id: 'reboot', lines: ['menu_item :main :Reboot             :power              :reboot'] },
+    { id: 'sleep', lines: ['menu_item :main :Sleep Device :power :sleep'] },
+    { id: 'reboot', lines: ['menu_item :main :Reboot Device :power :reboot'] },
 ];
 
 // The Dark Mode item only works on devices whose firmware has a Dark mode
