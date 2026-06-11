@@ -48,7 +48,7 @@ Currently, KOReader is the only alternative reader app that's available to insta
 
 I would like to expand this (see #11) with alternatives. The "KOReader" section should become "Reading Apps".
 
-Add Plato (https://github.com/baskerville/plato) or Cadmus (https://github.com/OGKevin/cadmus) to "Reading Apps". These are mutually exclusive, so enabling one should automatically disable the other option. `excludes: ['cadmus']` is probably needed as part of the feature export for Plato (and vice-versa).
+Add Plato (https://github.com/baskerville/plato) or Cadmus (https://github.com/OGKevin/cadmus) to "Reading Apps". These are mutually exclusive, so enabling one should automatically disable the other option. `excludes: ['cadmus']` is probably needed as part of the feature export for Plato (and vice-versa). It should be obvious in the UI that these are, in fact mutually exclusive w/ a label in red as soon as one is selected.
 
 ### Consider making the required preset optional
 
