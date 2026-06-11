@@ -26,6 +26,7 @@ src/assets/cartisse-release.json
 
 # Build output
 dist/
+dist-dev/
 .version.json
 test-results/
 

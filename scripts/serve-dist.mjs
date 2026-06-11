@@ -2,7 +2,9 @@ import { createServer } from 'node:http';
 import { createReadStream, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
-const DIST = join(import.meta.dirname, '..', 'dist');
+// Served directory. Defaults to dist/; the dev server points it (via DIST_DIR)
+// at its own throwaway build directory.
+const DIST = process.env.DIST_DIR || join(import.meta.dirname, '..', 'dist');
 const PORT = process.env.PORT || 8888;
 
 const UMAMI_WEBSITE_ID = process.env.UMAMI_WEBSITE_ID || '';
@@ -46,8 +48,23 @@ const MIME = {
     '.webmanifest': 'application/manifest+json',
 };
 
+// Per-request logging (enabled by the dev server so it reports which files it
+// serves). Logged on 'finish' so it captures the final status across every
+// response branch — 200s, redirects to index.html, and 404s alike.
+const logRequests = !!process.env.LOG_REQUESTS;
+const useColor = logRequests && process.stdout.isTTY;
+const paint = (code, text) => useColor ? `\u001b[${code}m${text}\u001b[0m` : `${text}`;
+function logServed(req, res, url) {
+    res.on('finish', () => {
+        const status = res.statusCode;
+        const color = status >= 400 ? 31 : status >= 300 ? 33 : 32; // red / yellow / green
+        console.log(`  ${paint(color, status)}  ${req.method} ${url.pathname}`);
+    });
+}
+
 createServer((req, res) => {
     const url = new URL(req.url, `http://localhost`);
+    if (logRequests) logServed(req, res, url);
     let filePath = join(DIST, decodeURIComponent(url.pathname));
     if (!filePath.startsWith(DIST + '/') && filePath !== DIST) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });

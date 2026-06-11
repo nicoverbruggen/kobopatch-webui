@@ -8,7 +8,10 @@ import { generateVersion } from './version-generate.mjs';
 
 const appDir = join(import.meta.dirname, '..');
 const srcDir = join(appDir, 'src');
-const distDir = join(appDir, 'dist');
+// Output directory. Defaults to dist/, but the dev server overrides it (via
+// DIST_DIR) with a throwaway directory so it never clobbers the production
+// dist/ that the e2e and screenshot suites build and serve.
+const distDir = process.env.DIST_DIR || join(appDir, 'dist');
 const isDev = process.argv.includes('--dev');
 const isWatch = process.argv.includes('--watch');
 
