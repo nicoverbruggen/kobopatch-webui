@@ -76,7 +76,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
-    // Sideload Mode is the one feature with a hint, so exactly one "?" badge shows.
+    // Sideload mode is the one feature with a hint, so exactly one "?" badge shows.
     await expect(page.locator('.nm-config-help')).toHaveCount(1);
 
     // Enable home screen hiding options and exclude-calibre for testing
@@ -1160,21 +1160,21 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
   }
 
-  test('with device — factory-reset Kobo (not signed in) recommends Sideload Mode', async ({ page }) => {
+  test('with device — factory-reset Kobo (not signed in) recommends Sideload mode', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, { signedIn: false });
     await goToNmFeatures(page);
 
     // The recommendation banner shows, and the Advanced section it points at is
-    // auto-expanded so the Sideload Mode option is visible.
+    // auto-expanded so the Sideload mode option is visible.
     await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
     await expect(page.locator('#nm-sideloaded-banner')).toContainText('Sideload mode');
     await expect(page.locator('input[name="nm-cfg-sideloaded-mode"]')).toBeVisible();
     await expect(page.locator('input[name="nm-cfg-sideloaded-mode"]')).toBeEnabled();
   });
 
-  test('with device — signed-in Kobo does not recommend Sideload Mode', async ({ page }) => {
+  test('with device — signed-in Kobo does not recommend Sideload mode', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, { signedIn: true });
@@ -1183,7 +1183,7 @@ test.describe('NickelMenu', () => {
     await expect(page.locator('#nm-sideloaded-banner')).toBeHidden();
   });
 
-  test('with device — enabling Sideload Mode writes SideloadedMode to the config', async ({ page }) => {
+  test('with device — enabling Sideload mode writes SideloadedMode to the config', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, { signedIn: false });
@@ -1196,7 +1196,7 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-nm-features-next');
     await skipNmBackup(page);
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    // The review step warns about what sideload mode does.
+    // The review step warns about what Sideload mode does.
     await expect(page.locator('#nm-review-notices')).toContainText('Home tab is hidden');
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
@@ -1210,7 +1210,7 @@ test.describe('NickelMenu', () => {
     expect(items).toContain('# experimental :menu_main_15505_0_enabled: 1');
   });
 
-  test('with device — removing Sideload Mode reverts the config setting', async ({ page }) => {
+  test('with device — removing Sideload mode reverts the config setting', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, {
@@ -1235,10 +1235,10 @@ test.describe('NickelMenu', () => {
     expect(conf).toContain('some=setting');
   });
 
-  test('with device — Sideload Mode is disabled on Kobo software older than 4.31', async ({ page }) => {
+  test('with device — Sideload mode is disabled on Kobo software older than 4.31', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
-    // 4.28 is below Sideload Mode's 4.31 minimum (but still a supported OS).
+    // 4.28 is below Sideload mode's 4.31 minimum (but still a supported OS).
     await connectMockDevice(page, { firmware: '4.28.17820', signedIn: false });
     await goToNmFeatures(page);
 

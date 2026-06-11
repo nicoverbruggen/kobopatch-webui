@@ -594,7 +594,7 @@ const goToNmFeaturesForShot = async (page) => {
 };
 
 // Full journey for a factory-reset Kobo that was never signed in: the
-// recommendation, choosing sideload mode, the review summary with its warning,
+// recommendation, choosing Sideload mode, the review summary with its warning,
 // and the done screen.
 test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) => {
   const dir = 'connected-nickelmenu-factory';
@@ -604,11 +604,11 @@ test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) =
   await goToNmFeaturesForShot(page);
 
   // Recommendation banner, with the Advanced section auto-expanded so the
-  // sideload mode option is visible.
+  // Sideload mode option is visible.
   await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
   await shot(page, dir, '01-recommendation', testInfo);
 
-  // Choose sideload mode.
+  // Choose Sideload mode.
   await page.check('input[name="nm-cfg-sideloaded-mode"]');
   await shot(page, dir, '02-sideload-selected', testInfo);
 
@@ -626,9 +626,9 @@ test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) =
   await shot(page, dir, '04-done', testInfo);
 });
 
-// Edge case: Kobo software older than Sideload Mode's 4.31 minimum. The option
+// Edge case: Kobo software older than Sideload mode's 4.31 minimum. The option
 // is shown disabled with a red explanation; no recommendation banner.
-test('Sideload Mode too old os', async ({ page }, testInfo) => {
+test('Sideload mode too old os', async ({ page }, testInfo) => {
   const dir = 'edge-cases';
   await page.goto('/');
   await dismissMobileModal(page);
