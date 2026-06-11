@@ -1,3 +1,5 @@
+import { NM_ITEMS_FILE } from '../../constants.js';
+
 // Sideload mode. A Kobo that has been factory reset and never signed into a
 // Kobo account can still be used for reading sideloaded books by setting
 // SideloadedMode=true under [ApplicationPreferences]. This feature applies that
@@ -49,7 +51,7 @@ export default {
     // regenerates the items file with the line restored. A no-op when the line
     // isn't present: without it Sideload mode already hides the home tab on its own.
     postProcess(files) {
-        const items = files.find(f => f.path === '.adds/nm/items');
+        const items = files.find(f => f.path === NM_ITEMS_FILE);
         if (!items || typeof items.data !== 'string') return files;
 
         const homeTabPattern = /^\s*experimental\s*:\s*menu_main_15505_0_enabled\b/;

@@ -245,7 +245,7 @@
                     <input type="radio" name="nm-option" value="nickelmenu-only">
                     <div class="selection-card-body">
                         <div class="selection-card-title">Barebones install</div>
-                        <div class="selection-card-desc">Installs <u>only</u> NickelMenu without any configuration or preset. You will need to set it up yourself later by editing the `.adds/nm/items` file. For tinkerers.</div>
+                        <div class="selection-card-desc">Installs <u>only</u> NickelMenu without any configuration or preset. You will need to set it up yourself later by editing the NickelMenu config file. For tinkerers.</div>
                     </div>
                 </label>
                 <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">
@@ -327,6 +327,13 @@
                         <div class="selection-card-title">Don't make a backup</div>
                         <div class="selection-card-desc">If you previously made a backup, you can probably skip this.</div>
                     </div>
+                </label>
+            </div>
+            <div id="nm-keep-config-option" class="nm-keep-config" hidden>
+                <label class="nm-keep-config-label">
+                    <input type="checkbox" id="nm-keep-items">
+                    <span class="nm-keep-config-title">Keep my custom NickelMenu configuration</span>
+                    <span class="nm-keep-config-desc">If you are upgrading from a previous setup installed with KoboPatch Web UI, you can safely leave this unchecked. If this config was customised manually, keep this checked so your custom entries are preserved.</span>
                 </label>
             </div>
             <p id="nm-backup-local-note">

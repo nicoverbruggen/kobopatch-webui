@@ -1,4 +1,4 @@
-// Copies a sample screensaver image to .kobo/screensaver and adds a Tweak-menu
+// Copies a sample screensaver image to .kobo/screensaver and adds a Toggle-menu
 // item that toggles the screensaver on or off (by moving the image between
 // .kobo/screensaver and a .disabled/ folder). The user can drop additional
 // screensavers into .kobo/screensaver themselves. Removal deletes the sample
@@ -8,7 +8,7 @@ export default {
     id: 'screensaver',
     section: 'Advanced',
     title: 'Copy sample screensaver',
-    description: 'Copies a sample screensaver to .kobo/screensaver and adds a new item to the Tweak menu to toggle the screensaver on or off. You can always add extra screensavers in the .kobo/screensaver folder.',
+    description: 'Copies a sample screensaver to .kobo/screensaver and adds a new item to the Toggle menu to toggle the screensaver on or off. You can always add extra screensavers in the .kobo/screensaver folder.',
     default: false,
 
     cleanup: {
@@ -28,7 +28,7 @@ export default {
         ];
     },
 
-    // The Tweak-menu entry that toggles the screensaver on/off. menuItems only
+    // The Toggle-menu entry that toggles the screensaver on/off. menuItems only
     // runs when this feature is selected, so the toggle is added exactly when the
     // screensaver image is also installed, and the menu never offers a toggle for
     // a screensaver that isn't there. Its position near the top of the menu is

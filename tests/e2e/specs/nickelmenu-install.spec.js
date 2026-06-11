@@ -108,7 +108,7 @@ test.describe('NickelMenu — install', () => {
     // Must contain KoboRoot.tgz
     expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
     // Must contain NickelMenu items config
-    expect(zipFiles).toContainEqual('.adds/nm/items');
+    expect(zipFiles).toContainEqual('.adds/nm/webui-preset');
     // Must contain font .ttf files (Additional Fonts is checked by default)
     const fontFiles = zipFiles.filter(f => f.startsWith('fonts/') && f.endsWith('.ttf'));
     expect(fontFiles.length).toBeGreaterThan(0);
@@ -116,7 +116,7 @@ test.describe('NickelMenu — install', () => {
     expect(zipFiles.some(f => f.startsWith('.kobo/screensaver/'))).toBe(false);
 
     // Verify items file has the selected home screen modifications
-    const itemsContent = await zip.file('.adds/nm/items').async('string');
+    const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
     expect(itemsContent).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row2col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
@@ -181,12 +181,12 @@ test.describe('NickelMenu — install', () => {
     const zipFiles = Object.keys(zip.files);
 
     expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
-    expect(zipFiles).toContainEqual('.adds/nm/items');
+    expect(zipFiles).toContainEqual('.adds/nm/webui-preset');
     // KOReader files should be present under .adds/koreader/
     expect(zipFiles.some(f => f.startsWith('.adds/koreader/'))).toBe(true);
     // KOReader launcher should be the first menu item, just below the Tweak
     // tab header (first in MENU_ITEM_ORDER after the header).
-    const itemsContent = await zip.file('.adds/nm/items').async('string');
+    const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
     expect(itemsContent).toContain('menu_item:main:Open KOReader');
     const firstMenuItem = itemsContent.split('\n').find(line => line.startsWith('menu_item'));
     expect(firstMenuItem.startsWith('menu_item:main:Open KOReader')).toBe(true);
@@ -264,11 +264,11 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('#nm-review-notices')).toContainText('Dark Mode is not supported');
     await expect(page.locator('#nm-review-notices')).toContainText('Kobo Aura HD');
 
-    // Writing to the device drops the Dark Mode line from .adds/nm/items.
+    // Writing to the device drops the Dark Mode line from .adds/nm/webui-preset.
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
 
-    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
     // The Dark Mode item is omitted entirely (it is no longer commented out).
     expect(items).not.toMatch(/Dark Mode/);
     expect(items).not.toMatch(/:dark_mode/);
@@ -433,7 +433,7 @@ test.describe('NickelMenu — install', () => {
     // Verify files written to mock device
     const writtenFiles = await getWrittenFiles(page);
     expect(writtenFiles, 'KoboRoot.tgz should be written').toContainEqual(expect.stringContaining('KoboRoot.tgz'));
-    expect(writtenFiles, 'NickelMenu items should be written').toContainEqual(expect.stringContaining('items'));
+    expect(writtenFiles, 'NickelMenu config should be written').toContainEqual(expect.stringContaining('webui-preset'));
 
     // Verify font files were written (Additional Fonts is on by default)
     const fontFiles = writtenFiles.filter(f => f.includes('fonts/') && f.endsWith('.ttf'));
@@ -454,8 +454,8 @@ test.describe('NickelMenu — install', () => {
     expect(conf).toContain('readingFontFamily=KF Libron');
 
     // Verify NickelMenu items file exists and has expected modifications
-    const items = await readMockFile(page, '.adds', 'nm', 'items');
-    expect(items, '.adds/nm/items should exist').not.toBeNull();
+    const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
+    expect(items, '.adds/nm/webui-preset should exist').not.toBeNull();
     // With hide-recommendations and hide-notices enabled, the hide lines should be appended
     expect(items).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(items).toContain('experimental:hide_home_row3_enabled:1');
@@ -491,7 +491,7 @@ test.describe('NickelMenu — install', () => {
 
     // The toggle is inserted directly below Toggle Screenshots, and the sample
     // screensaver image is written.
-    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
     expect(items).toContain('menu_item :main :Toggle Screensaver :cmd_output');
     expect(items).toMatch(/menu_item :main :Toggle Screenshots[^\n]*\n\nmenu_item :main :Toggle Screensaver/);
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
@@ -573,7 +573,7 @@ test.describe('NickelMenu — install', () => {
     expect(backupFiles).toContain('.kobo/fonts.sqlite');
     expect(backupFiles).toContain('.kobo/KoboReader.sqlite');
     expect(backupFiles).toContain('.kobo/version');
-    expect(backupFiles).toContain('.adds/nm/items');
+    expect(backupFiles).toContain('.adds/nm/webui-preset');
 
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#btn-nm-download')).toBeVisible();

@@ -11,6 +11,7 @@ import betterTypography from '../../src/js/nickelmenu/features/better-typography
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
+import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
 import { revertableConfSettings } from '../../src/js/nickelmenu/installer.js';
 import { createResponse, text } from './test-helpers.js';
 
@@ -214,7 +215,7 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
 
 test('NickelMenu postProcess features prepend tab config and append hide flags', () => {
     const files = [
-        { path: '.adds/nm/items', data: 'menu_item :main :base' },
+        { path: NM_ITEMS_FILE, data: 'menu_item :main :base' },
     ];
 
     const processed = hideNotices.postProcess(
@@ -229,7 +230,7 @@ test('NickelMenu postProcess features prepend tab config and append hide flags',
 
 test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab override can be commented out', () => {
     // simulate a generated items file with the tab config from simplify-tabs
-    const files = itemsFiles('experimental :menu_main_15505_label :Tweak', 'menu_item :main :Power :power :reboot');
+    const files = itemsFiles('experimental :menu_main_15505_label :Toggle', 'menu_item :main :Power :power :reboot');
 
     const withTabs = simplifyTabs.postProcess(files);
     const commented = sideloadedMode.postProcess(withTabs);
@@ -239,7 +240,7 @@ test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab over
     assert.match(items, /^# Home tab hidden for Sideload mode/);
     assert.match(items, /^# experimental :menu_main_15505_0_enabled: 1/m);
     // Other tab config and menu items are left untouched
-    assert.match(items, /^experimental :menu_main_15505_label :Tweak$/m);
+    assert.match(items, /^experimental :menu_main_15505_label :Toggle$/m);
     assert.match(items, /menu_item :main :Power :power :reboot/);
 });
 
@@ -247,11 +248,11 @@ const AURA_HD = { serialPrefix: 'N204', model: 'Kobo Aura HD' };       // no Dar
 const LIBRA_COLOUR = { serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
 
 function itemsFiles(...lines) {
-    return [{ path: '.adds/nm/items', data: lines.join('\n') }];
+    return [{ path: NM_ITEMS_FILE, data: lines.join('\n') }];
 }
 
 function itemsText(files) {
-    return files.find(f => f.path === '.adds/nm/items').data;
+    return files.find(f => f.path === NM_ITEMS_FILE).data;
 }
 
 test('custom menu omits the Dark Mode item on unsupported devices', () => {
@@ -317,8 +318,8 @@ test('home-content hiders share one toggle item and append distinct flags', () =
 
     // ...but each appends its own experimental flag to the items file.
     const flags = homeHiders.map(h => {
-        const files = h.postProcess([{ path: '.adds/nm/items', data: '' }]);
-        return files.find(f => f.path === '.adds/nm/items').data.trim();
+        const files = h.postProcess([{ path: NM_ITEMS_FILE, data: '' }]);
+        return files.find(f => f.path === NM_ITEMS_FILE).data.trim();
     });
     assert.deepEqual(flags, [
         'experimental:hide_home_row1col2_enabled:1',

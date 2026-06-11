@@ -1,19 +1,19 @@
 import { darkModeSupport } from '../../../kobo/dark-mode.js';
 
-// Sets up the "Tweak" tab and its base NickelMenu entries (the tab header, plus
+// Sets up the "Toggle" tab and its base NickelMenu entries (the tab header, plus
 // screenshots, auto-USB, rescan, invert, sleep, reboot, and a device-conditional
-// Dark Mode item). The NickelMenu `items` file is not a static asset: every
+// Dark Mode item). The NickelMenu config file is not a static asset: every
 // selected feature contributes its entries via `menuItems`, and the installer
 // orders them by their id's position in MENU_ITEM_ORDER (see ../menu-order.js)
 // and renders the file. Device-conditional items are simply left out rather than
 // commented. The toggle items for hidden home content and navigation tabs are
 // owned by the features that hide those things (hide-home-content and
-// simplify-tabs); custom-menu only owns the base Tweak menu.
+// simplify-tabs); custom-menu only owns the base Toggle menu.
 export default {
     id: 'custom-menu',
     section: 'Interface tweaks',
     title: 'Set up NickelMenu preset',
-    description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak".',
+    description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Toggle".',
     default: true,
     required: true,
     // No per-feature cleanup: everything this feature ships lives under .adds/nm
@@ -39,21 +39,21 @@ export default {
         }];
     },
 
-    // Ship the Tweak menu icon.
+    // Ship the Toggle menu icon.
     async install(ctx = {}) {
         return [
             { path: '.adds/nm/.cog.png', data: await ctx.asset('.cog.png') },
         ];
     },
 
-    // Contribute the base Tweak-menu entries: the tab header first, then the
+    // Contribute the base Toggle-menu entries: the tab header first, then the
     // shared toggles and power items.
     menuItems(ctx = {}) {
         const entries = [
             {
                 id: 'tweak-header',
                 lines: [
-                    'experimental :menu_main_15505_label :Tweak',
+                    'experimental :menu_main_15505_label :Toggle',
                     'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
                 ],
             },

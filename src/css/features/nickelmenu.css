@@ -161,6 +161,41 @@
     margin-top: 1rem;
 }
 
+/* Keep old NickelMenu config checkbox, shown in the backup step when a legacy
+   .adds/nm/items exists on the connected device. */
+.nm-keep-config {
+    margin-top: 1.25rem;
+    padding: 0.9rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+}
+
+.nm-keep-config-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.6rem;
+    cursor: pointer;
+}
+
+.nm-keep-config-label input[type="checkbox"] {
+    align-self: start;
+    margin-top: 0.15rem;
+}
+
+.nm-keep-config-title {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.nm-keep-config-desc {
+    width: 100%;
+    font-size: 0.82rem;
+    color: var(--text-light);
+    line-height: 1.45;
+}
+
 #nm-preset-conflict-list {
     margin-top: 1rem;
 }

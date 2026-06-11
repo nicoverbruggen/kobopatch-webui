@@ -208,7 +208,7 @@ test.describe('NickelMenu — configuration', () => {
     expect(conf).toContain('SideloadedMode=true');
 
     // The home-tab override is commented out in the NickelMenu items file.
-    const items = await readMockFile(page, '.adds', 'nm', 'items');
+    const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
     expect(items).toContain('# experimental :menu_main_15505_0_enabled: 1');
   });
 

@@ -70,7 +70,7 @@ The JS source lives in `src/js/` as ES modules, organized by role:
 - **`flows/`** — the two main user journeys: NickelMenu and custom patches.
 - **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`audit-log.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
 - **`patches/`** — custom patch UI and runner modules.
-- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The `.adds/nm/items` file is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`.
+- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
 Flow modules receive a shared `state` object by reference and call back into the orchestrator via `state.showError()` and `state.goToModeSelection()` when they need to cross module boundaries. esbuild bundles everything into `dist/bundle.js`.

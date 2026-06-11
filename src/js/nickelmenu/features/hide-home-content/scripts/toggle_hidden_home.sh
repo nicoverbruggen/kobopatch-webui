@@ -5,7 +5,7 @@
 # flags in the NickelMenu items file between 1 (hidden) and 0 (shown) at once,
 # reports which state will apply, then reboots so NickelMenu re-reads the file.
 
-ITEMS_FILE="/mnt/onboard/.adds/nm/items"
+ITEMS_FILE="/mnt/onboard/.adds/nm/webui-preset"
 
 if grep -q "hide_home_[a-z0-9]*_enabled:1" "$ITEMS_FILE"; then
     # At least one hider is on — turn them all off.

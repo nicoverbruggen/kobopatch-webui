@@ -8,7 +8,7 @@
 //     are part of the install, so we don't point at a font that isn't there.
 //
 // On top of those one-time settings, this feature also folds in the on-device
-// "Typography Toggle" Tweak-menu item (it ships the toggle script and inserts
+// "Typography Toggle" Toggle-menu item (it ships the toggle script and inserts
 // the menu entry), so the WebKit rendering mode can be flipped later without a
 // reconnect. Modelled on the screensaver feature, which likewise owns both an
 // asset and its menu item.
@@ -16,7 +16,7 @@ export default {
     id: 'better-typography',
     section: 'Text and typography',
     title: 'Enable better typography',
-    description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Tweak menu so you can switch this rendering on or off later.',
+    description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later.',
     default: true,
 
     // The WebKit rendering setting and the toggle script are owned by this
@@ -47,7 +47,7 @@ export default {
         ];
     },
 
-    // Contribute the Tweak-menu toggle that flips optimized WebKit rendering
+    // Contribute the Toggle-menu toggle that flips optimized WebKit rendering
     // on/off. cmd_output keeps the alert (which states the mode that will be
     // active) on screen for the 7s the script waits before rebooting. menuItems
     // only runs when this feature is selected, so the entry is added exactly when

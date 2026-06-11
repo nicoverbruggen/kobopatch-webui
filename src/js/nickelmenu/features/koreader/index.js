@@ -2,13 +2,13 @@ import JSZip from 'jszip';
 
 // Installs KOReader, an alternative e-book reader, alongside the built-in Kobo
 // reader (it does not replace it). The app is downloaded as a release zip at
-// install time and extracted into .adds/koreader/, and a Tweak-menu item is
+// install time and extracted into .adds/koreader/, and a Toggle-menu item is
 // added to launch it. Removal deletes the whole app directory.
 export default {
     id: 'koreader',
     section: 'KOReader',
     title: 'Install KOReader',
-    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can start KOReader via the Tweak menu, it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
+    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can launch KOReader from the Toggle menu; it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
 
@@ -67,8 +67,8 @@ export default {
     },
 
     menuItems() {
-        // The Tweak-menu entry that launches KOReader. Its position (just below
-        // the Tweak tab header) is set by 'koreader' in ../menu-order.js.
+        // The Toggle-menu entry that launches KOReader. Its position (just below
+        // the Toggle tab header) is set by 'koreader' in ../menu-order.js.
         return [{
             id: 'koreader',
             lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],

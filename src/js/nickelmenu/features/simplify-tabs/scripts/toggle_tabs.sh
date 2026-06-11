@@ -4,7 +4,7 @@
 # option). It comments or uncomments the simplify-tabs config lines in the
 # NickelMenu items file, then reboots so NickelMenu re-reads the file.
 
-ITEMS_FILE="/mnt/onboard/.adds/nm/items"
+ITEMS_FILE="/mnt/onboard/.adds/nm/webui-preset"
 
 if grep -q "^experimental :menu_main_15505_enabled:" "$ITEMS_FILE"; then
     # Custom tabs are on — comment out the tab override lines.

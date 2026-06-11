@@ -2,7 +2,7 @@ import { prependToNmConfig } from '../helpers.js';
 
 // Simplifies the bottom navigation tab bar: hides the "My Notebooks" and
 // "Discover" tabs and surfaces reading stats as a separate "Stats" tab. This
-// feature alone owns the navigation-tab override, so it also owns the Tweak-menu
+// feature alone owns the navigation-tab override, so it also owns the Toggle-menu
 // item and script that toggle it on the device — no capability flag or
 // custom-menu coordination needed. The script comments or uncomments the tab
 // override lines in the items file and reboots; it lives under .adds/nm/scripts
@@ -19,7 +19,7 @@ export default {
         return [{ path: '.adds/nm/scripts/toggle_tabs.sh', data: await ctx.asset('scripts/toggle_tabs.sh') }];
     },
 
-    // Contribute the "Toggle Simple Tabs" Tweak item. Its position (just after
+    // Contribute the "Toggle Simple Tabs" Toggle item. Its position (just after
     // the home-content toggle) is set by 'toggle-tabs' in ../menu-order.js.
     menuItems() {
         return [{

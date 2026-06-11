@@ -1,10 +1,10 @@
-// The order of the NickelMenu "Tweak" menu items, top to bottom. This is the
+// The order of the NickelMenu Toggle menu items, top to bottom. This is the
 // single source of truth for menu ordering: each feature's `menuItems` entry
 // only declares its `id` and `lines`, and the installer positions it by where
 // that id appears in this list. To reorder the menu, move an id; to insert an
 // item, add its id in the right place — no numbers to juggle.
 export const MENU_ITEM_ORDER = [
-    'tweak-header',        // custom-menu: the "Tweak" tab header
+    'tweak-header',        // custom-menu: the Toggle tab header
     'koreader',            // koreader: Open KOReader
     'screenshots',         // custom-menu: Toggle Screenshots
     'screensaver',         // screensaver: Toggle Screensaver (below Screenshots)
