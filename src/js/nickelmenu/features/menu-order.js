@@ -11,7 +11,7 @@ export const MENU_ITEM_ORDER = [
     'auto-usb',            // custom-menu: Toggle Auto USB
     'typography',          // better-typography: Toggle Typography
     'toggle-hidden-home',  // hide-home-content: Toggle Minimal Home
-    'toggle-tabs',         // simplify-tabs: Toggle Minimal Tabs
+    'toggle-tabs',         // simplify-tabs: Toggle Simple Tabs
     'invert-reboot',       // custom-menu: Invert Display
     'sleep',               // custom-menu: Sleep Device
     'reboot',              // custom-menu: Reboot Device
