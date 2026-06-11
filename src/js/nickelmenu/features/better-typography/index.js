@@ -14,7 +14,12 @@
 // asset and its menu item.
 const ADDITIONAL_FONTS_ID = 'additional-fonts';
 const DEFAULT_FONT_FAMILY = 'KF Libron';
-const WEBKIT_RENDERING = { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' };
+// `revertable` marks this as a setting the feature owns for removal: the
+// installer applies it like any other, and the flow/uninstaller derive detection
+// and revert from it (revertTo: null removes the line). The alignment/font
+// settings in confSettings carry no such marker — they are general preferences
+// we apply once but never claw back.
+const WEBKIT_RENDERING = { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null };
 
 const TOGGLE_SCRIPT_PATH = '.adds/scripts/toggle_typography.sh';
 
@@ -44,12 +49,12 @@ export default {
         removeLabel: 'Turn off better typography',
         description: 'Removes the setting that enables correct kerning and ligatures in certain books, and the Toggle Typography menu script. Your default font and reading settings are not changed.',
         detect: [['.adds', 'scripts', 'toggle_typography.sh']],
-        detectConf: [WEBKIT_RENDERING],
         paths: [
             { path: ['.adds', 'scripts', 'toggle_typography.sh'] },
         ],
         removeParentDirsIfEmpty: [['.adds', 'scripts']],
-        revertConf: [{ ...WEBKIT_RENDERING, revertTo: null }],
+        // The conf line this feature reverts (webkitTextRendering) is derived from
+        // its revertable confSettings — no separate detectConf/revertConf here.
     },
 
     // Ship the on-device toggle script. install() runs only for selected

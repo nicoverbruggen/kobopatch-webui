@@ -11,6 +11,7 @@ import betterTypography from '../../src/js/nickelmenu/features/better-typography
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
+import { revertableConfSettings } from '../../src/js/nickelmenu/installer.js';
 import { createResponse, text } from './test-helpers.js';
 
 const hideNotices = homeHiders.find(f => f.id === 'hide-notices');
@@ -72,7 +73,9 @@ test('Additional Fonts install bundles all three families, strips ZIP dirs and i
 
 test('Better Typography sets reading rendering and alignment; default font only when fonts are installed', () => {
     const readingDefaults = [
-        { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' },
+        // webkitTextRendering is revertable (owned for removal); the others are
+        // general preferences applied once and never reverted.
+        { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null },
         { section: 'Reading', key: 'readingAlignment', value: 'Left' },
     ];
 
@@ -113,7 +116,9 @@ test('Sideload mode sets SideloadedMode under ApplicationPreferences and declare
     assert.equal(sideloadedMode.minimumVersion, '4.31');
     assert.equal(sideloadedMode.default, false);
     assert.deepEqual(sideloadedMode.confSettings(), [
-        { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' },
+        // Revertable: the flow detects the feature by this key and the uninstaller
+        // removes the line (revertTo: null) on removal.
+        { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true', revertable: true, revertTo: null },
     ]);
 });
 
@@ -139,12 +144,17 @@ test('Sideload mode postProcess is a no-op when the home-tab override is absent'
     assert.equal(itemsText(sideloadedMode.postProcess(files)), 'menu_item :main :Reboot :power :reboot');
 });
 
-test('Sideload mode cleanup detects and reverts only its own conf key', () => {
-    const setting = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' };
+test('Sideload mode cleanup is conf-only: detect/revert derive from its revertable setting', () => {
     const { cleanup } = sideloadedMode;
     assert.equal(cleanup.mode, 'optional');
-    assert.deepEqual(cleanup.detectConf, [setting]);
-    assert.deepEqual(cleanup.revertConf, [{ ...setting, revertTo: null }]);
+    // No files and no separate detectConf/revertConf — the revertable conf
+    // setting in confSettings is the single source for detection and revert.
+    assert.equal(cleanup.detect, undefined);
+    assert.equal(cleanup.detectConf, undefined);
+    assert.equal(cleanup.revertConf, undefined);
+    assert.deepEqual(revertableConfSettings(sideloadedMode), [
+        { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true', revertable: true, revertTo: null },
+    ]);
 });
 
 test('KOReader contributes its launcher entry at the top of the menu', () => {
@@ -155,17 +165,21 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
 });
 
 test('Better Typography cleanup detects and removes both the toggle script and the WebKit setting', () => {
-    const webkit = { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' };
     const { cleanup } = betterTypography;
 
     assert.equal(cleanup.mode, 'optional');
-    // Detected by either the on-device script or the conf line (the toggle can
-    // turn the conf line off while leaving the script installed).
+    // Detected by either the on-device script (cleanup.detect) or the conf line
+    // (its revertable confSettings — the toggle can turn the conf line off while
+    // leaving the script installed).
     assert.deepEqual(cleanup.detect, [['.adds', 'scripts', 'toggle_typography.sh']]);
-    assert.deepEqual(cleanup.detectConf, [webkit]);
     assert.deepEqual(cleanup.paths, [{ path: ['.adds', 'scripts', 'toggle_typography.sh'] }]);
     assert.deepEqual(cleanup.removeParentDirsIfEmpty, [['.adds', 'scripts']]);
-    assert.deepEqual(cleanup.revertConf, [{ ...webkit, revertTo: null }]);
+    // The conf revert is derived from confSettings, not duplicated on cleanup.
+    assert.equal(cleanup.detectConf, undefined);
+    assert.equal(cleanup.revertConf, undefined);
+    assert.deepEqual(revertableConfSettings(betterTypography), [
+        { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null },
+    ]);
 });
 
 test('KOReader install maps ZIP files under .adds/koreader', async () => {

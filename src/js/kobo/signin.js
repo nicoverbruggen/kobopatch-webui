@@ -11,13 +11,18 @@ const KOBO_READER_DB = ['.kobo', 'KoboReader.sqlite'];
  * unexpected format), so callers can treat sign-in state as *unknown* and carry
  * on rather than blocking the flow on a best-effort check.
  *
- * @param {object} device - KoboDevice (or compatible) exposing readFileBytes
+ * Reads the database a page at a time via `readFileRange`, so it never loads the
+ * (potentially hundreds-of-MB) KoboReader.sqlite into memory just to count one
+ * tiny table.
+ *
+ * @param {object} device - KoboDevice (or compatible) exposing readFileRange
  * @returns {Promise<number|null>}
  */
 export async function countKoboUsers(device) {
-    const bytes = await device.readFileBytes(KOBO_READER_DB);
-    if (!bytes || bytes.length === 0) return null;
-    return countTableRows(bytes, 'user');
+    return countTableRows(
+        (offset, length) => device.readFileRange(KOBO_READER_DB, offset, length),
+        'user'
+    );
 }
 
 /**

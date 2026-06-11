@@ -1,5 +1,5 @@
 import { getConfSetting, removeConfSetting, setConfSetting } from '../kobo/configuration.js';
-import { writeAuditLog } from './installer.js';
+import { revertableConfSettings, writeAuditLog } from './installer.js';
 
 const eReaderConfPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
 const nickelMenuTgzPath = ['.kobo', 'KoboRoot.tgz'];
@@ -36,19 +36,21 @@ async function removeCleanupParentDirsIfEmpty(device, cleanup, logger, audit = n
 }
 
 /**
- * Undo a feature's Kobo eReader.conf changes. Each entry only reverts when the
- * current value still matches what the feature set, so user customisations made
- * afterwards are never clobbered. `revertTo: null` removes the line entirely;
- * any string (including '') sets the key to that value.
+ * Undo a feature's Kobo eReader.conf changes — the `revertable` entries it
+ * declares in `confSettings`. Each entry only reverts when the current value
+ * still matches what the feature set, so user customisations made afterwards are
+ * never clobbered. `revertTo: null` (or absent) removes the line entirely; any
+ * string (including '') sets the key to that value.
  */
-async function applyConfReverts(device, cleanup, audit = null) {
-    if (!cleanup.revertConf?.length) return;
+async function applyConfReverts(device, feature, audit = null) {
+    const reverts = revertableConfSettings(feature, { deviceInfo: device.deviceInfo, features: [] });
+    if (!reverts.length) return;
 
     let content = await device.readFile(eReaderConfPath);
     if (!content) return;
 
     let changed = false;
-    for (const { section, key, value, revertTo } of cleanup.revertConf) {
+    for (const { section, key, value, revertTo } of reverts) {
         if (getConfSetting(content, section, key) !== value) continue;
         content = (revertTo === null || revertTo === undefined)
             ? removeConfSetting(content, section, key)
@@ -75,7 +77,7 @@ async function executeFeatureCleanup(device, feature, logger, audit = null) {
     }
 
     await removeCleanupParentDirsIfEmpty(device, cleanup, logger, audit);
-    await applyConfReverts(device, cleanup, audit);
+    await applyConfReverts(device, feature, audit);
 }
 
 async function executeNickelMenuRemoval({

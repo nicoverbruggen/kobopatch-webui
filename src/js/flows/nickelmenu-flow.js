@@ -18,7 +18,7 @@
 import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../shell/dom.js';
 import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
-import { NICKELMENU_FEATURES, getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
+import { NICKELMENU_FEATURES, getExcludeSyncFoldersLine, revertableConfSettings } from '../nickelmenu/installer.js';
 import {
     executeNickelMenuRemoval,
     hasAddsDirectoriesRequiringSyncExclusions,
@@ -177,13 +177,15 @@ export function initNickelMenu(state) {
     /**
      * Whether an optional cleanup feature is present on the connected device,
      * detected by its files (cleanup.detect) or by a Kobo eReader.conf setting it
-     * applied (cleanup.detectConf), matched against the already-read conf content.
+     * applied — its revertable confSettings, matched against the already-read conf
+     * content.
      */
-    async function isOptionalCleanupPresent(cleanup, conf) {
-        for (const detectPath of cleanup.detect || []) {
+    async function isOptionalCleanupPresent(feature, conf) {
+        for (const detectPath of feature.cleanup.detect || []) {
             if (await state.device.pathExists(detectPath)) return true;
         }
-        for (const { section, key, value } of cleanup.detectConf || []) {
+        const ctx = { deviceInfo: state.device?.deviceInfo, features: [] };
+        for (const { section, key, value } of revertableConfSettings(feature, ctx)) {
             if (getConfSetting(conf, section, key) === value) return true;
         }
         return false;
@@ -396,14 +398,13 @@ export function initNickelMenu(state) {
                 removeDesc.textContent = TL.STATUS.NM_REMOVAL_HINT;
 
                 // Scan for removable extras (only once per session). A feature is
-                // detectable by file paths (cleanup.detect) and/or by Kobo
-                // eReader.conf settings it applied (cleanup.detectConf).
+                // detectable by file paths (cleanup.detect) and/or by the Kobo
+                // eReader.conf settings it applied (its revertable confSettings).
                 if (detectedOptionalCleanupFeatures.length === 0) {
                     const conf = await state.device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']) || '';
                     for (const feature of NICKELMENU_FEATURES) {
-                        const cleanup = feature.cleanup;
-                        if (cleanup?.mode !== 'optional') continue;
-                        if (await isOptionalCleanupPresent(cleanup, conf)) {
+                        if (feature.cleanup?.mode !== 'optional') continue;
+                        if (await isOptionalCleanupPresent(feature, conf)) {
                             detectedOptionalCleanupFeatures.push(feature);
                         }
                     }
@@ -539,9 +540,14 @@ export function initNickelMenu(state) {
         if (!nmConfigOptions.children.length) {
             renderFeatureCheckboxes();
         }
-        await updateSideloadedRecommendation();
         setNavStep(3);
         showStep(stepNmFeatures);
+        // The Sideload-mode hint depends on a (now range-read, but still I/O)
+        // KoboReader.sqlite lookup. Fire it after the step is shown so it never
+        // blocks navigation; updateSideloadedRecommendation does its own DOM
+        // updates when the count resolves. Best-effort — a failure just leaves
+        // the hint hidden.
+        updateSideloadedRecommendation().catch(() => {});
     }
 
     // Cached user-row count for the connected device (undefined = not checked

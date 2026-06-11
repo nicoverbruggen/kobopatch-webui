@@ -6,7 +6,10 @@
 //
 // The setting was introduced in Kobo software 4.31, so the feature declares a
 // minimumVersion and is gated off on older devices in the config UI.
-const SIDELOADED_MODE = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' };
+// `revertable` marks the one conf key this feature owns: the installer applies
+// it, and the flow/uninstaller derive detection and revert from it (revertTo:
+// null removes the line on removal).
+const SIDELOADED_MODE = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true', revertable: true, revertTo: null };
 
 // The NickelMenu items line that force-enables the home navigation tab (index 0
 // of the bottom tab bar). The simplify-tabs feature adds it. In Sideload mode
@@ -14,20 +17,6 @@ const SIDELOADED_MODE = { section: 'ApplicationPreferences', key: 'SideloadedMod
 // disappear — we comment it out rather than delete it, so it can be restored if
 // the build is re-run without Sideload mode (or simply not selected at all).
 const HOME_TAB_PATTERN = /^\s*experimental\s*:\s*menu_main_15505_0_enabled\b/;
-
-// Comment out the home-tab override (if present and not already commented),
-// leaving an explanatory note above it. Re-running the build without this
-// feature regenerates the items file with the line restored.
-function hideHomeTab(items) {
-    return items
-        .split('\n')
-        .flatMap(line =>
-            HOME_TAB_PATTERN.test(line) && !line.trimStart().startsWith('#')
-                ? ['# Home tab hidden for Sideload mode (no home screen when not signed in).', '# ' + line]
-                : [line]
-        )
-        .join('\n');
-}
 
 export default {
     id: 'sideloaded-mode',
@@ -38,16 +27,15 @@ export default {
     minimumVersion: '4.31',
     hint: 'Sideload mode lets the Kobo run without a Kobo account. It disables the home screen and opens the device straight to the "My Books" library instead, and it turns off syncing with the Kobo store. Useful after a factory reset when you only read sideloaded books and don\'t want to sign in.',
 
-    // Detected by, and reverted to, the single conf key it manages. Reverting
-    // only removes the line when it still matches what we set, so a value the
-    // user changed afterwards is never clobbered.
+    // Cleanup only carries the removal presentation here — detection and revert
+    // are derived from the revertable SIDELOADED_MODE conf setting above.
+    // Reverting only removes the line when it still matches what we set, so a
+    // value the user changed afterwards is never clobbered.
     cleanup: {
         mode: 'optional',
         title: 'Sideload mode',
         removeLabel: 'Turn off Sideload mode',
         description: 'If you did not previously sign in, sign-in may be required again after your device reboots.',
-        detectConf: [SIDELOADED_MODE],
-        revertConf: [{ ...SIDELOADED_MODE, revertTo: null }],
     },
 
     // Surface what Sideload mode does at the review step, so the behavior
@@ -80,3 +68,17 @@ export default {
         return [SIDELOADED_MODE];
     },
 };
+
+// Comment out the home-tab override (if present and not already commented),
+// leaving an explanatory note above it. Re-running the build without this
+// feature regenerates the items file with the line restored.
+function hideHomeTab(items) {
+    return items
+        .split('\n')
+        .flatMap(line =>
+            HOME_TAB_PATTERN.test(line) && !line.trimStart().startsWith('#')
+                ? ['# Home tab hidden for Sideload mode (no home screen when not signed in).', '# ' + line]
+                : [line]
+        )
+        .join('\n');
+}

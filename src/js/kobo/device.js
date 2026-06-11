@@ -194,6 +194,30 @@ class KoboDevice {
         }
     }
 
+    /**
+     * Read a byte range from a file without loading the whole thing into memory.
+     * getFile() returns a Blob, and Blob.slice() is lazy — only the requested
+     * range is read from disk. Used to walk large databases (KoboReader.sqlite)
+     * a page at a time rather than slurping hundreds of MB. Returns a Uint8Array
+     * (possibly shorter than `length` at EOF), or null if the file is missing.
+     */
+    async readFileRange(filePath, offset, length) {
+        try {
+            let dir = this.directoryHandle;
+            const dirParts = filePath.slice(0, -1);
+            const fileName = filePath[filePath.length - 1];
+            for (const part of dirParts) {
+                dir = await dir.getDirectoryHandle(part);
+            }
+            const fileHandle = await dir.getFileHandle(fileName);
+            const file = await fileHandle.getFile();
+            const slice = file.slice(offset, offset + length);
+            return new Uint8Array(await slice.arrayBuffer());
+        } catch {
+            return null;
+        }
+    }
+
     async collectExistingEntries(pathList, progressFn) {
         const filePaths = [];
         for (const pathParts of pathList) {

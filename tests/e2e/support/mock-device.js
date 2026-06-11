@@ -167,18 +167,19 @@ async function injectMockDevice(page, opts = {}) {
         getFile: async () => {
           const fileNode = dirNode[fileName];
           // Binary nodes (e.g. the KoboReader.sqlite fixture) carry raw bytes;
-          // everything else stores text content.
-          if (fileNode && fileNode.bytes) {
-            const bytes = fileNode.bytes;
-            return {
-              text: async () => new TextDecoder().decode(bytes),
-              arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-            };
-          }
-          const content = fileNode ? (fileNode.content || '') : '';
+          // everything else stores text content. Normalise to bytes so the
+          // file-like exposes text/arrayBuffer/slice the same way a real Blob
+          // does — slice() backs KoboDevice.readFileRange's page reads.
+          const bytes = (fileNode && fileNode.bytes)
+            ? fileNode.bytes
+            : new TextEncoder().encode(fileNode ? (fileNode.content || '') : '');
+          const arrayBufferOf = (sub) => sub.buffer.slice(sub.byteOffset, sub.byteOffset + sub.byteLength);
           return {
-            text: async () => content,
-            arrayBuffer: async () => new TextEncoder().encode(content).buffer,
+            text: async () => new TextDecoder().decode(bytes),
+            arrayBuffer: async () => arrayBufferOf(bytes),
+            slice: (start = 0, end = bytes.length) => ({
+              arrayBuffer: async () => arrayBufferOf(bytes.subarray(start, end)),
+            }),
           };
         },
         createWritable: async () => {
