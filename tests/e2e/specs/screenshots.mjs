@@ -626,9 +626,9 @@ test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) =
   await shot(page, dir, '04-done', testInfo);
 });
 
-// Edge case: Kobo software older than Sideloaded Mode's 4.31 minimum. The option
+// Edge case: Kobo software older than Sideload Mode's 4.31 minimum. The option
 // is shown disabled with a red explanation; no recommendation banner.
-test('sideloaded mode too old os', async ({ page }, testInfo) => {
+test('Sideload Mode too old os', async ({ page }, testInfo) => {
   const dir = 'edge-cases';
   await page.goto('/');
   await dismissMobileModal(page);

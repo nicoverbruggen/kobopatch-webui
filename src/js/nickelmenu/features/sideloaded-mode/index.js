@@ -1,4 +1,4 @@
-// Sideloaded Mode. A Kobo that has been factory reset and never signed into a
+// Sideload Mode. A Kobo that has been factory reset and never signed into a
 // Kobo account can still be used for reading sideloaded books by setting
 // SideloadedMode=true under [ApplicationPreferences]. This feature applies that
 // one setting and can revert it again — like the better-typography feature, the
@@ -9,10 +9,10 @@
 const SIDELOADED_MODE = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' };
 
 // The NickelMenu items line that force-enables the home navigation tab (index 0
-// of the bottom tab bar). The simplify-tabs feature adds it. In Sideloaded Mode
+// of the bottom tab bar). The simplify-tabs feature adds it. In Sideload Mode
 // there is no home screen, so this override must be removed for the home tab to
 // disappear — we comment it out rather than delete it, so it can be restored if
-// the build is re-run without Sideloaded Mode (or simply not selected at all).
+// the build is re-run without Sideload Mode (or simply not selected at all).
 const HOME_TAB_PATTERN = /^\s*experimental\s*:\s*menu_main_15505_0_enabled\b/;
 
 // Comment out the home-tab override (if present and not already commented),
@@ -23,7 +23,7 @@ function hideHomeTab(items) {
         .split('\n')
         .flatMap(line =>
             HOME_TAB_PATTERN.test(line) && !line.trimStart().startsWith('#')
-                ? ['# Home tab hidden for Sideloaded Mode (no home screen when not signed in).', '# ' + line]
+                ? ['# Home tab hidden for Sideload Mode (no home screen when not signed in).', '# ' + line]
                 : [line]
         )
         .join('\n');
@@ -36,21 +36,21 @@ export default {
     description: 'Sideload Mode lets you use your device without signing into a Kobo account — useful if you factory reset the device and want to read sideloaded books without setting up an account.',
     default: false,
     minimumVersion: '4.31',
-    hint: 'Sideloaded Mode lets the Kobo run without a Kobo account. It disables the home screen and opens the device straight to the "My Books" library instead, and it turns off syncing with the Kobo store. Useful after a factory reset when you only read sideloaded books and don\'t want to sign in.',
+    hint: 'Sideload Mode lets the Kobo run without a Kobo account. It disables the home screen and opens the device straight to the "My Books" library instead, and it turns off syncing with the Kobo store. Useful after a factory reset when you only read sideloaded books and don\'t want to sign in.',
 
     // Detected by, and reverted to, the single conf key it manages. Reverting
     // only removes the line when it still matches what we set, so a value the
     // user changed afterwards is never clobbered.
     cleanup: {
         mode: 'optional',
-        title: 'Sideloaded Mode',
-        removeLabel: 'Turn off Sideloaded Mode',
+        title: 'Sideload Mode',
+        removeLabel: 'Turn off Sideload Mode',
         description: 'Removes the SideloadedMode setting from your Kobo configuration. If you have not signed in, sign-in may be required again after a reboot.',
         detectConf: [SIDELOADED_MODE],
         revertConf: [{ ...SIDELOADED_MODE, revertTo: null }],
     },
 
-    // Surface what Sideloaded Mode does at the review step, so the behavior
+    // Surface what Sideload Mode does at the review step, so the behavior
     // change is hard to miss before writing it. No outbound link — the
     // explanation is self-contained.
     reviewNotices() {
@@ -66,7 +66,7 @@ export default {
 
     // Hide the home navigation tab by commenting out its force-enable override
     // (added by simplify-tabs). A no-op when that line isn't present — without it
-    // Sideloaded Mode already hides the home tab on its own.
+    // Sideload Mode already hides the home tab on its own.
     postProcess(files) {
         const items = files.find(f => f.path === '.adds/nm/items');
         if (!items || typeof items.data !== 'string') return files;

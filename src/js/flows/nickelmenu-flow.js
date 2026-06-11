@@ -545,7 +545,7 @@ export function initNickelMenu(state) {
 
     // Cached user-row count for the connected device (undefined = not checked
     // yet, null = couldn't be read). A factory-reset Kobo that was never signed
-    // in reads 0, which is when we recommend Sideloaded Mode.
+    // in reads 0, which is when we recommend Sideload Mode.
     async function getKoboUserCount() {
         if (state.koboUserCount !== undefined) return state.koboUserCount;
         if (state.manualMode || !state.device?.directoryHandle) {
@@ -556,8 +556,8 @@ export function initNickelMenu(state) {
         return state.koboUserCount;
     }
 
-    // Show the "not signed in → enable Sideloaded Mode" banner when the device
-    // reads zero user rows, but only if Sideloaded Mode is actually available on
+    // Show the "not signed in → enable Sideload Mode" banner when the device
+    // reads zero user rows, but only if Sideload Mode is actually available on
     // this firmware. When shown, expand the Advanced section so the option the
     // banner points at is visible.
     async function updateSideloadedRecommendation() {
