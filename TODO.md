@@ -1,9 +1,5 @@
 # TODO
 
-## Clarity about ejection
-
-In the manual instructions, make it clear that if the "Connected and charing" screen remains visible after safely ejecting the device, you need to unplug your device as part of the instructions on ejecting your device.
-
 ## Hidden content on main screen (toggle)
 
 When selecting any option that hides content on the home screen, add an option to the menu that allows the user to toggle this feature (which runs as script that toggles the config options + reboots).
