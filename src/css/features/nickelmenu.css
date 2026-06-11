@@ -162,13 +162,15 @@
 }
 
 /* Keep old NickelMenu config checkbox, shown in the backup step when a legacy
-   .adds/nm/items exists on the connected device. */
+   .adds/nm/items exists on the connected device. Styled as a compact notice
+   card matching the review-summary cards. */
 .nm-keep-config {
-    margin-top: 1.25rem;
-    padding: 0.9rem 1rem;
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
     background: var(--card-bg);
     border: 1px solid var(--border-light);
     border-radius: 10px;
+    box-shadow: var(--shadow);
 }
 
 .nm-keep-config-label {
@@ -181,19 +183,22 @@
 
 .nm-keep-config-label input[type="checkbox"] {
     align-self: start;
-    margin-top: 0.15rem;
+    margin-top: 0.2rem;
+    accent-color: var(--primary);
 }
 
 .nm-keep-config-title {
     font-weight: 600;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
 }
 
 .nm-keep-config-desc {
     width: 100%;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--text-light);
     line-height: 1.45;
+    margin-top: 0.1rem;
 }
 
 #nm-preset-conflict-list {
