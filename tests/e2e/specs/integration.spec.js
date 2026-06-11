@@ -1196,6 +1196,8 @@ test.describe('NickelMenu', () => {
     await page.click('#btn-nm-features-next');
     await skipNmBackup(page);
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    // The review step warns about what sideload mode does.
+    await expect(page.locator('#nm-review-notices')).toContainText('Home tab is hidden');
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
 

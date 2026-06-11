@@ -593,16 +593,37 @@ const goToNmFeaturesForShot = async (page) => {
   await expect(page.locator('#step-nm-features')).not.toBeHidden();
 };
 
-// Factory-reset (not signed in) Kobo: the feature step recommends Sideloaded
-// Mode and auto-expands the Advanced section that holds the option.
-test('connected nickelmenu sideloaded recommendation', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+// Full journey for a factory-reset Kobo that was never signed in: the
+// recommendation, choosing sideload mode, the review summary with its warning,
+// and the done screen.
+test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu-factory';
   await page.goto('/');
   await dismissMobileModal(page);
   await injectMockDevice(page, { signedIn: false });
   await goToNmFeaturesForShot(page);
+
+  // Recommendation banner, with the Advanced section auto-expanded so the
+  // sideload mode option is visible.
   await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
-  await shot(page, dir, '06b-nickelmenu-sideloaded-recommendation', testInfo);
+  await shot(page, dir, '01-recommendation', testInfo);
+
+  // Choose sideload mode.
+  await page.check('input[name="nm-cfg-sideloaded-mode"]');
+  await shot(page, dir, '02-sideload-selected', testInfo);
+
+  // Backup → review: the summary lists the selection and warns what it does.
+  await page.click('#btn-nm-features-next');
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  await page.click('#btn-nm-backup-next');
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await expect(page.locator('#nm-review-notices')).toContainText('Home tab is hidden');
+  await shot(page, dir, '03-review', testInfo);
+
+  // Write to device → done.
+  await page.click('#btn-nm-write');
+  await expect(page.locator('#step-nm-done')).not.toBeHidden();
+  await shot(page, dir, '04-done', testInfo);
 });
 
 // Edge case: Kobo software older than Sideloaded Mode's 4.31 minimum. The option

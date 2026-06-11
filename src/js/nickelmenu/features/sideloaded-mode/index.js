@@ -50,6 +50,20 @@ export default {
         revertConf: [{ ...SIDELOADED_MODE, revertTo: null }],
     },
 
+    // Surface what Sideloaded Mode does at the review step, so the behavior
+    // change is hard to miss before writing it. No outbound link — the
+    // explanation is self-contained.
+    reviewNotices() {
+        return [{
+            type: 'warning',
+            title: 'Sideload mode changes how your Kobo works',
+            paragraphs: [
+                'With sideload mode on, the device skips the home screen and opens straight to your "My Books" library, the Home tab is hidden, and syncing with the Kobo store is turned off.',
+                'This is meant for a Kobo used without a Kobo account (for example after a factory reset). To switch it back off, remove NickelMenu with this tool — it offers to revert the setting during removal — after which the device may ask you to sign in.',
+            ],
+        }];
+    },
+
     // Hide the home navigation tab by commenting out its force-enable override
     // (added by simplify-tabs). A no-op when that line isn't present — without it
     // Sideloaded Mode already hides the home tab on its own.
