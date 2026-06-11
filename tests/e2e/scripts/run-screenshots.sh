@@ -24,6 +24,7 @@ if [ -d "$STALE_TEST_NODE_MODULES" ]; then
 fi
 
 npm --prefix "$APP_DIR" install --silent
+npm --prefix "$APP_DIR" run build
 "$PLAYWRIGHT" install chromium
 "$PLAYWRIGHT" test --config "$E2E_DIR/config/screenshots.config.js" --reporter=list "$@"
 
