@@ -1169,7 +1169,7 @@ test.describe('NickelMenu', () => {
     // The recommendation banner shows, and the Advanced section it points at is
     // auto-expanded so the Sideload Mode option is visible.
     await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
-    await expect(page.locator('#nm-sideloaded-banner')).toContainText('Sideload Mode');
+    await expect(page.locator('#nm-sideloaded-banner')).toContainText('Sideload mode');
     await expect(page.locator('input[name="nm-cfg-sideloaded-mode"]')).toBeVisible();
     await expect(page.locator('input[name="nm-cfg-sideloaded-mode"]')).toBeEnabled();
   });
