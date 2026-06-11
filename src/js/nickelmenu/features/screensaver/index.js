@@ -1,17 +1,9 @@
-// The Tweak-menu entry that toggles the screensaver on/off. Contributed to the
-// NickelMenu items file only when this feature is installed, so the menu never
-// offers a toggle for a screensaver that isn't there. Its position near the top
-// of the menu is set by 'screensaver' in ../menu-order.js.
-const SCREENSAVER_MENU_ITEM = [
-    'menu_item :main :Toggle Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
-    '      chain_failure : skip : 3',
-    '      chain_success : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.disabled/screensaver /mnt/onboard/.kobo/screensaver',
-    '      chain_success : dbg_toast : Screensaver is now ON.',
-    '      chain_always : skip : -1',
-    '      chain_failure : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.kobo/screensaver /mnt/onboard/.disabled/screensaver',
-    '      chain_success : dbg_toast : Screensaver is now OFF.',
-];
-
+// Copies a sample screensaver image to .kobo/screensaver and adds a Tweak-menu
+// item that toggles the screensaver on or off (by moving the image between
+// .kobo/screensaver and a .disabled/ folder). The user can drop additional
+// screensavers into .kobo/screensaver themselves. Removal deletes the sample
+// image; like the better-typography feature, this one owns both an asset and
+// its menu item.
 export default {
     id: 'screensaver',
     section: 'Advanced',
@@ -36,9 +28,23 @@ export default {
         ];
     },
 
-    // menuItems only runs when this feature is selected, so the toggle is added
-    // exactly when the screensaver image is also installed.
+    // The Tweak-menu entry that toggles the screensaver on/off. menuItems only
+    // runs when this feature is selected, so the toggle is added exactly when the
+    // screensaver image is also installed, and the menu never offers a toggle for
+    // a screensaver that isn't there. Its position near the top of the menu is
+    // set by 'screensaver' in ../menu-order.js.
     menuItems() {
-        return [{ id: 'screensaver', lines: SCREENSAVER_MENU_ITEM }];
+        return [{
+            id: 'screensaver',
+            lines: [
+                'menu_item :main :Toggle Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
+                '      chain_failure : skip : 3',
+                '      chain_success : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.disabled/screensaver /mnt/onboard/.kobo/screensaver',
+                '      chain_success : dbg_toast : Screensaver is now ON.',
+                '      chain_always : skip : -1',
+                '      chain_failure : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.kobo/screensaver /mnt/onboard/.disabled/screensaver',
+                '      chain_success : dbg_toast : Screensaver is now OFF.',
+            ],
+        }];
     },
 };

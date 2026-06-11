@@ -9,27 +9,6 @@ import { appendToNmConfig } from '../helpers.js';
 // the installer de-duplicates the identical menu item (by id) and script (by
 // path) so it appears exactly once regardless of how many hiders are selected.
 
-// Shipped under .adds/nm/scripts so NickelMenu removal's recursive delete cleans
-// it up. ctx.asset() is scoped to features/<feature.id>/, but these features
-// share a single directory under different ids, so the script is fetched by its
-// real path (mirroring how the KOReader feature fetches its assets directly).
-const TOGGLE_SCRIPT_URL = 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh';
-const TOGGLE_SCRIPT_DEVICE_PATH = '.adds/nm/scripts/toggle_hidden_home.sh';
-
-// The shared Tweak item. Every hider contributes this identical entry and the
-// installer collapses the duplicates; its position (after the power items) is set
-// by 'toggle-hidden-home' in ../menu-order.js.
-const HOME_CONTENT_TOGGLE = {
-    id: 'toggle-hidden-home',
-    lines: ['menu_item :main :Toggle Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
-};
-
-async function shipToggleScript() {
-    const resp = await fetch(TOGGLE_SCRIPT_URL);
-    if (!resp.ok) throw new Error(`Failed to load ${TOGGLE_SCRIPT_URL}`);
-    return { path: TOGGLE_SCRIPT_DEVICE_PATH, data: new Uint8Array(await resp.arrayBuffer()) };
-}
-
 function makeHider({ id, title, description, flag }) {
     return {
         id,
@@ -38,14 +17,27 @@ function makeHider({ id, title, description, flag }) {
         description,
         default: false,
 
-        // Ship the shared toggle script (de-duplicated by path in the installer).
+        // Ship the shared toggle script (de-duplicated by path in the installer,
+        // so it lands once however many hiders are selected). It goes under
+        // .adds/nm/scripts so NickelMenu removal's recursive delete cleans it up.
+        // ctx.asset() is scoped to features/<feature.id>/, but these features
+        // share a single directory under different ids, so the script is fetched
+        // by its real path (mirroring how the KOReader feature fetches directly).
         async install() {
-            return [await shipToggleScript()];
+            const url = 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh';
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`Failed to load ${url}`);
+            return [{ path: '.adds/nm/scripts/toggle_hidden_home.sh', data: new Uint8Array(await resp.arrayBuffer()) }];
         },
 
-        // Contribute the shared toggle item (de-duplicated by id in the installer).
+        // Contribute the shared Tweak item. Every hider returns this identical
+        // entry and the installer collapses the duplicates (by id); its position
+        // (after the power items) is set by 'toggle-hidden-home' in ../menu-order.js.
         menuItems() {
-            return [HOME_CONTENT_TOGGLE];
+            return [{
+                id: 'toggle-hidden-home',
+                lines: ['menu_item :main :Toggle Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
+            }];
         },
 
         // Append this hider's experimental flag to the assembled items file.

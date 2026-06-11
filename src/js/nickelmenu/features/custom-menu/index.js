@@ -1,49 +1,15 @@
 import { darkModeSupport } from '../../../kobo/dark-mode.js';
 
-// The base Tweak-menu entries, owned by this feature. The NickelMenu `items`
-// file is no longer a static asset: each entry below is a data structure, and
-// the installer collects entries from every selected feature (via `menuItems`),
-// orders them by their id's position in MENU_ITEM_ORDER (see ../menu-order.js),
-// and renders the file. Device-conditional items become a simple "don't include
-// this entry" instead of commenting out matched lines.
-const HEADER = {
-    id: 'tweak-header',
-    lines: [
-        'experimental :menu_main_15505_label :Tweak',
-        'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
-    ],
-};
-
-const BASE_ITEMS = [
-    HEADER,
-    { id: 'screenshots', lines: ['menu_item :main :Toggle Screenshots :nickel_setting :toggle :screenshots'] },
-    { id: 'auto-usb', lines: ['menu_item :main :Toggle Auto USB :nickel_setting :toggle :auto_usb_gadget'] },
-    { id: 'rescan-books', lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
-    {
-        id: 'invert-reboot',
-        lines: [
-            'menu_item :main :Invert Display :nickel_setting :toggle: invert',
-            '    chain_success :power :reboot',
-        ],
-    },
-    { id: 'sleep', lines: ['menu_item :main :Sleep Device :power :sleep'] },
-    { id: 'reboot', lines: ['menu_item :main :Reboot Device :power :reboot'] },
-];
-
-// The Dark Mode item only works on devices whose firmware has a Dark mode
-// setting. On older devices we leave it out entirely (and surface the warning in
-// reviewNotices); previously it was shipped commented-out.
-const DARK_MODE = {
-    id: 'dark-mode',
-    lines: ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode'],
-};
-
-// The toggle items for hidden home content and navigation tabs are owned by the
-// features that hide those things (hide-home-content and simplify-tabs), each of
-// which contributes its own menuItems entry and ships its own .adds/nm/scripts
-// script. custom-menu only owns the base Tweak menu below.
-
-const customMenu = {
+// Sets up the "Tweak" tab and its base NickelMenu entries (the tab header, plus
+// screenshots, auto-USB, rescan, invert, sleep, reboot, and a device-conditional
+// Dark Mode item). The NickelMenu `items` file is not a static asset: every
+// selected feature contributes its entries via `menuItems`, and the installer
+// orders them by their id's position in MENU_ITEM_ORDER (see ../menu-order.js)
+// and renders the file. Device-conditional items are simply left out rather than
+// commented. The toggle items for hidden home content and navigation tabs are
+// owned by the features that hide those things (hide-home-content and
+// simplify-tabs); custom-menu only owns the base Tweak menu.
+export default {
     id: 'custom-menu',
     section: 'Interface tweaks',
     title: 'Set up NickelMenu preset',
@@ -80,15 +46,42 @@ const customMenu = {
         ];
     },
 
-    // Contribute the base Tweak-menu entries. Dark Mode is dropped on unsupported
-    // devices (left out of the menu entirely rather than commented out).
+    // Contribute the base Tweak-menu entries: the tab header first, then the
+    // shared toggles and power items.
     menuItems(ctx = {}) {
-        const entries = [...BASE_ITEMS];
+        const entries = [
+            {
+                id: 'tweak-header',
+                lines: [
+                    'experimental :menu_main_15505_label :Tweak',
+                    'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
+                ],
+            },
+            { id: 'screenshots', lines: ['menu_item :main :Toggle Screenshots :nickel_setting :toggle :screenshots'] },
+            { id: 'auto-usb', lines: ['menu_item :main :Toggle Auto USB :nickel_setting :toggle :auto_usb_gadget'] },
+            { id: 'rescan-books', lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
+            {
+                id: 'invert-reboot',
+                lines: [
+                    'menu_item :main :Invert Display :nickel_setting :toggle: invert',
+                    '    chain_success :power :reboot',
+                ],
+            },
+            { id: 'sleep', lines: ['menu_item :main :Sleep Device :power :sleep'] },
+            { id: 'reboot', lines: ['menu_item :main :Reboot Device :power :reboot'] },
+        ];
+
+        // The Dark Mode item only works on devices whose firmware has a Dark mode
+        // setting. On unsupported devices it is left out of the menu entirely
+        // (and the warning is surfaced in reviewNotices) rather than shipped
+        // commented-out.
         if (darkModeSupport(ctx.deviceInfo) !== 'unsupported') {
-            entries.push(DARK_MODE);
+            entries.push({
+                id: 'dark-mode',
+                lines: ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode'],
+            });
         }
+
         return entries;
     },
 };
-
-export default customMenu;

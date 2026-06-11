@@ -1,9 +1,9 @@
 import JSZip from 'jszip';
 
-// The Tweak-menu entry that launches KOReader. Its position (just below the
-// Tweak tab header) is set by 'koreader' in ../menu-order.js.
-const KOREADER_MENU_ITEM = 'menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh';
-
+// Installs KOReader, an alternative e-book reader, alongside the built-in Kobo
+// reader (it does not replace it). The app is downloaded as a release zip at
+// install time and extracted into .adds/koreader/, and a Tweak-menu item is
+// added to launch it. Removal deletes the whole app directory.
 export default {
     id: 'koreader',
     section: 'KOReader',
@@ -67,6 +67,11 @@ export default {
     },
 
     menuItems() {
-        return [{ id: 'koreader', lines: [KOREADER_MENU_ITEM] }];
+        // The Tweak-menu entry that launches KOReader. Its position (just below
+        // the Tweak tab header) is set by 'koreader' in ../menu-order.js.
+        return [{
+            id: 'koreader',
+            lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+        }];
     },
 };

@@ -6,18 +6,6 @@
 //
 // The setting was introduced in Kobo software 4.31, so the feature declares a
 // minimumVersion and is gated off on older devices in the config UI.
-// `revertable` marks the one conf key this feature owns: the installer applies
-// it, and the flow/uninstaller derive detection and revert from it (revertTo:
-// null removes the line on removal).
-const SIDELOADED_MODE = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true', revertable: true, revertTo: null };
-
-// The NickelMenu items line that force-enables the home navigation tab (index 0
-// of the bottom tab bar). The simplify-tabs feature adds it. In Sideload mode
-// there is no home screen, so this override must be removed for the home tab to
-// disappear — we comment it out rather than delete it, so it can be restored if
-// the build is re-run without Sideload mode (or simply not selected at all).
-const HOME_TAB_PATTERN = /^\s*experimental\s*:\s*menu_main_15505_0_enabled\b/;
-
 export default {
     id: 'sideloaded-mode',
     section: 'Advanced',
@@ -52,33 +40,36 @@ export default {
         }];
     },
 
-    // Hide the home navigation tab by commenting out its force-enable override
-    // (added by simplify-tabs). A no-op when that line isn't present — without it
-    // Sideload mode already hides the home tab on its own.
+    // Hide the home navigation tab by commenting out its force-enable override.
+    // That override (experimental:menu_main_15505_0_enabled, the home tab at
+    // index 0 of the bottom tab bar) is added by simplify-tabs; in Sideload mode
+    // there is no home screen, so it must be removed for the home tab to
+    // disappear. We comment it out rather than delete it — and leave an
+    // explanatory note above it — so re-running the build without this feature
+    // regenerates the items file with the line restored. A no-op when the line
+    // isn't present: without it Sideload mode already hides the home tab on its own.
     postProcess(files) {
         const items = files.find(f => f.path === '.adds/nm/items');
         if (!items || typeof items.data !== 'string') return files;
-        items.data = hideHomeTab(items.data);
+
+        const homeTabPattern = /^\s*experimental\s*:\s*menu_main_15505_0_enabled\b/;
+        items.data = items.data
+            .split('\n')
+            .flatMap(line =>
+                homeTabPattern.test(line) && !line.trimStart().startsWith('#')
+                    ? ['# Home tab hidden for Sideload mode (no home screen when not signed in).', '# ' + line]
+                    : [line]
+            )
+            .join('\n');
         return files;
     },
 
     // Declarative Kobo eReader.conf change, applied by the installer when a
     // device is connected (and shown as a manual instruction otherwise).
+    // `revertable` marks the one conf key this feature owns: the flow/uninstaller
+    // derive detection and revert from it (revertTo: null removes the line on
+    // removal, and only when it still matches what we set).
     confSettings() {
-        return [SIDELOADED_MODE];
+        return [{ section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true', revertable: true, revertTo: null }];
     },
 };
-
-// Comment out the home-tab override (if present and not already commented),
-// leaving an explanatory note above it. Re-running the build without this
-// feature regenerates the items file with the line restored.
-function hideHomeTab(items) {
-    return items
-        .split('\n')
-        .flatMap(line =>
-            HOME_TAB_PATTERN.test(line) && !line.trimStart().startsWith('#')
-                ? ['# Home tab hidden for Sideload mode (no home screen when not signed in).', '# ' + line]
-                : [line]
-        )
-        .join('\n');
-}

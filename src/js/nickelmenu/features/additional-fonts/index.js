@@ -1,14 +1,9 @@
 import JSZip from 'jszip';
 
-// Font families bundled as runtime assets, downloaded and extracted into fonts/
-// at install time. Each archive contains four .ttf weights named
-// KF_<Family>-{Regular,Italic,Bold,BoldItalic}.ttf.
-const FONT_ARCHIVES = [
-    { name: 'KF Readerly', asset: '/assets/KF_Readerly.zip' },
-    { name: 'KF Libron', asset: '/assets/KF_Libron.zip' },
-    { name: 'KF Cartisse', asset: '/assets/KF_Cartisse.zip' },
-];
-
+// Installs three bundled font families (Readerly, Libron, Cartisse) so they
+// appear in the in-book font dropdown. Each family ships as a zip asset that is
+// downloaded and extracted into fonts/ at install time; removal deletes the
+// individual .ttf files again.
 export default {
     id: 'additional-fonts',
     section: 'Text and typography',
@@ -43,8 +38,16 @@ export default {
     },
 
     async install(ctx) {
+        // Each archive contains four .ttf weights named
+        // KF_<Family>-{Regular,Italic,Bold,BoldItalic}.ttf.
+        const archives = [
+            { name: 'KF Readerly', asset: '/assets/KF_Readerly.zip' },
+            { name: 'KF Libron', asset: '/assets/KF_Libron.zip' },
+            { name: 'KF Cartisse', asset: '/assets/KF_Cartisse.zip' },
+        ];
+
         const files = [];
-        for (const archive of FONT_ARCHIVES) {
+        for (const archive of archives) {
             ctx.progress(`Downloading ${archive.name} font...`);
             const resp = await fetch(archive.asset);
             if (!resp.ok) throw new Error(`Failed to download ${archive.name}: HTTP ${resp.status}`);

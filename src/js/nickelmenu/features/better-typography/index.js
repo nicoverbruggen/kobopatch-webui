@@ -12,24 +12,6 @@
 // the menu entry), so the WebKit rendering mode can be flipped later without a
 // reconnect. Modelled on the screensaver feature, which likewise owns both an
 // asset and its menu item.
-const ADDITIONAL_FONTS_ID = 'additional-fonts';
-const DEFAULT_FONT_FAMILY = 'KF Libron';
-// `revertable` marks this as a setting the feature owns for removal: the
-// installer applies it like any other, and the flow/uninstaller derive detection
-// and revert from it (revertTo: null removes the line). The alignment/font
-// settings in confSettings carry no such marker — they are general preferences
-// we apply once but never claw back.
-const WEBKIT_RENDERING = { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null };
-
-const TOGGLE_SCRIPT_PATH = '.adds/scripts/toggle_typography.sh';
-
-// The Tweak-menu entry that toggles optimized WebKit rendering on/off. cmd_output
-// keeps the alert (which states the mode that will be active) on screen for the
-// 7s the script waits before rebooting. Contributed only when this feature is
-// installed, so the menu never offers a toggle for a setting that isn't managed.
-// Its position is set by 'typography' in ../menu-order.js.
-const TYPOGRAPHY_MENU_ITEM = 'menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh';
-
 export default {
     id: 'better-typography',
     section: 'Text and typography',
@@ -61,28 +43,40 @@ export default {
     // features, so the script lands exactly when the feature is installed.
     async install(ctx) {
         return [
-            { path: TOGGLE_SCRIPT_PATH, data: await ctx.asset('scripts/toggle_typography.sh') },
+            { path: '.adds/scripts/toggle_typography.sh', data: await ctx.asset('scripts/toggle_typography.sh') },
         ];
     },
 
-    // Contribute the Tweak-menu toggle. menuItems only runs when this feature is
-    // selected, so the entry is added exactly when the toggle script is shipped.
+    // Contribute the Tweak-menu toggle that flips optimized WebKit rendering
+    // on/off. cmd_output keeps the alert (which states the mode that will be
+    // active) on screen for the 7s the script waits before rebooting. menuItems
+    // only runs when this feature is selected, so the entry is added exactly when
+    // the toggle script is shipped. Its position is set by 'typography' in
+    // ../menu-order.js.
     menuItems() {
-        return [{ id: 'typography', lines: [TYPOGRAPHY_MENU_ITEM] }];
+        return [{
+            id: 'typography',
+            lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh'],
+        }];
     },
 
     // Declarative Kobo eReader.conf changes, applied by the installer when a
     // device is connected. Receives the selected features so the default font is
     // only set when the additional fonts are actually being installed.
+    //
+    // `revertable` marks webkitTextRendering as a setting the feature owns for
+    // removal: the flow/uninstaller derive detection and revert from it
+    // (revertTo: null removes the line). The alignment/font settings carry no
+    // such marker — they are general preferences we apply once but never claw back.
     confSettings(ctx = {}) {
         const settings = [
-            WEBKIT_RENDERING,
+            { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null },
             { section: 'Reading', key: 'readingAlignment', value: 'Left' },
         ];
 
-        const additionalFontsInstalled = (ctx.features || []).some(f => f.id === ADDITIONAL_FONTS_ID);
+        const additionalFontsInstalled = (ctx.features || []).some(f => f.id === 'additional-fonts');
         if (additionalFontsInstalled) {
-            settings.push({ section: 'Reading', key: 'readingFontFamily', value: DEFAULT_FONT_FAMILY });
+            settings.push({ section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' });
         }
 
         return settings;
