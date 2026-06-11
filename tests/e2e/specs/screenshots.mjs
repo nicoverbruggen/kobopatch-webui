@@ -339,11 +339,17 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 });
 
 // ============================================================
-// 5b-2. Connected NickelMenu — removal review
+// 5c. Connected NickelMenu removal flow
+//
+// Removal is its own path with phases that don't exist in the install flow:
+// the removal options (which optional features to uninstall alongside
+// NickelMenu), the removal-styled review, and a "removing on reboot" done
+// screen. Captured here as a standalone flow rather than mixed into the
+// install screenshots above.
 // ============================================================
 
-test('connected nickelmenu removal review', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+test('connected nickelmenu removal', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu-removal';
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -353,7 +359,7 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
   }
 
   // NickelMenu already installed, plus optional features that can be removed
-  // alongside it, so the review lists more than one "Selected removals:" entry.
+  // alongside it, so the removal options and review list more than one entry.
   await injectMockDevice(page, {
     hasNickelMenu: true,
     hasKOReader: true,
@@ -369,11 +375,14 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
   await page.click('input[name="mode"][value="nickelmenu"]');
   await page.click('#btn-mode-next');
 
+  // Removal options — selecting "remove" reveals the optional-feature cleanup
+  // checkboxes (pre-checked for each detected feature).
   await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
   await page.click('input[name="nm-option"][value="remove"]');
-  // Optional-feature cleanup checkboxes are pre-checked when detected. Uncheck
-  // the additional fonts so the review shows them under the "kept" card.
   await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+  await shot(page, dir, '01-removal-options', testInfo);
+
+  // Uncheck the additional fonts so the review shows them under the "kept" card.
   await page.uncheck('input[name="nm-uninstall-additional-fonts"]');
   await page.click('#btn-nm-next');
 
@@ -385,15 +394,19 @@ test('connected nickelmenu removal review', async ({ page }, testInfo) => {
   await page.click('#btn-nm-backup-next');
 
   await expect(page.locator('#step-nm-review')).not.toBeHidden();
-  await shot(page, dir, '08c-nickelmenu-removal-review', testInfo);
+  await shot(page, dir, '02-removal-review', testInfo);
+
+  // Write to device → done (NickelMenu removed on next reboot).
+  await page.click('#btn-nm-write');
+  const nmDone = page.locator('#step-nm-done');
+  await expect(nmDone).not.toBeHidden();
+  await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
+  await shot(page, dir, '03-removal-done', testInfo);
 });
 
-// ============================================================
-// 5b-3. Connected NickelMenu — removal review with no kept features
-// ============================================================
-
-test('connected nickelmenu removal review (no kept features)', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+// Variant: every cleanup checkbox left checked, so the review has no "kept" card.
+test('connected nickelmenu removal (no kept features)', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu-removal';
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -402,8 +415,6 @@ test('connected nickelmenu removal review (no kept features)', async ({ page }, 
     await expect(page.locator('#mobile-dialog')).not.toBeVisible();
   }
 
-  // NickelMenu plus optional features, all left checked for removal, so the
-  // review has no "kept" card.
   await injectMockDevice(page, {
     hasNickelMenu: true,
     hasKOReader: true,
@@ -433,11 +444,11 @@ test('connected nickelmenu removal review (no kept features)', async ({ page }, 
 
   await expect(page.locator('#step-nm-review')).not.toBeHidden();
   await expect(page.locator('#nm-review-kept')).toBeHidden();
-  await shot(page, dir, '08d-nickelmenu-removal-review-no-kept', testInfo);
+  await shot(page, dir, '02a-removal-review-no-kept', testInfo);
 });
 
 // ============================================================
-// 5c. Busy indicator (install in progress)
+// 5d. Busy indicator (install in progress)
 // ============================================================
 
 test('connected nickelmenu installing (busy indicator)', async ({ page }, testInfo) => {

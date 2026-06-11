@@ -1,3 +1,61 @@
+/* Polished "done" card — mirrors the busy/installing card chrome with a
+   success icon header, status title, and instruction body. */
+.done-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 2.25rem 1.75rem;
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.done-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.6rem;
+    border-radius: 50%;
+    background: var(--success-bg);
+    color: var(--success-text);
+
+    & svg {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* Scoped under .done-card to outrank the generic `.step p` rule */
+.done-card .done-card-title {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text);
+}
+
+.done-card .done-card-detail {
+    margin: 0.35rem 0 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+/* Inside the done card the instructions sit flush — no nested card chrome */
+.done-card .install-instructions {
+    width: 100%;
+    margin-top: 0.85rem;
+    padding: 0;
+    text-align: left;
+    background: transparent;
+    border: none;
+}
+
 /* Install instructions card */
 .install-instructions {
     margin-top: 1rem;
