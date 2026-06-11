@@ -16,6 +16,7 @@ import hideRow2Col2 from './features/hide-row2col2/index.js';
 import hideNotices from './features/hide-notices/index.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
+import sideloadedMode from './features/sideloaded-mode/index.js';
 import {
     buildExcludeSyncFoldersLine,
     legacyBrokenExcludeSyncFoldersLines,
@@ -43,6 +44,7 @@ export const NICKELMENU_FEATURES = [
     koreader,
     // "Advanced" section — less common power-user options, rendered last and
     // collapsed by default in the feature selection step.
+    sideloadedMode,
     screensaver,
     excludeCalibre,
 ];

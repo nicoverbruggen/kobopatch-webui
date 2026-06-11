@@ -24,6 +24,8 @@ import {
     hasAddsDirectoriesRequiringSyncExclusions,
 } from '../nickelmenu/uninstaller.js';
 import { getConfSetting } from '../kobo/configuration.js';
+import { meetsMinimumVersion } from '../kobo/version.js';
+import { countKoboUsers } from '../kobo/signin.js';
 import { TL } from '../shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from '../shell/analytics.js';
 
@@ -86,17 +88,27 @@ export function initNickelMenu(state) {
     // Required features are checked and disabled; others use their default.
 
     function renderFeatureCheckboxes() {
+        // A connected device's firmware gates features that declare a
+        // minimumVersion. In manual mode the version is unknown, so nothing is
+        // gated (meetsMinimumVersion treats an unknown version as meeting it).
+        const firmware = state.device?.deviceInfo?.firmware;
         const items = NICKELMENU_FEATURES
             .filter(f => f.available !== false)
-            .map(f => ({
-                name: 'nm-cfg-' + f.id,
-                title: f.title + (f.required ? ' (required)' : '') + (f.version ? ' ' + f.version : ''),
-                description: f.description,
-                hint: f.hint,
-                sectionTitle: f.section,
-                checked: f.required || f.default,
-                disabled: f.required,
-            }));
+            .map(f => {
+                const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
+                return {
+                    name: 'nm-cfg-' + f.id,
+                    title: f.title + (f.required ? ' (required)' : '') + (f.version ? ' ' + f.version : ''),
+                    description: f.description,
+                    hint: f.hint,
+                    sectionTitle: f.section,
+                    checked: meetsMinimum && (f.required || f.default),
+                    disabled: f.required || !meetsMinimum,
+                    disabledReason: meetsMinimum
+                        ? undefined
+                        : `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`,
+                };
+            });
         renderNmCheckboxList(nmConfigOptions, items);
     }
 
@@ -123,6 +135,8 @@ export function initNickelMenu(state) {
     function resetNickelMenuState() {
         detectedOptionalCleanupFeatures = [];
         detectedPresetConflicts = [];
+        state.koboUserCount = undefined;
+        $('nm-sideloaded-banner').hidden = true;
         nmUninstallOptions.hidden = true;
         nmUninstallOptions.innerHTML = '';
         nmPresetConflictList.innerHTML = '';
@@ -181,8 +195,12 @@ export function initNickelMenu(state) {
 
     /** Return all features the user has selected for installation. */
     function getSelectedFeatures() {
+        const firmware = state.device?.deviceInfo?.firmware;
         return NICKELMENU_FEATURES.filter(f => {
             if (f.available === false) return false;
+            // Never install a feature the device's Kobo software is too old for,
+            // even if it is otherwise required/default.
+            if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
             if (f.required) return true;
             const checkbox = $q(`input[name="nm-cfg-${f.id}"]`);
             return checkbox && checkbox.checked;
@@ -493,7 +511,7 @@ export function initNickelMenu(state) {
             if (await maybeShowPresetConflictStep()) {
                 return;
             }
-            goToNmFeatures();
+            await goToNmFeatures();
         } else {
             await showNmBackupStep();
         }
@@ -507,21 +525,59 @@ export function initNickelMenu(state) {
         btnNmPresetConflictNext.disabled = !nmPresetConflictAck.checked;
     });
 
-    btnNmPresetConflictNext.addEventListener('click', () => {
+    btnNmPresetConflictNext.addEventListener('click', async () => {
         if (!nmPresetConflictAck.checked) return;
-        goToNmFeatures();
+        await goToNmFeatures();
     });
 
     // --- Step: Features ---
     // Checkboxes are rendered lazily on first visit, then preserved
     // so selections survive back-navigation.
 
-    function goToNmFeatures() {
+    async function goToNmFeatures() {
         if (!nmConfigOptions.children.length) {
             renderFeatureCheckboxes();
         }
+        await updateSideloadedRecommendation();
         setNavStep(3);
         showStep(stepNmFeatures);
+    }
+
+    // Cached user-row count for the connected device (undefined = not checked
+    // yet, null = couldn't be read). A factory-reset Kobo that was never signed
+    // in reads 0, which is when we recommend Sideloaded Mode.
+    async function getKoboUserCount() {
+        if (state.koboUserCount !== undefined) return state.koboUserCount;
+        if (state.manualMode || !state.device?.directoryHandle) {
+            state.koboUserCount = null;
+        } else {
+            state.koboUserCount = await countKoboUsers(state.device);
+        }
+        return state.koboUserCount;
+    }
+
+    // Show the "not signed in → enable Sideloaded Mode" banner when the device
+    // reads zero user rows, but only if Sideloaded Mode is actually available on
+    // this firmware. When shown, expand the Advanced section so the option the
+    // banner points at is visible.
+    async function updateSideloadedRecommendation() {
+        const banner = $('nm-sideloaded-banner');
+        const firmware = state.device?.deviceInfo?.firmware;
+        const sideloaded = NICKELMENU_FEATURES.find(f => f.id === 'sideloaded-mode');
+        if (!meetsMinimumVersion(firmware, sideloaded?.minimumVersion)) {
+            banner.hidden = true;
+            return;
+        }
+
+        const userCount = await getKoboUserCount();
+        banner.hidden = userCount !== 0;
+
+        if (userCount === 0) {
+            for (const section of $qa('.nm-config-section', nmConfigOptions)) {
+                const title = $q('.nm-config-section-title', section);
+                if (title && title.textContent === sideloaded.section) section.open = true;
+            }
+        }
     }
 
     btnNmFeaturesBack.addEventListener('click', async () => {

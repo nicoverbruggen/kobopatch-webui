@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseKoboVersion } from '../../src/js/kobo/version.js';
+import { parseKoboVersion, compareFirmware, meetsMinimumVersion } from '../../src/js/kobo/version.js';
 
 const HARDWARE_ID = '00000000-0000-0000-0000-000000000390';
 
@@ -59,4 +59,22 @@ test('parseKoboVersion marks firmware 4.6 and later 4.x versions as compatible',
 
 test('parseKoboVersion marks firmware 5.x as incompatible', () => {
     assert.equal(parseKoboVersion(versionLine('N4284B5215352', '5.0.0')).isIncompatible, true);
+});
+
+test('compareFirmware orders versions segment-by-segment, ignoring trailing zeros', () => {
+    assert.equal(compareFirmware('4.45.23646', '4.31'), 1);
+    assert.equal(compareFirmware('4.28.17820', '4.31'), -1);
+    assert.equal(compareFirmware('4.31', '4.31.0'), 0);
+    assert.equal(compareFirmware('4.31.1', '4.31'), 1);
+    assert.equal(compareFirmware('4.9.0', '4.10.0'), -1); // numeric, not lexical
+});
+
+test('meetsMinimumVersion gates only when a known firmware is below the floor', () => {
+    assert.equal(meetsMinimumVersion('4.45.23646', '4.31'), true);
+    assert.equal(meetsMinimumVersion('4.31.0', '4.31'), true);
+    assert.equal(meetsMinimumVersion('4.28.17820', '4.31'), false);
+    // No minimum, or an unknown firmware (manual mode), is never gated.
+    assert.equal(meetsMinimumVersion('4.28.17820', undefined), true);
+    assert.equal(meetsMinimumVersion(undefined, '4.31'), true);
+    assert.equal(meetsMinimumVersion('', '4.31'), true);
 });

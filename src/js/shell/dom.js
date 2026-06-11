@@ -47,7 +47,7 @@ export function populateSelect(selectEl, placeholder, items) {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, hint?: string, sectionTitle?: string, sectionDescription?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -102,6 +102,8 @@ export function renderNmCheckboxList(container, items) {
         const label = document.createElement('label');
         label.className = 'nm-config-item';
 
+        if (item.disabled) label.classList.add('nm-config-item--disabled');
+
         const input = document.createElement('input');
         input.type = 'checkbox';
         input.name = item.name;
@@ -121,6 +123,16 @@ export function renderNmCheckboxList(container, items) {
 
         textDiv.appendChild(titleSpan);
         textDiv.appendChild(descSpan);
+
+        // Explain (in red) why a feature is unavailable, e.g. when the device's
+        // Kobo software is older than the feature's minimum supported version.
+        if (item.disabledReason) {
+            const reason = document.createElement('span');
+            reason.className = 'nm-config-disabled-reason';
+            reason.textContent = item.disabledReason;
+            textDiv.appendChild(reason);
+        }
+
         label.appendChild(input);
         label.appendChild(textDiv);
 

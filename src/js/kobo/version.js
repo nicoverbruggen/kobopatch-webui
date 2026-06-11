@@ -71,4 +71,34 @@ function parseKoboVersion(content) {
     };
 }
 
-export { koboModels, parseKoboVersion };
+/**
+ * Compare two Kobo firmware version strings (e.g. "4.45.23646" vs "4.31").
+ * Compares segment-by-segment numerically; missing trailing segments count as
+ * 0, so "4.31" and "4.31.0" are equal. Returns -1, 0, or 1.
+ */
+function compareFirmware(a, b) {
+    const partsA = String(a).split('.').map(n => parseInt(n, 10) || 0);
+    const partsB = String(b).split('.').map(n => parseInt(n, 10) || 0);
+    const length = Math.max(partsA.length, partsB.length);
+
+    for (let i = 0; i < length; i++) {
+        const segmentA = partsA[i] || 0;
+        const segmentB = partsB[i] || 0;
+        if (segmentA !== segmentB) return segmentA < segmentB ? -1 : 1;
+    }
+
+    return 0;
+}
+
+/**
+ * Whether `firmware` is at least `minimum`. A missing `minimum` means the
+ * feature has no floor; a missing `firmware` (e.g. manual mode, where the OS
+ * version is unknown) is treated as meeting it so we don't gate blindly.
+ */
+function meetsMinimumVersion(firmware, minimum) {
+    if (!minimum) return true;
+    if (!firmware) return true;
+    return compareFirmware(firmware, minimum) >= 0;
+}
+
+export { koboModels, parseKoboVersion, compareFirmware, meetsMinimumVersion };

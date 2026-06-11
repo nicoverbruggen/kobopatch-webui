@@ -5,6 +5,11 @@
     gap: 0.9rem;
 }
 
+/* Space between the "not signed in" recommendation and the feature list. */
+#nm-sideloaded-banner {
+    margin-bottom: 1.25rem;
+}
+
 .nm-config-section {
     padding: 0.7rem 0.9rem 0.55rem;
     border: 1px solid var(--border-light);
@@ -130,6 +135,22 @@
     color: var(--text-secondary);
     line-height: 1.5;
     margin-top: 0.1rem;
+}
+
+/* A feature unavailable on this device (e.g. Kobo software too old) is dimmed... */
+.nm-config-item--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ...with a red note explaining why it can't be enabled. */
+.nm-config-disabled-reason {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--error-text);
+    line-height: 1.4;
+    margin-top: 0.25rem;
 }
 
 #nm-backup-local-note {

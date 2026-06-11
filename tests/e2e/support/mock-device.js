@@ -1,6 +1,16 @@
 const { expect } = require('@playwright/test');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE = String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`;
+
+// Real (tiny) KoboReader.sqlite fixtures so sign-in detection — which parses the
+// actual SQLite b-tree — has genuine bytes to read. signed-in has one `user`
+// row; factory-reset has zero.
+const SIGNIN_FIXTURES = {
+  true: path.join(__dirname, 'fixtures', 'kobo-reader-signed-in.sqlite'),
+  false: path.join(__dirname, 'fixtures', 'kobo-reader-factory-reset.sqlite'),
+};
 
 // A real Kobo eReader.conf ships a [Reading] section with these keys present but
 // empty. Including them lets tests verify that better-typography updates them in
@@ -29,6 +39,9 @@ const defaultConfig = {
   extraAddsDirs: [],
   extraAddsFiles: [],
   rootFolders: [],
+  // null = leave the placeholder KoboReader.sqlite (sign-in unknown); true/false
+  // swaps in a real fixture so detection reads a signed-in or factory-reset db.
+  signedIn: null,
 };
 
 async function injectMockDevice(page, opts = {}) {
@@ -37,8 +50,15 @@ async function injectMockDevice(page, opts = {}) {
     ? '[General]\nsome=setting\n[FeatureSettings]\n' + EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n' + READING_DEFAULTS
     : '[General]\nsome=setting\n' + READING_DEFAULTS);
 
+  // Load the matching KoboReader.sqlite fixture (as base64) when a sign-in state
+  // is requested, so the in-page mock can expose its real bytes.
+  if (config.signedIn === true || config.signedIn === false) {
+    config.koboReaderSqliteBase64 = fs.readFileSync(SIGNIN_FIXTURES[config.signedIn]).toString('base64');
+  }
+
   await page.evaluate((config) => {
     const file = (content = '') => ({ _type: 'file', content });
+    const binaryFile = (bytes) => ({ _type: 'file', bytes });
     const dir = (children = {}) => ({ _type: 'dir', ...children });
 
     const filesystem = dir({
@@ -129,6 +149,15 @@ async function injectMockDevice(page, opts = {}) {
       filesystem[folderName] = dir();
     }
 
+    // Swap the placeholder KoboReader.sqlite for a real fixture (decoded from
+    // base64) so sign-in detection parses genuine SQLite bytes.
+    if (config.koboReaderSqliteBase64) {
+      const binary = atob(config.koboReaderSqliteBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      filesystem['.kobo']['KoboReader.sqlite'] = binaryFile(bytes);
+    }
+
     window.__mockFS = filesystem;
     window.__mockWrittenFiles = {};
     window.__mockRemovedEntries = [];
@@ -137,6 +166,15 @@ async function injectMockDevice(page, opts = {}) {
       return {
         getFile: async () => {
           const fileNode = dirNode[fileName];
+          // Binary nodes (e.g. the KoboReader.sqlite fixture) carry raw bytes;
+          // everything else stores text content.
+          if (fileNode && fileNode.bytes) {
+            const bytes = fileNode.bytes;
+            return {
+              text: async () => new TextDecoder().decode(bytes),
+              arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+            };
+          }
           const content = fileNode ? (fileNode.content || '') : '';
           return {
             text: async () => content,

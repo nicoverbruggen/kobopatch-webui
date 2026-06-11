@@ -10,6 +10,7 @@ import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/i
 import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
+import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { createResponse, text } from './test-helpers.js';
 
 async function createZip(entries) {
@@ -114,6 +115,22 @@ test('Better Typography ships the toggle script and inserts its Tweak menu item 
     assert.doesNotMatch(result, /Legibility/);
     // Existing items are preserved.
     assert.match(result, /^menu_item :main :Screenshots/m);
+});
+
+test('Sideloaded Mode sets SideloadedMode under ApplicationPreferences and declares a 4.31 floor', () => {
+    assert.equal(sideloadedMode.minimumVersion, '4.31');
+    assert.equal(sideloadedMode.default, false);
+    assert.deepEqual(sideloadedMode.confSettings(), [
+        { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' },
+    ]);
+});
+
+test('Sideloaded Mode cleanup detects and reverts only its own conf key', () => {
+    const setting = { section: 'ApplicationPreferences', key: 'SideloadedMode', value: 'true' };
+    const { cleanup } = sideloadedMode;
+    assert.equal(cleanup.mode, 'optional');
+    assert.deepEqual(cleanup.detectConf, [setting]);
+    assert.deepEqual(cleanup.revertConf, [{ ...setting, revertTo: null }]);
 });
 
 test('Better Typography postProcess is a no-op when the items file is absent', () => {

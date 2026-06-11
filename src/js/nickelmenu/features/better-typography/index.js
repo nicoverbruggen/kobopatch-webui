@@ -32,7 +32,7 @@ export default {
     id: 'better-typography',
     section: 'Text and typography',
     title: 'Enable better typography',
-    description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. When the additional fonts are also installed, KF Libron is set as the default reading font. Adds a "Typography Mode" item to the Tweak menu so you can switch this rendering on or off later.',
+    description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Tweak menu so you can switch this rendering on or off later.',
     default: true,
 
     // The WebKit rendering setting and the toggle script are owned by this

@@ -579,3 +579,42 @@ test('disclaimer dialog', async ({ page }, testInfo) => {
   await page.waitForTimeout(200);
   await page.screenshot({ path: `screenshots/${testInfo.project.name}/${dir}/disclaimer-dialog.png` });
 });
+
+// Walk a connected device to the preset feature-selection step.
+const goToNmFeaturesForShot = async (page) => {
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+  await page.click('#btn-device-next');
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+};
+
+// Factory-reset (not signed in) Kobo: the feature step recommends Sideloaded
+// Mode and auto-expands the Advanced section that holds the option.
+test('connected nickelmenu sideloaded recommendation', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page, { signedIn: false });
+  await goToNmFeaturesForShot(page);
+  await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
+  await shot(page, dir, '06b-nickelmenu-sideloaded-recommendation', testInfo);
+});
+
+// Edge case: Kobo software older than Sideloaded Mode's 4.31 minimum. The option
+// is shown disabled with a red explanation; no recommendation banner.
+test('sideloaded mode too old os', async ({ page }, testInfo) => {
+  const dir = 'edge-cases';
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page, { firmware: '4.28.17820', signedIn: false });
+  await goToNmFeaturesForShot(page);
+  // Open the (collapsed) Advanced section so the disabled option is visible.
+  await page.locator('summary.nm-config-section-heading').filter({ hasText: 'Advanced' }).click();
+  await expect(page.locator('.nm-config-disabled-reason')).toBeVisible();
+  await shot(page, dir, 'sideloaded-mode-too-old-os', testInfo);
+});
