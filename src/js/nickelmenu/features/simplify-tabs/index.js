@@ -4,9 +4,9 @@ import { prependToNmConfig } from '../helpers.js';
 // "Discover" tabs and surfaces reading stats as a separate "Stats" tab. This
 // feature alone owns the navigation-tab override, so it also owns the Tweak-menu
 // item and script that toggle it on the device — no capability flag or
-// custom-menu coordination needed. The script flips the master
-// menu_main_15505_enabled switch in the items file and reboots; it lives under
-// .adds/nm/scripts so NickelMenu removal's recursive delete cleans it up.
+// custom-menu coordination needed. The script comments or uncomments the tab
+// override lines in the items file and reboots; it lives under .adds/nm/scripts
+// so NickelMenu removal's recursive delete cleans it up.
 export default {
     id: 'simplify-tabs',
     section: 'Interface tweaks',
