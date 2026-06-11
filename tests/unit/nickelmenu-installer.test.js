@@ -54,8 +54,6 @@ test('installToDevice with features updates eReader config and writes feature fi
         koboEReaderConfPath,
         '.adds/nm/items',
         '.adds/nm/.cog.png',
-        '.adds/scripts/legibility_status.sh',
-        '.adds/scripts/toggle_wk_rendering.sh',
     ]);
     assert.match(text(device.writeFor(koboEReaderConfPath).data), /^\[ApplicationPreferences\]\nCurrentLocale=en_US\n\n\[FeatureSettings\]\nExcludeSyncFolders=/);
     assert.equal(text(device.writeFor('.adds/nm/items').data), 'menu_item :main :base');
@@ -168,8 +166,6 @@ test('buildDownloadZip with features includes feature files but not Kobo eReader
             '.kobo/KoboRoot.tgz',
             '.adds/nm/items',
             '.adds/nm/.cog.png',
-            '.adds/scripts/legibility_status.sh',
-            '.adds/scripts/toggle_wk_rendering.sh',
         ]);
         assert.equal(
             await zip.file('.adds/nm/items').async('string'),

@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
+
+// better-typography owns the only file that lands in .adds/scripts (its
+// Typography Toggle script) and the cleanup that removes the directory when it
+// becomes empty, so it stands in for "an optional feature with files to remove".
+const typographyScriptPath = '.adds/scripts/toggle_typography.sh';
 import {
     buildExcludeSyncFoldersLine,
     legacyBrokenExcludeSyncFoldersLines,
@@ -51,13 +57,13 @@ test('hasAddsDirectoriesRequiringSyncExclusions ignores only the NickelMenu dire
     ]), true);
 });
 
-test('executeNickelMenuRemoval removes NickelMenu assets, preset scripts, and creates uninstall marker', async () => {
+test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files, and creates uninstall marker', async () => {
     const installer = createInstaller();
     const device = new RecordingDevice({
         existingEntries: [
             '.adds/nm',
             '.adds/scripts',
-            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: typographyScriptPath, kind: 'file' },
         ],
     });
     const progress = createProgressRecorder();
@@ -65,7 +71,7 @@ test('executeNickelMenuRemoval removes NickelMenu assets, preset scripts, and cr
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [customMenu],
+        cleanupFeatures: [betterTypography],
         shouldRemoveSyncExclusions: async () => false,
         onProgress: progress,
     });
@@ -74,10 +80,11 @@ test('executeNickelMenuRemoval removes NickelMenu assets, preset scripts, and cr
         koboRootTgzPath,
         pathString(nickelMenuUninstallMarkerPath),
     ]);
+    // Optional cleanup runs after the uninstall marker: the toggle script is
+    // removed, then .adds/scripts is dropped because it is now empty.
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
-        '.adds/scripts/legibility_status.sh',
-        '.adds/scripts/toggle_wk_rendering.sh',
+        typographyScriptPath,
         '.adds/scripts',
     ]);
     assert.deepEqual(device.removalFor('.adds/nm').options, { recursive: true });
@@ -87,6 +94,7 @@ test('executeNickelMenuRemoval removes NickelMenu assets, preset scripts, and cr
         'Writing KoboRoot.tgz...',
         'Removing NickelMenu assets...',
         'Creating uninstall marker...',
+        'Removing Better typography...',
     ]);
 });
 
@@ -96,7 +104,7 @@ test('executeNickelMenuRemoval removes selected feature cleanup paths only', asy
         existingEntries: [
             '.adds/nm',
             '.adds/scripts',
-            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: typographyScriptPath, kind: 'file' },
             { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
     });
@@ -104,14 +112,13 @@ test('executeNickelMenuRemoval removes selected feature cleanup paths only', asy
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [customMenu, screensaver],
+        cleanupFeatures: [betterTypography, screensaver],
         shouldRemoveSyncExclusions: async () => false,
     });
 
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
-        '.adds/scripts/legibility_status.sh',
-        '.adds/scripts/toggle_wk_rendering.sh',
+        typographyScriptPath,
         '.adds/scripts',
         '.kobo/screensaver/moon.png',
     ]);
@@ -123,7 +130,7 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
     const device = new RecordingDevice({
         existingEntries: [
             '.adds/scripts',
-            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: typographyScriptPath, kind: 'file' },
             { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
         failRemovePaths: ['.adds/nm', '.kobo/screensaver/moon.png'],
@@ -133,7 +140,7 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [customMenu, screensaver],
+        cleanupFeatures: [betterTypography, screensaver],
         shouldRemoveSyncExclusions: async () => false,
         logger,
     });
@@ -143,8 +150,7 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
         pathString(nickelMenuUninstallMarkerPath),
     ]);
     assert.deepEqual(device.removePaths(), [
-        '.adds/scripts/legibility_status.sh',
-        '.adds/scripts/toggle_wk_rendering.sh',
+        typographyScriptPath,
         '.adds/scripts',
     ]);
     assert.equal(logger.messages.length, 2);
@@ -158,7 +164,7 @@ test('executeNickelMenuRemoval keeps .adds/scripts when non-owned files remain',
         existingEntries: [
             '.adds/nm',
             '.adds/scripts',
-            ...customMenu.cleanup.paths.map(path => ({ path, kind: 'file' })),
+            { path: typographyScriptPath, kind: 'file' },
             { path: '.adds/scripts/user-script.sh', kind: 'file' },
         ],
     });
@@ -166,7 +172,7 @@ test('executeNickelMenuRemoval keeps .adds/scripts when non-owned files remain',
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [customMenu],
+        cleanupFeatures: [betterTypography],
         shouldRemoveSyncExclusions: async () => false,
     });
 
@@ -174,8 +180,7 @@ test('executeNickelMenuRemoval keeps .adds/scripts when non-owned files remain',
     assert.equal(await device.pathExists(['.adds', 'scripts', 'user-script.sh']), true);
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
-        '.adds/scripts/legibility_status.sh',
-        '.adds/scripts/toggle_wk_rendering.sh',
+        typographyScriptPath,
     ]);
 });
 

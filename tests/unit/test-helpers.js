@@ -50,8 +50,6 @@ function useCustomMenuAssetFetch() {
     const assets = new Map([
         ['js/nickelmenu/features/custom-menu/items', 'menu_item :main :base'],
         ['js/nickelmenu/features/custom-menu/.cog.png', 'cog png'],
-        ['js/nickelmenu/features/custom-menu/scripts/legibility_status.sh', '#!/bin/sh\nlegibility'],
-        ['js/nickelmenu/features/custom-menu/scripts/toggle_wk_rendering.sh', '#!/bin/sh\ntoggle'],
     ]);
 
     globalThis.fetch = async (url) => {

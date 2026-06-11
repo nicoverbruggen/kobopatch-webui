@@ -84,6 +84,57 @@ test('Better Typography sets reading rendering and alignment; default font only 
     );
 });
 
+test('Better Typography ships the toggle script and inserts its Tweak menu item after the header', async () => {
+    // install() ships the on-device toggle script from the feature's own assets.
+    const requested = [];
+    const ctx = {
+        async asset(path) {
+            requested.push(path);
+            return new TextEncoder().encode('#!/bin/sh\ntoggle');
+        },
+    };
+    const installed = await betterTypography.install(ctx);
+    assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
+    assert.deepEqual(installed.map(f => f.path), ['.adds/scripts/toggle_typography.sh']);
+
+    // postProcess() inserts the single "Typography Toggle" entry right after the
+    // menu header (the same placement the screensaver toggle uses).
+    const files = itemsFiles(
+        'experimental :menu_main_15505_label :Tweak',
+        'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
+        '',
+        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
+    );
+    const result = itemsText(betterTypography.postProcess(files));
+    const lines = result.split('\n');
+    const headerIndex = lines.findIndex(l => /menu_main_15505_icon/.test(l));
+    assert.equal(lines[headerIndex + 1], '');
+    assert.equal(lines[headerIndex + 2], 'menu_item :main :Typography Mode    :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh');
+    // The old two-entry Legibility pair is gone, replaced by one toggle.
+    assert.doesNotMatch(result, /Legibility/);
+    // Existing items are preserved.
+    assert.match(result, /^menu_item :main :Screenshots/m);
+});
+
+test('Better Typography postProcess is a no-op when the items file is absent', () => {
+    const files = [{ path: '.adds/koreader/koreader.sh', data: '#!/bin/sh' }];
+    assert.deepEqual(betterTypography.postProcess(files), files);
+});
+
+test('Better Typography cleanup detects and removes both the toggle script and the WebKit setting', () => {
+    const webkit = { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility' };
+    const { cleanup } = betterTypography;
+
+    assert.equal(cleanup.mode, 'optional');
+    // Detected by either the on-device script or the conf line (the toggle can
+    // turn the conf line off while leaving the script installed).
+    assert.deepEqual(cleanup.detect, [['.adds', 'scripts', 'toggle_typography.sh']]);
+    assert.deepEqual(cleanup.detectConf, [webkit]);
+    assert.deepEqual(cleanup.paths, [{ path: ['.adds', 'scripts', 'toggle_typography.sh'] }]);
+    assert.deepEqual(cleanup.removeParentDirsIfEmpty, [['.adds', 'scripts']]);
+    assert.deepEqual(cleanup.revertConf, [{ ...webkit, revertTo: null }]);
+});
+
 test('KOReader install maps ZIP files under .adds/koreader', async () => {
     const zipData = await createZip({
         'koreader/koreader.sh': '#!/bin/sh',
@@ -205,8 +256,6 @@ test('custom menu install fetches the real preset asset paths', async () => {
     const assets = new Map([
         ['items', 'menu'],
         ['.cog.png', 'cog'],
-        ['scripts/legibility_status.sh', 'legibility'],
-        ['scripts/toggle_wk_rendering.sh', 'toggle'],
     ]);
     const ctx = {
         async asset(path) {
@@ -220,13 +269,9 @@ test('custom menu install fetches the real preset asset paths', async () => {
     assert.deepEqual(requested, [
         'items',
         '.cog.png',
-        'scripts/legibility_status.sh',
-        'scripts/toggle_wk_rendering.sh',
     ]);
     assert.deepEqual(files.map(file => file.path), [
         '.adds/nm/items',
         '.adds/nm/.cog.png',
-        '.adds/scripts/legibility_status.sh',
-        '.adds/scripts/toggle_wk_rendering.sh',
     ]);
 });

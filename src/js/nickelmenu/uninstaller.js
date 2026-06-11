@@ -100,7 +100,7 @@ async function executeNickelMenuRemoval({
     onProgress('Creating uninstall marker...');
     await device.writeFile(nickelMenuUninstallMarkerPath, new Uint8Array(0));
 
-    const optionalCleanupFeatures = cleanupFeatures.filter(feature => feature.cleanup?.mode !== 'always');
+    const optionalCleanupFeatures = cleanupFeatures.filter(feature => feature.cleanup && feature.cleanup.mode !== 'always');
     for (const feature of optionalCleanupFeatures) {
         onProgress('Removing ' + feature.cleanup.title + '...');
         await executeFeatureCleanup(device, feature, logger);

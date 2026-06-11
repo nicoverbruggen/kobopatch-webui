@@ -16,17 +16,6 @@ function commentOutDarkMode(items) {
         .join('\n');
 }
 
-const presetScripts = [
-    {
-        path: '.adds/scripts/legibility_status.sh',
-        asset: 'scripts/legibility_status.sh',
-    },
-    {
-        path: '.adds/scripts/toggle_wk_rendering.sh',
-        asset: 'scripts/toggle_wk_rendering.sh',
-    },
-];
-
 const customMenu = {
     id: 'custom-menu',
     section: 'Interface tweaks',
@@ -34,11 +23,10 @@ const customMenu = {
     description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak".',
     default: true,
     required: true,
-    cleanup: {
-        mode: 'always',
-        paths: presetScripts.map(script => script.path),
-        removeParentDirsIfEmpty: [['.adds', 'scripts']],
-    },
+    // No per-feature cleanup: everything this feature ships lives under .adds/nm,
+    // which NickelMenu removal deletes recursively. The Typography Toggle script
+    // (the only thing that used to land in .adds/scripts) is now owned by the
+    // better-typography feature.
 
     // The preset's Dark Mode item only works on devices whose firmware has a
     // Dark mode setting. On older devices we drop the item (see postProcess) and
@@ -63,10 +51,6 @@ const customMenu = {
         return [
             { path: '.adds/nm/items', data: await ctx.asset('items') },
             { path: '.adds/nm/.cog.png', data: await ctx.asset('.cog.png') },
-            ...await Promise.all(presetScripts.map(async script => ({
-                path: script.path,
-                data: await ctx.asset(script.asset),
-            }))),
         ];
     },
 

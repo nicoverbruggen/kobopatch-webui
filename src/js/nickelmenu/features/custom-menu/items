@@ -6,10 +6,6 @@ menu_item :main :Auto USB           :nickel_setting     :toggle :auto_usb_gadget
 
 menu_item :library :Rescan books    :nickel_misc        :rescan_books_full
 
-menu_item :main :Legibility Status    :cmd_output :500 :/mnt/onboard/.adds/scripts/legibility_status.sh
-
-menu_item :main :Legibility Toggle    :cmd_output :5000 :/mnt/onboard/.adds/scripts/toggle_wk_rendering.sh
-
 menu_item :main    :IP Address      :cmd_output         :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
 
 menu_item :main :Invert & Reboot    :nickel_setting :toggle: invert
