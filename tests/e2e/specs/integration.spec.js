@@ -1098,7 +1098,7 @@ test.describe('NickelMenu', () => {
     // Detected via its conf setting, offered for removal with its own label.
     await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
     await expect(page.locator('input[name="nm-uninstall-better-typography"]')).toBeChecked();
-    await expect(page.locator('#nm-uninstall-options')).toContainText('Turn off optimized WebKit rendering');
+    await expect(page.locator('#nm-uninstall-options')).toContainText('Turn off better typography');
 
     await page.click('#btn-nm-next');
     await skipNmBackup(page);

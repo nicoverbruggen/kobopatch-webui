@@ -24,8 +24,8 @@ export default {
     cleanup: {
         mode: 'optional',
         title: 'Better typography',
-        removeLabel: 'Turn off optimized WebKit rendering',
-        description: 'Removes the webkitTextRendering setting from Kobo eReader.conf. Your text alignment and reading font are left as they are.',
+        removeLabel: 'Turn off better typography',
+        description: 'Removes the special setting that enables correct kerning and ligatures in certain books. Your default font and reading settings are not changed.',
         detectConf: [WEBKIT_RENDERING],
         revertConf: [{ ...WEBKIT_RENDERING, revertTo: null }],
     },
