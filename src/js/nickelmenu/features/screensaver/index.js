@@ -1,6 +1,7 @@
-// The Tweak-menu entry that toggles the screensaver on/off. Added to the
+// The Tweak-menu entry that toggles the screensaver on/off. Contributed to the
 // NickelMenu items file only when this feature is installed, so the menu never
-// offers a toggle for a screensaver that isn't there.
+// offers a toggle for a screensaver that isn't there. Order 10 keeps it near the
+// top of the menu, its original position.
 const SCREENSAVER_MENU_ITEM = [
     'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
     '      chain_failure : skip : 3',
@@ -10,10 +11,6 @@ const SCREENSAVER_MENU_ITEM = [
     '      chain_failure : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.kobo/screensaver /mnt/onboard/.disabled/screensaver',
     '      chain_success : dbg_toast : Screensaver is now OFF.',
 ];
-
-// The item is inserted right after the Tweak menu header so it keeps its
-// original position at the top of the menu.
-const MENU_HEADER_PATTERN = /^experimental :menu_main_15505_icon\b/;
 
 export default {
     id: 'screensaver',
@@ -39,18 +36,9 @@ export default {
         ];
     },
 
-    // postProcess only runs when this feature is selected, so the toggle is added
+    // menuItems only runs when this feature is selected, so the toggle is added
     // exactly when the screensaver image is also installed.
-    postProcess(files) {
-        const items = files.find(f => f.path === '.adds/nm/items');
-        if (!items || typeof items.data !== 'string') return files;
-
-        const lines = items.data.split('\n');
-        const headerIndex = lines.findIndex(line => MENU_HEADER_PATTERN.test(line));
-        const insertAt = headerIndex === -1 ? lines.length : headerIndex + 1;
-        lines.splice(insertAt, 0, '', ...SCREENSAVER_MENU_ITEM);
-        items.data = lines.join('\n');
-
-        return files;
+    menuItems() {
+        return [{ id: 'screensaver', order: 10, lines: SCREENSAVER_MENU_ITEM }];
     },
 };

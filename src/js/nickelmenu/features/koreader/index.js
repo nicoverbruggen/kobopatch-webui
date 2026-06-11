@@ -1,5 +1,9 @@
 import JSZip from 'jszip';
-import { prependToNmConfig } from '../helpers.js';
+
+// The Tweak-menu entry that launches KOReader. Order 5 keeps it at the very top
+// of the menu (just below the Tweak tab header), where it was previously
+// prepended.
+const KOREADER_MENU_ITEM = 'menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh';
 
 export default {
     id: 'koreader',
@@ -63,5 +67,7 @@ export default {
         return files;
     },
 
-    postProcess: prependToNmConfig('menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'),
+    menuItems() {
+        return [{ id: 'koreader', order: 5, lines: [KOREADER_MENU_ITEM] }];
+    },
 };

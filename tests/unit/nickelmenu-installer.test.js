@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import JSZip from 'jszip';
 
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
+import { AuditLog } from '../../src/js/kobo/audit-log.js';
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import excludeCalibre from '../../src/js/nickelmenu/features/exclude-calibre/index.js';
 import hideNotices from '../../src/js/nickelmenu/features/hide-notices/index.js';
@@ -52,11 +53,15 @@ test('installToDevice with features updates eReader config and writes feature fi
     assert.deepEqual(device.writePaths(), [
         koboRootTgzPath,
         koboEReaderConfPath,
-        '.adds/nm/items',
         '.adds/nm/.cog.png',
+        '.adds/nm/items',
     ]);
     assert.match(text(device.writeFor(koboEReaderConfPath).data), /^\[ApplicationPreferences\]\nCurrentLocale=en_US\n\n\[FeatureSettings\]\nExcludeSyncFolders=/);
-    assert.equal(text(device.writeFor('.adds/nm/items').data), 'menu_item :main :base');
+    // The items file is generated from the feature menuItems hooks.
+    const items = text(device.writeFor('.adds/nm/items').data);
+    assert.match(items, /^experimental :menu_main_15505_label :Tweak\n/);
+    assert.match(items, /^menu_item :main :Screenshots/m);
+    assert.match(items, /^menu_item :reader :Dark Mode/m);
 });
 
 test('installToDevice uses the calibre sync exclusion when exclude-calibre is selected', async () => {
@@ -92,7 +97,45 @@ test('installToDevice writes post-processed NickelMenu items as bytes', async ()
 
     const itemsWrite = device.writeFor('.adds/nm/items');
     assert.ok(itemsWrite.data instanceof Uint8Array);
-    assert.equal(text(itemsWrite.data), 'menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n');
+    const items = text(itemsWrite.data);
+    // hide-notices appends its flag to the generated items file...
+    assert.match(items, /experimental:hide_home_row3_enabled:1\n$/);
+    // ...and custom-menu adds the universal home-content toggle item.
+    assert.match(items, /toggle_hidden_home\.sh/);
+});
+
+test('installToDevice writes an audit log under .kobopatch-webui when an AuditLog is passed', async () => {
+    const restoreFetch = useCustomMenuAssetFetch();
+    const installer = createInstaller();
+    const device = new RecordingDevice();
+    const audit = new AuditLog(new Date(2026, 5, 11, 14, 30));
+
+    try {
+        await installer.installToDevice(device, [customMenu], createProgressRecorder(), { audit });
+    } finally {
+        restoreFetch();
+    }
+
+    const logPath = '.kobopatch-webui/log-26-06-11_14-30.log';
+    assert.ok(device.writePaths().includes(logPath));
+    const log = text(device.writeFor(logPath).data);
+    assert.match(log, /wrote \.kobo\/KoboRoot\.tgz/);
+    assert.match(log, /Set Kobo eReader\.conf ExcludeSyncFolders=/);
+    assert.match(log, /Wrote \.adds\/nm\/items/);
+});
+
+test('installToDevice writes no audit log when none is passed', async () => {
+    const restoreFetch = useCustomMenuAssetFetch();
+    const installer = createInstaller();
+    const device = new RecordingDevice();
+
+    try {
+        await installer.installToDevice(device, [customMenu], createProgressRecorder());
+    } finally {
+        restoreFetch();
+    }
+
+    assert.ok(!device.writePaths().some(path => path.startsWith('.kobopatch-webui/')));
 });
 
 test('installToDevice stops before config or feature writes if KoboRoot.tgz write fails', async () => {
@@ -109,12 +152,12 @@ test('installToDevice stops before config or feature writes if KoboRoot.tgz writ
 test('installToDevice stops writing remaining feature files after a feature write fails', async () => {
     const restoreFetch = useCustomMenuAssetFetch();
     const installer = createInstaller();
-    const device = new RecordingDevice({ failWritePath: '.adds/nm/items' });
+    const device = new RecordingDevice({ failWritePath: '.adds/nm/.cog.png' });
 
     try {
         await assert.rejects(
             () => installer.installToDevice(device, [customMenu], createProgressRecorder()),
-            /Refusing write to \.adds\/nm\/items/
+            /Refusing write to \.adds\/nm\/\.cog\.png/
         );
     } finally {
         restoreFetch();
@@ -164,12 +207,13 @@ test('buildDownloadZip with features includes feature files but not Kobo eReader
 
         assert.deepEqual(filePaths, [
             '.kobo/KoboRoot.tgz',
-            '.adds/nm/items',
             '.adds/nm/.cog.png',
+            '.adds/nm/scripts/toggle_hidden_home.sh',
+            '.adds/nm/items',
         ]);
-        assert.equal(
+        assert.match(
             await zip.file('.adds/nm/items').async('string'),
-            'menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n'
+            /experimental:hide_home_row3_enabled:1\n$/
         );
         assert.equal(zip.file(koboEReaderConfPath), null);
     } finally {

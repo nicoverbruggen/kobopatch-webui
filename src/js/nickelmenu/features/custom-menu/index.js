@@ -1,20 +1,76 @@
 import { darkModeSupport } from '../../../kobo/dark-mode.js';
 
-/**
- * Comment out the Dark Mode menu item (matched by its `:dark_mode` setting),
- * leaving an explanatory comment above it. Older devices have no Dark mode
- * setting, so the item would otherwise appear in the Tweak menu but do nothing.
- */
-function commentOutDarkMode(items) {
-    return items
-        .split('\n')
-        .flatMap(line =>
-            /:dark_mode\b/.test(line) && !line.trimStart().startsWith('#')
-                ? ['# Unsupported on your device so this line is commented out.', '# ' + line]
-                : [line]
-        )
-        .join('\n');
-}
+// The base Tweak-menu entries, owned by this feature. The NickelMenu `items`
+// file is no longer a static asset: each entry below is a data structure, and
+// the installer collects entries from every selected feature (via `menuItems`),
+// sorts them by `order`, and renders the file. Device-conditional items become a
+// simple "don't include this entry" instead of commenting out matched lines.
+//
+// `order` values leave gaps so other features can slot their own items in at the
+// right place — e.g. better-typography's "Typography Mode" sits at 50, the spot
+// the old "Legibility Toggle" used to occupy (between Rescan books and IP
+// Address), and the screensaver toggle sits near the top at 10.
+const HEADER = {
+    id: 'tweak-header',
+    order: 0,
+    lines: [
+        'experimental :menu_main_15505_label :Tweak',
+        'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
+    ],
+};
+
+const BASE_ITEMS = [
+    HEADER,
+    { id: 'screenshots', order: 20, lines: ['menu_item :main :Screenshots        :nickel_setting     :toggle :screenshots'] },
+    { id: 'auto-usb', order: 30, lines: ['menu_item :main :Auto USB           :nickel_setting     :toggle :auto_usb_gadget'] },
+    { id: 'rescan-books', order: 40, lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
+    {
+        id: 'ip-address',
+        order: 60,
+        lines: ["menu_item :main    :IP Address      :cmd_output         :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'"],
+    },
+    {
+        id: 'invert-reboot',
+        order: 70,
+        lines: [
+            'menu_item :main :Invert & Reboot    :nickel_setting :toggle: invert',
+            '    chain_success :power :reboot',
+        ],
+    },
+    { id: 'sleep', order: 80, lines: ['menu_item :main :Sleep              :power              :sleep'] },
+    { id: 'reboot', order: 90, lines: ['menu_item :main :Reboot             :power              :reboot'] },
+];
+
+// The Dark Mode item only works on devices whose firmware has a Dark mode
+// setting. On older devices we leave it out entirely (and surface the warning in
+// reviewNotices); previously it was shipped commented-out.
+const DARK_MODE = {
+    id: 'dark-mode',
+    order: 100,
+    lines: ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode'],
+};
+
+// Toggle items for the home-content / navigation-tab hiders. They are added only
+// when a feature declaring the matching capability flag is part of the install,
+// and run a universal script that flips every flag that kind of feature manages,
+// then reboots so NickelMenu re-reads the items file. The scripts live under
+// .adds/nm/scripts so NickelMenu removal's recursive delete cleans them up.
+const HIDDEN_HOME_SCRIPT_PATH = '.adds/nm/scripts/toggle_hidden_home.sh';
+const TABS_SCRIPT_PATH = '.adds/nm/scripts/toggle_tabs.sh';
+
+const HIDDEN_HOME_TOGGLE = {
+    id: 'toggle-hidden-home',
+    order: 92,
+    lines: ['menu_item :main :Show/hide home content :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
+};
+const TABS_TOGGLE = {
+    id: 'toggle-tabs',
+    order: 94,
+    lines: ['menu_item :main :Toggle navigation tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
+};
+
+const installsHomeContentToggle = (features = []) => features.some(f => f.hidesHomeContent);
+const installsTabsToggle = (features = []) => features.some(f => f.hidesTabs);
 
 const customMenu = {
     id: 'custom-menu',
@@ -23,14 +79,13 @@ const customMenu = {
     description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Tweak".',
     default: true,
     required: true,
-    // No per-feature cleanup: everything this feature ships lives under .adds/nm,
-    // which NickelMenu removal deletes recursively. The Typography Toggle script
-    // (the only thing that used to land in .adds/scripts) is now owned by the
-    // better-typography feature.
+    // No per-feature cleanup: everything this feature ships lives under .adds/nm
+    // (including the toggle scripts under .adds/nm/scripts), which NickelMenu
+    // removal deletes recursively.
 
     // The preset's Dark Mode item only works on devices whose firmware has a
-    // Dark mode setting. On older devices we drop the item (see postProcess) and
-    // surface this notice instead.
+    // Dark mode setting. On older devices it is left out of the menu (see
+    // menuItems) and we surface this notice instead.
     reviewNotices(ctx = {}) {
         if (darkModeSupport(ctx.deviceInfo) !== 'unsupported') return [];
         const model = ctx.deviceInfo?.model || 'your device';
@@ -47,21 +102,34 @@ const customMenu = {
         }];
     },
 
-    async install(ctx) {
-        return [
-            { path: '.adds/nm/items', data: await ctx.asset('items') },
+    // Ship the menu icon, plus the toggle scripts for whichever hiders are part
+    // of the install. install() receives the selected features so it can decide
+    // which scripts to ship.
+    async install(ctx = {}) {
+        const files = [
             { path: '.adds/nm/.cog.png', data: await ctx.asset('.cog.png') },
         ];
-    },
-
-    postProcess(files, ctx = {}) {
-        if (darkModeSupport(ctx.deviceInfo) !== 'unsupported') return files;
-
-        const items = files.find(f => f.path === '.adds/nm/items');
-        if (items && typeof items.data === 'string') {
-            items.data = commentOutDarkMode(items.data);
+        const features = ctx.features || [];
+        if (installsHomeContentToggle(features)) {
+            files.push({ path: HIDDEN_HOME_SCRIPT_PATH, data: await ctx.asset('scripts/toggle_hidden_home.sh') });
+        }
+        if (installsTabsToggle(features)) {
+            files.push({ path: TABS_SCRIPT_PATH, data: await ctx.asset('scripts/toggle_tabs.sh') });
         }
         return files;
+    },
+
+    // Contribute the base Tweak-menu entries. Dark Mode is dropped on unsupported
+    // devices, and the toggle items are added only when their feature is present.
+    menuItems(ctx = {}) {
+        const entries = [...BASE_ITEMS];
+        if (darkModeSupport(ctx.deviceInfo) !== 'unsupported') {
+            entries.push(DARK_MODE);
+        }
+        const features = ctx.features || [];
+        if (installsHomeContentToggle(features)) entries.push(HIDDEN_HOME_TOGGLE);
+        if (installsTabsToggle(features)) entries.push(TABS_TOGGLE);
+        return entries;
     },
 };
 

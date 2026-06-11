@@ -47,9 +47,12 @@ function createResponse(body, { status = 200, json = null } = {}) {
 
 function useCustomMenuAssetFetch() {
     const originalFetch = globalThis.fetch;
+    // The items file is generated from feature menuItems hooks now, so custom-menu
+    // only fetches the menu icon and (conditionally) the home/tab toggle scripts.
     const assets = new Map([
-        ['js/nickelmenu/features/custom-menu/items', 'menu_item :main :base'],
         ['js/nickelmenu/features/custom-menu/.cog.png', 'cog png'],
+        ['js/nickelmenu/features/custom-menu/scripts/toggle_hidden_home.sh', '#!/bin/sh\ntoggle home'],
+        ['js/nickelmenu/features/custom-menu/scripts/toggle_tabs.sh', '#!/bin/sh\ntoggle tabs'],
     ]);
 
     globalThis.fetch = async (url) => {

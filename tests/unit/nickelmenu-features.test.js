@@ -85,7 +85,7 @@ test('Better Typography sets reading rendering and alignment; default font only 
     );
 });
 
-test('Better Typography ships the toggle script and inserts its Tweak menu item after the header', async () => {
+test('Better Typography ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {
     // install() ships the on-device toggle script from the feature's own assets.
     const requested = [];
     const ctx = {
@@ -98,23 +98,15 @@ test('Better Typography ships the toggle script and inserts its Tweak menu item 
     assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
     assert.deepEqual(installed.map(f => f.path), ['.adds/scripts/toggle_typography.sh']);
 
-    // postProcess() inserts the single "Typography Toggle" entry right after the
-    // menu header (the same placement the screensaver toggle uses).
-    const files = itemsFiles(
-        'experimental :menu_main_15505_label :Tweak',
-        'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
-        '',
-        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
-    );
-    const result = itemsText(betterTypography.postProcess(files));
-    const lines = result.split('\n');
-    const headerIndex = lines.findIndex(l => /menu_main_15505_icon/.test(l));
-    assert.equal(lines[headerIndex + 1], '');
-    assert.equal(lines[headerIndex + 2], 'menu_item :main :Typography Mode    :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh');
-    // The old two-entry Legibility pair is gone, replaced by one toggle.
-    assert.doesNotMatch(result, /Legibility/);
-    // Existing items are preserved.
-    assert.match(result, /^menu_item :main :Screenshots/m);
+    // menuItems() contributes the single "Typography Mode" entry at order 50 —
+    // the spot the old "Legibility Toggle" occupied (between Rescan books at 40
+    // and IP Address at 60).
+    const entries = betterTypography.menuItems();
+    assert.deepEqual(entries, [{
+        id: 'typography',
+        order: 50,
+        lines: ['menu_item :main :Typography Mode    :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh'],
+    }]);
 });
 
 test('Sideload mode sets SideloadedMode under ApplicationPreferences and declares a 4.31 floor', () => {
@@ -155,9 +147,12 @@ test('Sideload mode cleanup detects and reverts only its own conf key', () => {
     assert.deepEqual(cleanup.revertConf, [{ ...setting, revertTo: null }]);
 });
 
-test('Better Typography postProcess is a no-op when the items file is absent', () => {
-    const files = [{ path: '.adds/koreader/koreader.sh', data: '#!/bin/sh' }];
-    assert.deepEqual(betterTypography.postProcess(files), files);
+test('KOReader contributes its launcher entry at the top of the menu', () => {
+    assert.deepEqual(koreader.menuItems(), [{
+        id: 'koreader',
+        order: 5,
+        lines: ['menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+    }]);
 });
 
 test('Better Typography cleanup detects and removes both the toggle script and the WebKit setting', () => {
@@ -204,20 +199,18 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
     });
 });
 
-test('NickelMenu post-process features preserve launcher ordering', () => {
+test('NickelMenu postProcess features prepend tab config and append hide flags', () => {
     const files = [
         { path: '.adds/nm/items', data: 'menu_item :main :base' },
     ];
 
     const processed = hideNotices.postProcess(
-        simplifyTabs.postProcess(
-            koreader.postProcess(files)
-        )
+        simplifyTabs.postProcess(files)
     );
     const items = processed[0].data;
 
+    // simplify-tabs prepends its tab config block, hide-notices appends its flag.
     assert.match(items, /^experimental :menu_main_15505_0_enabled: 1\n/);
-    assert.match(items, /menu_item:main:KOReader:cmd_spawn:quiet:exec \/mnt\/onboard\/\.adds\/koreader\/koreader\.sh\n\nmenu_item :main :base/);
     assert.match(items, /menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n$/);
 });
 
@@ -232,52 +225,33 @@ function itemsText(files) {
     return files.find(f => f.path === '.adds/nm/items').data;
 }
 
-test('custom menu comments out Dark Mode on unsupported devices', () => {
-    const files = itemsFiles(
-        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
-        'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode',
-    );
-
-    const result = itemsText(customMenu.postProcess(files, { deviceInfo: AURA_HD }));
-
-    assert.match(
-        result,
-        /# Unsupported on your device so this line is commented out\.\n# menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode/
-    );
-    // Unrelated items are left untouched.
-    assert.match(result, /^menu_item :main :Screenshots/m);
+test('custom menu omits the Dark Mode item on unsupported devices', () => {
+    const ids = customMenu.menuItems({ deviceInfo: AURA_HD }).map(e => e.id);
+    assert.ok(!ids.includes('dark-mode'));
+    // The rest of the base menu is still present.
+    assert.ok(ids.includes('tweak-header'));
+    assert.ok(ids.includes('screenshots'));
 });
 
-test('custom menu leaves Dark Mode intact on supported devices', () => {
-    const files = itemsFiles('menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
-    const result = itemsText(customMenu.postProcess(files, { deviceInfo: LIBRA_COLOUR }));
-    assert.equal(result, 'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+test('custom menu includes the Dark Mode item on supported devices', () => {
+    const entries = customMenu.menuItems({ deviceInfo: LIBRA_COLOUR });
+    const darkMode = entries.find(e => e.id === 'dark-mode');
+    assert.deepEqual(darkMode.lines, ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode']);
 });
 
-test('custom menu leaves Dark Mode intact when the device is unknown (e.g. manual mode)', () => {
-    const files = itemsFiles('menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
-    const result = itemsText(customMenu.postProcess(files, {}));
-    assert.equal(result, 'menu_item :reader :Dark Mode :nickel_setting :toggle :dark_mode');
+test('custom menu includes the Dark Mode item when the device is unknown (manual mode)', () => {
+    const ids = customMenu.menuItems({}).map(e => e.id);
+    assert.ok(ids.includes('dark-mode'));
 });
 
-test('screensaver feature inserts its Tweak menu toggle right after the menu header', () => {
-    const files = itemsFiles(
-        'experimental :menu_main_15505_label :Tweak',
-        'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
-        '',
-        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
-    );
+test('screensaver feature contributes its Tweak menu toggle near the top of the menu', () => {
+    const entries = screensaver.menuItems();
 
-    const result = itemsText(screensaver.postProcess(files));
-    const lines = result.split('\n');
-
-    // The toggle is added immediately below the icon header (its original spot).
-    const headerIndex = lines.findIndex(l => /menu_main_15505_icon/.test(l));
-    assert.equal(lines[headerIndex + 1], '');
-    assert.equal(lines[headerIndex + 2], 'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
-    assert.match(result, /Screensaver is now ON/);
-    // Existing items are preserved.
-    assert.match(result, /^menu_item :main :Screenshots/m);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].id, 'screensaver');
+    assert.equal(entries[0].order, 10);
+    assert.equal(entries[0].lines[0], 'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
+    assert.ok(entries[0].lines.some(l => /Screensaver is now ON/.test(l)));
 });
 
 test('custom menu reviewNotices warns only on unsupported devices', () => {
@@ -290,27 +264,55 @@ test('custom menu reviewNotices warns only on unsupported devices', () => {
     assert.match(notices[0].paragraphs[0], /Kobo Aura HD/);
 });
 
-test('custom menu install fetches the real preset asset paths', async () => {
+test('custom menu install ships only the menu icon when no hiders are selected', async () => {
     const requested = [];
-    const assets = new Map([
-        ['items', 'menu'],
-        ['.cog.png', 'cog'],
-    ]);
     const ctx = {
+        features: [],
         async asset(path) {
             requested.push(path);
-            return new TextEncoder().encode(assets.get(path));
+            return new TextEncoder().encode('asset');
         },
     };
 
     const files = await customMenu.install(ctx);
 
-    assert.deepEqual(requested, [
-        'items',
-        '.cog.png',
-    ]);
+    assert.deepEqual(requested, ['.cog.png']);
+    assert.deepEqual(files.map(file => file.path), ['.adds/nm/.cog.png']);
+});
+
+test('custom menu ships the toggle scripts and adds toggle items when hiders are selected', async () => {
+    const requested = [];
+    const features = [
+        { id: 'hide-notices', hidesHomeContent: true },
+        { id: 'simplify-tabs', hidesTabs: true },
+    ];
+    const ctx = {
+        features,
+        async asset(path) {
+            requested.push(path);
+            return new TextEncoder().encode('script');
+        },
+    };
+
+    const files = await customMenu.install(ctx);
+
+    // The icon plus both toggle scripts, shipped under .adds/nm/scripts so the
+    // recursive NickelMenu removal cleans them up.
+    assert.deepEqual(requested, ['.cog.png', 'scripts/toggle_hidden_home.sh', 'scripts/toggle_tabs.sh']);
     assert.deepEqual(files.map(file => file.path), [
-        '.adds/nm/items',
         '.adds/nm/.cog.png',
+        '.adds/nm/scripts/toggle_hidden_home.sh',
+        '.adds/nm/scripts/toggle_tabs.sh',
     ]);
+
+    const toggleItems = customMenu.menuItems({ features }).filter(e => e.id.startsWith('toggle-'));
+    assert.deepEqual(toggleItems.map(e => e.id), ['toggle-hidden-home', 'toggle-tabs']);
+    assert.match(toggleItems[0].lines[0], /toggle_hidden_home\.sh$/);
+    assert.match(toggleItems[1].lines[0], /toggle_tabs\.sh$/);
+});
+
+test('custom menu omits the toggle items when no hiders are selected', () => {
+    const ids = customMenu.menuItems({ features: [{ id: 'koreader' }] }).map(e => e.id);
+    assert.ok(!ids.includes('toggle-hidden-home'));
+    assert.ok(!ids.includes('toggle-tabs'));
 });

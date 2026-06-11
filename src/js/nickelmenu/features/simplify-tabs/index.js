@@ -19,6 +19,9 @@ export default {
     title: 'Simplify navigation tabs',
     description: 'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar, and this also makes your reading stats available as a separate "Stats" tab.',
     default: false,
+    // Declares that it customizes the navigation tabs, so custom-menu adds the
+    // "Toggle navigation tabs" Tweak item and ships its toggle script.
+    hidesTabs: true,
 
     postProcess: prependToNmConfig(TAB_CONFIG),
 };

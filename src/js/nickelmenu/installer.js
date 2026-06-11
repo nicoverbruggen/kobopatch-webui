@@ -51,12 +51,13 @@ export const NICKELMENU_FEATURES = [
 
 /**
  * Create the context passed to a feature's installer-time hooks (`install` and
- * `postProcess`). Every hook receives `deviceInfo` so features can adapt to the
- * connected hardware; installer-time hooks additionally get `asset` and
- * `progress`. Assets are fetched at runtime from the feature's directory under
+ * `postProcess`). Every hook receives `deviceInfo` and the selected `features`
+ * so features can adapt to the connected hardware and to what else is being
+ * installed; installer-time hooks additionally get `asset` and `progress`.
+ * Assets are fetched at runtime from the feature's directory under
  * /js/nickelmenu/features/<id>/.
  */
-function createContext(feature, progressFn, deviceInfo = null) {
+function createContext(feature, progressFn, deviceInfo = null, features = []) {
     const basePath = `js/nickelmenu/features/${feature.id}/`;
     return {
         async asset(relativePath) {
@@ -68,7 +69,41 @@ function createContext(feature, progressFn, deviceInfo = null) {
             progressFn(msg);
         },
         deviceInfo,
+        features,
     };
+}
+
+/**
+ * Assemble the NickelMenu `.adds/nm/items` file from the selected features'
+ * `menuItems` hooks. Each feature contributes ordered entries
+ * (`{ id, order, lines }`); they are sorted by `order` and rendered (entries
+ * separated by a blank line, trailing newline). Returns null when no feature
+ * contributes any entries (e.g. nothing that ships the Tweak menu is selected).
+ */
+function buildItemsFile(features, deviceInfo) {
+    const menuCtx = { deviceInfo, features };
+    const entries = [];
+    for (const feature of features) {
+        if (!feature.menuItems) continue;
+        entries.push(...feature.menuItems(menuCtx));
+    }
+    if (entries.length === 0) return null;
+
+    entries.sort((a, b) => a.order - b.order);
+    return entries.map(entry => entry.lines.join('\n')).join('\n\n') + '\n';
+}
+
+/**
+ * Best-effort write of the on-device audit log. Logging must never fail an
+ * install or removal, so write errors are logged and swallowed.
+ */
+export async function writeAuditLog(audit, device, logger = console) {
+    if (!audit) return;
+    try {
+        await audit.write(device);
+    } catch (err) {
+        logger.warn('Could not write audit log:', err);
+    }
 }
 
 export class NickelMenuInstaller {
@@ -107,28 +142,30 @@ export class NickelMenuInstaller {
         // Run install() for features that have it
         for (const feature of features) {
             if (!feature.install) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo);
+            const ctx = createContext(feature, progressFn, deviceInfo, features);
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
         }
 
-        // Decode binary items file to string for postProcess mutation
-        const itemsFile = files.find(f => f.path === '.adds/nm/items');
-        if (itemsFile && itemsFile.data instanceof Uint8Array) {
-            itemsFile.data = new TextDecoder().decode(itemsFile.data);
+        // Assemble the NickelMenu items file from the features' menuItems hooks.
+        // It is built as a string so postProcess features can still mutate it.
+        const itemsContent = buildItemsFile(features, deviceInfo);
+        if (itemsContent !== null) {
+            files.push({ path: '.adds/nm/items', data: itemsContent });
         }
 
-        // Run postProcess() for features that have it. Device info lets features
-        // adapt their output to the connected hardware (e.g. drop Dark Mode); a
-        // feature can also add its own menu items (e.g. the Screensaver toggle).
+        // Run postProcess() for features that have it. These mutate the assembled
+        // items string in place (simplify-tabs prepends tab config, the hide-*
+        // features append flags, sideloaded comments out the home-tab override).
+        const itemsFile = files.find(f => f.path === '.adds/nm/items');
         for (const feature of features) {
             if (!feature.postProcess) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo);
+            const ctx = createContext(feature, progressFn, deviceInfo, features);
             files = feature.postProcess(files, ctx);
         }
 
-        // Re-encode items file back to Uint8Array
+        // Encode the items file to bytes for writing.
         if (itemsFile && typeof itemsFile.data === 'string') {
             itemsFile.data = new TextEncoder().encode(itemsFile.data);
         }
@@ -139,17 +176,18 @@ export class NickelMenuInstaller {
     /**
      * Install to a connected Kobo device via File System Access API.
      */
-    async installToDevice(device, features, progressFn) {
+    async installToDevice(device, features, progressFn, { audit = null } = {}) {
         await this.loadNickelMenu(progressFn);
 
         progressFn('Writing KoboRoot.tgz...');
         const tgz = await this.getKoboRootTgz();
         await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
+        audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
 
         if (features.length > 0) {
             // Features may require the ignore block in the config, write it first
             progressFn('Updating Kobo eReader.conf...');
-            await this.updateEReaderConf(device, features);
+            await this.updateEReaderConf(device, features, audit);
 
             // After that, collect all practical files that need to be copied
             const files = await this.collectFiles(features, progressFn, device.deviceInfo);
@@ -161,10 +199,12 @@ export class NickelMenuInstaller {
                 const pathArray = path.split('/');
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 await device.writeFile(pathArray, fileData);
+                audit?.record(`Wrote ${path} (${fileData.length} bytes)`);
                 progressFn(`Writing files to Kobo (${i + 1} of ${totalFiles})...`);
             }
         }
 
+        await writeAuditLog(audit, device);
         progressFn('Done.');
     }
 
@@ -198,13 +238,14 @@ export class NickelMenuInstaller {
      * Add or update ExcludeSyncFolders in Kobo eReader.conf.
      * @param {object[]} features - selected features; if 'exclude-calibre' is included, the calibre folder is excluded.
      */
-    async updateEReaderConf(device, features = []) {
+    async updateEReaderConf(device, features = [], audit = null) {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
         const settingLine = getExcludeSyncFoldersLine(features);
         let content = setExcludeSyncFoldersLine(
             await device.readFile(confPath) || '',
             settingLine
         );
+        audit?.record(`Set Kobo eReader.conf ExcludeSyncFolders=${settingLine}`);
 
         // Apply any Kobo eReader.conf settings declared by selected features
         // (e.g. better-typography's reading/rendering preferences). Features pass
@@ -215,6 +256,7 @@ export class NickelMenuInstaller {
             if (!feature.confSettings) continue;
             for (const { section, key, value } of feature.confSettings(settingsCtx)) {
                 content = setConfSetting(content, section, key, value);
+                audit?.record(`Set Kobo eReader.conf [${section}] ${key}=${value}`);
             }
         }
 

@@ -18,6 +18,7 @@ import {
     hasAddsDirectoriesRequiringSyncExclusions,
     nickelMenuUninstallMarkerPath,
 } from '../../src/js/nickelmenu/uninstaller.js';
+import { AuditLog } from '../../src/js/kobo/audit-log.js';
 import {
     RecordingDevice,
     createInstaller,
@@ -96,6 +97,34 @@ test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files
         'Creating uninstall marker...',
         'Removing Better typography...',
     ]);
+});
+
+test('executeNickelMenuRemoval writes an audit log of the removal steps', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({
+        existingEntries: [
+            '.adds/nm',
+            '.adds/scripts',
+            { path: typographyScriptPath, kind: 'file' },
+        ],
+    });
+    const audit = new AuditLog(new Date(2026, 5, 11, 14, 30));
+
+    await executeNickelMenuRemoval({
+        device,
+        installer,
+        cleanupFeatures: [betterTypography],
+        shouldRemoveSyncExclusions: async () => false,
+        audit,
+    });
+
+    const logPath = '.kobopatch-webui/log-26-06-11_14-30.log';
+    assert.ok(device.writePaths().includes(logPath));
+    const log = text(device.writeFor(logPath).data);
+    assert.match(log, /Removing NickelMenu: wrote \.kobo\/KoboRoot\.tgz/);
+    assert.match(log, /Removed \.adds\/nm/);
+    assert.match(log, new RegExp(`Removed ${typographyScriptPath.replace(/[.\\/]/g, '\\$&')}`));
+    assert.match(log, /Wrote uninstall marker/);
 });
 
 test('executeNickelMenuRemoval removes selected feature cleanup paths only', async () => {

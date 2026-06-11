@@ -18,7 +18,11 @@ const required = [
   'assets/koreader-kobo.zip',
   'assets/koreader-release.json',
   'assets/KF_Readerly.zip',
-  'js/nickelmenu/features/custom-menu/items',
+  // Runtime-fetched NickelMenu feature assets (the items file is generated from
+  // feature menuItems hooks, so it is no longer shipped as a static asset).
+  'js/nickelmenu/features/custom-menu/.cog.png',
+  'js/nickelmenu/features/custom-menu/scripts/toggle_hidden_home.sh',
+  'js/nickelmenu/features/custom-menu/scripts/toggle_tabs.sh',
 ];
 
 let missing = 0;

@@ -24,6 +24,7 @@ import {
     hasAddsDirectoriesRequiringSyncExclusions,
 } from '../nickelmenu/uninstaller.js';
 import { getConfSetting } from '../kobo/configuration.js';
+import { AuditLog } from '../kobo/audit-log.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { countKoboUsers } from '../kobo/signin.js';
 import { TL } from '../shell/strings.js';
@@ -746,6 +747,7 @@ export function initNickelMenu(state) {
                     ],
                     shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesRequiringSyncExclusionsOnDevice(),
                     onProgress: progressFn,
+                    audit: new AuditLog(),
                 });
                 showNmDone('remove');
                 return;
@@ -763,7 +765,7 @@ export function initNickelMenu(state) {
             track('nm-basic-tabs', { enabled: hasBasicTabs ? 'yes' : 'no' });
 
             if (writeToDevice && state.device.directoryHandle) {
-                await state.nmInstaller.installToDevice(state.device, features, progressFn);
+                await state.nmInstaller.installToDevice(state.device, features, progressFn, { audit: new AuditLog() });
                 showNmDone('written');
             } else {
                 state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo);
