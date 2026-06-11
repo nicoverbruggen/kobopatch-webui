@@ -1,8 +1,7 @@
 import JSZip from 'jszip';
 
-// The Tweak-menu entry that launches KOReader. Order 5 keeps it at the very top
-// of the menu (just below the Tweak tab header), where it was previously
-// prepended.
+// The Tweak-menu entry that launches KOReader. Its position (just below the
+// Tweak tab header) is set by 'koreader' in ../menu-order.js.
 const KOREADER_MENU_ITEM = 'menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh';
 
 export default {
@@ -68,6 +67,6 @@ export default {
     },
 
     menuItems() {
-        return [{ id: 'koreader', order: 5, lines: [KOREADER_MENU_ITEM] }];
+        return [{ id: 'koreader', lines: [KOREADER_MENU_ITEM] }];
     },
 };

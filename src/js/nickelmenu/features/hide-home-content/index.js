@@ -16,11 +16,11 @@ import { appendToNmConfig } from '../helpers.js';
 const TOGGLE_SCRIPT_URL = 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh';
 const TOGGLE_SCRIPT_DEVICE_PATH = '.adds/nm/scripts/toggle_hidden_home.sh';
 
-// The shared Tweak item. Order 92 sits just after the power items; every hider
-// contributes this identical entry and the installer collapses the duplicates.
+// The shared Tweak item. Every hider contributes this identical entry and the
+// installer collapses the duplicates; its position (after the power items) is set
+// by 'toggle-hidden-home' in ../menu-order.js.
 const HOME_CONTENT_TOGGLE = {
     id: 'toggle-hidden-home',
-    order: 92,
     lines: ['menu_item :main :Show/hide home content :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
 };
 

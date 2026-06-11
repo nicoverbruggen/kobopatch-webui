@@ -20,10 +20,10 @@ const TAB_CONFIG = [
 // .adds/nm/scripts so NickelMenu removal's recursive delete cleans it up.
 const TABS_TOGGLE_SCRIPT_PATH = '.adds/nm/scripts/toggle_tabs.sh';
 
-// Sits at order 94, alongside the home-content toggle custom-menu may add at 92.
+// Its position (just after the home-content toggle) is set by 'toggle-tabs' in
+// ../menu-order.js.
 const TABS_TOGGLE = {
     id: 'toggle-tabs',
-    order: 94,
     lines: ['menu_item :main :Toggle navigation tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
 };
 

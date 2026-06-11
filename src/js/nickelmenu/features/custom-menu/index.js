@@ -3,16 +3,11 @@ import { darkModeSupport } from '../../../kobo/dark-mode.js';
 // The base Tweak-menu entries, owned by this feature. The NickelMenu `items`
 // file is no longer a static asset: each entry below is a data structure, and
 // the installer collects entries from every selected feature (via `menuItems`),
-// sorts them by `order`, and renders the file. Device-conditional items become a
-// simple "don't include this entry" instead of commenting out matched lines.
-//
-// `order` values leave gaps so other features can slot their own items in at the
-// right place — e.g. better-typography's "Typography Mode" sits at 50, the spot
-// the old "Legibility Toggle" used to occupy (between Rescan books and IP
-// Address), and the screensaver toggle sits near the top at 10.
+// orders them by their id's position in MENU_ITEM_ORDER (see ../menu-order.js),
+// and renders the file. Device-conditional items become a simple "don't include
+// this entry" instead of commenting out matched lines.
 const HEADER = {
     id: 'tweak-header',
-    order: 0,
     lines: [
         'experimental :menu_main_15505_label :Tweak',
         'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
@@ -21,24 +16,22 @@ const HEADER = {
 
 const BASE_ITEMS = [
     HEADER,
-    { id: 'screenshots', order: 20, lines: ['menu_item :main :Screenshots        :nickel_setting     :toggle :screenshots'] },
-    { id: 'auto-usb', order: 30, lines: ['menu_item :main :Auto USB           :nickel_setting     :toggle :auto_usb_gadget'] },
-    { id: 'rescan-books', order: 40, lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
+    { id: 'screenshots', lines: ['menu_item :main :Screenshots        :nickel_setting     :toggle :screenshots'] },
+    { id: 'auto-usb', lines: ['menu_item :main :Auto USB           :nickel_setting     :toggle :auto_usb_gadget'] },
+    { id: 'rescan-books', lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
     {
         id: 'ip-address',
-        order: 60,
         lines: ["menu_item :main    :IP Address      :cmd_output         :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'"],
     },
     {
         id: 'invert-reboot',
-        order: 70,
         lines: [
             'menu_item :main :Invert & Reboot    :nickel_setting :toggle: invert',
             '    chain_success :power :reboot',
         ],
     },
-    { id: 'sleep', order: 80, lines: ['menu_item :main :Sleep              :power              :sleep'] },
-    { id: 'reboot', order: 90, lines: ['menu_item :main :Reboot             :power              :reboot'] },
+    { id: 'sleep', lines: ['menu_item :main :Sleep              :power              :sleep'] },
+    { id: 'reboot', lines: ['menu_item :main :Reboot             :power              :reboot'] },
 ];
 
 // The Dark Mode item only works on devices whose firmware has a Dark mode
@@ -46,7 +39,6 @@ const BASE_ITEMS = [
 // reviewNotices); previously it was shipped commented-out.
 const DARK_MODE = {
     id: 'dark-mode',
-    order: 100,
     lines: ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode'],
 };
 

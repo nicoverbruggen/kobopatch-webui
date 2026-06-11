@@ -12,6 +12,7 @@ import betterTypography from './features/better-typography/index.js';
 import koreader from './features/koreader/index.js';
 import simplifyTabs from './features/simplify-tabs/index.js';
 import { homeHiders } from './features/hide-home-content/index.js';
+import { menuItemPosition } from './features/menu-order.js';
 import screensaver from './features/screensaver/index.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
 import sideloadedMode from './features/sideloaded-mode/index.js';
@@ -71,10 +72,11 @@ function createContext(feature, progressFn, deviceInfo = null, features = []) {
 
 /**
  * Assemble the NickelMenu `.adds/nm/items` file from the selected features'
- * `menuItems` hooks. Each feature contributes ordered entries
- * (`{ id, order, lines }`); they are sorted by `order` and rendered (entries
- * separated by a blank line, trailing newline). Returns null when no feature
- * contributes any entries (e.g. nothing that ships the Tweak menu is selected).
+ * `menuItems` hooks. Each feature contributes entries (`{ id, lines }`); they are
+ * ordered by their id's position in MENU_ITEM_ORDER (see features/menu-order.js)
+ * and rendered (entries separated by a blank line, trailing newline). Returns
+ * null when no feature contributes any entries (e.g. nothing that ships the Tweak
+ * menu is selected).
  */
 function buildItemsFile(features, deviceInfo) {
     const menuCtx = { deviceInfo, features };
@@ -93,7 +95,7 @@ function buildItemsFile(features, deviceInfo) {
     }
     if (entries.length === 0) return null;
 
-    entries.sort((a, b) => a.order - b.order);
+    entries.sort((a, b) => menuItemPosition(a.id) - menuItemPosition(b.id));
     return entries.map(entry => entry.lines.join('\n')).join('\n\n') + '\n';
 }
 

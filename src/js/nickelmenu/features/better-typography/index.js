@@ -22,8 +22,8 @@ const TOGGLE_SCRIPT_PATH = '.adds/scripts/toggle_typography.sh';
 // keeps the alert (which states the mode that will be active) on screen for the
 // 7s the script waits before rebooting. Contributed only when this feature is
 // installed, so the menu never offers a toggle for a setting that isn't managed.
-// Order 50 places it where the old "Legibility Toggle" lived — between Rescan
-// books (40) and IP Address (60).
+// Its position (the old "Legibility Toggle" slot, between Rescan books and IP
+// Address) is set by 'typography' in ../menu-order.js.
 const TYPOGRAPHY_MENU_ITEM = 'menu_item :main :Typography Mode    :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh';
 
 export default {
@@ -64,7 +64,7 @@ export default {
     // Contribute the Tweak-menu toggle. menuItems only runs when this feature is
     // selected, so the entry is added exactly when the toggle script is shipped.
     menuItems() {
-        return [{ id: 'typography', order: 50, lines: [TYPOGRAPHY_MENU_ITEM] }];
+        return [{ id: 'typography', lines: [TYPOGRAPHY_MENU_ITEM] }];
     },
 
     // Declarative Kobo eReader.conf changes, applied by the installer when a

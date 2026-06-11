@@ -1,7 +1,7 @@
 // The Tweak-menu entry that toggles the screensaver on/off. Contributed to the
 // NickelMenu items file only when this feature is installed, so the menu never
-// offers a toggle for a screensaver that isn't there. Order 10 keeps it near the
-// top of the menu, its original position.
+// offers a toggle for a screensaver that isn't there. Its position near the top
+// of the menu is set by 'screensaver' in ../menu-order.js.
 const SCREENSAVER_MENU_ITEM = [
     'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
     '      chain_failure : skip : 3',
@@ -39,6 +39,6 @@ export default {
     // menuItems only runs when this feature is selected, so the toggle is added
     // exactly when the screensaver image is also installed.
     menuItems() {
-        return [{ id: 'screensaver', order: 10, lines: SCREENSAVER_MENU_ITEM }];
+        return [{ id: 'screensaver', lines: SCREENSAVER_MENU_ITEM }];
     },
 };
