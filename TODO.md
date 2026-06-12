@@ -107,13 +107,15 @@ Rough shape:
 
 On re-apply, the app loads the catalog YAML files, replaces each customized patch's YAML block with the stored version, applies the `overrides`, and passes the result to the WASM patcher. A patch absent from `customized` uses its catalog definition as-is.
 
-### Offer alternative reading apps
+### Update install logs
 
-KOReader and Cadmus are now available to install.
+Install logs are currently named e.g. `log-26-06-12_12-42.log` and are directly stored in `.kobopatch-webui`. Put these in a subfolder, `logs`.
 
-I would like to expand this (see #11) with more alternatives.
+They should be: `26-06-12_12-42-install-nickelmenu.log`
+            or: `26-06-12_12-42-remove-nickelmenu.log`
+            or: `26-06-12_12-42-custom-patches.log`
 
-Add Plato (https://github.com/baskerville/plato) to "Reading Apps". Plato and Cadmus are mutually exclusive, so enabling one should automatically disable the other option. `excludes: ['cadmus']` is probably needed as part of the feature export for Plato (and vice-versa). It should be obvious in the UI that these are, in fact mutually exclusive w/ a label in red as soon as one is selected.
+Depending on the actual flow. Also, these logs should be appended to in real-time if that isn't the case already, just to make sure that the log is actually accurate (if a write fails somehow, this way we have a log that explains where everything stopped).
 
 ### Consider making the required preset optional
 
