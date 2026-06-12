@@ -657,7 +657,13 @@ class PatchUI {
         statusEl.textContent = '';
         statusEl.className = 'patch-editor-status';
 
-        this._editing = { patch, filename, container };
+        // The Enabled value the editor opens with (from the file text). Used on
+        // save to tell a deliberate edit of the Enabled line from a no-op, so a
+        // live checkbox/radio toggle isn't silently overwritten by the file's
+        // default when the user only edited other fields.
+        const displayedEnabled = parsePatchYAML(patchYaml)[0]?.enabled;
+
+        this._editing = { patch, filename, container, displayedEnabled };
 
         dialog.showModal();
         textarea.focus();
@@ -756,10 +762,22 @@ class PatchUI {
         this.patchFiles[filename].raw = updatedRaw;
         this.patchFiles[filename].patches = parsePatchYAML(updatedRaw);
 
+        // The reparse derives `enabled` from each patch's file text, but the live
+        // toggle state lives on the patch objects, not in the file. Restore it so
+        // an edit doesn't reset selections to the file's defaults.
+        const editedName = parsePatchYAML(newYaml)[0]?.name ?? patch.name;
+        const displayedEnabled = this._editing?.displayedEnabled;
+
         for (const newPatch of this.patchFiles[filename].patches) {
-            const old = oldPatches.find(p => p.name === newPatch.name);
-            if (old && newPatch.name !== patch.name) {
-                newPatch.enabled = old.enabled;
+            if (newPatch.name === editedName) {
+                // Keep the edited patch's live toggle unless the user actually
+                // changed the Enabled line in the editor itself.
+                const enabledEditedInPlace = displayedEnabled !== undefined
+                    && newPatch.enabled !== displayedEnabled;
+                if (!enabledEditedInPlace) newPatch.enabled = patch.enabled;
+            } else {
+                const old = oldPatches.find(p => p.name === newPatch.name);
+                if (old) newPatch.enabled = old.enabled;
             }
         }
 
