@@ -824,9 +824,8 @@ test.describe('Custom patches', () => {
     await dialog.locator('.patch-editor-save').click();
     await expect(dialog).not.toBeVisible();
 
-    // Re-open the editor to verify persistence (re-query after re-render)
-    const reOpenedSection = page.locator('.patch-file-section').first();
-    await reOpenedSection.locator('summary').click();
+    // Re-open the editor to verify persistence. The section stays expanded across
+    // the post-save re-render, so re-query the patch directly without toggling it.
     const reOpenedPatchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
     await expect(reOpenedPatchName).toBeVisible();
     const reOpenedEditBtn = reOpenedPatchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]').locator('.patch-edit-btn');
@@ -877,10 +876,10 @@ test.describe('Custom patches', () => {
     await expect(statusEl).toContainText('cannot be empty');
     await expect(dialog.locator('.patch-editor-status--error')).toBeVisible();
 
-    // Test invalid YAML (no patch name)
+    // Test invalid YAML (malformed indentation)
     await textarea.fill('some: random\n  - yaml: content');
     await dialog.locator('.patch-editor-validate').click();
-    await expect(statusEl).toContainText('valid patch definition');
+    await expect(statusEl).toContainText('YAML error');
     await expect(dialog.locator('.patch-editor-status--error')).toBeVisible();
 
     // Test that save is blocked when invalid (dialog stays open)

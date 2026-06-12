@@ -244,6 +244,10 @@ class PatchUI {
      * Render the patch configuration UI into a container element.
      */
     render(container) {
+        // Preserve which sections are expanded across re-renders (e.g. after a save).
+        const openFiles = new Set(
+            [...container.querySelectorAll('.patch-file-section[open]')].map(s => s.dataset.filename)
+        );
         container.innerHTML = '';
 
         const searchWrap = document.createElement('div');
@@ -281,6 +285,8 @@ class PatchUI {
 
             const section = document.createElement('details');
             section.className = 'patch-file-section';
+            section.dataset.filename = filename;
+            section.open = openFiles.has(filename);
 
             const summary = document.createElement('summary');
             const label = PATCH_FILE_LABELS[filename] || filename;
