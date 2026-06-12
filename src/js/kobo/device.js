@@ -291,15 +291,89 @@ class KoboDevice {
 
     /**
      * Remove a file or directory at the given path.
+     *
+     * Recursive directory removals are done manually — descending depth-first
+     * and deleting entries one-by-one — rather than via the native
+     * `removeEntry(..., { recursive: true })`, which can throw `NotFoundError`
+     * partway through the tree on removable exFAT volumes (notably Kobo drives).
+     * The manual walk tolerates per-entry `NotFoundError` (an already-gone entry
+     * counts as success), so the whole tree comes down reliably.
      */
     async removeEntry(pathParts, options = {}) {
+        const parent = await this.resolveParentHandle(pathParts);
+        const entryName = pathParts[pathParts.length - 1];
+
+        if (!options.recursive) {
+            await parent.removeEntry(entryName, options);
+            return;
+        }
+
+        await this.removeEntryRecursively(parent, entryName);
+    }
+
+    /**
+     * Resolve the directory handle that contains the final segment of `pathParts`.
+     */
+    async resolveParentHandle(pathParts) {
         let dir = this.directoryHandle;
         const dirParts = pathParts.slice(0, -1);
-        const entryName = pathParts[pathParts.length - 1];
         for (const part of dirParts) {
             dir = await dir.getDirectoryHandle(part);
         }
-        await dir.removeEntry(entryName, options);
+        return dir;
+    }
+
+    /**
+     * Manually delete `entryName` (file or directory) from `parentHandle`,
+     * descending depth-first and treating missing entries as already removed.
+     */
+    async removeEntryRecursively(parentHandle, entryName) {
+        let dirHandle = null;
+        try {
+            dirHandle = await parentHandle.getDirectoryHandle(entryName);
+        } catch (err) {
+            // NotFoundError → already gone. TypeMismatchError → it's a file, so
+            // drop through to the plain removeEntry below. Anything else is real.
+            if (err?.name === 'NotFoundError') return;
+            if (err?.name !== 'TypeMismatchError') throw err;
+        }
+
+        if (dirHandle) {
+            await this.clearDirectory(dirHandle);
+        }
+
+        try {
+            await parentHandle.removeEntry(entryName);
+        } catch (err) {
+            if (err?.name === 'NotFoundError') return;
+            throw err;
+        }
+    }
+
+    /**
+     * Recursively remove every child of `dirHandle`, leaving it empty.
+     * Entries that have already vanished (`NotFoundError`) are skipped.
+     */
+    async clearDirectory(dirHandle) {
+        if (typeof dirHandle.values !== 'function') return;
+
+        const children = [];
+        for await (const entry of dirHandle.values()) {
+            children.push({ name: entry.name, kind: entry.kind });
+        }
+
+        for (const { name, kind } of children) {
+            try {
+                if (kind === 'directory') {
+                    const child = await dirHandle.getDirectoryHandle(name);
+                    await this.clearDirectory(child);
+                }
+                await dirHandle.removeEntry(name);
+            } catch (err) {
+                if (err?.name === 'NotFoundError') continue;
+                throw err;
+            }
+        }
     }
 
     /**

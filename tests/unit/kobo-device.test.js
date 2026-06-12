@@ -16,6 +16,12 @@ function normalizeBytes(data) {
     return bytes(data);
 }
 
+function domError(name, message) {
+    const err = new Error(message);
+    err.name = name;
+    return err;
+}
+
 class MockFileHandle {
     constructor(name, data = new Uint8Array()) {
         this.name = name;
@@ -69,8 +75,8 @@ class MockDirectoryHandle {
     async getDirectoryHandle(name, options = {}) {
         const existing = this.children.get(name);
         if (existing?.kind === 'directory') return existing;
-        if (existing) throw new Error(`${name} is not a directory`);
-        if (!options.create) throw new Error(`Missing directory ${name}`);
+        if (existing) throw domError('TypeMismatchError', `${name} is not a directory`);
+        if (!options.create) throw domError('NotFoundError', `Missing directory ${name}`);
 
         const directory = new MockDirectoryHandle(name);
         this.children.set(name, directory);
@@ -80,8 +86,8 @@ class MockDirectoryHandle {
     async getFileHandle(name, options = {}) {
         const existing = this.children.get(name);
         if (existing?.kind === 'file') return existing;
-        if (existing) throw new Error(`${name} is not a file`);
-        if (!options.create) throw new Error(`Missing file ${name}`);
+        if (existing) throw domError('TypeMismatchError', `${name} is not a file`);
+        if (!options.create) throw domError('NotFoundError', `Missing file ${name}`);
 
         const file = new MockFileHandle(name);
         this.children.set(name, file);
@@ -90,9 +96,9 @@ class MockDirectoryHandle {
 
     async removeEntry(name, options = {}) {
         const existing = this.children.get(name);
-        if (!existing) throw new Error(`Missing entry ${name}`);
+        if (!existing) throw domError('NotFoundError', `Missing entry ${name}`);
         if (existing.kind === 'directory' && existing.children.size > 0 && !options.recursive) {
-            throw new Error(`Directory ${name} is not empty`);
+            throw domError('InvalidModificationError', `Directory ${name} is not empty`);
         }
 
         this.removals.push({ name, options });
@@ -149,17 +155,73 @@ test('writeFile creates nested directories and writes bytes to the target file',
     assert.equal(file.writes.length, 1);
 });
 
-test('removeEntry removes nested entries with the requested options', async () => {
+test('removeEntry removes a non-recursive entry directly', async () => {
     const { device, root } = createDevice();
     await root.addFile(['.adds', 'nm', 'items'], 'items');
-    const addsDir = await getDirectory(root, ['.adds']);
+    const nmDir = await getDirectory(root, ['.adds', 'nm']);
 
-    await device.removeEntry(['.adds', 'nm'], { recursive: true });
+    await device.removeEntry(['.adds', 'nm', 'items']);
 
-    assert.equal(await device.pathExists(['.adds', 'nm']), false);
-    assert.deepEqual(addsDir.removals, [
-        { name: 'nm', options: { recursive: true } },
+    assert.equal(await device.pathExists(['.adds', 'nm', 'items']), false);
+    assert.deepEqual(nmDir.removals, [
+        { name: 'items', options: {} },
     ]);
+});
+
+test('removeEntry deletes a directory tree one entry at a time, never using the native recursive flag', async () => {
+    const { device, root } = createDevice();
+    await root.addFile(['.adds', 'koreader', 'koreader.sh'], 'sh');
+    await root.addFile(['.adds', 'koreader', 'data', 'fonts', 'noto.ttf'], 'font');
+    await root.addFile(['.adds', 'koreader', 'data', 'l10n', 'fr.po'], 'l10n');
+
+    // Fail loudly if anything ever asks for a native recursive removal — the
+    // whole point is to delete entries one-by-one.
+    const reject = handle => {
+        const native = handle.removeEntry.bind(handle);
+        handle.removeEntry = async (name, options = {}) => {
+            assert.ok(!options.recursive, `unexpected recursive removeEntry on ${name}`);
+            return native(name, options);
+        };
+        for (const child of handle.children.values()) {
+            if (child.kind === 'directory') reject(child);
+        }
+    };
+    reject(root);
+
+    await device.removeEntry(['.adds', 'koreader'], { recursive: true });
+
+    assert.equal(await device.pathExists(['.adds', 'koreader']), false);
+});
+
+test('removeEntry tolerates a descendant that disappears mid-walk (NotFoundError)', async () => {
+    const { device, root } = createDevice();
+    await root.addFile(['.adds', 'koreader', 'koreader.sh'], 'sh');
+    await root.addFile(['.adds', 'koreader', 'cache.dat'], 'cache');
+    const koDir = await getDirectory(root, ['.adds', 'koreader']);
+
+    // An entry vanishes out from under us between enumeration and deletion:
+    // removeEntry('cache.dat') reports NotFoundError, as if already gone.
+    const native = koDir.removeEntry.bind(koDir);
+    koDir.removeEntry = async (name, options = {}) => {
+        if (name === 'cache.dat') {
+            koDir.children.delete(name);
+            throw domError('NotFoundError', 'A requested file or directory could not be found.');
+        }
+        return native(name, options);
+    };
+
+    await device.removeEntry(['.adds', 'koreader'], { recursive: true });
+
+    assert.equal(await device.pathExists(['.adds', 'koreader']), false);
+});
+
+test('removeEntry treats an already-missing directory as a successful removal', async () => {
+    const { device, root } = createDevice();
+    await root.addDirectory(['.adds']);
+
+    await assert.doesNotReject(
+        device.removeEntry(['.adds', 'koreader'], { recursive: true }),
+    );
 });
 
 test('collectExistingEntries reads files and recursively collects directories', async () => {
