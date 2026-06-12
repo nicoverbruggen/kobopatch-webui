@@ -331,7 +331,7 @@ export function initPatchesFlow(state) {
                 installed: {
                     timestamp: new Date().toISOString(),
                     firmware: state.firmwareVersion,
-                    model: state.deviceModelLabel,
+                    model: state.selectedPrefix,
                 },
             },
         };

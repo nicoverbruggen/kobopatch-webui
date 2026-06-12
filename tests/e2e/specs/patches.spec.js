@@ -786,7 +786,7 @@ test.describe('Custom patches', () => {
     expect(manifest.files.some(f => f.path === '.kobo/KoboRoot.tgz')).toBe(true);
     expect(manifest.meta.writer.name).toBe('kobopatch-webui');
     expect(manifest.meta.installed.firmware).toBe('4.45.23646');
-    expect(manifest.meta.installed.model).toBe('Kobo Libra Colour');
+    expect(manifest.meta.installed.model).toBe('N428');
 
     // Verify audit log written under .kobopatch-webui/logs/
     const writtenFiles = await getWrittenFiles(page);
