@@ -553,6 +553,19 @@ test.describe('NickelMenu — install', () => {
     expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
     // Screensaver was not selected, so its toggle is absent from the menu.
     expect(items).not.toContain('menu_item :main :Screensaver');
+
+    // Verify manifest records features and their files
+    const manifestText = await readMockFile(page, '.kobopatch-webui', 'nickelmenu.json');
+    const manifest = JSON.parse(manifestText);
+    expect(manifest.selected).toEqual(
+      expect.arrayContaining(['simplify-tabs', 'hide-recommendations', 'hide-notices', 'exclude-calibre']),
+    );
+    expect(manifest.features['simplify-tabs']).toBeDefined();
+    expect(manifest.features['simplify-tabs'].files.some(f => f.path === '.adds/nm/scripts/toggle_tabs.sh')).toBe(true);
+    expect(manifest.features['exclude-calibre']).toBeDefined();
+    expect(manifest.meta.writer.name).toBe('kobopatch-webui');
+    expect(manifest.meta.installed.firmware).toBe('4.45.23646');
+    expect(manifest.meta.installed.model).toBe('N428');
   });
 
 
@@ -706,6 +719,16 @@ test.describe('NickelMenu — install', () => {
       f => !f.includes('KoboRoot.tgz') && !f.includes('.kobopatch-webui/'),
     );
     expect(configWrites).toHaveLength(0);
+    // Manifest should be written with empty feature list
+    const manifestText = await readMockFile(page, '.kobopatch-webui', 'nickelmenu.json');
+    const manifest = JSON.parse(manifestText);
+    expect(manifest.selected).toEqual([]);
+    expect(manifest.features).toEqual({});
+    expect(manifest.meta.writer.name).toBe('kobopatch-webui');
+    expect(manifest.meta.installed.firmware).toBe('4.45.23646');
+    expect(manifest.meta.installed.model).toBe('N428');
+    // Audit log should be written under .kobopatch-webui/logs/
+    expect(writtenFiles.some(f => f.includes('.kobopatch-webui/logs/') && f.includes('install-nickelmenu'))).toBe(true);
   });
 
 

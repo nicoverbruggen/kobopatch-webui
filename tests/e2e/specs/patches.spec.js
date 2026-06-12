@@ -705,4 +705,65 @@ test.describe('Custom patches', () => {
     await page.click('#btn-mode-back');
     await expect(page.locator('#step-connect')).not.toBeHidden();
   });
+
+
+  test('with device — write patched firmware writes manifest and audit log', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+
+    // Select Custom Patches
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Patches step
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Enable a patch
+    const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
+    const patchSection = patchName.locator('xpath=ancestor::details');
+    await patchSection.locator('summary').click();
+    await expect(patchName).toBeVisible();
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+    await page.click('#btn-patches-next');
+
+    // Build step — firmware/model should be set by device info
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await expect(page.locator('#firmware-version-label')).toHaveText('4.45.23646');
+    await expect(page.locator('#firmware-device-label')).toHaveText('Kobo Libra Colour');
+
+    // Build
+    await page.click('#btn-build');
+
+    const doneOrError = await Promise.race([
+      page.locator('#step-done').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'done'),
+      page.locator('#step-error').waitFor({ state: 'visible', timeout: 240_000 }).then(() => 'error'),
+    ]);
+
+    expect(doneOrError).toBe('done');
+    await expect(page.locator('#build-status')).toContainText('Patching complete');
+
+    // Write to device
+    await expect(page.locator('#btn-write')).toBeVisible();
+    await page.click('#btn-write');
+
+    // Wait for write completion
+    await expect(page.locator('#write-instructions')).toBeVisible({ timeout: 30_000 });
+
+    // Verify custom-patches.json manifest
+    const manifestText = await readMockFile(page, '.kobopatch-webui', 'custom-patches.json');
+    const manifest = JSON.parse(manifestText);
+    expect(manifest.files.some(f => f.path === '.kobo/KoboRoot.tgz')).toBe(true);
+    expect(manifest.meta.writer.name).toBe('kobopatch-webui');
+    expect(manifest.meta.installed.firmware).toBe('4.45.23646');
+    expect(manifest.meta.installed.model).toBe('Kobo Libra Colour');
+
+    // Verify audit log written under .kobopatch-webui/logs/
+    const writtenFiles = await getWrittenFiles(page);
+    expect(writtenFiles.some(f => f.includes('.kobopatch-webui/logs/') && f.includes('custom-patches'))).toBe(true);
+  });
 });

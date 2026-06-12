@@ -144,6 +144,9 @@ test.describe('NickelMenu — removal', () => {
     const confAfter = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
     expect(confAfter).not.toContain('ExcludeSyncFolders');
     expect(confAfter).toContain('some=setting');
+
+    // Verify audit log is written under .kobopatch-webui/logs/ with the removal type
+    expect(writtenFiles.some(f => f.includes('.kobopatch-webui/logs/') && f.includes('remove-nickelmenu'))).toBe(true);
   });
 
 
