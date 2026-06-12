@@ -9,6 +9,24 @@ const { hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
 
+/**
+ * Drive the manual flow up to a loaded patches step for 4.45.23646 / N428.
+ * Collapses the version → model → confirm sequence that nearly every patch
+ * test repeats. Leaves the page on #step-patches with sections rendered.
+ */
+async function gotoManualPatchesStep(page) {
+  await goToManualMode(page);
+  await page.click('input[name="mode"][value="patches"]');
+  await page.click('#btn-mode-next');
+  await expect(page.locator('#step-manual-version')).not.toBeHidden();
+  await overrideFirmwareURLs(page);
+  await page.selectOption('#manual-version', '4.45.23646');
+  await page.selectOption('#manual-model', 'N428');
+  await page.click('#btn-manual-confirm');
+  await expect(page.locator('#step-patches')).not.toBeHidden();
+  await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+}
+
 test.describe('Custom patches', () => {
   test('no device — full manual mode patching pipeline', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
@@ -771,18 +789,7 @@ test.describe('Custom patches', () => {
   test('patch edit button opens editor dialog with patch YAML', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    await goToManualMode(page);
-    await page.click('input[name="mode"][value="patches"]');
-    await page.click('#btn-mode-next');
-    await expect(page.locator('#step-manual-version')).not.toBeHidden();
-    await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
-    await page.selectOption('#manual-model', 'N428');
-    await page.click('#btn-manual-confirm');
-
-    // Wait for patches to load
-    await expect(page.locator('#step-patches')).not.toBeHidden();
-    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    await gotoManualPatchesStep(page);
 
     // Open the first section (Nickel UI patches)
     const section = page.locator('.patch-file-section').first();
@@ -844,18 +851,7 @@ test.describe('Custom patches', () => {
   test('patch editor validation rejects empty and invalid YAML', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    await goToManualMode(page);
-    await page.click('input[name="mode"][value="patches"]');
-    await page.click('#btn-mode-next');
-    await expect(page.locator('#step-manual-version')).not.toBeHidden();
-    await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
-    await page.selectOption('#manual-model', 'N428');
-    await page.click('#btn-manual-confirm');
-
-    // Wait for patches to load
-    await expect(page.locator('#step-patches')).not.toBeHidden();
-    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    await gotoManualPatchesStep(page);
 
     // Open first section and find a patch
     const section = page.locator('.patch-file-section').first();
@@ -896,16 +892,7 @@ test.describe('Custom patches', () => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
     // --- First build: edited patch ---
-    await goToManualMode(page);
-    await page.click('input[name="mode"][value="patches"]');
-    await page.click('#btn-mode-next');
-    await expect(page.locator('#step-manual-version')).not.toBeHidden();
-    await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
-    await page.selectOption('#manual-model', 'N428');
-    await page.click('#btn-manual-confirm');
-    await expect(page.locator('#step-patches')).not.toBeHidden();
-    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    await gotoManualPatchesStep(page);
 
     // Open section, edit patch value
     const section = page.locator('.patch-file-section').first();
@@ -944,16 +931,7 @@ test.describe('Custom patches', () => {
 
     // --- Second build: same patch, default (unedited) ---
     await page.goto('/');
-    await goToManualMode(page);
-    await page.click('input[name="mode"][value="patches"]');
-    await page.click('#btn-mode-next');
-    await expect(page.locator('#step-manual-version')).not.toBeHidden();
-    await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
-    await page.selectOption('#manual-model', 'N428');
-    await page.click('#btn-manual-confirm');
-    await expect(page.locator('#step-patches')).not.toBeHidden();
-    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    await gotoManualPatchesStep(page);
 
     // Enable the same patch WITHOUT editing
     const section2 = page.locator('.patch-file-section').first();

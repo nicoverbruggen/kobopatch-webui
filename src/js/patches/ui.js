@@ -16,88 +16,107 @@ const PATCH_FILE_LABELS = {
 };
 
 /**
+ * Extract the key name from a top-level YAML mapping line, or null if the line
+ * is not a top-level key (indented, blank, a comment, or a list item).
+ *
+ * A top-level key starts at column 0 and is followed by a colon that is either
+ * at end-of-line or followed by whitespace (YAML's rule for `key:` vs a plain
+ * `name:value` scalar). Handles trailing spaces, inline comments, and quoting.
+ */
+function topLevelKeyName(line) {
+    if (!line || /^[\s#]/.test(line)) return null;
+    const match = line.match(/^(.+?)\s*:(?:\s.*)?$/);
+    if (!match) return null;
+    let key = match[1].trim();
+    if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+        key = key.slice(1, -1);
+    }
+    return key;
+}
+
+/**
  * Parse a kobopatch YAML file and extract patch metadata.
  * Returns an array of patch objects with: name, enabled, description, patchGroup,
  * lineStart (0-indexed), and lineEnd (exclusive).
+ *
+ * Field values are derived from a single js-yaml parse so that what we report
+ * here always agrees with what the editor's validator (also js-yaml) accepts.
+ * The raw lines are only used to record each patch's line range, which the
+ * editor needs for surgical text replacement on save.
  */
 function parsePatchYAML(content) {
-    const patches = [];
-    const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-    let i = 0;
+    const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalized.split('\n');
 
-    while (i < lines.length) {
-        const line = lines[i];
+    let doc;
+    try {
+        doc = yaml.load(normalized);
+    } catch {
+        doc = null;
+    }
+    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+        return [];
+    }
 
-        // Top-level key (patch name): not indented, begins at column 0, ends with ':'
-        if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#') && line.endsWith(':')) {
-            const name = line.slice(0, -1).trim();
-            const patch = { name, enabled: false, description: '', patchGroup: null, lineStart: i };
-            i++;
+    const names = new Set(Object.keys(doc));
 
-            // Parse the array items for this patch
-            while (i < lines.length) {
-                const itemLine = lines[i];
-
-                // Stop at next top-level key or EOF
-                if (itemLine.length > 0 && !itemLine.startsWith(' ') && !itemLine.startsWith('#')) {
-                    break;
-                }
-
-                const trimmed = itemLine.trim();
-
-                // Match "- Enabled: yes/no"
-                const enabledMatch = trimmed.match(/^- Enabled:\s*(yes|no)$/);
-                if (enabledMatch) {
-                    patch.enabled = enabledMatch[1] === 'yes';
-                    i++;
-                    continue;
-                }
-
-                // Match "- PatchGroup: ..."
-                const pgMatch = trimmed.match(/^- PatchGroup:\s*(.+)$/);
-                if (pgMatch) {
-                    patch.patchGroup = pgMatch[1].trim();
-                    i++;
-                    continue;
-                }
-
-                // Match "- Description: ..." (single line or multi-line block)
-                const descMatch = trimmed.match(/^- Description:\s*(.*)$/);
-                if (descMatch) {
-                    const rest = descMatch[1].trim();
-                    if (rest === '|' || rest === '>') {
-                        // Multi-line block scalar
-                        i++;
-                        const descLines = [];
-                        while (i < lines.length) {
-                            const dl = lines[i];
-                            // Block continues while indented more than the "- Description" level
-                            if (dl.match(/^\s{6,}/) || dl.trim() === '') {
-                                descLines.push(dl.trim());
-                                i++;
-                            } else {
-                                break;
-                            }
-                        }
-                        patch.description = descLines.join('\n').trim();
-                    } else {
-                        patch.description = rest;
-                        i++;
-                    }
-                    continue;
-                }
-
-                i++;
-            }
-
-            patch.lineEnd = i;
-            patches.push(patch);
-        } else {
-            i++;
+    // Locate the starting line of each patch by matching top-level keys against
+    // the names js-yaml actually parsed. Tying detection to known keys avoids the
+    // guesswork (and corruption risk) of inferring boundaries from punctuation.
+    const boundaries = [];
+    for (let i = 0; i < lines.length; i++) {
+        const key = topLevelKeyName(lines[i]);
+        if (key !== null && names.has(key)) {
+            boundaries.push({ name: key, lineStart: i });
         }
     }
 
-    return patches;
+    return boundaries.map((boundary, idx) => {
+        const lineEnd = idx + 1 < boundaries.length ? boundaries[idx + 1].lineStart : lines.length;
+        const body = doc[boundary.name];
+        const items = Array.isArray(body) ? body : [];
+
+        let enabled = false;
+        let description = '';
+        let patchGroup = null;
+        for (const item of items) {
+            if (!item || typeof item !== 'object') continue;
+            if ('Enabled' in item) enabled = item.Enabled === 'yes' || item.Enabled === true;
+            if ('Description' in item && item.Description !== null) description = String(item.Description).trim();
+            if ('PatchGroup' in item && item.PatchGroup !== null) patchGroup = String(item.PatchGroup).trim();
+        }
+
+        return { name: boundary.name, enabled, description, patchGroup, lineStart: boundary.lineStart, lineEnd };
+    });
+}
+
+/**
+ * Replace the line range [lineStart, lineEnd) of `raw` with `replacement`,
+ * operating entirely on line arrays so boundaries can't produce stray or
+ * missing newlines. Trailing newlines on the replacement are trimmed to avoid
+ * doubling up against the lines that follow.
+ */
+function replacePatchLines(raw, lineStart, lineEnd, replacement) {
+    const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const before = lines.slice(0, lineStart);
+    const after = lines.slice(lineEnd);
+    const replacementLines = replacement.replace(/\n+$/, '').split('\n');
+    return [...before, ...replacementLines, ...after].join('\n');
+}
+
+/**
+ * Quote a string for safe use as a YAML scalar (mapping key or value).
+ * Plain scalars are returned as-is; anything containing YAML-significant
+ * characters is double-quoted with backslashes and quotes escaped.
+ */
+function yamlScalar(str) {
+    const s = String(str);
+    // Safe if it's a non-empty run of unambiguous plain-scalar characters and
+    // doesn't collide with a boolean/null-ish token that would change meaning.
+    if (s.length > 0 && /^[A-Za-z0-9 ._/+()-]+$/.test(s) && !/^[-.]/.test(s) && !/^(yes|no|true|false|null|~|on|off)$/i.test(s)) {
+        return s;
+    }
+    return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
 /**
@@ -481,9 +500,15 @@ class PatchUI {
         const sections = wrapper.querySelectorAll('.patch-file-section');
         let anyVisible = false;
 
-        for (const section of sections) {
-            section.open = !!q;
+        // Remember the user's expand/collapse state on the first keystroke of a
+        // search so it can be restored when the query is cleared, instead of
+        // force-collapsing every section on each keystroke.
+        if (q && !this._savedOpenState) {
+            this._savedOpenState = new Map();
+            for (const section of sections) this._savedOpenState.set(section, section.open);
+        }
 
+        for (const section of sections) {
             const matchedGroups = new Set();
 
             const allItems = section.querySelectorAll('.patch-item');
@@ -504,7 +529,7 @@ class PatchUI {
             const groups = section.querySelectorAll('.patch-group');
             for (const group of groups) {
                 const hasMatch = matchedGroups.has(group);
-                group.style.display = hasMatch ? '' : 'none';
+                group.classList.toggle('patch-group-hidden', !hasMatch);
                 const noneItem = group.querySelector('.patch-name-none')?.closest('.patch-item');
                 if (noneItem) noneItem.classList.toggle('patch-item-hidden', !hasMatch);
             }
@@ -514,13 +539,21 @@ class PatchUI {
                 const hasStandalone = Array.from(standaloneItems).some(
                     item => !item.classList.contains('patch-item-hidden')
                 );
-                const hasGroup = Array.from(groups).some(
-                    g => g.style.display !== 'none'
-                );
-                section.style.display = (hasStandalone || hasGroup) ? '' : 'none';
+                const hasGroup = Array.from(groups).some(g => matchedGroups.has(g));
+                const sectionVisible = hasStandalone || hasGroup;
+                section.classList.toggle('patch-section-hidden', !sectionVisible);
+                // Auto-expand sections with matches; collapse those without.
+                section.open = sectionVisible;
             } else {
-                section.style.display = '';
+                section.classList.remove('patch-section-hidden');
             }
+        }
+
+        if (!q && this._savedOpenState) {
+            for (const section of sections) {
+                if (this._savedOpenState.has(section)) section.open = this._savedOpenState.get(section);
+            }
+            this._savedOpenState = null;
         }
 
         nullEl.hidden = q ? anyVisible : true;
@@ -530,50 +563,62 @@ class PatchUI {
         return document.getElementById('patch-editor-dialog');
     }
 
-    _openEditor(patch, filename, container) {
-        const lines = this.patchFiles[filename].raw.split('\n');
-        const patchYaml = lines.slice(patch.lineStart, patch.lineEnd).join('\n');
+    /**
+     * Wire up the editor dialog's buttons exactly once. The handlers read the
+     * patch currently being edited from `this._editing`, so there are no
+     * per-open listeners to leak or tear down.
+     */
+    _ensureEditorBound(dialog) {
+        if (this._editorBound) return;
+        this._editorBound = true;
 
-        const dialog = this._getDialog();
-        if (!dialog) return;
-
-        const titleEl = dialog.querySelector('.patch-editor-title');
         const textarea = dialog.querySelector('.patch-editor-textarea');
         const statusEl = dialog.querySelector('.patch-editor-status');
         const footer = dialog.querySelector('.modal-footer');
 
-        titleEl.textContent = `Edit: ${patch.name}`;
-        textarea.value = patchYaml;
-        statusEl.textContent = '';
-        statusEl.className = 'patch-editor-status';
-
-        // Use event delegation on the footer so we never deal with stale listeners
-        const onFooterClick = (e) => {
+        footer.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
-            if (!btn) return;
+            if (!btn || !this._editing) return;
 
             if (btn.classList.contains('patch-editor-validate')) {
                 this._validateEdit(textarea, statusEl);
             } else if (btn.classList.contains('patch-editor-save')) {
                 if (this._validateEdit(textarea, statusEl)) {
+                    const { patch, filename, container } = this._editing;
                     this._saveEdit(patch, filename, textarea.value, container);
                     dialog.close();
                 }
             } else if (btn.classList.contains('patch-editor-cancel')) {
                 dialog.close();
             }
-        };
-        footer.addEventListener('click', onFooterClick);
+        });
 
-        const closeHandler = (e) => {
-            if (e.target === dialog || e.target.closest('.patch-editor-cancel')) dialog.close();
-        };
-        dialog.addEventListener('click', closeHandler);
+        // Clicking the backdrop (outside the content) dismisses the dialog.
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) dialog.close();
+        });
 
-        dialog.addEventListener('close', () => {
-            footer.removeEventListener('click', onFooterClick);
-            dialog.removeEventListener('click', closeHandler);
-        }, { once: true });
+        dialog.addEventListener('close', () => { this._editing = null; });
+    }
+
+    _openEditor(patch, filename, container) {
+        const dialog = this._getDialog();
+        if (!dialog) return;
+        this._ensureEditorBound(dialog);
+
+        const lines = this.patchFiles[filename].raw.split('\n');
+        const patchYaml = lines.slice(patch.lineStart, patch.lineEnd).join('\n');
+
+        const titleEl = dialog.querySelector('.patch-editor-title');
+        const textarea = dialog.querySelector('.patch-editor-textarea');
+        const statusEl = dialog.querySelector('.patch-editor-status');
+
+        titleEl.textContent = `Edit: ${patch.name}`;
+        textarea.value = patchYaml;
+        statusEl.textContent = '';
+        statusEl.className = 'patch-editor-status';
+
+        this._editing = { patch, filename, container };
 
         dialog.showModal();
         textarea.focus();
@@ -630,7 +675,11 @@ class PatchUI {
             return false;
         }
 
-        // Validate each item
+        // Validate each item.
+        // Source of truth for these keys is kobopatch's patchfile parser:
+        // https://github.com/pgaskin/kobopatch/blob/master/patchfile/kobopatch/kobopatch.go
+        // (the `PatchableFunc`/instruction set). Keep in sync when upstream adds ops;
+        // an unrecognized key only produces a soft warning, never blocks saving.
         const knownOps = ['Enabled', 'Description', 'PatchGroup', 'FindZlib', 'ReplaceZlib', 'ReplaceZlibGroup', 'FindZlibHash', 'FindReplaceString', 'ReplaceBytes', 'ReplaceFloat', 'BaseAddress', 'MustMatchLength'];
         for (const item of body) {
             if (typeof item !== 'object' || item === null) continue;
@@ -662,10 +711,7 @@ class PatchUI {
     }
 
     _saveEdit(patch, filename, newYaml, container) {
-        const rawLines = this.patchFiles[filename].raw.split('\n');
-        const before = rawLines.slice(0, patch.lineStart);
-        const after = rawLines.slice(patch.lineEnd);
-        const updatedRaw = before.join('\n') + (before.length > 0 ? '\n' : '') + newYaml + (after.length > 0 ? '\n' : '') + after.join('\n');
+        const updatedRaw = replacePatchLines(this.patchFiles[filename].raw, patch.lineStart, patch.lineEnd, newYaml);
 
         const oldPatches = this.patchFiles[filename].patches;
         this.patchFiles[filename].raw = updatedRaw;
@@ -738,7 +784,7 @@ class PatchUI {
         for (const [filename, patches] of Object.entries(overrides)) {
             yaml += `  ${filename}:\n`;
             for (const [name, enabled] of Object.entries(patches)) {
-                yaml += `    ${name}: ${enabled ? 'yes' : 'no'}\n`;
+                yaml += `    ${yamlScalar(name)}: ${enabled ? 'yes' : 'no'}\n`;
             }
         }
         return yaml;
@@ -757,4 +803,4 @@ class PatchUI {
 
 }
 
-export { PatchUI, scanAvailablePatches };
+export { PatchUI, scanAvailablePatches, parsePatchYAML, replacePatchLines, yamlScalar };

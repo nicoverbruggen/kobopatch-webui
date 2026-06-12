@@ -142,12 +142,14 @@
     }
 }
 
-.patch-item-hidden {
+.patch-item-hidden,
+.patch-group-hidden,
+.patch-section-hidden {
     display: none;
+}
 
-    & + .patch-item {
-        border-top: none;
-    }
+.patch-item-hidden + .patch-item {
+    border-top: none;
 }
 
 .patch-header {
@@ -311,13 +313,18 @@
 }
 
 .patch-editor-status--ok {
-    color: var(--success, #2e7d32);
-    background: #e8f5e9;
+    color: var(--success-text);
+    background: var(--success-bg);
 }
 
 .patch-editor-status--error {
-    color: var(--error, #c0392b);
-    background: #fef2f2;
+    color: var(--error-text);
+    background: var(--error-bg);
+}
+
+.patch-editor-status--warning {
+    color: var(--warning-text);
+    background: var(--warning-bg);
 }
 
 .patch-editor-footer {
