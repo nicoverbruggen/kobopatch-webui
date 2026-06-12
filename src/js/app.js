@@ -45,6 +45,8 @@ const state = {
     nmInstaller: new NickelMenuInstaller(),
     // Mutable state that changes as the user progresses through the wizard.
     firmwareURL: null,       // URL to download firmware from (set during device detection or manual selection)
+    firmwareVersion: null,   // Firmware version string (e.g. "4.45.23646"), set when patches are configured
+    deviceModelLabel: null,  // Human-readable device model name (e.g. "Kobo Libra Colour")
     resultTgz: null,         // Built KoboRoot.tgz bytes (set after successful patch/extract)
     resultNmZip: null,       // Built NickelMenu ZIP bytes (set after NM download flow)
     manualMode: false,       // True when user chose "manual download" instead of connecting a device

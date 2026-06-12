@@ -14,6 +14,7 @@
  * `updatePatchCount`, and `configureFirmwareStep`.
  */
 
+import { AuditLog, AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { $, formatMB, triggerDownload, populateList, setupFeedback } from '../shell/dom.js';
 import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
 import { koboModels } from '../kobo/version.js';
@@ -67,8 +68,10 @@ export function initPatchesFlow(state) {
 
     function configureFirmwareStep(version, prefix) {
         state.firmwareURL = prefix ? state.getSoftwareUrl(prefix, version) : null;
+        state.firmwareVersion = version;
+        state.deviceModelLabel = koboModels[prefix] || prefix;
         firmwareVersionLabel.textContent = version;
-        firmwareDeviceLabel.textContent = koboModels[prefix] || prefix;
+        firmwareDeviceLabel.textContent = state.deviceModelLabel;
         $('firmware-download-url').textContent = state.firmwareURL || '';
     }
 
@@ -311,6 +314,25 @@ export function initPatchesFlow(state) {
     // Writes the built KoboRoot.tgz to the device via File System Access API,
     // or triggers a browser download.
 
+    function buildPatchesManifest() {
+        const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
+        return {
+            overrides: state.patchUI.getOverrides(),
+            customized: {},
+            files: [
+                { path: '.kobo/KoboRoot.tgz', type: 'file' },
+            ],
+            meta: {
+                writer: { name: 'kobopatch-webui', version },
+                installed: {
+                    timestamp: new Date().toISOString(),
+                    firmware: state.firmwareVersion,
+                    model: state.deviceModelLabel,
+                },
+            },
+        };
+    }
+
     btnWrite.addEventListener('click', async () => {
         if (!state.resultTgz || !state.device.directoryHandle) return;
 
@@ -318,18 +340,34 @@ export function initPatchesFlow(state) {
         btnWrite.textContent = TL.BUTTON.WRITING;
         downloadInstructions.hidden = true;
 
+        const audit = new AuditLog('custom-patches', new Date(), state.device);
+
         try {
             const koboDir = await state.device.directoryHandle.getDirectoryHandle('.kobo');
             const fileHandle = await koboDir.getFileHandle('KoboRoot.tgz', { create: true });
             const writable = await fileHandle.createWritable();
             await writable.write(state.resultTgz);
             await writable.close();
+            audit.record(`Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`);
 
+            // Best-effort manifest write
+            try {
+                const manifest = buildPatchesManifest();
+                const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+                await state.device.writeFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json'], data);
+                audit.record('Wrote .kobopatch-webui/custom-patches.json manifest');
+            } catch (e) {
+                console.warn('Could not write custom-patches manifest:', e);
+            }
+
+            await audit.write();
             btnWrite.textContent = TL.BUTTON.WRITTEN;
             btnWrite.className = 'btn-success';
             writeInstructions.hidden = false;
             track('flow-end', { result: state.isRestore ? 'restore-write' : 'patches-write' });
         } catch (err) {
+            // Best-effort: write whatever was recorded so far
+            await audit.write().catch(() => {});
             btnWrite.disabled = false;
             btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             state.showError(TL.STATUS.WRITE_FAILED(err.message));

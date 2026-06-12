@@ -1,4 +1,4 @@
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -27,23 +27,23 @@ async function resolveTagFromGitHub(sha) {
 }
 
 export async function generateVersion() {
+    const pkg = JSON.parse(readFileSync(join(appDir, 'package.json'), 'utf-8'));
+    const versionStr = pkg.version || 'unknown';
+
     const fullHash = (process.env.SOURCE_COMMIT ?? '').trim() || tryExec('git rev-parse HEAD');
-    if (!fullHash) {
-        throw new Error('could not determine commit hash');
-    }
 
     let tag = (process.env.SOURCE_TAG ?? '').trim()
-        || tryExec(`git describe --tags --exact-match ${fullHash}`);
+        || (fullHash ? tryExec(`git describe --tags --exact-match ${fullHash}`) : '');
 
-    // Only consult GitHub when the local repo has no tag data to trust.
-    if (!tag && !tryExec('git tag --list')) {
+    if (!tag && fullHash && !tryExec('git tag --list')) {
         tag = await resolveTagFromGitHub(fullHash);
     }
 
-    const versionStr = tag ? tag.replace(/^v/, '') : fullHash.slice(0, 7);
     const versionLink = tag
         ? `https://github.com/${repo}/releases/tag/${tag}`
-        : `https://github.com/${repo}/tree/${fullHash}`;
+        : fullHash
+            ? `https://github.com/${repo}/tree/${fullHash}`
+            : `https://github.com/${repo}`;
 
     const data = { versionStr, versionLink, commit: fullHash, tag: tag || null };
     writeFileSync(join(appDir, '.version.json'), JSON.stringify(data, null, 2) + '\n');

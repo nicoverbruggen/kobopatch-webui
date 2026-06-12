@@ -22,7 +22,7 @@ import {
 
 const hideNotices = homeHiders.find(f => f.id === 'hide-notices');
 
-test('installToDevice with no features writes only NickelMenu KoboRoot.tgz', async () => {
+test('installToDevice with no features writes NickelMenu KoboRoot.tgz and manifest', async () => {
     const tgz = bytes('tgz payload');
     const installer = createInstaller(tgz);
     const device = new RecordingDevice();
@@ -30,8 +30,18 @@ test('installToDevice with no features writes only NickelMenu KoboRoot.tgz', asy
 
     await installer.installToDevice(device, [], progress);
 
-    assert.deepEqual(device.writePaths(), [koboRootTgzPath]);
+    assert.deepEqual(device.writePaths(), [
+        koboRootTgzPath,
+        '.kobopatch-webui/nickelmenu.json',
+    ]);
     assert.deepEqual(device.writeFor(koboRootTgzPath).data, tgz);
+    // Manifest should record no selected features
+    const manifest = JSON.parse(text(device.writeFor('.kobopatch-webui/nickelmenu.json').data));
+    assert.deepEqual(manifest.selected, []);
+    assert.deepEqual(manifest.features, {});
+    assert.equal(manifest.meta.writer.name, 'kobopatch-webui');
+    assert.equal(manifest.meta.writer.version, 'unknown');
+    assert.equal(manifest.meta.installed.firmware, null);
     assert.deepEqual(progress.messages, [
         'Writing KoboRoot.tgz...',
         'Done.',
@@ -58,6 +68,7 @@ test('installToDevice with features updates eReader config and writes feature fi
         koboEReaderConfPath,
         '.adds/nm/.cog.png',
         NM_ITEMS_FILE,
+        '.kobopatch-webui/nickelmenu.json',
     ]);
     assert.match(text(device.writeFor(koboEReaderConfPath).data), /^\[ApplicationPreferences\]\nCurrentLocale=en_US\n\n\[FeatureSettings\]\nExcludeSyncFolders=/);
     // The items file is generated from the feature menuItems hooks.
@@ -66,6 +77,11 @@ test('installToDevice with features updates eReader config and writes feature fi
     assert.match(items, /^experimental :menu_main_15505_label :Toggle\n/m);
     assert.match(items, /^menu_item :main :Screenshots/m);
     assert.match(items, /^menu_item :reader :Dark Mode/m);
+    // Manifest records the selected feature and its files
+    const manifest = JSON.parse(text(device.writeFor('.kobopatch-webui/nickelmenu.json').data));
+    assert.deepEqual(manifest.selected, ['custom-menu']);
+    assert.ok(manifest.features['custom-menu']);
+    assert.ok(manifest.features['custom-menu'].files.some(f => f.path === '.adds/nm/.cog.png'));
 });
 
 test('installToDevice uses the calibre sync exclusion when exclude-calibre is selected', async () => {
@@ -77,6 +93,7 @@ test('installToDevice uses the calibre sync exclusion when exclude-calibre is se
     assert.deepEqual(device.writePaths(), [
         koboRootTgzPath,
         koboEReaderConfPath,
+        '.kobopatch-webui/nickelmenu.json',
     ]);
     assert.match(
         text(device.writeFor(koboEReaderConfPath).data),
@@ -132,11 +149,11 @@ test('installToDevice de-duplicates the shared home-content toggle across hiders
     assert.match(items, /experimental:hide_home_row3_enabled:1/);
 });
 
-test('installToDevice writes an audit log under .kobopatch-webui when an AuditLog is passed', async () => {
+test('installToDevice writes an audit log under .kobopatch-webui/logs when an AuditLog is passed', async () => {
     const restoreFetch = useCustomMenuAssetFetch();
     const installer = createInstaller();
     const device = new RecordingDevice();
-    const audit = new AuditLog(new Date(2026, 5, 11, 14, 30));
+    const audit = new AuditLog('install-nickelmenu', new Date(2026, 5, 11, 14, 30));
 
     try {
         await installer.installToDevice(device, [customMenu], createProgressRecorder(), { audit });
@@ -144,7 +161,7 @@ test('installToDevice writes an audit log under .kobopatch-webui when an AuditLo
         restoreFetch();
     }
 
-    const logPath = '.kobopatch-webui/log-26-06-11_14-30.log';
+    const logPath = '.kobopatch-webui/logs/26-06-11_14-30-install-nickelmenu.log';
     assert.ok(device.writePaths().includes(logPath));
     const log = text(device.writeFor(logPath).data);
     assert.match(log, /wrote \.kobo\/KoboRoot\.tgz/);
@@ -152,7 +169,7 @@ test('installToDevice writes an audit log under .kobopatch-webui when an AuditLo
     assert.match(log, /Wrote \.adds\/nm\/webui-preset/);
 });
 
-test('installToDevice writes no audit log when none is passed', async () => {
+test('installToDevice writes manifest but no audit log when none is passed', async () => {
     const restoreFetch = useCustomMenuAssetFetch();
     const installer = createInstaller();
     const device = new RecordingDevice();
@@ -163,7 +180,9 @@ test('installToDevice writes no audit log when none is passed', async () => {
         restoreFetch();
     }
 
-    assert.ok(!device.writePaths().some(path => path.startsWith('.kobopatch-webui/')));
+    // Manifest is always written; no audit log file should exist.
+    assert.ok(device.writePaths().includes('.kobopatch-webui/nickelmenu.json'));
+    assert.ok(!device.writePaths().some(path => path.startsWith('.kobopatch-webui/logs/')));
 });
 
 test('installToDevice stops before config or feature writes if KoboRoot.tgz write fails', async () => {

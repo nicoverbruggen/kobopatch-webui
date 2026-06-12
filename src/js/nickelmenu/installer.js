@@ -1,3 +1,4 @@
+import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { NM_ITEMS_FILE } from './constants.js';
 import JSZip from 'jszip';
 import { fetchOrThrow } from '../shell/dom.js';
@@ -164,6 +165,7 @@ export class NickelMenuInstaller {
      */
     async collectFiles(features, progressFn, deviceInfo = null) {
         let files = [];
+        const featureFiles = {};
 
         // Run install() for features that have it
         for (const feature of features) {
@@ -172,6 +174,7 @@ export class NickelMenuInstaller {
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
+            featureFiles[feature.id] = result.map(f => f.path);
         }
 
         // De-duplicate shared install files by path — e.g. several home-content
@@ -184,15 +187,12 @@ export class NickelMenuInstaller {
         });
 
         // Assemble the NickelMenu items file from the features' menuItems hooks.
-        // It is built as a string so postProcess features can still mutate it.
         const itemsContent = buildItemsFile(features, deviceInfo);
         if (itemsContent !== null) {
             files.push({ path: NM_ITEMS_FILE, data: itemsContent });
         }
 
-        // Run postProcess() for features that have it. These mutate the assembled
-        // items string in place (simplify-tabs prepends tab config, the hide-*
-        // features append flags, sideloaded comments out the home-tab override).
+        // Run postProcess() for features that have it.
         const itemsFile = files.find(f => f.path === NM_ITEMS_FILE);
         for (const feature of features) {
             if (!feature.postProcess) continue;
@@ -205,7 +205,7 @@ export class NickelMenuInstaller {
             itemsFile.data = new TextEncoder().encode(itemsFile.data);
         }
 
-        return files;
+        return { files, featureFiles };
     }
 
     /**
@@ -219,24 +219,33 @@ export class NickelMenuInstaller {
         await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
         audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
 
+        let collectedFiles = [];
+        let featureFiles = {};
+
         if (features.length > 0) {
-            // Features may require the ignore block in the config, write it first
             progressFn('Updating Kobo eReader.conf...');
             await this.updateEReaderConf(device, features, audit);
 
-            // After that, collect all practical files that need to be copied
-            const files = await this.collectFiles(features, progressFn, device.deviceInfo);
-            progressFn('Writing files to Kobo...');
+            const result = await this.collectFiles(features, progressFn, device.deviceInfo);
+            collectedFiles = result.files;
+            featureFiles = result.featureFiles;
 
-            const totalFiles = files.length;
-            for (let i = 0; i < files.length; i++) {
-                const { path, data } = files[i];
+            progressFn('Writing files to Kobo...');
+            const totalFiles = collectedFiles.length;
+            for (let i = 0; i < collectedFiles.length; i++) {
+                const { path, data } = collectedFiles[i];
                 const pathArray = path.split('/');
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 await device.writeFile(pathArray, fileData);
                 audit?.record(`Wrote ${path} (${fileData.length} bytes)`);
                 progressFn(`Writing files to Kobo (${i + 1} of ${totalFiles})...`);
             }
+        }
+
+        // Write the install manifest
+        const manifest = this.buildManifest(features, collectedFiles, featureFiles, device.deviceInfo, audit);
+        if (manifest) {
+            await this.writeManifest(device, manifest);
         }
 
         await writeAuditLog(audit, device);
@@ -256,7 +265,7 @@ export class NickelMenuInstaller {
         zip.file('.kobo/KoboRoot.tgz', tgz);
 
         if (features.length > 0) {
-            const files = await this.collectFiles(features, progressFn, deviceInfo);
+            const { files } = await this.collectFiles(features, progressFn, deviceInfo);
             for (const { path, data } of files) {
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 zip.file(path, fileData);
@@ -330,5 +339,50 @@ export class NickelMenuInstaller {
         if (updated !== content) {
             await device.writeFile(confPath, new TextEncoder().encode(updated));
         }
+    }
+
+    buildManifest(features, collectedFiles, featureFiles, deviceInfo, audit) {
+        const selected = features.map(f => f.id);
+        const settingsCtx = { deviceInfo, features };
+        const manifestFeatures = {};
+
+        for (const feature of features) {
+            const entry = { files: [] };
+
+            const paths = featureFiles[feature.id] || [];
+            for (const path of paths) {
+                entry.files.push({ path, type: 'file' });
+            }
+
+            if (feature.confSettings) {
+                const conf = feature.confSettings(settingsCtx)
+                    .filter(s => s.revertable)
+                    .map(s => ({ section: s.section, key: s.key, value: s.value, revertTo: s.revertTo ?? null }));
+                if (conf.length > 0) entry.conf = conf;
+            }
+
+            if (entry.files.length > 0 || entry.conf) {
+                manifestFeatures[feature.id] = entry;
+            }
+        }
+
+        const version = (typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : null) || 'unknown';
+        const timestamp = audit ? audit.startedAt.toISOString() : new Date().toISOString();
+        const firmware = deviceInfo?.firmware || null;
+        const model = deviceInfo?.model || deviceInfo?.serialPrefix || null;
+
+        return {
+            selected,
+            features: manifestFeatures,
+            meta: {
+                writer: { name: 'kobopatch-webui', version },
+                installed: { timestamp, firmware, model },
+            },
+        };
+    }
+
+    async writeManifest(device, manifest) {
+        const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+        await device.writeFile([AUDIT_LOG_DIRECTORY, 'nickelmenu.json'], data);
     }
 }

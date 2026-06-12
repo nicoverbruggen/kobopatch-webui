@@ -809,7 +809,7 @@ export function initNickelMenu(state) {
                     ],
                     shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesRequiringSyncExclusionsOnDevice(),
                     onProgress: progressFn,
-                    audit: new AuditLog(),
+                    audit: new AuditLog('remove-nickelmenu', new Date(), state.device),
                 });
                 showNmDone('remove');
                 return;
@@ -852,7 +852,7 @@ export function initNickelMenu(state) {
                 } catch {
                     // best-effort
                 }
-                await state.nmInstaller.installToDevice(state.device, features, progressFn, { audit: new AuditLog() });
+                await state.nmInstaller.installToDevice(state.device, features, progressFn, { audit: new AuditLog('install-nickelmenu', new Date(), state.device) });
                 showNmDone('written');
             } else {
                 state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo);

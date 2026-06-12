@@ -84,6 +84,13 @@ async function build() {
         }
     }
 
+    // Get version string early so it's available for JS bundle and HTML.
+    let versionStr = 'unknown';
+    let versionLink = 'https://github.com/nicoverbruggen/kobopatch-webui';
+    try {
+        ({ versionStr, versionLink } = await generateVersion());
+    } catch {}
+
     // Build JS bundle
     await esbuild.build({
         entryPoints: [join(srcDir, 'js', 'app.js')],
@@ -94,6 +101,9 @@ async function build() {
         minify: !isDev && !isWatch,
         sourcemap: isDev || isWatch,
         logLevel: 'warning',
+        define: {
+            'globalThis.__APP_VERSION__': JSON.stringify(versionStr),
+        },
     });
 
     // Copy all of src/ to dist/, skipping js/ (bundled separately), css/ (minified), and index.html (generated)
@@ -138,13 +148,6 @@ async function build() {
         }
         writeFileSync(join(distDir, 'js', 'workers', 'patch-worker.js'), workerContent);
     }
-
-    // Get git version string
-    let versionStr = 'unknown';
-    let versionLink = 'https://github.com/nicoverbruggen/kobopatch-webui';
-    try {
-        ({ versionStr, versionLink } = await generateVersion());
-    } catch {}
 
     // Generate cache-busted index.html
     const bundleContent = readFileSync(join(distDir, 'bundle.js'));

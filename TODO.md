@@ -107,16 +107,6 @@ Rough shape:
 
 On re-apply, the app loads the catalog YAML files, replaces each customized patch's YAML block with the stored version, applies the `overrides`, and passes the result to the WASM patcher. A patch absent from `customized` uses its catalog definition as-is.
 
-### Update install logs
-
-Install logs are currently named e.g. `log-26-06-12_12-42.log` and are directly stored in `.kobopatch-webui`. Put these in a subfolder, `logs`.
-
-They should be: `26-06-12_12-42-install-nickelmenu.log`
-            or: `26-06-12_12-42-remove-nickelmenu.log`
-            or: `26-06-12_12-42-custom-patches.log`
-
-Depending on the actual flow. Also, these logs should be appended to in real-time if that isn't the case already, just to make sure that the log is actually accurate (if a write fails somehow, this way we have a log that explains where everything stopped).
-
 ### Consider making the required preset optional
 
 When the user selects "Install with preset", the default menu items and "Tweak" label + icon should be optional but checked by default. This should be easier to achieve now that the way the NickelMenu config file is generated, has changed.

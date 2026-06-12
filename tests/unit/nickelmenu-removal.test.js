@@ -102,7 +102,7 @@ test('executeNickelMenuRemoval writes an audit log of the removal steps', async 
             { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
     });
-    const audit = new AuditLog(new Date(2026, 5, 11, 14, 30));
+    const audit = new AuditLog('remove-nickelmenu', new Date(2026, 5, 11, 14, 30));
 
     await executeNickelMenuRemoval({
         device,
@@ -112,7 +112,7 @@ test('executeNickelMenuRemoval writes an audit log of the removal steps', async 
         audit,
     });
 
-    const logPath = '.kobopatch-webui/log-26-06-11_14-30.log';
+    const logPath = '.kobopatch-webui/logs/26-06-11_14-30-remove-nickelmenu.log';
     assert.ok(device.writePaths().includes(logPath));
     const log = text(device.writeFor(logPath).data);
     assert.match(log, /Removing NickelMenu: wrote \.kobo\/KoboRoot\.tgz/);
