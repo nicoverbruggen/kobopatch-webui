@@ -1,4 +1,5 @@
 import { darkModeSupport } from '../../../kobo/dark-mode.js';
+import { resolveMenuCustomization, NM_MENU_ICON_DEFAULT_PATH } from '../../customization.js';
 
 // Sets up the "Toggle" tab and its base NickelMenu entries (the tab header, plus
 // screenshots, auto-USB, rescan, invert, sleep, reboot, and a device-conditional
@@ -13,7 +14,11 @@ export default {
     id: 'custom-menu',
     section: 'Interface tweaks',
     title: 'Set up NickelMenu preset',
-    description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation that is labelled "Toggle".',
+    description: 'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation bar. You can customize the icon and label.',
+    customization: {
+        actionLabel: 'Customize',
+        actionAriaLabel: 'Customize NickelMenu preset tab',
+    },
     default: true,
     required: true,
     // No per-feature cleanup: everything this feature ships lives under .adds/nm
@@ -41,20 +46,26 @@ export default {
 
     // Ship the Toggle menu icon.
     async install(ctx = {}) {
+        const resolved = resolveMenuCustomization(ctx.menuCustomization);
+        if (resolved.iconFile) {
+            return [resolved.iconFile];
+        }
+
         return [
-            { path: '.adds/nm/.cog.png', data: await ctx.asset('.cog.png') },
+            { path: NM_MENU_ICON_DEFAULT_PATH, data: await ctx.asset('.cog.png') },
         ];
     },
 
     // Contribute the base Toggle-menu entries: the tab header first, then the
     // shared toggles and power items.
     menuItems(ctx = {}) {
+        const resolved = resolveMenuCustomization(ctx.menuCustomization);
         const entries = [
             {
                 id: 'tweak-header',
                 lines: [
-                    'experimental :menu_main_15505_label :Toggle',
-                    'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
+                    `experimental :menu_main_15505_label :${resolved.label}`,
+                    `experimental :menu_main_15505_icon :/mnt/onboard/${resolved.iconPath}`,
                 ],
             },
             { id: 'screenshots', lines: ['menu_item :main :Screenshots :nickel_setting :toggle :screenshots'] },

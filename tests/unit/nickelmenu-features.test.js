@@ -14,6 +14,11 @@ import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
+import {
+    isValidMenuLabel,
+    NM_MENU_ICON_CUSTOM_PNG_PATH,
+    sanitizeMenuLabel,
+} from '../../src/js/nickelmenu/customization.js';
 import { revertableConfSettings } from '../../src/js/nickelmenu/installer.js';
 import { createResponse, text } from './test-helpers.js';
 
@@ -350,6 +355,32 @@ test('custom menu includes the Dark Mode item on supported devices', () => {
 test('custom menu includes the Dark Mode item when the device is unknown (manual mode)', () => {
     const ids = customMenu.menuItems({}).map(e => e.id);
     assert.ok(ids.includes('dark-mode'));
+});
+
+test('custom menu uses the configured tab label and custom icon path', () => {
+    const header = customMenu.menuItems({
+        menuCustomization: {
+            label: 'Read',
+            icon: { type: 'preset', id: 'spark', mimeType: 'image/png', data: new Uint8Array([1, 2, 3]) },
+        },
+    }).find(e => e.id === 'tweak-header');
+
+    assert.deepEqual(header.lines, [
+        'experimental :menu_main_15505_label :Read',
+        `experimental :menu_main_15505_icon :/mnt/onboard/${NM_MENU_ICON_CUSTOM_PNG_PATH}`,
+    ]);
+});
+
+test('custom menu label sanitization keeps only NickelMenu-safe text', () => {
+    assert.equal(sanitizeMenuLabel('ReadMode!'), 'ReadMode');
+    assert.equal(sanitizeMenuLabel('Read Mode'), 'ReadMode');
+    assert.equal(sanitizeMenuLabel('Cats:Books'), 'CatsBooks');
+    assert.equal(sanitizeMenuLabel('ABCDEFGHIJK'), 'ABCDEFGHIJ');
+
+    assert.equal(isValidMenuLabel('ReadMode'), true);
+    assert.equal(isValidMenuLabel('Read Mode'), false);
+    assert.equal(isValidMenuLabel('ReadMode!'), false);
+    assert.equal(isValidMenuLabel(''), false);
 });
 
 test('screensaver feature contributes its Tweak menu toggle near the top of the menu', () => {

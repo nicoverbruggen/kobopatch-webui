@@ -47,7 +47,7 @@ export function populateSelect(selectEl, placeholder, items) {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -103,6 +103,7 @@ export function renderNmCheckboxList(container, items) {
         label.className = 'nm-config-item';
 
         if (item.disabled) label.classList.add('nm-config-item--disabled');
+        if (item.actionLabel && item.onAction) label.classList.add('nm-config-item--has-action');
 
         const input = document.createElement('input');
         input.type = 'checkbox';
@@ -135,6 +136,60 @@ export function renderNmCheckboxList(container, items) {
 
         label.appendChild(input);
         label.appendChild(textDiv);
+
+        if (item.actionLabel && item.onAction) {
+            const side = document.createElement('div');
+            side.className = 'nm-config-side';
+
+            if (item.summaryId) {
+                const caption = document.createElement('span');
+                caption.className = 'nm-config-customize-caption';
+                caption.textContent = item.actionLabel + ':';
+                side.appendChild(caption);
+
+                const summary = document.createElement('button');
+                summary.type = 'button';
+                summary.id = item.summaryId;
+                summary.className = 'nm-config-summary nm-config-summary-button';
+                summary.setAttribute('aria-label', item.actionAriaLabel || item.actionLabel);
+
+                const icon = document.createElement('span');
+                icon.className = 'nm-config-summary-icon';
+                if (item.summaryIconHtml) {
+                    icon.innerHTML = item.summaryIconHtml;
+                } else if (item.summaryIconSrc) {
+                    const img = document.createElement('img');
+                    img.alt = '';
+                    img.src = item.summaryIconSrc;
+                    icon.appendChild(img);
+                }
+
+                const text = document.createElement('span');
+                text.className = 'nm-config-summary-label';
+                text.textContent = item.summaryLabel || '';
+
+                summary.append(icon, text);
+                summary.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    item.onAction();
+                });
+                side.appendChild(summary);
+            } else {
+                const action = document.createElement('button');
+                action.type = 'button';
+                action.className = 'nm-config-action secondary';
+                action.textContent = item.actionLabel;
+                action.setAttribute('aria-label', item.actionAriaLabel || item.actionLabel);
+                action.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    item.onAction();
+                });
+                side.appendChild(action);
+            }
+            label.appendChild(side);
+        }
 
         // Optional "learn more" badge. A hint that looks like a URL opens in a new
         // tab; any other hint is treated as text and shown in a popup. Both are

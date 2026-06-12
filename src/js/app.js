@@ -23,6 +23,7 @@ import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './kobo/s
 import { PatchUI, scanAvailablePatches } from './patches/ui.js';
 import { KoboPatchRunner } from './patches/runner.js';
 import { NickelMenuInstaller, NICKELMENU_FEATURES } from './nickelmenu/installer.js';
+import { createDefaultMenuCustomization } from './nickelmenu/customization.js';
 import { TL } from './shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from './shell/analytics.js';
 import { $, $q, $qa, populateSelect } from './shell/dom.js';
@@ -55,6 +56,7 @@ const state = {
     isRestore: false,        // True when restoring original firmware (no patches selected)
     selectedMode: null,      // "nickelmenu" or "patches"
     nickelMenuOption: null,  // "preset", "nickelmenu-only", or "remove"
+    nickelMenuCustomization: createDefaultMenuCustomization(),
     // Cross-module callbacks — set below after the functions are defined.
     goToModeSelection: null,
     showError: null,

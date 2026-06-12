@@ -89,7 +89,84 @@
 }
 
 .nm-config-text {
+    flex: 1;
+    min-width: 0;
     user-select: none;
+}
+
+.nm-config-action {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.nm-config-side {
+    flex-shrink: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.nm-config-customize-caption {
+    display: none;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+}
+
+.nm-config-summary {
+    display: inline-grid;
+    align-items: center;
+    justify-items: center;
+    gap: 0.15rem;
+    width: 3.35rem;
+    min-height: 3.75rem;
+    padding: 0.3rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+}
+
+.nm-config-summary-button {
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+
+.nm-config-summary-button:hover {
+    border-color: var(--primary);
+    background: #f9fafb;
+}
+
+.nm-config-summary-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    overflow: hidden;
+}
+
+.nm-config-summary-icon img,
+.nm-config-summary-icon svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.nm-config-summary-label {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.15;
 }
 
 /* "Learn more" badge shown for features that declare a hint (url or text). */
@@ -147,6 +224,11 @@
     cursor: not-allowed;
 }
 
+.nm-config-item--disabled.nm-config-item--has-action {
+    opacity: 1;
+    cursor: default;
+}
+
 /* ...with a red note explaining why it can't be enabled. */
 .nm-config-disabled-reason {
     display: block;
@@ -202,6 +284,186 @@
 
 #nm-preset-conflict-list {
     margin-top: 1rem;
+}
+
+.nm-customize-dialog {
+    max-width: 620px;
+}
+
+.nm-customize-body {
+    display: grid;
+    gap: 1rem;
+}
+
+.nm-upload-preview,
+.nm-icon-choice-image {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: transparent;
+}
+
+.nm-upload-preview img,
+.nm-upload-preview svg,
+.nm-icon-choice-image img,
+.nm-icon-choice-image svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.nm-customize-field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.nm-customize-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.nm-customize-label-row span:last-child {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+#nm-customize-label {
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.92rem;
+}
+
+.nm-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+    gap: 0.55rem;
+}
+
+.nm-icon-choice {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    min-height: 86px;
+    padding: 0.55rem 0.35rem;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    box-shadow: none;
+}
+
+.nm-icon-choice:hover,
+.nm-icon-choice--selected {
+    border-color: var(--primary);
+}
+
+.nm-icon-choice-image {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 8px;
+}
+
+.nm-icon-choice-title {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: 0.72rem;
+    line-height: 1.15;
+}
+
+.nm-customize-upload {
+    display: grid;
+    grid-template-columns: auto 2.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.nm-upload-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.nm-upload-button:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.nm-upload-preview {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+}
+
+.nm-upload-preview--selected {
+    border-color: var(--primary);
+}
+
+.nm-upload-name,
+.nm-customize-status,
+.nm-upload-help {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.nm-customize-status {
+    min-height: 1.2rem;
+    margin: 0;
+}
+
+.nm-upload-help {
+    margin: -0.45rem 0 0;
+}
+
+.nm-customize-footer {
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.nm-customize-footer-spacer {
+    flex: 1;
+}
+
+@media (max-width: 520px) {
+    .nm-config-item {
+        flex-wrap: wrap;
+    }
+
+    .nm-config-side {
+        width: auto;
+        margin-left: 1.7rem;
+        align-items: center;
+    }
+
+    .nm-customize-upload {
+        grid-template-columns: 2.5rem minmax(0, 1fr);
+    }
+
+    .nm-upload-button {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
 }
 
 /* Review step: group the "what will be installed" summary into one card so it

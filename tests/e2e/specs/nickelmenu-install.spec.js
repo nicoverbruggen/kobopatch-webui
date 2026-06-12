@@ -50,6 +50,7 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await expect(page.locator('#nm-config-options')).toContainText('Interface tweaks');
     await expect(page.locator('#nm-config-options')).toContainText('Text and typography');
+    await expect(page.getByRole('button', { name: 'Customize NickelMenu preset tab' })).toBeVisible();
 
     // Verify default checkbox states
     await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).toBeChecked();
@@ -63,6 +64,16 @@ test.describe('NickelMenu — install', () => {
 
     // Sideload mode is the one feature with a hint, so exactly one "?" badge shows.
     await expect(page.locator('.nm-config-help')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
+    await expect(page.locator('#nm-customize-dialog')).toBeVisible();
+    await expect(page.locator('.nm-icon-choice')).toHaveCount(12);
+    await expect(page.getByRole('button', { name: 'Use Cog icon' }).locator('img')).toHaveAttribute('src', /\/?js\/nickelmenu\/features\/custom-menu\/\.cog\.png$/);
+    await page.fill('#nm-customize-label', 'ReadMode!');
+    await expect(page.locator('#nm-customize-label')).toHaveValue('ReadMode');
+    await page.getByRole('button', { name: 'Use Spark icon' }).click();
+    await page.click('#btn-nm-customize-save');
+    await expect(page.locator('#nm-customize-dialog')).toBeHidden();
 
     // Enable home screen hiding options and exclude-calibre for testing
     await page.check('input[name="nm-cfg-hide-recommendations"]');
@@ -131,6 +142,10 @@ test.describe('NickelMenu — install', () => {
     expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
     // Must contain NickelMenu items config
     expect(zipFiles).toContainEqual('.adds/nm/webui-preset');
+    expect(zipFiles).toContainEqual('.adds/nm/.custom-icon.png');
+    expect(zipFiles).not.toContainEqual('.adds/nm/.cog.png');
+    const customIconBytes = await zip.file('.adds/nm/.custom-icon.png').async('uint8array');
+    expect(Array.from(customIconBytes.slice(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
     // Must contain font .ttf files (Additional Fonts is checked by default)
     const fontFiles = zipFiles.filter(f => f.startsWith('fonts/') && f.endsWith('.ttf'));
     expect(fontFiles.length).toBeGreaterThan(0);
@@ -139,6 +154,8 @@ test.describe('NickelMenu — install', () => {
 
     // Verify items file has the selected home screen modifications
     const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
+    expect(itemsContent).toContain('experimental :menu_main_15505_label :ReadMode');
+    expect(itemsContent).toContain('experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.custom-icon.png');
     expect(itemsContent).toContain('experimental:hide_home_row1col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row2col2_enabled:1');
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
@@ -150,6 +167,53 @@ test.describe('NickelMenu — install', () => {
     expect(zipFiles).toContainEqual('.adds/nm/scripts/toggle_hidden_home.sh');
     expect(zipFiles).not.toContainEqual('.adds/nm/scripts/toggle_tabs.sh');
     expect(itemsContent).toContain('menu_item :main :Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh');
+  });
+
+  test('no device — uploaded SVG tab icon is resized to 64x64', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await goToManualMode(page);
+
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
+    await expect(page.locator('#nm-customize-dialog')).toBeVisible();
+    await page.setInputFiles('#nm-customize-upload', {
+      name: 'wide.svg',
+      mimeType: 'image/svg+xml',
+      buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><path d="M1 5h18" stroke="black" fill="none"/></svg>'),
+    });
+    await expect(page.locator('#nm-customize-status')).toHaveText('SVG resized to 64x64.');
+    await page.click('#btn-nm-customize-save');
+
+    const additionalFonts = page.locator('input[name="nm-cfg-additional-fonts"]');
+    if (await additionalFonts.isChecked()) {
+      await additionalFonts.uncheck();
+    }
+
+    await page.click('#btn-nm-features-next');
+    await page.click('#btn-nm-backup-next');
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-download'),
+    ]);
+
+    const zipData = fs.readFileSync(await download.path());
+    const zip = await JSZip.loadAsync(zipData);
+    const zipFiles = Object.keys(zip.files);
+    expect(zipFiles).toContainEqual('.adds/nm/.custom-icon.svg');
+    expect(zipFiles).not.toContainEqual('.adds/nm/.custom-icon.png');
+    const iconContent = await zip.file('.adds/nm/.custom-icon.svg').async('string');
+    expect(iconContent).toContain('width="64"');
+    expect(iconContent).toContain('height="64"');
+    expect(iconContent).toContain('viewBox="0 0 20 10"');
+
+    const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
+    expect(itemsContent).toContain('experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.custom-icon.svg');
   });
 
 

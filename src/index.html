@@ -640,6 +640,47 @@
         </div>
     </dialog>
 
+    <dialog id="nm-customize-dialog" class="modal nm-customize-dialog" aria-labelledby="nm-customize-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="nm-customize-title">Customize NickelMenu tab</h2>
+                <button id="btn-nm-customize-close" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body nm-customize-body">
+                <label class="nm-customize-field">
+                    <span class="nm-customize-label-row">
+                        <span>Tab label</span>
+                        <span id="nm-customize-counter">6/10</span>
+                    </span>
+                    <input id="nm-customize-label" type="text" value="Toggle" maxlength="10" autocomplete="off" spellcheck="false" inputmode="text">
+                </label>
+
+                <div class="nm-customize-field">
+                    <div class="nm-customize-label-row">
+                        <span>Preset icon</span>
+                        <span>12 choices</span>
+                    </div>
+                    <div id="nm-customize-presets" class="nm-icon-grid"></div>
+                </div>
+
+                <div class="nm-customize-upload">
+                    <label class="secondary nm-upload-button" for="nm-customize-upload">Upload image</label>
+                    <input id="nm-customize-upload" class="sr-only" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif">
+                    <span id="nm-customize-upload-preview" class="nm-upload-preview" aria-hidden="true"></span>
+                    <span id="nm-customize-upload-name" class="nm-upload-name">No uploaded image selected</span>
+                </div>
+                <p class="nm-upload-help">SVG files are resized to 64x64 and kept as SVG. PNG, JPEG, WebP, and GIF files are resized into a transparent 64x64 PNG.</p>
+                <p id="nm-customize-status" class="nm-customize-status" role="status" aria-live="polite"></p>
+            </div>
+            <div class="modal-footer nm-customize-footer">
+                <button id="btn-nm-customize-reset" class="secondary">Reset defaults</button>
+                <span class="nm-customize-footer-spacer"></span>
+                <button id="btn-nm-customize-cancel" class="secondary">Cancel</button>
+                <button id="btn-nm-customize-save" class="primary">Save</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog id="patch-editor-dialog" class="modal" aria-labelledby="patch-editor-title">
         <div class="modal-content patch-editor-content">
             <div class="modal-header">

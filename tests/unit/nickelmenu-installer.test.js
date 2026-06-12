@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import JSZip from 'jszip';
 
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
+import { NM_MENU_ICON_CUSTOM_PNG_PATH } from '../../src/js/nickelmenu/customization.js';
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
 import { AuditLog } from '../../src/js/kobo/audit-log.js';
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
@@ -82,6 +83,31 @@ test('installToDevice with features updates eReader config and writes feature fi
     assert.deepEqual(manifest.selected, ['custom-menu']);
     assert.ok(manifest.features['custom-menu']);
     assert.ok(manifest.features['custom-menu'].files.some(f => f.path === '.adds/nm/.cog.png'));
+});
+
+test('installToDevice writes customized NickelMenu tab icon and label', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice();
+    const png = bytes('png data');
+
+    await installer.installToDevice(
+        device,
+        [customMenu],
+        createProgressRecorder(),
+        {
+            menuCustomization: {
+                label: 'Read',
+                icon: { type: 'preset', id: 'spark', mimeType: 'image/png', data: png },
+            },
+        }
+    );
+
+    assert.ok(device.writePaths().includes(NM_MENU_ICON_CUSTOM_PNG_PATH));
+    assert.ok(!device.writePaths().includes('.adds/nm/.cog.png'));
+    const items = text(device.writeFor(NM_ITEMS_FILE).data);
+    assert.match(items, /^experimental :menu_main_15505_label :Read$/m);
+    assert.match(items, new RegExp(`^experimental :menu_main_15505_icon :/mnt/onboard/${NM_MENU_ICON_CUSTOM_PNG_PATH}$`, 'm'));
+    assert.deepEqual(device.writeFor(NM_MENU_ICON_CUSTOM_PNG_PATH).data, png);
 });
 
 test('installToDevice uses the calibre sync exclusion when exclude-calibre is selected', async () => {

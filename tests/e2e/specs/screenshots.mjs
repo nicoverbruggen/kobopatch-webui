@@ -34,6 +34,15 @@ const makeKOReaderAvailable = async (page) => {
   });
 };
 
+const shotNickelMenuCustomizeModal = async (page, folder, name, testInfo) => {
+  await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
+  const dialog = page.locator('#nm-customize-dialog');
+  await expect(dialog).toBeVisible();
+  await shot(page, folder, name, testInfo);
+  await page.click('#btn-nm-customize-close');
+  await expect(dialog).not.toBeVisible();
+};
+
 // ============================================================
 // 1. Manual NickelMenu flow
 // ============================================================
@@ -64,6 +73,7 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
   await page.click('#btn-nm-next');
   await expect(page.locator('#step-nm-features')).not.toBeHidden();
   await shot(page, dir, '03-nickelmenu-features', testInfo);
+  await shotNickelMenuCustomizeModal(page, dir, '03a-nickelmenu-customize-modal', testInfo);
 
   // Features → backup → review (only download button in manual mode)
   await page.click('#btn-nm-features-next');
@@ -261,6 +271,7 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
   await page.click('#btn-nm-next');
   await expect(page.locator('#step-nm-features')).not.toBeHidden();
   await shot(page, dir, '06-nickelmenu-features', testInfo);
+  await shotNickelMenuCustomizeModal(page, dir, '06a-nickelmenu-customize-modal', testInfo);
 
   // Features → backup → review
   await page.click('#btn-nm-features-next');
