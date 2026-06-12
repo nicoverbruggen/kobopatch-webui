@@ -228,7 +228,7 @@ test('installToDevice does not write to the device when NickelMenu zip is missin
     assert.deepEqual(device.writePaths(), []);
 });
 
-test('buildDownloadZip with no features includes only NickelMenu KoboRoot.tgz', async () => {
+test('buildDownloadZip with no features includes NickelMenu KoboRoot.tgz and manifest', async () => {
     const tgz = bytes('download tgz');
     const installer = createInstaller(tgz);
 
@@ -236,8 +236,11 @@ test('buildDownloadZip with no features includes only NickelMenu KoboRoot.tgz', 
     const zip = await JSZip.loadAsync(result);
     const filePaths = Object.keys(zip.files).filter(path => !zip.files[path].dir);
 
-    assert.deepEqual(filePaths, ['.kobo/KoboRoot.tgz']);
+    assert.deepEqual(filePaths, ['.kobo/KoboRoot.tgz', '.kobopatch-webui/nickelmenu.json']);
     assert.deepEqual(await zip.file('.kobo/KoboRoot.tgz').async('uint8array'), tgz);
+
+    const manifest = JSON.parse(await zip.file('.kobopatch-webui/nickelmenu.json').async('string'));
+    assert.deepEqual(manifest.selected, []);
 });
 
 test('buildDownloadZip with features includes feature files but not Kobo eReader.conf', async () => {
@@ -257,6 +260,7 @@ test('buildDownloadZip with features includes feature files but not Kobo eReader
             '.adds/nm/.cog.png',
             '.adds/nm/scripts/toggle_hidden_home.sh',
             NM_ITEMS_FILE,
+            '.kobopatch-webui/nickelmenu.json',
         ]);
         assert.match(
             await zip.file(NM_ITEMS_FILE).async('string'),

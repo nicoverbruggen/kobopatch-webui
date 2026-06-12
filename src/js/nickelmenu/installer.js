@@ -264,12 +264,25 @@ export class NickelMenuInstaller {
         const tgz = await this.getKoboRootTgz();
         zip.file('.kobo/KoboRoot.tgz', tgz);
 
+        let collectedFiles = [];
+        let featureFiles = {};
+
         if (features.length > 0) {
-            const { files } = await this.collectFiles(features, progressFn, deviceInfo);
-            for (const { path, data } of files) {
+            const result = await this.collectFiles(features, progressFn, deviceInfo);
+            collectedFiles = result.files;
+            featureFiles = result.featureFiles;
+            for (const { path, data } of collectedFiles) {
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 zip.file(path, fileData);
             }
+        }
+
+        // Include the install manifest so the downloaded archive carries the same
+        // definitional info about the chosen features that a USB install writes.
+        const manifest = this.buildManifest(features, collectedFiles, featureFiles, deviceInfo, null);
+        if (manifest) {
+            const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+            zip.file(`${AUDIT_LOG_DIRECTORY}/nickelmenu.json`, data);
         }
 
         progressFn('Compressing...');

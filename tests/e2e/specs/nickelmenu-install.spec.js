@@ -431,13 +431,13 @@ test.describe('NickelMenu — install', () => {
     // eReader.conf step should be hidden for nickelmenu-only
     await expect(page.locator('#nm-download-conf-step')).toBeHidden();
 
-    // Verify ZIP contents — should only contain KoboRoot.tgz
+    // Verify ZIP contents — KoboRoot.tgz plus the install manifest
     expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
     const zipData = fs.readFileSync(await download.path());
     const zip = await JSZip.loadAsync(zipData);
     const zipFiles = Object.keys(zip.files).filter(f => !zip.files[f].dir);
 
-    expect(zipFiles).toEqual(['.kobo/KoboRoot.tgz']);
+    expect(zipFiles).toEqual(['.kobo/KoboRoot.tgz', '.kobopatch-webui/nickelmenu.json']);
   });
 
 

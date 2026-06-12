@@ -378,9 +378,25 @@ export function initPatchesFlow(state) {
         }
     });
 
-    btnDownload.addEventListener('click', () => {
+    btnDownload.addEventListener('click', async () => {
         if (!state.resultTgz) return;
-        triggerDownload(state.resultTgz, 'KoboRoot.tgz', 'application/gzip');
+
+        btnDownload.disabled = true;
+        try {
+            // Bundle KoboRoot.tgz together with the manifest, mirroring the
+            // folder layout a USB install writes to the device. The manifest
+            // carries the definitional info about the chosen patches/config.
+            const zip = new JSZip();
+            zip.file('.kobo/KoboRoot.tgz', state.resultTgz);
+            const manifest = buildPatchesManifest();
+            const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+            zip.file(`${AUDIT_LOG_DIRECTORY}/custom-patches.json`, manifestData);
+            const bytes = await zip.generateAsync({ type: 'uint8array' });
+            triggerDownload(bytes, 'custom-patches.zip', 'application/zip');
+        } finally {
+            btnDownload.disabled = false;
+        }
+
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
         $('download-device-name').textContent = koboModels[state.selectedPrefix] || 'Kobo';

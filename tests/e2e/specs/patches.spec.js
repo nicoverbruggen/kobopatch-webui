@@ -3,11 +3,21 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const crypto = require('crypto');
 const zlib = require('zlib');
+const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../support/paths');
 const { hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
+
+/**
+ * Read a downloaded patches ZIP and return the embedded KoboRoot.tgz bytes.
+ * The download bundles `.kobo/KoboRoot.tgz` alongside the custom-patches manifest.
+ */
+async function extractKoboRootTgz(download) {
+  const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+  return zip.file('.kobo/KoboRoot.tgz').async('nodebuffer');
+}
 
 /**
  * Drive the manual flow up to a loaded patches step for 4.45.23646 / N428.
@@ -94,7 +104,7 @@ test.describe('Custom patches', () => {
       page.click('#btn-download'),
     ]);
 
-    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+    expect(download.suggestedFilename()).toBe('custom-patches.zip');
     await expect(page.locator('#download-device-name')).toHaveText('Kobo Libra Colour');
   });
 
@@ -144,15 +154,14 @@ test.describe('Custom patches', () => {
 
     await expect(page.locator('#build-status')).toContainText('Software extracted');
 
-    // Download KoboRoot.tgz and verify it matches the original
+    // Download the ZIP and verify the embedded KoboRoot.tgz matches the original
     const [download] = await Promise.all([
       page.waitForEvent('download'),
       page.click('#btn-download'),
     ]);
 
-    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
-    const downloadPath = await download.path();
-    const tgzData = fs.readFileSync(downloadPath);
+    expect(download.suggestedFilename()).toBe('custom-patches.zip');
+    const tgzData = await extractKoboRootTgz(download);
     const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
   });
@@ -303,7 +312,7 @@ test.describe('Custom patches', () => {
       page.click('#btn-download'),
     ]);
 
-    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
+    expect(download.suggestedFilename()).toBe('custom-patches.zip');
   });
 
 
@@ -342,9 +351,8 @@ test.describe('Custom patches', () => {
       page.click('#btn-download'),
     ]);
 
-    expect(download.suggestedFilename()).toBe('KoboRoot.tgz');
-    const downloadPath = await download.path();
-    const tgzData = fs.readFileSync(downloadPath);
+    expect(download.suggestedFilename()).toBe('custom-patches.zip');
+    const tgzData = await extractKoboRootTgz(download);
     const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
   });
@@ -927,7 +935,7 @@ test.describe('Custom patches', () => {
       page.waitForEvent('download'),
       page.click('#btn-download'),
     ]);
-    const shaEdited = crypto.createHash('sha1').update(fs.readFileSync(await dlEdited.path())).digest('hex');
+    const shaEdited = crypto.createHash('sha1').update(await extractKoboRootTgz(dlEdited)).digest('hex');
 
     // --- Second build: same patch, default (unedited) ---
     await page.goto('/');
@@ -951,7 +959,7 @@ test.describe('Custom patches', () => {
       page.waitForEvent('download'),
       page.click('#btn-download'),
     ]);
-    const shaDefault = crypto.createHash('sha1').update(fs.readFileSync(await dlDefault.path())).digest('hex');
+    const shaDefault = crypto.createHash('sha1').update(await extractKoboRootTgz(dlDefault)).digest('hex');
 
     // The edited patch must produce different output
     expect(shaEdited).not.toBe(shaDefault);
