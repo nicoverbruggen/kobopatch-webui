@@ -11,6 +11,7 @@ export default {
     description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can launch KOReader from the Toggle menu; it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
+    directories: ['.adds/koreader'],
 
     reviewNotices() {
         return [

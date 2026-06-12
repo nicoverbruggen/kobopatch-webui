@@ -347,11 +347,16 @@ export class NickelMenuInstaller {
         const manifestFeatures = {};
 
         for (const feature of features) {
-            const entry = { files: [] };
+            const entry = {};
 
-            const paths = featureFiles[feature.id] || [];
-            for (const path of paths) {
-                entry.files.push({ path, type: 'file' });
+            if (feature.directories) {
+                entry.directories = feature.directories;
+            } else {
+                entry.files = [];
+                const paths = featureFiles[feature.id] || [];
+                for (const path of paths) {
+                    entry.files.push({ path, type: 'file' });
+                }
             }
 
             if (feature.confSettings) {
