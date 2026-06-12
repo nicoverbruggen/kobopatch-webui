@@ -891,4 +891,92 @@ test.describe('Custom patches', () => {
     await dialog.locator('.modal-footer .patch-editor-cancel').click();
     await expect(dialog).not.toBeVisible();
   });
+
+
+  test('editing a patch value changes the output KoboRoot.tgz', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    // --- First build: edited patch ---
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await overrideFirmwareURLs(page);
+    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Open section, edit patch value
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+    const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(patchName).toBeVisible();
+    const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+    const editBtn = patchItem.locator('.patch-edit-btn');
+    await editBtn.click();
+
+    const dialog = page.locator('#patch-editor-dialog');
+    const textarea = dialog.locator('.patch-editor-textarea');
+    const initialYaml = await textarea.inputValue();
+    const editedYaml = initialYaml.replace('min-height: 12px', 'min-height: 99px');
+    await textarea.fill(editedYaml);
+    await dialog.locator('.patch-editor-validate').click();
+    await expect(dialog.locator('.patch-editor-status--ok')).toBeVisible();
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+
+    // Enable the patch
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+
+    // Build and download
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await page.click('#btn-build');
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+    await expect(page.locator('#build-status')).toContainText('Patching complete');
+    const [dlEdited] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+    const shaEdited = crypto.createHash('sha1').update(fs.readFileSync(await dlEdited.path())).digest('hex');
+
+    // --- Second build: same patch, default (unedited) ---
+    await page.goto('/');
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await overrideFirmwareURLs(page);
+    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Enable the same patch WITHOUT editing
+    const section2 = page.locator('.patch-file-section').first();
+    await section2.locator('summary').click();
+    const patchName2 = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(patchName2).toBeVisible();
+    await patchName2.locator('xpath=ancestor::label').locator('input').check();
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+
+    // Build and download
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await page.click('#btn-build');
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+    await expect(page.locator('#build-status')).toContainText('Patching complete');
+    const [dlDefault] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+    const shaDefault = crypto.createHash('sha1').update(fs.readFileSync(await dlDefault.path())).digest('hex');
+
+    // The edited patch must produce different output
+    expect(shaEdited).not.toBe(shaDefault);
+  });
 });
