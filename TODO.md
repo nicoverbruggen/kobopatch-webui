@@ -2,26 +2,36 @@
 
 ## NickelMenu flow
 
-### Audit should generate a parsable JSON file so we can easily uninstall the latest state
+### Audit should generate a parsable JSON manifest for informed removal
 
-In addition to an install log, maintain a `kp-webui.json` file in `.kobopatch-webui` that contains information about what was installed, i.e.:
+In addition to the human-readable install log, maintain a `kp-webui.json` file in `.kobopatch-webui` that records exactly what was written — the single source of truth for removal. Currently, removal detection is entirely heuristic (file paths, conf settings), which is fragile across version changes (e.g. a script path moving between releases).
 
-```
+Key design notes:
+
+- **Overwrite on every install/reinstall.** The manifest always reflects the latest state, not an append-only log.
+- **Best-effort.** Never block removal if the manifest is missing; fall back to the current heuristics.
+- **Record actual paths written *at install time*, not the feature's current declarations.** This is the core value: if a script path moved between versions, the old path recorded in the manifest is what removal uses, so it still cleans up correctly.
+- **Feature IDs** for the checklist UX, **files** for cleanup, **conf settings** (section/key/value) so reverts are precise.
+- **The uninstaller's `removeOptionalEntry` already catches missing paths**, so a stale manifest entry (deleted file) is a safe no-op.
+
+Rough shape:
+
+```json
 {
+    "features": ["preset", "koreader"],
     "files": [
-        {path: ".adds/nm/kp-preset", type: file},
-        {path: ".adds/koreader", type: "folder"}
+        { "path": ".adds/nm/webui-preset", "type": "file" },
+        { "path": ".adds/nm/scripts/toggle_typography.sh", "type": "file" },
+        { "path": ".adds/koreader", "type": "directory" }
     ],
-    "features": [
-        "preset", "koreader"
+    "conf": [
+        { "section": "Reading", "key": "webkitTextRendering", "value": "optimizeLegibility" }
     ],
     "metadata": {
-        "version": 1.15
+        "version": "1.15"
     }
 }
 ```
-
-Based on this information, we can do a more informed uninstall in the future.
 
 ### Offer alternative reading apps
 
