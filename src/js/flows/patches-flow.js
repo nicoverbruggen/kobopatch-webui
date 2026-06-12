@@ -83,6 +83,10 @@ export function initPatchesFlow(state) {
     }
 
     btnPatchesBack.addEventListener('click', () => {
+        // Going back reloads patches from scratch, discarding any edits. Warn first.
+        if (state.patchUI.hasEdits() && !window.confirm(TL.PATCH.DISCARD_EDITS_CONFIRM)) {
+            return;
+        }
         if (state.manualMode) {
             setNavStep(2);
             showStep($('step-manual-version'));

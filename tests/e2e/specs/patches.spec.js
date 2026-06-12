@@ -956,4 +956,72 @@ test.describe('Custom patches', () => {
     // The edited patch must produce different output
     expect(shaEdited).not.toBe(shaDefault);
   });
+
+
+  test('edited patch shows a "modified" indicator that clears when reverted', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await gotoManualPatchesStep(page);
+
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+
+    const patchLabel = 'Reduce top/bottom page spacer';
+    const itemFor = () => page.locator('.patch-name', { hasText: patchLabel }).first()
+      .locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+
+    // No indicator before any edit.
+    await expect(itemFor().locator('.patch-modified')).toHaveCount(0);
+
+    const dialog = page.locator('#patch-editor-dialog');
+    const textarea = dialog.locator('.patch-editor-textarea');
+
+    // Edit a value → indicator appears.
+    await itemFor().locator('.patch-edit-btn').click();
+    const original = await textarea.inputValue();
+    await textarea.fill(original.replace('min-height: 12px', 'min-height: 77px'));
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+    await expect(itemFor().locator('.patch-modified')).toBeVisible();
+
+    // Edit back to the original → indicator clears.
+    await itemFor().locator('.patch-edit-btn').click();
+    await textarea.fill(original);
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+    await expect(itemFor().locator('.patch-modified')).toHaveCount(0);
+  });
+
+
+  test('going back after editing a patch asks for confirmation', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await gotoManualPatchesStep(page);
+
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+    const patchItem = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first()
+      .locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+
+    // Edit a patch so there are unsaved edits.
+    await patchItem.locator('.patch-edit-btn').click();
+    const dialog = page.locator('#patch-editor-dialog');
+    const textarea = dialog.locator('.patch-editor-textarea');
+    const original = await textarea.inputValue();
+    await textarea.fill(original.replace('min-height: 12px', 'min-height: 77px'));
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+
+    // Dismissing the confirm keeps us on the patches step.
+    let prompted = false;
+    page.once('dialog', (d) => { prompted = true; expect(d.message()).toContain('discard'); d.dismiss(); });
+    await page.click('#btn-patches-back');
+    expect(prompted).toBe(true);
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+
+    // Accepting the confirm navigates back (manual mode → version step).
+    page.once('dialog', (d) => d.accept());
+    await page.click('#btn-patches-back');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+  });
 });

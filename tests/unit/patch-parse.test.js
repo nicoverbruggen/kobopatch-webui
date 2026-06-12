@@ -1,7 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/ui.js';
+import { PatchUI, parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/ui.js';
+
+/**
+ * Build a PatchUI seeded with one file's worth of patches and their pristine
+ * text, mirroring what loadFromZip captures, without needing a zip or the DOM.
+ */
+function seedUI(filename, raw) {
+    const ui = new PatchUI();
+    const parsed = parsePatchYAML(raw);
+    ui.patchFiles[filename] = { raw, patches: parsed };
+    ui.pristineText[filename] = {};
+    for (const p of parsed) {
+        ui.pristineText[filename][p.name] = ui._patchText(raw, p.lineStart, p.lineEnd);
+    }
+    return ui;
+}
 
 test('parsePatchYAML reads name, enabled, description and patchGroup', () => {
     const yaml = [
@@ -93,6 +108,38 @@ test('replacePatchLines round-trips through parsePatchYAML', () => {
     const reparsed = parsePatchYAML(updated);
     assert.equal(reparsed.find(p => p.name === 'Second').enabled, true);
     assert.equal(reparsed.find(p => p.name === 'First').enabled, true);
+});
+
+test('edit tracking flags a modified patch and reports hasEdits', () => {
+    const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n  - ReplaceString: a\nQ:\n  - Enabled: no\n');
+    assert.equal(ui.hasEdits(), false);
+    assert.equal(ui.isModified('f.yaml', 'P'), false);
+
+    ui._trackEdit('f.yaml', 'P', 'P:\n  - Enabled: no\n  - ReplaceString: b\n');
+    assert.equal(ui.isModified('f.yaml', 'P'), true);
+    assert.equal(ui.isModified('f.yaml', 'Q'), false);
+    assert.equal(ui.hasEdits(), true);
+});
+
+test('edit tracking clears the flag when an edit restores the pristine form', () => {
+    const original = 'P:\n  - Enabled: no\n  - ReplaceString: a\n';
+    const ui = seedUI('f.yaml', original);
+
+    ui._trackEdit('f.yaml', 'P', 'P:\n  - Enabled: no\n  - ReplaceString: b\n');
+    assert.equal(ui.isModified('f.yaml', 'P'), true);
+
+    // Editing back to the original (ignoring trailing whitespace) clears it.
+    ui._trackEdit('f.yaml', 'P', 'P:\n  - Enabled: no\n  - ReplaceString: a  \n');
+    assert.equal(ui.isModified('f.yaml', 'P'), false);
+    assert.equal(ui.hasEdits(), false);
+});
+
+test('edit tracking follows a renamed patch and drops the old name', () => {
+    const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n');
+    const editedName = ui._trackEdit('f.yaml', 'P', 'Renamed:\n  - Enabled: yes\n');
+    assert.equal(editedName, 'Renamed');
+    assert.equal(ui.isModified('f.yaml', 'P'), false);
+    assert.equal(ui.isModified('f.yaml', 'Renamed'), true);
 });
 
 test('yamlScalar leaves plain names bare and quotes significant characters', () => {

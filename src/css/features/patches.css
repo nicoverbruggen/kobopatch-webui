@@ -184,6 +184,18 @@
     flex-shrink: 0;
 }
 
+.patch-modified {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent-text);
+    background: var(--primary-light);
+    border-radius: 3px;
+    padding: 0.05rem 0.3rem;
+    flex-shrink: 0;
+}
+
 .patch-desc-toggle {
     flex-shrink: 0;
     margin-left: auto;

@@ -173,12 +173,34 @@ test('manual patches', async ({ page }, testInfo) => {
   await expect(page.locator('#step-patches')).not.toBeHidden();
   await shot(page, dir, '03-patches-config', testInfo);
 
-  // Expand section and select a patch
+  // Expand section and select a standalone (checkbox) patch.
   const section = page.locator('.patch-file-section').first();
   await section.locator('summary').click();
-  const patchLabel = section.locator('label').filter({ has: page.locator('.patch-name:not(.patch-name-none)') }).first();
+  const patchLabel = section.locator('label').filter({ has: page.locator('input[type="checkbox"]') }).first();
   await patchLabel.locator('input').check();
   await shot(page, dir, '04-patches-selected', testInfo);
+
+  // Patch editor — open, validate an edit, and show the "modified" indicator.
+  // Edit a different patch than the one selected above (the first, near the top
+  // of the list) so the selection count carries through and the badge is
+  // prominently visible in the modified-indicator shot.
+  const editTarget = section.locator('.patch-item').filter({ has: page.locator('.patch-edit-btn') }).first();
+  await editTarget.locator('.patch-edit-btn').click();
+  const editorDialog = page.locator('#patch-editor-dialog');
+  await expect(editorDialog).toBeVisible();
+  await shot(page, dir, '04a-patch-editor', testInfo);
+
+  const editorTextarea = editorDialog.locator('.patch-editor-textarea');
+  const originalYaml = await editorTextarea.inputValue();
+  await editorTextarea.fill(originalYaml.replace(/\n*$/, '') + '\n  # customized via kobopatch-webui\n');
+  await editorDialog.locator('.patch-editor-validate').click();
+  await expect(editorDialog.locator('.patch-editor-status--ok')).toBeVisible();
+  await shot(page, dir, '04b-patch-editor-validated', testInfo);
+
+  await editorDialog.locator('.patch-editor-save').click();
+  await expect(editorDialog).not.toBeVisible();
+  await expect(page.locator('.patch-modified').first()).toBeVisible();
+  await shot(page, dir, '04c-patch-modified', testInfo);
 
   // Review & build
   await page.click('#btn-patches-next');

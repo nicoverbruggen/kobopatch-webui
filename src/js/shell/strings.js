@@ -55,6 +55,9 @@ export const TL = {
 
     PATCH: {
         NONE: 'None (do not patch)',
+        MODIFIED: 'modified',
+        MODIFIED_TITLE: 'You edited this patch’s definition.',
+        DISCARD_EDITS_CONFIRM: 'You have unsaved edits to one or more patches. Going back will discard them. Continue?',
     },
 
 };

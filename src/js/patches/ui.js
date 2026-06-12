@@ -192,6 +192,11 @@ class PatchUI {
         this.configYAML = null;
         // Blacklisted patches keyed by short version -> filename -> [names]
         this.blacklist = null;
+        // Pristine patch text keyed by filename -> name, captured at load time so
+        // edits can be detected (and reverts cleared) by comparison.
+        this.pristineText = {};
+        // Names of user-edited patches keyed by filename -> Set<name>.
+        this.modifiedPatches = {};
         // Called when patch selection changes
         this.onChange = null;
     }
@@ -236,8 +241,11 @@ class PatchUI {
         this.firmwareVersion = version;
         this.patchConfig = patches;
 
-        // Load each patch YAML file referenced in the config
+        // Load each patch YAML file referenced in the config. A fresh load is a
+        // clean slate, so any previously tracked edits are discarded here.
         this.patchFiles = {};
+        this.pristineText = {};
+        this.modifiedPatches = {};
         for (const filename of Object.keys(patches)) {
             const yamlFile = zip.file(filename);
             if (!yamlFile) {
@@ -247,7 +255,30 @@ class PatchUI {
             const raw = await yamlFile.async('string');
             const parsed = parsePatchYAML(raw);
             this.patchFiles[filename] = { raw, patches: parsed };
+            this.pristineText[filename] = {};
+            for (const p of parsed) {
+                this.pristineText[filename][p.name] = this._patchText(raw, p.lineStart, p.lineEnd);
+            }
         }
+    }
+
+    /** Extract and normalize a patch's text block for edit comparison. */
+    _patchText(raw, lineStart, lineEnd) {
+        return raw
+            .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+            .split('\n').slice(lineStart, lineEnd)
+            .map(l => l.replace(/\s+$/, ''))
+            .join('\n').replace(/\n+$/, '');
+    }
+
+    /** Whether a patch's definition differs from its pristine loaded form. */
+    isModified(filename, name) {
+        return !!this.modifiedPatches[filename]?.has(name);
+    }
+
+    /** Whether any patch across any file has been edited by the user. */
+    hasEdits() {
+        return Object.values(this.modifiedPatches).some(set => set.size > 0);
     }
 
     /**
@@ -422,6 +453,14 @@ class PatchUI {
                     const badge = document.createElement('span');
                     badge.className = 'patch-incompatible';
                     badge.textContent = 'known to fail';
+                    header.appendChild(badge);
+                }
+
+                if (this.isModified(filename, patch.name)) {
+                    const badge = document.createElement('span');
+                    badge.className = 'patch-modified';
+                    badge.textContent = TL.PATCH.MODIFIED;
+                    badge.title = TL.PATCH.MODIFIED_TITLE;
                     header.appendChild(badge);
                 }
 
@@ -724,8 +763,29 @@ class PatchUI {
             }
         }
 
+        this._trackEdit(filename, patch.name, newYaml);
+
         this.render(container);
         this._updateCounts(container);
+    }
+
+    /**
+     * Update the modified-patch set after an edit. The edit is flagged as a
+     * modification unless it restores the patch to its pristine loaded form, in
+     * which case the flag is cleared. The patch name may have changed, so the
+     * edited name is derived from the new YAML. Returns the edited name.
+     */
+    _trackEdit(filename, oldName, newYaml) {
+        const editedName = parsePatchYAML(newYaml)[0]?.name ?? oldName;
+        const set = this.modifiedPatches[filename] || (this.modifiedPatches[filename] = new Set());
+        set.delete(oldName);
+        const pristine = this.pristineText[filename]?.[editedName];
+        if (pristine !== undefined && this._patchText(newYaml, 0, newYaml.split('\n').length) === pristine) {
+            set.delete(editedName);
+        } else {
+            set.add(editedName);
+        }
+        return editedName;
     }
 
     /**
