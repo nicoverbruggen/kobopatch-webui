@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { gzipSync } from 'node:zlib';
 
 import JSZip from 'jszip';
 
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import cadmus from '../../src/js/nickelmenu/features/cadmus/index.js';
 import { homeHiders } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
@@ -23,6 +25,43 @@ async function createZip(entries) {
         zip.file(path, data);
     }
     return zip.generateAsync({ type: 'uint8array' });
+}
+
+// Test-only companion to createZip(): KOReader's unit test uses a tiny in-memory
+// ZIP instead of the production archive, and Cadmus does the same with tar.gz so
+// unit tests stay fast and do not depend on downloaded installable assets.
+function createTarGzFixture(entries) {
+    const blocks = [];
+
+    for (const [path, value] of Object.entries(entries)) {
+        const isDirectory = value === null;
+        const data = isDirectory ? Buffer.alloc(0) : Buffer.from(value);
+        const header = Buffer.alloc(512);
+        header.write(path);
+        header.write('0000755\0', 100);
+        header.write('0000000\0', 108);
+        header.write('0000000\0', 116);
+        header.write(data.length.toString(8).padStart(11, '0') + '\0', 124);
+        header.write('00000000000\0', 136);
+        header.fill(' ', 148, 156);
+        header.write(isDirectory ? '5' : '0', 156);
+        header.write('ustar\0', 257);
+        header.write('00', 263);
+
+        let checksum = 0;
+        for (const byte of header) checksum += byte;
+        header.write(checksum.toString(8).padStart(6, '0') + '\0 ', 148);
+
+        blocks.push(header);
+        if (!isDirectory) {
+            blocks.push(data);
+            const padding = (512 - data.length % 512) % 512;
+            if (padding) blocks.push(Buffer.alloc(padding));
+        }
+    }
+
+    blocks.push(Buffer.alloc(1024));
+    return gzipSync(Buffer.concat(blocks));
 }
 
 async function withMockFetch(responses, fn) {
@@ -104,12 +143,12 @@ test('Better Typography ships the toggle script and contributes its Tweak menu i
     assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
     assert.deepEqual(installed.map(f => f.path), ['.adds/nm/scripts/toggle_typography.sh']);
 
-    // menuItems() contributes the single "Toggle Typography" entry; its position
+    // menuItems() contributes the single "Typography" entry; its position
     // (the old "Legibility Toggle" slot) is set in features/menu-order.js.
     const entries = betterTypography.menuItems();
     assert.deepEqual(entries, [{
         id: 'typography',
-        lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
+        lines: ['menu_item :main :Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
     }]);
 });
 
@@ -165,6 +204,14 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
     }]);
 });
 
+test('Cadmus contributes its launcher entry at the top of the menu', () => {
+    assert.equal(cadmus.section, 'Reading Apps');
+    assert.deepEqual(cadmus.menuItems(), [{
+        id: 'cadmus',
+        lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+    }]);
+});
+
 test('Better Typography cleanup removes the toggle script and the WebKit setting', () => {
     const { cleanup } = betterTypography;
 
@@ -208,6 +255,38 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
             'Fetching KOReader release info...',
             'Downloading KOReader v2026.01...',
             'Extracting KOReader...',
+        ]);
+    });
+});
+
+test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {
+    const tarData = createTarGzFixture({
+        './': null,
+        './cadmus.sh': '#!/bin/sh',
+        './libs/': null,
+        './libs/libcadmus.so': 'library',
+    });
+    const progressMessages = [];
+
+    await withMockFetch(new Map([
+        ['/assets/cadmus-release.json', createResponse('', { json: { version: 'v0.10.1' } })],
+        ['/assets/cadmus-kobo.tar.gz', createResponse(tarData)],
+    ]), async () => {
+        const files = await cadmus.install({
+            progress(message) {
+                progressMessages.push(message);
+            },
+        });
+
+        assert.deepEqual(files.map(file => file.path), [
+            '.adds/cadmus/cadmus.sh',
+            '.adds/cadmus/libs/libcadmus.so',
+        ]);
+        assert.equal(text(files[0].data), '#!/bin/sh');
+        assert.deepEqual(progressMessages, [
+            'Fetching Cadmus release info...',
+            'Downloading Cadmus v0.10.1...',
+            'Extracting Cadmus...',
         ]);
     });
 });
@@ -278,7 +357,7 @@ test('screensaver feature contributes its Tweak menu toggle near the top of the 
 
     assert.equal(entries.length, 1);
     assert.equal(entries[0].id, 'screensaver');
-    assert.equal(entries[0].lines[0], 'menu_item :main :Toggle Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
+    assert.equal(entries[0].lines[0], 'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
     assert.ok(entries[0].lines.some(l => /Screensaver is now ON/.test(l)));
 });
 

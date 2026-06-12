@@ -19,12 +19,12 @@ The project itself currently has a few operational modes, depending on what it i
 
 **This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config).** 
 
-This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers and even KOReader if you'd like.  (You can select which specific tweaks to apply.)
+This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, and reading apps like KOReader or Cadmus if you'd like.  (You can select which specific tweaks to apply.)
 
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
 - <u>This is easily the safest mod to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
-- You can optionally install **KOReader** using this method, too.
+- You can optionally install **KOReader** or **Cadmus** using this method, too.
 - Recommended for everyone. Easy to uninstall, too.
 
 ## Mode B: Custom Patches
@@ -73,7 +73,7 @@ If you want to apply **custom patches**:
 
 1. **Connect or download** — auto-detect your Kobo via File System Access API on Chromium, or choose manual download mode (any browser)
 2. **Choose mode** — NickelMenu (install/configure/remove) or custom patches
-3. **Configure** — for NickelMenu: select install options (fonts, screensaver, tab/homescreen tweaks, KOReader) or removal; for patches: enable/disable patches (or select none to restore original software)
+3. **Configure** — for NickelMenu: select install options (fonts, screensaver, tab/homescreen tweaks, reading apps) or removal; for patches: enable/disable patches (or select none to restore original software)
 4. **Backup** — create or manually confirm a backup before changing NickelMenu files
 5. **Review** — confirm your selections before proceeding
 6. **Install or remove** — write directly to the device (Chromium auto mode) or download a ZIP/tgz for manual installation

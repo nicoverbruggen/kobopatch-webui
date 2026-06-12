@@ -6,12 +6,13 @@
 export const MENU_ITEM_ORDER = [
     'tweak-header',        // custom-menu: the Toggle tab header
     'koreader',            // koreader: Open KOReader
-    'screenshots',         // custom-menu: Toggle Screenshots
-    'screensaver',         // screensaver: Toggle Screensaver (below Screenshots)
-    'auto-usb',            // custom-menu: Toggle Auto USB
-    'typography',          // better-typography: Toggle Typography
-    'toggle-hidden-home',  // hide-home-content: Toggle Minimal Home
-    'toggle-tabs',         // simplify-tabs: Toggle Simple Tabs
+    'cadmus',              // cadmus: Open Cadmus
+    'screenshots',         // custom-menu: Screenshots
+    'screensaver',         // screensaver: Screensaver (below Screenshots)
+    'auto-usb',            // custom-menu: Auto USB
+    'typography',          // better-typography: Typography
+    'toggle-hidden-home',  // hide-home-content: Minimal Home
+    'toggle-tabs',         // simplify-tabs: Simple Tabs
     'invert-reboot',       // custom-menu: Invert Display
     'sleep',               // custom-menu: Sleep Device
     'reboot',              // custom-menu: Reboot Device

@@ -19,12 +19,12 @@ export default {
         return [{ path: '.adds/nm/scripts/toggle_tabs.sh', data: await ctx.asset('scripts/toggle_tabs.sh') }];
     },
 
-    // Contribute the "Toggle Simple Tabs" Toggle item. Its position (just after
+    // Contribute the "Simple Tabs" Toggle-menu item. Its position (just after
     // the home-content toggle) is set by 'toggle-tabs' in ../menu-order.js.
     menuItems() {
         return [{
             id: 'toggle-tabs',
-            lines: ['menu_item :main :Toggle Simple Tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
+            lines: ['menu_item :main :Simple Tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
         }];
     },
 

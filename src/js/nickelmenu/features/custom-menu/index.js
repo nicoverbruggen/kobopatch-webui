@@ -57,8 +57,8 @@ export default {
                     'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
                 ],
             },
-            { id: 'screenshots', lines: ['menu_item :main :Toggle Screenshots :nickel_setting :toggle :screenshots'] },
-            { id: 'auto-usb', lines: ['menu_item :main :Toggle Auto USB :nickel_setting :toggle :auto_usb_gadget'] },
+            { id: 'screenshots', lines: ['menu_item :main :Screenshots :nickel_setting :toggle :screenshots'] },
+            { id: 'auto-usb', lines: ['menu_item :main :Auto USB :nickel_setting :toggle :auto_usb_gadget'] },
             { id: 'rescan-books', lines: ['menu_item :library :Rescan books    :nickel_misc        :rescan_books_full'] },
             {
                 id: 'invert-reboot',

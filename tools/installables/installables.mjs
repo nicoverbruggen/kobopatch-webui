@@ -29,6 +29,12 @@ const INSTALLABLES = [
         fetchLatest: () => fetchLatestRelease('koreader/koreader', (n) => /^koreader-kobo-.*\.zip$/.test(n)),
     },
     {
+        name: 'cadmus',
+        asset: 'cadmus-kobo.tar.gz',
+        versionFile: 'cadmus-release.json',
+        fetchLatest: () => fetchLatestRelease('OGKevin/cadmus', (n) => n === 'cadmus-kobo.tar.gz'),
+    },
+    {
         name: 'readerly',
         asset: 'KF_Readerly.zip',
         versionFile: 'readerly-release.json',

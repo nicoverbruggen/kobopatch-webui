@@ -2,11 +2,10 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const crypto = require('crypto');
-const zlib = require('zlib');
 const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../support/paths');
-const { hasNickelMenuAssets, hasKOReaderAssets, hasFontAssets, hasFirmwareZip } = require('../support/assets');
+const { hasNickelMenuAssets, hasKOReaderAssets, hasCadmusAssets, hasFontAssets, hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles, getRemovedEntries } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
 const {
@@ -145,12 +144,56 @@ test.describe('NickelMenu — install', () => {
     expect(itemsContent).toContain('experimental:hide_home_row3_enabled:1');
     expect(itemsContent).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
 
-    // Selecting home-screen hiders adds the universal "Toggle Minimal Home"
+    // Selecting home-screen hiders adds the universal "Minimal Home"
     // toggle item and ships its script under .adds/nm/scripts. The tabs toggle is
     // not added because simplify-tabs was left unchecked.
     expect(zipFiles).toContainEqual('.adds/nm/scripts/toggle_hidden_home.sh');
     expect(zipFiles).not.toContainEqual('.adds/nm/scripts/toggle_tabs.sh');
-    expect(itemsContent).toContain('menu_item :main :Toggle Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh');
+    expect(itemsContent).toContain('menu_item :main :Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh');
+  });
+
+
+  test('no device — install with Cadmus via manual download', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasCadmusAssets(), 'Cadmus assets not found (run npm run setup:installables)');
+
+    await goToManualMode(page);
+
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await expect(page.locator('#nm-config-options')).toContainText('Reading Apps');
+    await expect(page.locator('input[name="nm-cfg-cadmus"]')).not.toBeChecked();
+
+    await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+    await page.check('input[name="nm-cfg-cadmus"]');
+
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('Cadmus');
+    await expect(page.locator('#nm-review-notices')).toBeHidden();
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-download'),
+    ]);
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+
+    const zipData = fs.readFileSync(await download.path());
+    const zip = await JSZip.loadAsync(zipData);
+    const zipFiles = Object.keys(zip.files);
+
+    expect(zipFiles).toContainEqual('.adds/cadmus/cadmus.sh');
+    expect(zipFiles).toContainEqual('.adds/cadmus/cadmus');
+    expect(zipFiles.some(f => f.startsWith('.adds/cadmus/libs/'))).toBe(true);
+
+    const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
+    expect(itemsContent).toContain('menu_item:main:Open Cadmus');
   });
 
 
@@ -509,7 +552,7 @@ test.describe('NickelMenu — install', () => {
     expect(items).toContain('experimental :menu_main_15505_enabled: 1');
     expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
     // Screensaver was not selected, so its toggle is absent from the menu.
-    expect(items).not.toContain('menu_item :main :Toggle Screensaver');
+    expect(items).not.toContain('menu_item :main :Screensaver');
   });
 
 
@@ -535,11 +578,11 @@ test.describe('NickelMenu — install', () => {
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
 
-    // The toggle is inserted directly below Toggle Screenshots, and the sample
+    // The toggle is inserted directly below Screenshots, and the sample
     // screensaver image is written.
     const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
-    expect(items).toContain('menu_item :main :Toggle Screensaver :cmd_output');
-    expect(items).toMatch(/menu_item :main :Toggle Screenshots[^\n]*\n\nmenu_item :main :Toggle Screensaver/);
+    expect(items).toContain('menu_item :main :Screensaver :cmd_output');
+    expect(items).toMatch(/menu_item :main :Screenshots[^\n]*\n\nmenu_item :main :Screensaver/);
     expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
   });
 

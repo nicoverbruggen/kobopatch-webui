@@ -54,7 +54,7 @@ Rough shape:
             "timestamp": "2026-01-01 12:00:00",
             "firmware": "4.45.12345",
             "model": "N306"
-        },
+        }
     }
 }
 ```
@@ -109,11 +109,11 @@ On re-apply, the app loads the catalog YAML files, replaces each customized patc
 
 ### Offer alternative reading apps
 
-Currently, KOReader is the only alternative reader app that's available to install.
+KOReader and Cadmus are now available to install.
 
-I would like to expand this (see #11) with alternatives. The "KOReader" section should become "Reading Apps".
+I would like to expand this (see #11) with more alternatives.
 
-Add Plato (https://github.com/baskerville/plato) or Cadmus (https://github.com/OGKevin/cadmus) to "Reading Apps". These are mutually exclusive, so enabling one should automatically disable the other option. `excludes: ['cadmus']` is probably needed as part of the feature export for Plato (and vice-versa). It should be obvious in the UI that these are, in fact mutually exclusive w/ a label in red as soon as one is selected.
+Add Plato (https://github.com/baskerville/plato) to "Reading Apps". Plato and Cadmus are mutually exclusive, so enabling one should automatically disable the other option. `excludes: ['cadmus']` is probably needed as part of the feature export for Plato (and vice-versa). It should be obvious in the UI that these are, in fact mutually exclusive w/ a label in red as soon as one is selected.
 
 ### Consider making the required preset optional
 

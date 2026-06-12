@@ -12,6 +12,11 @@ function hasKOReaderAssets() {
     && fs.existsSync(path.join(WEBROOT, 'assets', 'koreader-release.json'));
 }
 
+function hasCadmusAssets() {
+  return fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-kobo.tar.gz'))
+    && fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-release.json'));
+}
+
 function hasFontAssets() {
   return fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Readerly.zip'))
     && fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Libron.zip'))
@@ -34,6 +39,7 @@ function cleanupFirmwareSymlink() {
 module.exports = {
   hasNickelMenuAssets,
   hasKOReaderAssets,
+  hasCadmusAssets,
   hasFontAssets,
   hasFirmwareZip,
   setupFirmwareSymlink,

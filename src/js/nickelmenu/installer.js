@@ -10,6 +10,7 @@ import {
 import customMenu from './features/custom-menu/index.js';
 import additionalFonts from './features/additional-fonts/index.js';
 import betterTypography from './features/better-typography/index.js';
+import cadmus from './features/cadmus/index.js';
 import koreader from './features/koreader/index.js';
 import simplifyTabs from './features/simplify-tabs/index.js';
 import { homeHiders } from './features/hide-home-content/index.js';
@@ -56,6 +57,7 @@ export const NICKELMENU_FEATURES = [
     additionalFonts,
     betterTypography,
     koreader,
+    cadmus,
     // "Advanced" section — less common power-user options, rendered last and
     // collapsed by default in the feature selection step.
     sideloadedMode,     // postProcess comments out the home-tab override added by simplifyTabs
@@ -103,7 +105,7 @@ function buildItemsFile(features, deviceInfo) {
         if (!feature.menuItems) continue;
         for (const entry of feature.menuItems(menuCtx)) {
             // Several features can contribute the same shared entry — e.g. every
-            // home-content hider offers the one "Toggle Minimal Home" toggle.
+            // home-content hider offers the one "Minimal Home" toggle.
             // Keep the first; the duplicates are identical.
             if (seenIds.has(entry.id)) continue;
             seenIds.add(entry.id);

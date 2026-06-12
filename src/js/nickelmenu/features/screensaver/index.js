@@ -37,7 +37,7 @@ export default {
         return [{
             id: 'screensaver',
             lines: [
-                'menu_item :main :Toggle Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
+                'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver',
                 '      chain_failure : skip : 3',
                 '      chain_success : cmd_spawn : quiet: mkdir -p /mnt/onboard/.disabled && mv /mnt/onboard/.disabled/screensaver /mnt/onboard/.kobo/screensaver',
                 '      chain_success : dbg_toast : Screensaver is now ON.',

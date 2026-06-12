@@ -2,7 +2,7 @@ import { appendToNmConfig } from '../helpers.js';
 
 // The home-screen hiders are near-identical: each one appends a single
 // experimental:hide_home_*_enabled:1 line and shares ONE on-device toggle — the
-// "Toggle Minimal Home" Toggle item plus a script that flips every
+// "Minimal Home" Toggle-menu item plus a script that flips every
 // hide_home_*_enabled flag at once. Rather than repeat that across three feature
 // files behind a capability flag custom-menu has to scan for, we generate the
 // features from a table below. Each generated feature owns the shared toggle, and
@@ -36,7 +36,7 @@ function makeHider({ id, title, description, flag }) {
         menuItems() {
             return [{
                 id: 'toggle-hidden-home',
-                lines: ['menu_item :main :Toggle Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
+                lines: ['menu_item :main :Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
             }];
         },
 

@@ -28,7 +28,7 @@ export default {
         mode: 'optional',
         title: 'Better typography',
         removeLabel: 'Turn off better typography',
-        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and the Toggle Typography menu script. Your default font and reading settings are not changed.',
+        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and the Typography menu script. Your default font and reading settings are not changed.',
         paths: [
             { path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] },
         ],
@@ -51,7 +51,7 @@ export default {
     menuItems() {
         return [{
             id: 'typography',
-            lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
+            lines: ['menu_item :main :Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
         }];
     },
 
