@@ -102,14 +102,14 @@ test('Better Typography ships the toggle script and contributes its Tweak menu i
     };
     const installed = await betterTypography.install(ctx);
     assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
-    assert.deepEqual(installed.map(f => f.path), ['.adds/scripts/toggle_typography.sh']);
+    assert.deepEqual(installed.map(f => f.path), ['.adds/nm/scripts/toggle_typography.sh']);
 
     // menuItems() contributes the single "Toggle Typography" entry; its position
     // (the old "Legibility Toggle" slot) is set in features/menu-order.js.
     const entries = betterTypography.menuItems();
     assert.deepEqual(entries, [{
         id: 'typography',
-        lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh'],
+        lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
     }]);
 });
 
@@ -165,13 +165,13 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
     }]);
 });
 
-test('Better Typography cleanup detects and removes both the toggle script and the WebKit setting', () => {
+test('Better Typography cleanup detects and removes the legacy toggle script and the WebKit setting', () => {
     const { cleanup } = betterTypography;
 
     assert.equal(cleanup.mode, 'optional');
-    // Detected by either the on-device script (cleanup.detect) or the conf line
-    // (its revertable confSettings — the toggle can turn the conf line off while
-    // leaving the script installed).
+    // Detected by the legacy on-device script path (for old installs) or the
+    // revertable conf setting (the toggle can turn the line off while leaving the
+    // legacy script on the device).
     assert.deepEqual(cleanup.detect, [['.adds', 'scripts', 'toggle_typography.sh']]);
     assert.deepEqual(cleanup.paths, [{ path: ['.adds', 'scripts', 'toggle_typography.sh'] }]);
     assert.deepEqual(cleanup.removeParentDirsIfEmpty, [['.adds', 'scripts']]);

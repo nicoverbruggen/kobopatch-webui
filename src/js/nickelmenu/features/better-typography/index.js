@@ -19,31 +19,34 @@ export default {
     description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later.',
     default: true,
 
-    // The WebKit rendering setting and the toggle script are owned by this
-    // feature for removal — the alignment and reading font are general
-    // preferences we don't claw back. The feature is "present" when either the
-    // WebKit setting is in the conf or the toggle script is on the device (the
-    // toggle can turn the conf line off while leaving the script in place), and
-    // reverting removes that line and the script.
+    // The WebKit rendering setting is owned for removal — the alignment and
+    // reading font are general preferences we don't claw back. The toggle script
+    // now lives under .adds/nm/scripts/ and is cleaned up by NickelMenu's
+    // recursive .adds/nm deletion, so detection and file cleanup here only cover
+    // the legacy .adds/scripts/toggle_typography.sh path from earlier installs.
+    // The feature is "present" when the WebKit setting is in the conf; the
+    // toggle script detects it independently for legacy cleanup. The revertable
+    // conf setting (webkitTextRendering) is derived from revertable confSettings
+    // — no separate detectConf/revertConf here.
     cleanup: {
         mode: 'optional',
         title: 'Better typography',
         removeLabel: 'Turn off better typography',
-        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and the Toggle Typography menu script. Your default font and reading settings are not changed.',
+        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and any remaining files from the Toggle Typography menu script. Your default font and reading settings are not changed.',
+        // Detect by the legacy script path, so old installs are still picked up
+        // for removal. New installs are detected via the revertable conf setting.
         detect: [['.adds', 'scripts', 'toggle_typography.sh']],
         paths: [
             { path: ['.adds', 'scripts', 'toggle_typography.sh'] },
         ],
         removeParentDirsIfEmpty: [['.adds', 'scripts']],
-        // The conf line this feature reverts (webkitTextRendering) is derived from
-        // its revertable confSettings — no separate detectConf/revertConf here.
     },
 
     // Ship the on-device toggle script. install() runs only for selected
     // features, so the script lands exactly when the feature is installed.
     async install(ctx) {
         return [
-            { path: '.adds/scripts/toggle_typography.sh', data: await ctx.asset('scripts/toggle_typography.sh') },
+            { path: '.adds/nm/scripts/toggle_typography.sh', data: await ctx.asset('scripts/toggle_typography.sh') },
         ];
     },
 
@@ -56,7 +59,7 @@ export default {
     menuItems() {
         return [{
             id: 'typography',
-            lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh'],
+            lines: ['menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
         }];
     },
 

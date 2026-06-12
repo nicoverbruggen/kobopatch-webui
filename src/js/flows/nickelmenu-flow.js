@@ -839,6 +839,17 @@ export function initNickelMenu(state) {
                         }
                     }
                 }
+                // Best-effort: remove any legacy `.adds/scripts/toggle_typography.sh`
+                // that may remain from an older install (the script now lives under
+                // .adds/nm/scripts/ and is written fresh by the installer).
+                try {
+                    const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
+                    if (await state.device.pathExists(legacyScriptPath)) {
+                        await state.device.removeEntry(legacyScriptPath);
+                    }
+                } catch {
+                    // best-effort
+                }
                 await state.nmInstaller.installToDevice(state.device, features, progressFn, { audit: new AuditLog() });
                 showNmDone('written');
             } else {

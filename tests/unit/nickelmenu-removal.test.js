@@ -5,9 +5,10 @@ import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 
-// better-typography owns the only file that lands in .adds/scripts (its
-// Typography Toggle script) and the cleanup that removes the directory when it
-// becomes empty, so it stands in for "an optional feature with files to remove".
+// better-typography's cleanup still handles the legacy .adds/scripts path (its
+// Typography Toggle script was moved to .adds/nm/scripts, but the cleanup
+// detects and removes the old location for legacy upgrades), so it stands in
+// for "an optional feature with files to remove".
 const typographyScriptPath = '.adds/scripts/toggle_typography.sh';
 import {
     buildExcludeSyncFoldersLine,

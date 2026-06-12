@@ -207,9 +207,9 @@ test.describe('NickelMenu — removal', () => {
   test('with device — remove NickelMenu removes the typography toggle script and sync exclusions when nothing else remains', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
-    // better-typography owns .adds/scripts/toggle_typography.sh; with it as the
-    // only thing in .adds/scripts, removing the feature empties and drops the
-    // directory, so no non-nm .adds folder is left to keep sync exclusions for.
+    // better-typography's cleanup handles the legacy .adds/scripts/toggle_typography.sh
+    // path; with it as the only thing in .adds/scripts, removing the feature empties
+    // and drops the directory, so no non-nm .adds folder is left to keep sync exclusions for.
     await connectMockDevice(page, {
       hasNickelMenu: true,
       hasCalibreExclude: true,
