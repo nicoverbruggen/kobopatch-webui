@@ -822,9 +822,11 @@ export function initNickelMenu(state) {
                 ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id)
             );
             const hasBasicTabs = features.some(f => f.id === 'simplify-tabs');
+            const hasSideloadedMode = features.some(f => f.id === 'sideloaded-mode');
             track('nm-koreader-addon', { enabled: hasKOReader ? 'yes' : 'no' });
             track('nm-simplified-home', { enabled: hasSimplifiedHome ? 'yes' : 'no' });
             track('nm-basic-tabs', { enabled: hasBasicTabs ? 'yes' : 'no' });
+            track('nm-sideloaded-mode', { enabled: hasSideloadedMode ? 'yes' : 'no' });
 
             if (writeToDevice && state.device.directoryHandle) {
                 // If a legacy `.adds/nm/items` exists and the user chose not to

@@ -24,6 +24,13 @@ test.describe('NickelMenu — install', () => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
     test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
+    await page.addInitScript(() => {
+      window.__ANALYTICS_ENABLED = true;
+      window.__trackedEvents = [];
+      window.umami = {
+        track: (eventName, data) => window.__trackedEvents.push({ eventName, data }),
+      };
+    });
     await goToManualMode(page);
 
     // Select NickelMenu and continue
@@ -91,6 +98,22 @@ test.describe('NickelMenu — install', () => {
     ]);
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('ready to download');
+    // Feature-tracking events should have been recorded.
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-koreader-addon', data: { enabled: 'no' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-simplified-home', data: { enabled: 'yes' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-basic-tabs', data: { enabled: 'no' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-sideloaded-mode', data: { enabled: 'no' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'flow-end', data: { result: 'nm-download' } },
+    );
 
     // Download instructions should be visible, and include eReader.conf step for sample config
     await expect(page.locator('#nm-download-instructions')).not.toBeHidden();
@@ -379,6 +402,13 @@ test.describe('NickelMenu — install', () => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
     test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
+    await page.addInitScript(() => {
+      window.__ANALYTICS_ENABLED = true;
+      window.__trackedEvents = [];
+      window.umami = {
+        track: (eventName, data) => window.__trackedEvents.push({ eventName, data }),
+      };
+    });
     await connectMockDevice(page, { hasNickelMenu: false });
 
     // Continue to mode selection
@@ -428,6 +458,22 @@ test.describe('NickelMenu — install', () => {
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('installed');
+    // Feature-tracking events should have been recorded.
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-koreader-addon', data: { enabled: 'no' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-simplified-home', data: { enabled: 'yes' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-basic-tabs', data: { enabled: 'yes' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'nm-sideloaded-mode', data: { enabled: 'no' } },
+    );
+    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
+      { eventName: 'flow-end', data: { result: 'nm-write' } },
+    );
     await expect(page.locator('#nm-write-instructions')).not.toBeHidden();
 
     // Verify files written to mock device
