@@ -245,6 +245,36 @@ class PatchUI {
     render(container) {
         container.innerHTML = '';
 
+        const searchWrap = document.createElement('div');
+        searchWrap.className = 'patch-search-wrap';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'patch-search';
+        searchInput.placeholder = 'Search patches\u2026';
+        searchWrap.appendChild(searchInput);
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'patch-search-clear';
+        clearBtn.type = 'button';
+        clearBtn.textContent = '\u00d7';
+        clearBtn.hidden = true;
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.hidden = true;
+            this._filterPatches(listWrapper, nullEl, '');
+        });
+        searchWrap.appendChild(clearBtn);
+        container.appendChild(searchWrap);
+
+        const listWrapper = document.createElement('div');
+        listWrapper.className = 'patch-list-wrapper';
+        container.appendChild(listWrapper);
+
+        const nullEl = document.createElement('div');
+        nullEl.className = 'patch-search-none';
+        nullEl.textContent = 'No patches match your search.';
+        nullEl.hidden = true;
+        container.appendChild(nullEl);
+
         for (const [filename, { patches }] of Object.entries(this.patchFiles)) {
             if (patches.length === 0) continue;
 
@@ -404,8 +434,13 @@ class PatchUI {
             }
 
             section.appendChild(list);
-            container.appendChild(section);
+            listWrapper.appendChild(section);
         }
+
+        searchInput.addEventListener('input', () => {
+            clearBtn.hidden = !searchInput.value;
+            this._filterPatches(listWrapper, nullEl, searchInput.value);
+        });
     }
 
     _updateCounts(container) {
@@ -419,6 +454,56 @@ class PatchUI {
             idx++;
         }
         if (this.onChange) this.onChange();
+    }
+
+    _filterPatches(wrapper, nullEl, query) {
+        const q = query.toLowerCase().trim();
+        const sections = wrapper.querySelectorAll('.patch-file-section');
+        let anyVisible = false;
+
+        for (const section of sections) {
+            section.open = !!q;
+
+            const matchedGroups = new Set();
+
+            const allItems = section.querySelectorAll('.patch-item');
+            for (const item of allItems) {
+                const nameEl = item.querySelector('.patch-name');
+                const isNone = nameEl.classList.contains('patch-name-none');
+                if (isNone) continue;
+
+                const match = !q || nameEl.textContent.toLowerCase().includes(q);
+                item.classList.toggle('patch-item-hidden', !match);
+                if (match) {
+                    anyVisible = true;
+                    const group = item.closest('.patch-group');
+                    if (group) matchedGroups.add(group);
+                }
+            }
+
+            const groups = section.querySelectorAll('.patch-group');
+            for (const group of groups) {
+                const hasMatch = matchedGroups.has(group);
+                group.style.display = hasMatch ? '' : 'none';
+                const noneItem = group.querySelector('.patch-name-none')?.closest('.patch-item');
+                if (noneItem) noneItem.classList.toggle('patch-item-hidden', !hasMatch);
+            }
+
+            if (q) {
+                const standaloneItems = section.querySelectorAll(':scope > .patch-list > .patch-item');
+                const hasStandalone = Array.from(standaloneItems).some(
+                    item => !item.classList.contains('patch-item-hidden')
+                );
+                const hasGroup = Array.from(groups).some(
+                    g => g.style.display !== 'none'
+                );
+                section.style.display = (hasStandalone || hasGroup) ? '' : 'none';
+            } else {
+                section.style.display = '';
+            }
+        }
+
+        nullEl.hidden = q ? anyVisible : true;
     }
 
     /**

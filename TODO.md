@@ -121,10 +121,6 @@ When the user selects "Install with preset", the default menu items and "Tweak" 
 
 ## Custom patches
 
-### Search feature
-
-It currently isn't that easy to locate a specific patch if you know of one. A search field with live filtering would be very helpful here.
-
 ### Customizing patches
 
 Some patches are intended to be modified. It should be possible to press an "Edit" button which opens an editor that lets you customize (and validate!) the patch. This should probably be some sort of pop-up or popover.

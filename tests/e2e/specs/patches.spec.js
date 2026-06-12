@@ -370,6 +370,44 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('patch search filters by name and clears', async ({ page }) => {
+    await connectMockDevice(page, { hasNickelMenu: false });
+
+    // Navigate to Custom Patches
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    // Wait for patches to load
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Open all sections so items are present in the DOM
+    const sections = page.locator('.patch-file-section');
+    const sectionCount = await sections.count();
+    for (let i = 0; i < sectionCount; i++) {
+      await sections.nth(i).locator('summary').click();
+    }
+
+    const searchInput = page.locator('.patch-search');
+
+    // Type a search query
+    await searchInput.fill('home screen');
+
+    // Matching patches remain visible
+    await expect(page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first()).toBeVisible();
+
+    // Non-matching patches are hidden
+    await expect(page.locator('.patch-item-hidden')).not.toHaveCount(0);
+
+    // Clear button appears and is clickable
+    await expect(page.locator('.patch-search-clear')).toBeVisible();
+    await page.locator('.patch-search-clear').click();
+
+    // All patches restored
+    await expect(page.locator('.patch-item-hidden')).toHaveCount(0);
+  });
+
+
   test('blacklisted patches are marked "known to fail" but remain enableable', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 

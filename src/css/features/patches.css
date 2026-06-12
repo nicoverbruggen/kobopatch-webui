@@ -1,9 +1,69 @@
+/* Patch search */
+.patch-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.patch-search {
+    width: 100%;
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    box-sizing: border-box;
+
+    &:focus {
+        background: var(--card-bg);
+    }
+
+    &::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+}
+
+.patch-search-clear {
+    position: absolute;
+    right: 0.4rem;
+    background: none;
+    border: none;
+    padding: 0.2rem 0.4rem;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    transition: opacity 0.1s;
+    box-shadow: none;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.patch-search-none {
+    padding: 1.5rem 0.75rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
 /* Scrollable patch container */
 .patch-container-scroll {
     max-height: 50vh; /* ~15 visible lines before scrolling */
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--border);
     border-radius: 5px;
+}
+
+.patch-list-wrapper {
+    overflow-y: auto;
+    flex: 1;
 }
 
 /* Patch file sections */
@@ -79,6 +139,14 @@
 
     & + .patch-item {
         border-top: 1px solid var(--border-light);
+    }
+}
+
+.patch-item-hidden {
+    display: none;
+
+    & + .patch-item {
+        border-top: none;
     }
 }
 
