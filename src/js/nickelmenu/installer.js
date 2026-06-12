@@ -361,15 +361,13 @@ export class NickelMenuInstaller {
                 if (conf.length > 0) entry.conf = conf;
             }
 
-            if (entry.files.length > 0 || entry.conf) {
-                manifestFeatures[feature.id] = entry;
-            }
+            manifestFeatures[feature.id] = entry;
         }
 
         const version = (typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : null) || 'unknown';
         const timestamp = audit ? audit.startedAt.toISOString() : new Date().toISOString();
         const firmware = deviceInfo?.firmware || null;
-        const model = deviceInfo?.model || deviceInfo?.serialPrefix || null;
+        const model = deviceInfo?.serialPrefix || deviceInfo?.model || null;
 
         return {
             selected,
