@@ -839,9 +839,9 @@ export function initNickelMenu(state) {
                         }
                     }
                 }
-                // Best-effort: remove any legacy `.adds/scripts/toggle_typography.sh`
-                // that may remain from an older install (the script now lives under
-                // .adds/nm/scripts/ and is written fresh by the installer).
+                // Best-effort: clean up the old toggle_typography.sh from .adds/scripts/
+                // that previous versions always installed. All toggle scripts now live
+                // under .adds/nm/scripts/ regardless of selected features.
                 try {
                     const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
                     if (await state.device.pathExists(legacyScriptPath)) {

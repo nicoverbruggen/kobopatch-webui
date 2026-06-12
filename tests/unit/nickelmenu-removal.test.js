@@ -2,14 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
-import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 
-// better-typography's cleanup still handles the legacy .adds/scripts path (its
-// Typography Toggle script was moved to .adds/nm/scripts, but the cleanup
-// detects and removes the old location for legacy upgrades), so it stands in
-// for "an optional feature with files to remove".
-const typographyScriptPath = '.adds/scripts/toggle_typography.sh';
+// screensaver is used as the stand-in for "an optional feature with files to
+// remove" in the removal tests (better-typography's cleanup is now conf-only).
 import {
     buildExcludeSyncFoldersLine,
     legacyBrokenExcludeSyncFoldersLines,
@@ -64,8 +60,8 @@ test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files
     const device = new RecordingDevice({
         existingEntries: [
             '.adds/nm',
-            '.adds/scripts',
-            { path: typographyScriptPath, kind: 'file' },
+            '.kobo/screensaver',
+            { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
     });
     const progress = createProgressRecorder();
@@ -73,7 +69,7 @@ test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [betterTypography],
+        cleanupFeatures: [screensaver],
         shouldRemoveSyncExclusions: async () => false,
         onProgress: progress,
     });
@@ -82,21 +78,18 @@ test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files
         koboRootTgzPath,
         pathString(nickelMenuUninstallMarkerPath),
     ]);
-    // Optional cleanup runs after the uninstall marker: the toggle script is
-    // removed, then .adds/scripts is dropped because it is now empty.
+    // Optional cleanup runs after the uninstall marker: the screensaver image is removed.
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
-        typographyScriptPath,
-        '.adds/scripts',
+        '.kobo/screensaver/moon.png',
     ]);
     assert.deepEqual(device.removalFor('.adds/nm').options, { recursive: true });
-    assert.deepEqual(device.removalFor('.adds/scripts').options, {});
     assert.equal(device.writeFor(pathString(nickelMenuUninstallMarkerPath)).data.length, 0);
     assert.deepEqual(progress.messages, [
         'Writing KoboRoot.tgz...',
         'Removing NickelMenu assets...',
         'Creating uninstall marker...',
-        'Removing Better typography...',
+        'Removing Screensaver...',
     ]);
 });
 
@@ -105,8 +98,8 @@ test('executeNickelMenuRemoval writes an audit log of the removal steps', async 
     const device = new RecordingDevice({
         existingEntries: [
             '.adds/nm',
-            '.adds/scripts',
-            { path: typographyScriptPath, kind: 'file' },
+            '.kobo/screensaver',
+            { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
     });
     const audit = new AuditLog(new Date(2026, 5, 11, 14, 30));
@@ -114,7 +107,7 @@ test('executeNickelMenuRemoval writes an audit log of the removal steps', async 
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [betterTypography],
+        cleanupFeatures: [screensaver],
         shouldRemoveSyncExclusions: async () => false,
         audit,
     });
@@ -124,7 +117,7 @@ test('executeNickelMenuRemoval writes an audit log of the removal steps', async 
     const log = text(device.writeFor(logPath).data);
     assert.match(log, /Removing NickelMenu: wrote \.kobo\/KoboRoot\.tgz/);
     assert.match(log, /Removed \.adds\/nm/);
-    assert.match(log, new RegExp(`Removed ${typographyScriptPath.replace(/[.\\/]/g, '\\$&')}`));
+    assert.match(log, /Removed \.kobo\/screensaver\/moon\.png/);
     assert.match(log, /Wrote uninstall marker/);
 });
 
@@ -133,23 +126,21 @@ test('executeNickelMenuRemoval removes selected feature cleanup paths only', asy
     const device = new RecordingDevice({
         existingEntries: [
             '.adds/nm',
-            '.adds/scripts',
-            { path: typographyScriptPath, kind: 'file' },
+            '.kobo/screensaver',
             { path: '.kobo/screensaver/moon.png', kind: 'file' },
+            { path: '.kobo/screensaver/user.png', kind: 'file' },
         ],
     });
 
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [betterTypography, screensaver],
+        cleanupFeatures: [screensaver],
         shouldRemoveSyncExclusions: async () => false,
     });
 
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
-        typographyScriptPath,
-        '.adds/scripts',
         '.kobo/screensaver/moon.png',
     ]);
     assert.deepEqual(device.removalFor('.kobo/screensaver/moon.png').options, { recursive: false });
@@ -159,18 +150,17 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
     const installer = createInstaller();
     const device = new RecordingDevice({
         existingEntries: [
-            '.adds/scripts',
-            { path: typographyScriptPath, kind: 'file' },
+            '.kobo/screensaver',
             { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
-        failRemovePaths: ['.adds/nm', '.kobo/screensaver/moon.png'],
+        failRemovePaths: ['.adds/nm'],
     });
     const logger = createWarnRecorder();
 
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [betterTypography, screensaver],
+        cleanupFeatures: [screensaver],
         shouldRemoveSyncExclusions: async () => false,
         logger,
     });
@@ -180,37 +170,35 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
         pathString(nickelMenuUninstallMarkerPath),
     ]);
     assert.deepEqual(device.removePaths(), [
-        typographyScriptPath,
-        '.adds/scripts',
+        '.kobo/screensaver/moon.png',
     ]);
-    assert.equal(logger.messages.length, 2);
+    assert.equal(logger.messages.length, 1);
     assert.match(logger.messages[0][0], /Could not remove \.adds\/nm/);
-    assert.match(logger.messages[1][0], /Could not remove \.kobo\/screensaver\/moon\.png/);
 });
 
-test('executeNickelMenuRemoval keeps .adds/scripts when non-owned files remain', async () => {
+test('executeNickelMenuRemoval removes only the owned file, leaving unrelated files intact', async () => {
     const installer = createInstaller();
     const device = new RecordingDevice({
         existingEntries: [
             '.adds/nm',
-            '.adds/scripts',
-            { path: typographyScriptPath, kind: 'file' },
-            { path: '.adds/scripts/user-script.sh', kind: 'file' },
+            '.kobo/screensaver',
+            { path: '.kobo/screensaver/moon.png', kind: 'file' },
+            { path: '.kobo/screensaver/user.png', kind: 'file' },
         ],
     });
 
     await executeNickelMenuRemoval({
         device,
         installer,
-        cleanupFeatures: [betterTypography],
+        cleanupFeatures: [screensaver],
         shouldRemoveSyncExclusions: async () => false,
     });
 
-    assert.equal(await device.pathExists(['.adds', 'scripts']), true);
-    assert.equal(await device.pathExists(['.adds', 'scripts', 'user-script.sh']), true);
+    assert.equal(await device.pathExists(['.kobo', 'screensaver', 'user.png']), true);
+    assert.equal(await device.pathExists(['.kobo', 'screensaver', 'moon.png']), false);
     assert.deepEqual(device.removePaths(), [
         '.adds/nm',
-        typographyScriptPath,
+        '.kobo/screensaver/moon.png',
     ]);
 });
 

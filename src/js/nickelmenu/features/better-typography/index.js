@@ -19,27 +19,15 @@ export default {
     description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later.',
     default: true,
 
-    // The WebKit rendering setting is owned for removal — the alignment and
-    // reading font are general preferences we don't claw back. The toggle script
-    // now lives under .adds/nm/scripts/ and is cleaned up by NickelMenu's
-    // recursive .adds/nm deletion, so detection and file cleanup here only cover
-    // the legacy .adds/scripts/toggle_typography.sh path from earlier installs.
-    // The feature is "present" when the WebKit setting is in the conf; the
-    // toggle script detects it independently for legacy cleanup. The revertable
-    // conf setting (webkitTextRendering) is derived from revertable confSettings
-    // — no separate detectConf/revertConf here.
+    // Cleanup is conf-only: the toggle script lives under .adds/nm/scripts/ and
+    // is cleaned up by NickelMenu's recursive .adds/nm deletion, so no file
+    // paths are needed. The revertable conf setting (webkitTextRendering) drives
+    // both detection and revert — no separate detectConf/revertConf here.
     cleanup: {
         mode: 'optional',
         title: 'Better typography',
         removeLabel: 'Turn off better typography',
-        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and any remaining files from the Toggle Typography menu script. Your default font and reading settings are not changed.',
-        // Detect by the legacy script path, so old installs are still picked up
-        // for removal. New installs are detected via the revertable conf setting.
-        detect: [['.adds', 'scripts', 'toggle_typography.sh']],
-        paths: [
-            { path: ['.adds', 'scripts', 'toggle_typography.sh'] },
-        ],
-        removeParentDirsIfEmpty: [['.adds', 'scripts']],
+        description: 'Removes the setting that enables correct kerning and ligatures in certain books. Your default font and reading settings are not changed.',
     },
 
     // Ship the on-device toggle script. install() runs only for selected
