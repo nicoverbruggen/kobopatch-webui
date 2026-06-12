@@ -583,3 +583,22 @@ if (analyticsEnabled()) {
     $('privacy-link-separator').hidden = false;
 }
 setupDialog('privacy-dialog', 'btn-privacy', 'btn-close-privacy');
+
+// Mark non-production environments in the header. "DEV" when served by the
+// local dev server (the watch build sets __DEV_BUILD__); "Preview" on a
+// preview deployment, identified by a "-dev" hostname (e.g. kp-dev.…).
+function showEnvironmentPill() {
+    const pill = $('env-pill');
+    if (!pill) return;
+
+    const isDevBuild = typeof globalThis.__DEV_BUILD__ !== 'undefined' && globalThis.__DEV_BUILD__;
+    const isPreviewHost = window.location.hostname.includes('-dev');
+
+    const label = isDevBuild ? 'DEV' : (isPreviewHost ? 'Preview' : null);
+    if (!label) return;
+
+    pill.textContent = label;
+    pill.hidden = false;
+}
+
+showEnvironmentPill();

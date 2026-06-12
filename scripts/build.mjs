@@ -103,6 +103,9 @@ async function build() {
         logLevel: 'warning',
         define: {
             'globalThis.__APP_VERSION__': JSON.stringify(versionStr),
+            // True only for the watch build, which is exclusively what the local
+            // dev server (`npm run dev`) runs — so the UI can mark itself "DEV".
+            'globalThis.__DEV_BUILD__': JSON.stringify(isWatch),
         },
     });
 
