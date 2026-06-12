@@ -573,7 +573,7 @@ test.describe('NickelMenu — install', () => {
     expect(backupFiles).toContain('.kobo/fonts.sqlite');
     expect(backupFiles).toContain('.kobo/KoboReader.sqlite');
     expect(backupFiles).toContain('.kobo/version');
-    expect(backupFiles).toContain('.adds/nm/webui-preset');
+    expect(backupFiles).toContain('.adds/nm/items');
 
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#btn-nm-download')).toBeVisible();

@@ -165,12 +165,15 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
     }]);
 });
 
-test('Better Typography cleanup is conf-only: detect/revert derive from its revertable setting', () => {
+test('Better Typography cleanup removes the toggle script and the WebKit setting', () => {
     const { cleanup } = betterTypography;
 
     assert.equal(cleanup.mode, 'optional');
-    // No files and no separate detectConf/revertConf — the revertable conf
-    // setting in confSettings is the single source for detection and revert.
+    // The toggle script is cleaned up by explicit path (alongside NM recursive
+    // .adds/nm deletion) for robustness. Detection is from the revertable conf.
+    assert.deepEqual(cleanup.paths, [
+        { path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] },
+    ]);
     assert.equal(cleanup.detect, undefined);
     assert.equal(cleanup.detectConf, undefined);
     assert.equal(cleanup.revertConf, undefined);

@@ -19,15 +19,19 @@ export default {
     description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later.',
     default: true,
 
-    // Cleanup is conf-only: the toggle script lives under .adds/nm/scripts/ and
-    // is cleaned up by NickelMenu's recursive .adds/nm deletion, so no file
-    // paths are needed. The revertable conf setting (webkitTextRendering) drives
-    // both detection and revert — no separate detectConf/revertConf here.
+    // Detection is conf-only (the revertable webkitTextRendering setting). The
+    // toggle script is also cleaned up explicitly via cleanup.paths so it's
+    // removed regardless of how removal reaches it — the NickelMenu recursive
+    // .adds/nm deletion covers it, but having the explicit path makes the
+    // removal self-documenting and robust against ordering changes.
     cleanup: {
         mode: 'optional',
         title: 'Better typography',
         removeLabel: 'Turn off better typography',
-        description: 'Removes the setting that enables correct kerning and ligatures in certain books. Your default font and reading settings are not changed.',
+        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and the Toggle Typography menu script. Your default font and reading settings are not changed.',
+        paths: [
+            { path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] },
+        ],
     },
 
     // Ship the on-device toggle script. install() runs only for selected
