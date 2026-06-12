@@ -14,10 +14,6 @@ Currently, manifests are written when applying custom patches and when installin
 
 When using custom patches, the app should automatically suggest loading the previous configuration.
 
-### Customizing patches
-
-Some patches are intended to be modified. It should be possible to press an "Edit" button which opens an editor that lets you customize (and validate!) the patch. This should probably be some sort of pop-up or popover.
-
 ### Side effects (to be looked at later)
 
 Set up side effects for certain patches. For example, in order to easily enable Google Drive/Dropbox support. For more information, see: 

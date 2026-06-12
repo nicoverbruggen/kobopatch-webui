@@ -766,4 +766,129 @@ test.describe('Custom patches', () => {
     const writtenFiles = await getWrittenFiles(page);
     expect(writtenFiles.some(f => f.includes('.kobopatch-webui/logs/') && f.includes('custom-patches'))).toBe(true);
   });
+
+
+  test('patch edit button opens editor dialog with patch YAML', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await overrideFirmwareURLs(page);
+    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+
+    // Wait for patches to load
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Open the first section (Nickel UI patches)
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+
+    // Find a known patch and click its edit button
+    const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(patchName).toBeVisible();
+    const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+    const editBtn = patchItem.locator('.patch-edit-btn');
+    await expect(editBtn).toBeVisible();
+    await editBtn.click();
+
+    // Dialog should be open with the patch YAML
+    const dialog = page.locator('#patch-editor-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('.patch-editor-title')).toContainText('Reduce top/bottom page spacer');
+
+    // Textarea should contain the patch YAML
+    const textarea = dialog.locator('.patch-editor-textarea');
+    await expect(textarea).toBeVisible();
+    const initialYaml = await textarea.inputValue();
+    expect(initialYaml).toContain('Reduce top/bottom page spacer');
+    expect(initialYaml).toContain('min-height: 12px');
+
+    // Validate button should report valid YAML
+    await dialog.locator('.patch-editor-validate').click();
+    await expect(dialog.locator('.patch-editor-status--ok')).toBeVisible();
+
+    // Modify a value in the YAML
+    const editedYaml = initialYaml.replace('min-height: 12px', 'min-height: 99px');
+    await textarea.fill(editedYaml);
+
+    // Validate the edited YAML
+    await dialog.locator('.patch-editor-validate').click();
+    await expect(dialog.locator('.patch-editor-status--ok')).toBeVisible();
+
+    // Save and close
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+
+    // Re-open the editor to verify persistence (re-query after re-render)
+    const reOpenedSection = page.locator('.patch-file-section').first();
+    await reOpenedSection.locator('summary').click();
+    const reOpenedPatchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(reOpenedPatchName).toBeVisible();
+    const reOpenedEditBtn = reOpenedPatchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]').locator('.patch-edit-btn');
+    await reOpenedEditBtn.click();
+    await expect(dialog).toBeVisible();
+    const savedYaml = await textarea.inputValue();
+    expect(savedYaml).toContain('min-height: 99px');
+    expect(savedYaml).not.toContain('min-height: 12px');
+
+    // Close dialog
+    await dialog.locator('.modal-footer .patch-editor-cancel').click();
+    await expect(dialog).not.toBeVisible();
+  });
+
+
+  test('patch editor validation rejects empty and invalid YAML', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await overrideFirmwareURLs(page);
+    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+
+    // Wait for patches to load
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+    // Open first section and find a patch
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+    const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(patchName).toBeVisible();
+    const editBtn = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]').locator('.patch-edit-btn');
+    await editBtn.click();
+
+    const dialog = page.locator('#patch-editor-dialog');
+    await expect(dialog).toBeVisible();
+    const textarea = dialog.locator('.patch-editor-textarea');
+    const statusEl = dialog.locator('.patch-editor-status');
+
+    // Test empty content
+    await textarea.fill('');
+    await dialog.locator('.patch-editor-validate').click();
+    await expect(statusEl).toContainText('cannot be empty');
+    await expect(dialog.locator('.patch-editor-status--error')).toBeVisible();
+
+    // Test invalid YAML (no patch name)
+    await textarea.fill('some: random\n  - yaml: content');
+    await dialog.locator('.patch-editor-validate').click();
+    await expect(statusEl).toContainText('valid patch definition');
+    await expect(dialog.locator('.patch-editor-status--error')).toBeVisible();
+
+    // Test that save is blocked when invalid (dialog stays open)
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).toBeVisible();
+
+    // Close dialog without saving
+    await dialog.locator('.modal-footer .patch-editor-cancel').click();
+    await expect(dialog).not.toBeVisible();
+  });
 });

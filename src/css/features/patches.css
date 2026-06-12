@@ -235,3 +235,101 @@
 .patch-description[hidden] {
     display: none;
 }
+
+/* Edit button for patches */
+.patch-edit-btn {
+    flex-shrink: 0;
+    margin-left: auto;
+    background: none;
+    border: none;
+    padding: 0 0.3rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    box-shadow: none;
+    opacity: 0.5;
+    transition: opacity 0.1s;
+
+    &:hover {
+        opacity: 1;
+        color: var(--primary);
+    }
+}
+
+/* When both edit and desc-toggle are present, order them */
+.patch-header .patch-edit-btn {
+    margin-left: auto;
+}
+
+.patch-header .patch-edit-btn + .patch-desc-toggle {
+    margin-left: 0;
+}
+
+/* Patch editor dialog — overrides the base .modal max-width */
+#patch-editor-dialog {
+    max-width: 780px;
+    width: calc(100% - 2rem);
+}
+
+.patch-editor-hint {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.75rem;
+    line-height: 1.4;
+}
+
+.patch-editor-textarea {
+    width: 100%;
+    min-height: 350px;
+    max-height: 55vh;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg);
+    color: var(--text);
+    resize: vertical;
+    tab-size: 2;
+    white-space: pre;
+    box-sizing: border-box;
+
+    &:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+}
+
+.patch-editor-status {
+    margin-top: 0;
+    font-size: 0.82rem;
+    min-height: 1.2em;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+}
+
+.patch-editor-status--ok {
+    color: var(--success, #2e7d32);
+    background: #e8f5e9;
+}
+
+.patch-editor-status--error {
+    color: var(--error, #c0392b);
+    background: #fef2f2;
+}
+
+.patch-editor-footer {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.patch-editor-footer .patch-editor-cancel {
+    margin-right: auto;
+}
+
+.patch-editor-footer .patch-editor-status {
+    margin-right: auto;
+}

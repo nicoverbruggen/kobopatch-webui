@@ -640,6 +640,25 @@
         </div>
     </dialog>
 
+    <dialog id="patch-editor-dialog" class="modal" aria-labelledby="patch-editor-title">
+        <div class="modal-content patch-editor-content">
+            <div class="modal-header">
+                <h2 id="patch-editor-title" class="patch-editor-title"></h2>
+                <button id="patch-editor-close" class="modal-close patch-editor-cancel" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="patch-editor-hint">Edit the values in the <strong>Replace</strong> lines below. Be careful not to break the YAML structure.</p>
+                <textarea class="patch-editor-textarea" spellcheck="false" wrap="off"></textarea>
+                <div class="patch-editor-status"></div>
+            </div>
+            <div class="modal-footer patch-editor-footer">
+                <button class="secondary patch-editor-cancel">Cancel</button>
+                <button class="secondary patch-editor-validate">Validate</button>
+                <button class="primary patch-editor-save">Save Changes</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog id="mobile-dialog" class="modal">
         <div class="modal-content">
             <div class="modal-header">

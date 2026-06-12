@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import yaml from 'js-yaml';
 import { TL } from '../shell/strings.js';
 import { fetchOrThrow } from '../shell/dom.js';
 
@@ -16,8 +17,8 @@ const PATCH_FILE_LABELS = {
 
 /**
  * Parse a kobopatch YAML file and extract patch metadata.
- * We only need: name, enabled, description, patchGroup.
- * This is a targeted parser, not a full YAML parser.
+ * Returns an array of patch objects with: name, enabled, description, patchGroup,
+ * lineStart (0-indexed), and lineEnd (exclusive).
  */
 function parsePatchYAML(content) {
     const patches = [];
@@ -27,11 +28,10 @@ function parsePatchYAML(content) {
     while (i < lines.length) {
         const line = lines[i];
 
-        // Top-level key (patch name): not indented, ends with ':'
-        // Skip comments and blank lines
+        // Top-level key (patch name): not indented, begins at column 0, ends with ':'
         if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#') && line.endsWith(':')) {
             const name = line.slice(0, -1).trim();
-            const patch = { name, enabled: false, description: '', patchGroup: null };
+            const patch = { name, enabled: false, description: '', patchGroup: null, lineStart: i };
             i++;
 
             // Parse the array items for this patch
@@ -90,6 +90,7 @@ function parsePatchYAML(content) {
                 i++;
             }
 
+            patch.lineEnd = i;
             patches.push(patch);
         } else {
             i++;
@@ -399,6 +400,13 @@ class PatchUI {
                     header.appendChild(badge);
                 }
 
+                const editBtn = document.createElement('button');
+                editBtn.className = 'patch-edit-btn';
+                editBtn.textContent = '\u270E';
+                editBtn.title = 'Edit patch values';
+                editBtn.type = 'button';
+                header.appendChild(editBtn);
+
                 if (patch.description) {
                     const toggle = document.createElement('button');
                     toggle.className = 'patch-desc-toggle';
@@ -409,6 +417,12 @@ class PatchUI {
                 }
 
                 item.appendChild(header);
+
+                editBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._openEditor(patch, filename, container);
+                });
 
                 if (patch.description) {
                     const desc = document.createElement('p');
@@ -504,6 +518,162 @@ class PatchUI {
         }
 
         nullEl.hidden = q ? anyVisible : true;
+    }
+
+    _getDialog() {
+        return document.getElementById('patch-editor-dialog');
+    }
+
+    _openEditor(patch, filename, container) {
+        const lines = this.patchFiles[filename].raw.split('\n');
+        const patchYaml = lines.slice(patch.lineStart, patch.lineEnd).join('\n');
+
+        const dialog = this._getDialog();
+        if (!dialog) return;
+
+        const titleEl = dialog.querySelector('.patch-editor-title');
+        const textarea = dialog.querySelector('.patch-editor-textarea');
+        const statusEl = dialog.querySelector('.patch-editor-status');
+        const footer = dialog.querySelector('.modal-footer');
+
+        titleEl.textContent = `Edit: ${patch.name}`;
+        textarea.value = patchYaml;
+        statusEl.textContent = '';
+        statusEl.className = 'patch-editor-status';
+
+        // Use event delegation on the footer so we never deal with stale listeners
+        const onFooterClick = (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            if (btn.classList.contains('patch-editor-validate')) {
+                this._validateEdit(textarea, statusEl);
+            } else if (btn.classList.contains('patch-editor-save')) {
+                if (this._validateEdit(textarea, statusEl)) {
+                    this._saveEdit(patch, filename, textarea.value, container);
+                    dialog.close();
+                }
+            } else if (btn.classList.contains('patch-editor-cancel')) {
+                dialog.close();
+            }
+        };
+        footer.addEventListener('click', onFooterClick);
+
+        const closeHandler = (e) => {
+            if (e.target === dialog || e.target.closest('.patch-editor-cancel')) dialog.close();
+        };
+        dialog.addEventListener('click', closeHandler);
+
+        dialog.addEventListener('close', () => {
+            footer.removeEventListener('click', onFooterClick);
+            dialog.removeEventListener('click', closeHandler);
+        }, { once: true });
+
+        dialog.showModal();
+        textarea.focus();
+    }
+
+    _validateEdit(textarea, statusEl) {
+        const value = textarea.value.trim();
+        if (!value) {
+            statusEl.textContent = 'Error: Patch definition cannot be empty.';
+            statusEl.className = 'patch-editor-status patch-editor-status--error';
+            return false;
+        }
+
+        // Use js-yaml to validate syntax and structure
+        let doc;
+        try {
+            doc = yaml.load(value);
+        } catch (err) {
+            const msg = err.mark
+                ? `Line ${err.mark.line + 1}, col ${err.mark.column + 1}: ${err.message}`
+                : err.message;
+            statusEl.textContent = `YAML error: ${msg}`;
+            statusEl.className = 'patch-editor-status patch-editor-status--error';
+            return false;
+        }
+
+        // Must be a mapping (object) with exactly one key — the patch name
+        if (typeof doc !== 'object' || doc === null || Array.isArray(doc)) {
+            statusEl.textContent = 'Error: Patch definition must be a mapping (key: value pairs).';
+            statusEl.className = 'patch-editor-status patch-editor-status--error';
+            return false;
+        }
+
+        const keys = Object.keys(doc);
+        if (keys.length === 0) {
+            statusEl.textContent = 'Error: No patch name found. Must start with a name followed by a colon.';
+            statusEl.className = 'patch-editor-status patch-editor-status--error';
+            return false;
+        }
+
+        if (keys.length > 1) {
+            statusEl.textContent = `Error: Multiple root keys detected (${keys.join(', ')}). Edit one patch at a time.`;
+            statusEl.className = 'patch-editor-status patch-editor-status--error';
+            return false;
+        }
+
+        const patchName = keys[0];
+        const body = doc[patchName];
+
+        // Body must be an array of operation items
+        if (!Array.isArray(body)) {
+            statusEl.textContent = 'Error: Patch body must be an array of items (indented lines starting with "-").';
+            statusEl.className = 'patch-editor-status patch-editor-status--error';
+            return false;
+        }
+
+        // Validate each item
+        const knownOps = ['Enabled', 'Description', 'PatchGroup', 'FindZlib', 'ReplaceZlib', 'ReplaceZlibGroup', 'FindZlibHash', 'FindReplaceString', 'ReplaceBytes', 'ReplaceFloat', 'BaseAddress', 'MustMatchLength'];
+        for (const item of body) {
+            if (typeof item !== 'object' || item === null) continue;
+            for (const key of Object.keys(item)) {
+                if (!knownOps.includes(key)) {
+                    statusEl.textContent = `Warning: Unknown operation "${key}" in patch "${patchName}". Check for typos.`;
+                    statusEl.className = 'patch-editor-status patch-editor-status--warning';
+                    break;
+                }
+            }
+            // Only check first unknown key
+            break;
+        }
+
+        // Validate Enabled value (must be yes/no)
+        const enabledEntry = body.find(item => item && typeof item === 'object' && 'Enabled' in item);
+        if (enabledEntry) {
+            const val = enabledEntry.Enabled;
+            if (val !== 'yes' && val !== 'no') {
+                statusEl.textContent = `Error: Enabled must be "yes" or "no", got "${String(val)}".`;
+                statusEl.className = 'patch-editor-status patch-editor-status--error';
+                return false;
+            }
+        }
+
+        statusEl.textContent = `Valid \u2014 patch "${patchName}" ready.`;
+        statusEl.className = 'patch-editor-status patch-editor-status--ok';
+        return true;
+    }
+
+    _saveEdit(patch, filename, newYaml, container) {
+        const rawLines = this.patchFiles[filename].raw.split('\n');
+        const before = rawLines.slice(0, patch.lineStart);
+        const after = rawLines.slice(patch.lineEnd);
+        const updatedRaw = before.join('\n') + (before.length > 0 ? '\n' : '') + newYaml + (after.length > 0 ? '\n' : '') + after.join('\n');
+
+        const oldPatches = this.patchFiles[filename].patches;
+        this.patchFiles[filename].raw = updatedRaw;
+        this.patchFiles[filename].patches = parsePatchYAML(updatedRaw);
+
+        for (const newPatch of this.patchFiles[filename].patches) {
+            const old = oldPatches.find(p => p.name === newPatch.name);
+            if (old && newPatch.name !== patch.name) {
+                newPatch.enabled = old.enabled;
+            }
+        }
+
+        this.render(container);
+        this._updateCounts(container);
     }
 
     /**
