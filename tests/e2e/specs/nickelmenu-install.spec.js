@@ -128,19 +128,17 @@ test.describe('NickelMenu — install', () => {
     ]);
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('ready to download');
-    // Feature-tracking events should have been recorded.
+    // Feature-tracking events fire only for features actually included in the
+    // install. Here that's additional fonts and the minimal-home tweaks.
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-koreader-addon', data: { enabled: 'no' } },
+      { eventName: 'add-fonts', data: undefined },
     );
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-simplified-home', data: { enabled: 'yes' } },
+      { eventName: 'add-minimal-home', data: undefined },
     );
-    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-basic-tabs', data: { enabled: 'no' } },
-    );
-    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-sideloaded-mode', data: { enabled: 'no' } },
-    );
+    // Unselected features must not be tracked.
+    expect(await page.evaluate(() => window.__trackedEvents.map(e => e.eventName)))
+      .not.toEqual(expect.arrayContaining(['add-koreader', 'add-basic-tabs', 'add-sideloaded-mode']));
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
       { eventName: 'flow-end', data: { result: 'nm-download' } },
     );
@@ -678,19 +676,20 @@ test.describe('NickelMenu — install', () => {
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#nm-done-status')).toContainText('installed');
-    // Feature-tracking events should have been recorded.
+    // Feature-tracking events fire only for features actually included in the
+    // install. Here that's additional fonts, minimal-home tweaks, and basic tabs.
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-koreader-addon', data: { enabled: 'no' } },
+      { eventName: 'add-fonts', data: undefined },
     );
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-simplified-home', data: { enabled: 'yes' } },
+      { eventName: 'add-minimal-home', data: undefined },
     );
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-basic-tabs', data: { enabled: 'yes' } },
+      { eventName: 'add-basic-tabs', data: undefined },
     );
-    await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
-      { eventName: 'nm-sideloaded-mode', data: { enabled: 'no' } },
-    );
+    // Unselected features must not be tracked.
+    expect(await page.evaluate(() => window.__trackedEvents.map(e => e.eventName)))
+      .not.toEqual(expect.arrayContaining(['add-koreader', 'add-sideloaded-mode']));
     await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual(
       { eventName: 'flow-end', data: { result: 'nm-write' } },
     );

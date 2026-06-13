@@ -43,7 +43,9 @@ test.describe('Build output', () => {
 
   test('no jszip script tag in built HTML', async () => {
     const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
-    expect(html).not.toContain('jszip');
+    // JSZip is bundled, not loaded via a script tag. A plain credits link to the
+    // JSZip homepage is fine, so only reject an actual <script> referencing it.
+    expect(html).not.toMatch(/<script[^>]*jszip/i);
   });
 
   test('no unreplaced template placeholders in built HTML', async () => {
