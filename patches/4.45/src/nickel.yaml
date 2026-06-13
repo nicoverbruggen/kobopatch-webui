@@ -650,8 +650,8 @@ Remove forgot pin button from lock screen:
       Removes the Forgot PIN -> Sign Out button from the lock screen.
       If this is enabled and you forget your pin, you will need to
       hard reset your Kobo.
-  #- BaseAddress: 0x1CD73B3 # qss/ParentalControlPinCodeVerifyView.qss
-  - BaseAddress: 0x1CF2E51 # qss/PinCodeInputDialog.qss
+  #- BaseAddress: 0x1CD7A93 # qss/ParentalControlPinCodeVerifyView.qss
+  - BaseAddress: 0x1CF3531 # qss/PinCodeInputDialog.qss
   - ReplaceZlib:
       Find: "#lblForgotPin[qApp_deviceIsDragon=true],\n#lblSignOut[qApp_deviceIsDragon=true] {\n  font-size: 26px;\n}"
       Replace: "#lblForgotPin,#lblSignOut{qproperty-visible:false;}"
