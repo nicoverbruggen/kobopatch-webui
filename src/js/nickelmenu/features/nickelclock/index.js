@@ -2,6 +2,30 @@ import JSZip from 'jszip';
 
 import { parseTarGz } from '../../archive.js';
 
+// A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
+// existing user-edited file is never overwritten). NickelClock otherwise creates
+// this on first boot with Margin=Auto, which hugs the screen edge tightly; 40px
+// is roomier. The [Clock] (on) and [Battery] (off) sections mirror NickelClock's
+// own defaults so its menu toggle works on the first reboot and the battery
+// indicator stays hidden; NickelClock's syncSettings() preserves these on boot.
+const DEFAULT_SETTINGS_INI = [
+    '[General]',
+    'Margin=40',
+    '',
+    '[Clock]',
+    'Enabled=true',
+    'Placement=Header',
+    'Position=Right',
+    '',
+    '[Battery]',
+    'BatteryType=Level',
+    'Enabled=false',
+    'Placement=Header',
+    'Position=Right',
+    'LevelTemplate=%1%',
+    '',
+].join('\n');
+
 // Installs NickelClock (https://github.com/shermp/NickelClock), which shows a
 // clock and battery indicator while reading. Like NickelMenu, it ships as a Qt
 // imageformats plugin inside its own KoboRoot.tgz, so it cannot be expressed as
@@ -26,7 +50,7 @@ export default {
     id: 'nickelclock',
     section: 'Advanced',
     title: 'Install NickelClock',
-    description: 'Installs NickelClock, which shows a clock (and optional battery indicator) in the header or footer while you read. After installing, adjust its placement and options in .adds/nickelclock/settings.ini. It is bundled into the same KoboRoot.tgz as NickelMenu and applied on the same reboot.',
+    description: 'Installs NickelClock, which shows a clock (and optional battery indicator) in the header or footer while you read. Adds a "NickelClock" item to the Toggle menu that turns the clock on or off. After installing, adjust its placement and other options in .adds/nickelclock/settings.ini. It is bundled into the same KoboRoot.tgz as NickelMenu and applied on the same reboot.',
     default: false,
     available: false, // set to true at runtime if NickelClock assets exist
     directories: ['.adds/nickelclock'],
@@ -38,7 +62,7 @@ export default {
                 type: 'info',
                 title: 'NickelClock',
                 paragraphs: [
-                    'NickelClock is merged into the same KoboRoot.tgz as NickelMenu and takes effect after the reboot that follows installation. Configure the clock and battery placement afterwards in .adds/nickelclock/settings.ini.',
+                    'Applied on the reboot after install. The clock starts on — toggle it from the menu, or edit .adds/nickelclock/settings.ini to change the margin, placement, or battery indicator.',
                 ],
                 link: {
                     label: 'NickelClock on GitHub',
@@ -57,6 +81,34 @@ export default {
         paths: [
             { path: ['.adds', 'nickelclock'], recursive: true },
         ],
+    },
+
+    // Ship the on-device toggle script under .adds/nm/scripts (so NickelMenu
+    // removal's recursive delete cleans it up) plus a prefilled settings.ini. The
+    // script flips [Clock] Enabled in settings.ini and reboots; the matching
+    // Toggle item is below. settings.ini is written `ifAbsent` so a user-edited
+    // config is preserved across reinstalls.
+    async install(ctx) {
+        return [
+            {
+                path: '.adds/nm/scripts/toggle_nickelclock.sh',
+                data: await ctx.asset('scripts/toggle_nickelclock.sh'),
+            },
+            {
+                path: '.adds/nickelclock/settings.ini',
+                data: new TextEncoder().encode(DEFAULT_SETTINGS_INI),
+                ifAbsent: true,
+            },
+        ];
+    },
+
+    // Contribute the "NickelClock" Toggle-menu item that turns the reading-screen
+    // clock on or off. Its position is set by 'nickelclock' in ../menu-order.js.
+    menuItems() {
+        return [{
+            id: 'nickelclock',
+            lines: ['menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh'],
+        }];
     },
 
     /**

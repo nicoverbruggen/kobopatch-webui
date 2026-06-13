@@ -303,12 +303,19 @@ export class NickelMenuInstaller {
             progressFn('Writing files to Kobo...');
             const totalFiles = collectedFiles.length;
             for (let i = 0; i < collectedFiles.length; i++) {
-                const { path, data } = collectedFiles[i];
+                const { path, data, ifAbsent } = collectedFiles[i];
                 const pathArray = path.split('/');
+                progressFn(`Writing files to Kobo (${i + 1} of ${totalFiles})...`);
+                // A feature can mark a user-owned file (e.g. NickelClock's
+                // settings.ini) `ifAbsent`: ship it on a fresh install but never
+                // overwrite one the user has since edited.
+                if (ifAbsent && await device.pathExists(pathArray)) {
+                    audit?.record(`Kept existing ${path}`);
+                    continue;
+                }
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
                 await device.writeFile(pathArray, fileData);
                 audit?.record(`Wrote ${path} (${fileData.length} bytes)`);
-                progressFn(`Writing files to Kobo (${i + 1} of ${totalFiles})...`);
             }
         }
 

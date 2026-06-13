@@ -11,6 +11,7 @@ export const MENU_ITEM_ORDER = [
     'screensaver',         // screensaver: Screensaver (below Screenshots)
     'auto-usb',            // custom-menu: Auto USB
     'typography',          // better-typography: Typography
+    'nickelclock',         // nickelclock: NickelClock (clock on/off)
     'toggle-hidden-home',  // hide-home-content: Minimal Home
     'toggle-tabs',         // simplify-tabs: Simple Tabs
     'invert-reboot',       // custom-menu: Invert Display

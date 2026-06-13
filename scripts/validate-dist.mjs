@@ -23,6 +23,7 @@ const required = [
   'js/nickelmenu/features/custom-menu/.cog.png',
   'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh',
   'js/nickelmenu/features/simplify-tabs/scripts/toggle_tabs.sh',
+  'js/nickelmenu/features/nickelclock/scripts/toggle_nickelclock.sh',
 ];
 
 let missing = 0;
