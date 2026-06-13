@@ -815,12 +815,11 @@ Don't grab exclusive access to event0:
 
 Both page turn buttons go next:
   - Enabled: no
-  - Description: Make both page turn buttons on the Forma go next in the reader.
+  - BaseAddress: {Sym: "_ZN11ReadingView13keyPressEventEP9QKeyEvent"}
   - ReplaceBytes:
-      Base:          "ReadingView::keyPressEvent(QKeyEvent*)"
-      Offset:        82
-      FindInstBW:    {SymPLTTail: "ReadingView::prevPageWithTimer()"}
-      ReplaceInstBW: {SymPLTTail: "ReadingView::nextPageWithTimer()"}
+      Offset: 0x3C
+      FindH:  68 B9
+      ReplaceH: 0D E0
 
 Both page turn sides go next:
   - Enabled: no
@@ -1453,3 +1452,26 @@ Unify font sizes:
       FindInstBLX: {SymPLT: "QScreen::logicalDotsPerInchX() const"}
       ReplaceH:    B3 EE 00 0B # vmov.f64 d0, #16.0
 
+Disable forward/backward swipe Gestures:
+  - Enabled: no
+  - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
+  - ReplaceBytes:
+      Offset: 0xE8
+      FindH: 1D F7 28 CC 
+      ReplaceH: 00 BF 00 BF
+  - ReplaceBytes:
+      Offset: 0xF6
+      FindH: 1A F7 F0 C8 
+      ReplaceH: 00 BF 00 BF
+
+Disable menu swipe gesture:
+  - Enabled: no
+  - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
+  - ReplaceBytes:
+      Offset: 0x134
+      FindH: 3F F7 E6 CA 
+      ReplaceH: 00 BF 00 BF
+  - ReplaceBytes:
+      Offset: 0x13c
+      FindH: 12 F7 A2 CB 
+      ReplaceH: 00 BF 00 BF
