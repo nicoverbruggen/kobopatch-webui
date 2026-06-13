@@ -298,6 +298,10 @@ class PatchUI {
         const openFiles = new Set(
             [...container.querySelectorAll('.patch-file-section[open]')].map(s => s.dataset.filename)
         );
+        // Preserve an active search query so an edit/save (which re-renders) keeps
+        // the search box and its filtered view instead of resetting to show all.
+        const previousSearch = container.querySelector('.patch-search');
+        const searchQuery = previousSearch ? previousSearch.value : '';
         container.innerHTML = '';
 
         const searchWrap = document.createElement('div');
@@ -519,6 +523,14 @@ class PatchUI {
             clearBtn.hidden = !searchInput.value;
             this._filterPatches(listWrapper, nullEl, searchInput.value);
         });
+
+        // Restore an in-progress search after a re-render (e.g. saving an edit),
+        // re-applying the filter so the visible list matches the preserved query.
+        if (searchQuery) {
+            searchInput.value = searchQuery;
+            clearBtn.hidden = false;
+            this._filterPatches(listWrapper, nullEl, searchQuery);
+        }
     }
 
     _updateCounts(container) {
@@ -544,7 +556,7 @@ class PatchUI {
         // force-collapsing every section on each keystroke.
         if (q && !this._savedOpenState) {
             this._savedOpenState = new Map();
-            for (const section of sections) this._savedOpenState.set(section, section.open);
+            for (const section of sections) this._savedOpenState.set(section.dataset.filename, section.open);
         }
 
         for (const section of sections) {
@@ -590,7 +602,8 @@ class PatchUI {
 
         if (!q && this._savedOpenState) {
             for (const section of sections) {
-                if (this._savedOpenState.has(section)) section.open = this._savedOpenState.get(section);
+                const filename = section.dataset.filename;
+                if (this._savedOpenState.has(filename)) section.open = this._savedOpenState.get(filename);
             }
             this._savedOpenState = null;
         }

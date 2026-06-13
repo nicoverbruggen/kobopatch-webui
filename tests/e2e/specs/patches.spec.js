@@ -885,6 +885,45 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('editing a patch keeps the active search query and filtered view', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await gotoManualPatchesStep(page);
+
+    // Open the first section so its patches (and edit buttons) are in the DOM.
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+
+    // Search for a query that matches the patch we'll edit.
+    const searchInput = page.locator('.patch-search');
+    await searchInput.fill('spacer');
+    await expect(page.locator('.patch-search-clear')).toBeVisible();
+    // The filter is active: some patches are hidden.
+    await expect(page.locator('.patch-item-hidden')).not.toHaveCount(0);
+
+    const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(patchName).toBeVisible();
+    const editBtn = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]').locator('.patch-edit-btn');
+    await editBtn.click();
+
+    // Edit a value and save (this re-renders the patch list).
+    const dialog = page.locator('#patch-editor-dialog');
+    await expect(dialog).toBeVisible();
+    const textarea = dialog.locator('.patch-editor-textarea');
+    const editedYaml = (await textarea.inputValue()).replace('min-height: 12px', 'min-height: 77px');
+    await textarea.fill(editedYaml);
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+
+    // The search box keeps its query and the filtered view is preserved across
+    // the post-save re-render — not reset to showing every patch.
+    await expect(page.locator('.patch-search')).toHaveValue('spacer');
+    await expect(page.locator('.patch-search-clear')).toBeVisible();
+    await expect(page.locator('.patch-item-hidden')).not.toHaveCount(0);
+    await expect(patchName).toBeVisible();
+  });
+
+
   test('patch editor validation rejects empty and invalid YAML', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
