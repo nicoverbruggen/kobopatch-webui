@@ -22,12 +22,12 @@ function makeHider({ id, title, description, flag }) {
         // .adds/nm/scripts so NickelMenu removal's recursive delete cleans it up.
         // ctx.asset() is scoped to features/<feature.id>/, but these features
         // share a single directory under different ids, so the script is fetched
-        // by its real path (mirroring how the KOReader feature fetches directly).
-        async install() {
-            const url = 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh';
-            const resp = await fetch(url);
-            if (!resp.ok) throw new Error(`Failed to load ${url}`);
-            return [{ path: '.adds/nm/scripts/toggle_hidden_home.sh', data: new Uint8Array(await resp.arrayBuffer()) }];
+        // by its real path via ctx.sharedAsset(). That path goes through the
+        // installer's per-run asset cache, so the script is fetched exactly once
+        // even when several hiders are selected.
+        async install(ctx) {
+            const data = await ctx.sharedAsset('js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
+            return [{ path: '.adds/nm/scripts/toggle_hidden_home.sh', data }];
         },
 
         // Contribute the shared Toggle item. Every hider returns this identical

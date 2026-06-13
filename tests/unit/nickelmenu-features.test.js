@@ -438,20 +438,19 @@ test('home-content hiders share one toggle item and append distinct flags', () =
 });
 
 test('a home-content hider ships the shared toggle script to .adds/nm/scripts', async () => {
-    const originalFetch = globalThis.fetch;
+    // The hider fetches the shared script by its real path via ctx.sharedAsset(),
+    // which the installer routes through its per-run, de-duplicating asset cache.
     let requestedUrl = null;
-    globalThis.fetch = async (url) => {
-        requestedUrl = url;
-        return { ok: true, async arrayBuffer() { return new TextEncoder().encode('toggle home').buffer; } };
+    const ctx = {
+        async sharedAsset(url) {
+            requestedUrl = url;
+            return new TextEncoder().encode('toggle home');
+        },
     };
 
-    try {
-        const files = await hideNotices.install();
-        assert.equal(requestedUrl, 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
-        assert.deepEqual(files.map(file => file.path), ['.adds/nm/scripts/toggle_hidden_home.sh']);
-    } finally {
-        globalThis.fetch = originalFetch;
-    }
+    const files = await hideNotices.install(ctx);
+    assert.equal(requestedUrl, 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
+    assert.deepEqual(files.map(file => file.path), ['.adds/nm/scripts/toggle_hidden_home.sh']);
 });
 
 test('simplify-tabs owns its navigation-tab toggle script and item', async () => {

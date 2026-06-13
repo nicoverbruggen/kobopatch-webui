@@ -176,6 +176,43 @@ test('installToDevice de-duplicates the shared home-content toggle across hiders
     assert.match(items, /experimental:hide_home_row3_enabled:1/);
 });
 
+test('install fetches the shared home-content toggle script only once across hiders', async () => {
+    const originalFetch = globalThis.fetch;
+    const toggleUrl = 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh';
+    const assets = {
+        'js/nickelmenu/features/custom-menu/.cog.png': 'cog png',
+        [toggleUrl]: '#!/bin/sh\ntoggle home',
+    };
+    const fetchCounts = new Map();
+    globalThis.fetch = async (url) => {
+        fetchCounts.set(url, (fetchCounts.get(url) || 0) + 1);
+        if (!(url in assets)) return { ok: false, status: 404 };
+        return {
+            ok: true,
+            status: 200,
+            async arrayBuffer() {
+                const data = bytes(assets[url]);
+                return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+            },
+        };
+    };
+
+    const installer = createInstaller();
+    const device = new RecordingDevice();
+    try {
+        // All three hiders selected — each ships the same toggle script.
+        await installer.installToDevice(device, [customMenu, ...homeHiders], createProgressRecorder());
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+
+    // The per-run asset cache collapses the three identical fetches into one.
+    assert.equal(fetchCounts.get(toggleUrl), 1);
+    // ...and the script is still written exactly once.
+    const scriptWrites = device.writePaths().filter(path => path.endsWith('toggle_hidden_home.sh'));
+    assert.deepEqual(scriptWrites, ['.adds/nm/scripts/toggle_hidden_home.sh']);
+});
+
 test('installToDevice writes an audit log under .kobopatch-webui/logs when an AuditLog is passed', async () => {
     const restoreFetch = useCustomMenuAssetFetch();
     const installer = createInstaller();

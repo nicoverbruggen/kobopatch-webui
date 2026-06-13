@@ -70,20 +70,46 @@ export const NICKELMENU_FEATURES = [
 ];
 
 /**
+ * Memoized asset fetch shared across one install run. Several features can ship
+ * the same shared asset (e.g. every home-content hider ships the identical
+ * toggle script); without this they would each fetch it independently before the
+ * installer de-duplicates the writes by path. Keyed by URL, it caches the
+ * in-flight promise so concurrent and repeated requests collapse to one fetch.
+ * Failures are not cached, so a transient error can be retried on a later run.
+ */
+function loadAssetCached(assetCache, url) {
+    let pending = assetCache.get(url);
+    if (!pending) {
+        pending = fetchOrThrow(url, `Failed to load asset ${url}`)
+            .then(resp => resp.arrayBuffer())
+            .then(buf => new Uint8Array(buf))
+            .catch(err => {
+                assetCache.delete(url);
+                throw err;
+            });
+        assetCache.set(url, pending);
+    }
+    return pending;
+}
+
+/**
  * Create the context passed to a feature's installer-time hooks (`install` and
  * `postProcess`). Every hook receives `deviceInfo` and the selected `features`
  * so features can adapt to the connected hardware and to what else is being
- * installed; installer-time hooks additionally get `asset` and `progress`.
- * Assets are fetched at runtime from the feature's directory under
- * /js/nickelmenu/features/<id>/.
+ * installed; installer-time hooks additionally get `asset`, `sharedAsset`, and
+ * `progress`. `asset(relativePath)` fetches from the feature's own directory
+ * under /js/nickelmenu/features/<id>/; `sharedAsset(url)` fetches an asset by its
+ * real path for assets shared between features. Both go through one per-run cache
+ * (`assetCache`), so an asset used by several features is fetched only once.
  */
-function createContext(feature, progressFn, deviceInfo = null, features = [], menuCustomization = null) {
+function createContext(feature, progressFn, deviceInfo = null, features = [], menuCustomization = null, assetCache = new Map()) {
     const basePath = `js/nickelmenu/features/${feature.id}/`;
     return {
-        async asset(relativePath) {
-            const url = basePath + relativePath;
-            const resp = await fetchOrThrow(url, `Failed to load asset ${url}`);
-            return new Uint8Array(await resp.arrayBuffer());
+        asset(relativePath) {
+            return loadAssetCached(assetCache, basePath + relativePath);
+        },
+        sharedAsset(url) {
+            return loadAssetCached(assetCache, url);
         },
         progress(msg) {
             progressFn(msg);
@@ -207,10 +233,14 @@ export class NickelMenuInstaller {
         let files = [];
         const featureFiles = {};
 
+        // One asset cache for the whole run, so an asset several features share
+        // (e.g. the home-content hiders' toggle script) is fetched only once.
+        const assetCache = new Map();
+
         // Run install() for features that have it
         for (const feature of features) {
             if (!feature.install) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo, features, menuCustomization);
+            const ctx = createContext(feature, progressFn, deviceInfo, features, menuCustomization, assetCache);
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
@@ -236,7 +266,7 @@ export class NickelMenuInstaller {
         const itemsFile = files.find(f => f.path === NM_ITEMS_FILE);
         for (const feature of features) {
             if (!feature.postProcess) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo, features, menuCustomization);
+            const ctx = createContext(feature, progressFn, deviceInfo, features, menuCustomization, assetCache);
             files = feature.postProcess(files, ctx);
         }
 
