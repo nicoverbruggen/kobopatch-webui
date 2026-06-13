@@ -58,10 +58,13 @@ const NM_DEFAULT_ICON_ASSET = 'js/nickelmenu/features/custom-menu/.cog.png';
 const NM_PRESET_ICON_PNG_SIZE = 48;
 const NM_UPLOAD_ICON_SIZE = 64;
 
+// Add-ons whose presence indicates a prior, potentially conflicting mod setup
+// that should block a preset install. NickelClock is intentionally absent: it
+// coexists with NickelMenu and is now offered as an Advanced feature, so an
+// existing install is managed rather than treated as a conflict.
 const NM_PRESET_CONFLICTS = [
     { id: 'nickeldbus', path: ['.adds', 'nickeldbus'], label: 'nickeldbus (.adds/nickeldbus)' },
     { id: 'nickelseries', path: ['.adds', 'nickelseries'], label: 'nickelseries (.adds/nickelseries)' },
-    { id: 'nickelclock', path: ['.adds', 'nickelclock'], label: 'nickelclock (.adds/nickelclock)' },
 ];
 
 export function initNickelMenu(state) {

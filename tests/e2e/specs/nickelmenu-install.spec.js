@@ -1,11 +1,13 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
 const crypto = require('crypto');
 const JSZip = require('jszip');
 
-const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../support/paths');
-const { hasNickelMenuAssets, hasKOReaderAssets, hasCadmusAssets, hasFontAssets, hasFirmwareZip } = require('../support/assets');
+const { FIRMWARE_PATH, WEBROOT, getOriginalTgzSha1 } = require('../support/paths');
+const { hasNickelMenuAssets, hasNickelClockAssets, hasKOReaderAssets, hasCadmusAssets, hasFontAssets, hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, mockPathExists, getWrittenFiles, getRemovedEntries } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
 const {
@@ -62,8 +64,11 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
-    // Sideload mode is the one feature with a hint, so exactly one "?" badge shows.
-    await expect(page.locator('.nm-config-help')).toHaveCount(1);
+    // Features with a hint render a "?" badge labelled "More about <title>".
+    // Assert Sideload mode's badge specifically rather than a global count, since
+    // other hinted features (e.g. NickelClock, when its assets are present) also
+    // contribute badges.
+    await expect(page.getByLabel('More about Enable Sideload mode')).toHaveCount(1);
 
     await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
     await expect(page.locator('#nm-customize-dialog')).toBeVisible();
@@ -260,6 +265,66 @@ test.describe('NickelMenu — install', () => {
     expect(itemsContent).toContain('menu_item:main:Open Cadmus');
   });
 
+  test('no device — NickelClock merges into KoboRoot.tgz preserving original files', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasNickelClockAssets(), 'NickelClock assets not found (run npm run setup:installables)');
+
+    // Read the unmerged entries from each source archive. Both ship as a zip
+    // wrapping a gzipped tar; parseTar normalizes the leading "./" so names line
+    // up with what the merged archive contains.
+    async function tgzEntriesFromAsset(assetName) {
+      const assetZip = await JSZip.loadAsync(fs.readFileSync(path.join(WEBROOT, 'assets', assetName)));
+      const tgz = await assetZip.file('KoboRoot.tgz').async('nodebuffer');
+      return parseTar(zlib.gunzipSync(tgz));
+    }
+    const nmEntries = await tgzEntriesFromAsset('NickelMenu.zip');
+    const ncEntries = await tgzEntriesFromAsset('NickelClock.zip');
+
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    // NickelClock is an Advanced feature; open the section and select only it.
+    await openNmSection(page, 'Advanced');
+    await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+    await page.check('input[name="nm-cfg-nickelclock"]');
+
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-list')).toContainText('Install NickelClock');
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-nm-download'),
+    ]);
+    await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+
+    // Unarchive the generated KoboRoot.tgz from the download package.
+    const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+    const mergedTgz = await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer');
+    const mergedEntries = parseTar(zlib.gunzipSync(mergedTgz));
+
+    // The merged archive is exactly the union of both sources — no more, no less.
+    const expectedNames = [...Object.keys(nmEntries), ...Object.keys(ncEntries)].sort();
+    expect(Object.keys(mergedEntries).sort()).toEqual(expectedNames);
+
+    // Sanity-check the two plugins and their marker/doc files are present...
+    expect(mergedEntries['usr/local/Kobo/imageformats/libnm.so']).toBeDefined();
+    expect(mergedEntries['usr/local/Kobo/imageformats/libnickelclock.so']).toBeDefined();
+    expect(mergedEntries['mnt/onboard/.adds/nickelclock/uninstall']).toBeDefined();
+
+    // ...and that every file's bytes are byte-for-byte identical to the original.
+    for (const [name, data] of Object.entries({ ...nmEntries, ...ncEntries })) {
+      expect(mergedEntries[name], `missing ${name} in merged tgz`).toBeDefined();
+      expect(Buffer.compare(mergedEntries[name], data), `${name} bytes differ after merge`).toBe(0);
+    }
+  });
+
 
   test('no device — install with KOReader via manual download', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
@@ -445,7 +510,9 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('#nm-preset-conflict-summary')).toContainText('This Kobo seems to have been modded before');
     await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickeldbus (.adds/nickeldbus)');
     await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelseries (.adds/nickelseries)');
-    await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelclock (.adds/nickelclock)');
+    // NickelClock coexists with NickelMenu (it's an installable Advanced feature),
+    // so an existing install is no longer treated as a conflict.
+    await expect(page.locator('#nm-preset-conflict-list')).not.toContainText('nickelclock');
     await expect(page.locator('#btn-nm-preset-conflict-next')).toBeDisabled();
 
     await page.check('#nm-preset-conflict-ack');

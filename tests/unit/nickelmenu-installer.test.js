@@ -6,6 +6,7 @@ import JSZip from 'jszip';
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
 import { NM_MENU_ICON_CUSTOM_PNG_PATH } from '../../src/js/nickelmenu/customization.js';
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
+import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
 import { AuditLog } from '../../src/js/kobo/audit-log.js';
 import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import excludeCalibre from '../../src/js/nickelmenu/features/exclude-calibre/index.js';
@@ -307,4 +308,64 @@ test('buildDownloadZip rejects when NickelMenu zip is missing KoboRoot.tgz', asy
         () => installer.buildDownloadZip([], createProgressRecorder()),
         /KoboRoot\.tgz not found/
     );
+});
+
+// --- KoboRoot.tgz merging (the generic koboRootEntries hook) ---
+
+const nmTgzEntry = { path: 'usr/local/Kobo/imageformats/libnm.so', data: bytes('nm plugin'), mode: 0o755 };
+
+// A feature that contributes its own KoboRoot.tgz payload, like NickelClock.
+const tgzAddonFeature = {
+    id: 'tgz-addon',
+    title: 'Tgz Addon',
+    async koboRootEntries() {
+        return [
+            { path: 'usr/local/Kobo/imageformats/libaddon.so', data: bytes('addon plugin'), mode: 0o755 },
+            { path: 'mnt/onboard/.adds/addon/uninstall', data: bytes('marker'), mode: 0o644 },
+        ];
+    },
+};
+
+async function createInstallerWithBaseTgz() {
+    const installer = new NickelMenuInstaller();
+    installer.nickelMenuZip = new JSZip();
+    installer.nickelMenuZip.file('KoboRoot.tgz', await buildTarGz([nmTgzEntry]));
+    return installer;
+}
+
+test('buildKoboRootTgz returns the base tgz verbatim when no feature contributes entries', async () => {
+    const tgz = bytes('opaque base tgz');
+    const installer = createInstaller(tgz);
+
+    const result = await installer.buildKoboRootTgz([excludeCalibre], createProgressRecorder());
+    assert.deepEqual(result, tgz);
+});
+
+test('buildKoboRootTgz merges a feature koboRootEntries payload into one archive', async () => {
+    const installer = await createInstallerWithBaseTgz();
+
+    const merged = await installer.buildKoboRootTgz([tgzAddonFeature], createProgressRecorder());
+    const entries = await parseTarGz(merged);
+
+    assert.deepEqual(entries.map(e => e.path), [
+        'usr/local/Kobo/imageformats/libnm.so',
+        'usr/local/Kobo/imageformats/libaddon.so',
+        'mnt/onboard/.adds/addon/uninstall',
+    ]);
+    // Executable bits on both plugins are preserved through the rebuild.
+    assert.equal(entries.find(e => e.path.endsWith('libnm.so')).mode, 0o755);
+    assert.equal(entries.find(e => e.path.endsWith('libaddon.so')).mode, 0o755);
+    assert.deepEqual(entries.find(e => e.path.endsWith('uninstall')).data, bytes('marker'));
+});
+
+test('installToDevice writes the merged KoboRoot.tgz when a tgz-addon feature is selected', async () => {
+    const installer = await createInstallerWithBaseTgz();
+    const device = new RecordingDevice();
+
+    await installer.installToDevice(device, [tgzAddonFeature], createProgressRecorder());
+
+    const written = device.writeFor(koboRootTgzPath);
+    const entries = await parseTarGz(written.data);
+    assert.ok(entries.some(e => e.path.endsWith('libnm.so')));
+    assert.ok(entries.some(e => e.path.endsWith('libaddon.so')));
 });

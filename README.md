@@ -19,12 +19,12 @@ The project itself currently has a few operational modes, depending on what it i
 
 **This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config).** 
 
-This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, and reading apps like KOReader or Cadmus if you'd like.  (You can select which specific tweaks to apply.)
+This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, [NickelClock](https://github.com/shermp/NickelClock) (a reading-screen clock), and reading apps like KOReader or Cadmus if you'd like.  (You can select which specific tweaks to apply.)
 
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
 - <u>This is easily the safest mod to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
-- You can optionally install **KOReader** or **Cadmus** using this method, too.
+- You can optionally install **KOReader**, **Cadmus**, or **NickelClock** using this method, too.
 - Recommended for everyone. Easy to uninstall, too.
 
 ## Mode B: Custom Patches

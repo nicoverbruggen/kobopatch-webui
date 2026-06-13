@@ -1,6 +1,7 @@
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { NM_ITEMS_FILE } from './constants.js';
 import JSZip from 'jszip';
+import { buildTarGz, parseTarGz } from './archive.js';
 import { fetchOrThrow } from '../shell/dom.js';
 import {
     removeExcludeSyncFoldersLine,
@@ -9,6 +10,7 @@ import {
 } from '../kobo/configuration.js';
 
 import customMenu from './features/custom-menu/index.js';
+import nickelclock from './features/nickelclock/index.js';
 import additionalFonts from './features/additional-fonts/index.js';
 import betterTypography from './features/better-typography/index.js';
 import cadmus from './features/cadmus/index.js';
@@ -63,6 +65,7 @@ export const NICKELMENU_FEATURES = [
     // collapsed by default in the feature selection step.
     sideloadedMode,     // postProcess comments out the home-tab override added by simplifyTabs
     screensaver,
+    nickelclock,        // merges its own KoboRoot.tgz payload via koboRootEntries
     excludeCalibre,
 ];
 
@@ -150,12 +153,48 @@ export class NickelMenuInstaller {
     }
 
     /**
-     * Get KoboRoot.tgz from the NickelMenu zip.
+     * Get the base NickelMenu KoboRoot.tgz from the NickelMenu zip.
      */
     async getKoboRootTgz() {
         const file = this.nickelMenuZip.file('KoboRoot.tgz');
         if (!file) throw new Error('KoboRoot.tgz not found in NickelMenu.zip');
         return new Uint8Array(await file.async('arraybuffer'));
+    }
+
+    /**
+     * Build the effective KoboRoot.tgz written to the device.
+     *
+     * The device only processes one `.kobo/KoboRoot.tgz` per boot, so any feature
+     * that ships its own KoboRoot.tgz payload (e.g. NickelClock, whose plugin
+     * cannot be expressed as ordinary onboard files) must be merged into a single
+     * archive alongside NickelMenu's. A feature declares this generically via a
+     * `koboRootEntries(ctx)` hook returning tar entries (`{ path, data, mode }`).
+     *
+     * When no selected feature contributes entries — the common case — the base
+     * NickelMenu tgz is returned verbatim (no parse/rebuild), so the default
+     * install path is byte-for-byte unchanged. Only when a feature contributes do
+     * we parse the base archive and rebuild a merged one.
+     */
+    async buildKoboRootTgz(features = [], progressFn = () => {}, deviceInfo = null) {
+        const baseTgz = await this.getKoboRootTgz();
+
+        const extraEntries = [];
+        for (const feature of features) {
+            if (!feature.koboRootEntries) continue;
+            const ctx = createContext(feature, progressFn, deviceInfo, features);
+            extraEntries.push(...await feature.koboRootEntries(ctx));
+        }
+        if (extraEntries.length === 0) return baseTgz;
+
+        // Merge base + feature entries, keeping the first occurrence of any path.
+        const merged = [];
+        const seenPaths = new Set();
+        for (const entry of [...await parseTarGz(baseTgz), ...extraEntries]) {
+            if (seenPaths.has(entry.path)) continue;
+            seenPaths.add(entry.path);
+            merged.push(entry);
+        }
+        return buildTarGz(merged);
     }
 
     /**
@@ -216,7 +255,7 @@ export class NickelMenuInstaller {
         await this.loadNickelMenu(progressFn);
 
         progressFn('Writing KoboRoot.tgz...');
-        const tgz = await this.getKoboRootTgz();
+        const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
         await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
         audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
 
@@ -262,7 +301,7 @@ export class NickelMenuInstaller {
         progressFn('Building download package...');
         const zip = new JSZip();
 
-        const tgz = await this.getKoboRootTgz();
+        const tgz = await this.buildKoboRootTgz(features, progressFn, deviceInfo);
         zip.file('.kobo/KoboRoot.tgz', tgz);
 
         let collectedFiles = [];

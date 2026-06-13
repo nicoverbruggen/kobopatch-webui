@@ -9,7 +9,14 @@ const CACHED_ASSETS = path.resolve(__dirname, '..', 'cached_assets');
 const WEBROOT = path.resolve(__dirname, '..', '..', '..', 'dist');
 const WEBROOT_FIRMWARE = path.join(WEBROOT, '_test_firmware.zip');
 
-const FIRMWARE_PATH = path.join(CACHED_ASSETS, `kobo-update-${primary.version}.zip`);
+// The cached primary-version firmware zip. E2E never downloads it: tests use it
+// only when present (and skip otherwise), and the app's firmware URLs are
+// redirected to a local symlink of this file. Set FIRMWARE_ZIP to reuse a copy
+// you already have anywhere on disk instead of caching another ~150 MB download
+// (same env var the WASM/patch test scripts honor).
+const FIRMWARE_PATH = process.env.FIRMWARE_ZIP
+  ? path.resolve(process.env.FIRMWARE_ZIP)
+  : path.join(CACHED_ASSETS, `kobo-update-${primary.version}.zip`);
 
 let cachedOriginalTgzSha1 = null;
 // Computes the SHA1 of KoboRoot.tgz inside the firmware zip. Used as a

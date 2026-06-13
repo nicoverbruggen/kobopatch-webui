@@ -70,7 +70,7 @@ The JS source lives in `src/js/` as ES modules, organized by role:
 - **`flows/`** — the two main user journeys: NickelMenu and custom patches.
 - **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`audit-log.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
 - **`patches/`** — custom patch UI and runner modules.
-- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`.
+- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
 Flow modules receive a shared `state` object by reference and call back into the orchestrator via `state.showError()` and `state.goToModeSelection()` when they need to cross module boundaries. esbuild bundles everything into `dist/bundle.js`.
@@ -108,7 +108,7 @@ Set up installable assets:
 npm run setup:installables
 ```
 
-This downloads NickelMenu, reading app assets (KOReader and Cadmus), and the font assets (Readerly, Libron, Cartisse) into `src/assets/`. Reading app and font archives are ignored local assets. Each asset is skipped if already present; pass `--force` to re-download all.
+This downloads NickelMenu, NickelClock, reading app assets (KOReader and Cadmus), and the font assets (Readerly, Libron, Cartisse) into `src/assets/`. Add-on and font archives are ignored local assets. Each asset is skipped if already present; pass `--force` to re-download all.
 
 To update assets between fixed deployments (e.g. on a running production container):
 

@@ -19,9 +19,11 @@ src/assets/KF_Cartisse.zip
 src/assets/koreader-kobo.zip
 src/assets/cadmus-kobo.tar.gz
 src/assets/NickelMenu.zip
+src/assets/NickelClock.zip
 src/assets/koreader-release.json
 src/assets/cadmus-release.json
 src/assets/nickelmenu-release.json
+src/assets/nickelclock-release.json
 src/assets/readerly-release.json
 src/assets/libron-release.json
 src/assets/cartisse-release.json

@@ -13,7 +13,10 @@ set -euo pipefail
 #   - kobopatch.wasm built (run npm run build:wasm first)
 #   - dist built (run npm run build first)
 #   - Node dependencies installed automatically
-#   - Test assets cached in tests/e2e/cached_assets/ (run npm run test to download)
+#   - Test assets cached in tests/e2e/cached_assets/ (run npm run test to download).
+#     Firmware is never downloaded here: firmware-dependent tests are skipped when
+#     it is absent. Set FIRMWARE_ZIP=/path/to/kobo-update-<version>.zip to reuse a
+#     copy you already have instead of caching another ~150 MB download.
 #   - Installable assets in src/assets/ (set up automatically)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

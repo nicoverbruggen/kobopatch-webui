@@ -74,12 +74,14 @@ const softwareUrlsReady = loadSoftwareUrls();
 const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 const blacklistReady = state.patchUI.loadBlacklist();
 
-// Best-effort reading-app availability checks. If the server has app assets,
-// mark the feature as available so it shows up in the NickelMenu features list.
-// Runs in the background — failure is silently ignored.
+// Best-effort availability checks for bundled add-ons (reading apps, NickelClock).
+// If the server has the add-on's assets, mark the feature as available so it
+// shows up in the NickelMenu features list. Runs in the background — failure is
+// silently ignored.
 for (const { id, releaseJson } of [
     { id: 'koreader', releaseJson: '/assets/koreader-release.json' },
     { id: 'cadmus', releaseJson: '/assets/cadmus-release.json' },
+    { id: 'nickelclock', releaseJson: '/assets/nickelclock-release.json' },
 ]) {
     const feature = NICKELMENU_FEATURES.find(f => f.id === id);
     fetch(releaseJson)

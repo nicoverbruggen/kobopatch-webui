@@ -23,6 +23,12 @@ const INSTALLABLES = [
         }),
     },
     {
+        name: 'nickelclock',
+        asset: 'NickelClock.zip',
+        versionFile: 'nickelclock-release.json',
+        fetchLatest: () => fetchLatestRelease('shermp/NickelClock', (n) => /^NickelClock-.*\.zip$/.test(n)),
+    },
+    {
         name: 'koreader',
         asset: 'koreader-kobo.zip',
         versionFile: 'koreader-release.json',
@@ -54,10 +60,21 @@ const INSTALLABLES = [
     },
 ];
 
+// A stalled GitHub download otherwise hangs the whole setup forever (no body
+// timeout in fetch). Abort a transfer that makes no progress for this long, and
+// retry a few times, so `setup:installables` fails fast with a clear error
+// instead of appearing to hang (most visibly on the large cadmus archive).
+const API_TIMEOUT_MS = 30_000;
+const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000;
+const DOWNLOAD_ATTEMPTS = 3;
+
 async function fetchLatestRelease(repo, matcher) {
     const headers = { 'Accept': 'application/vnd.github+json', 'User-Agent': 'kobopatch-webui-installables' };
     if (process.env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
-    const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers });
+    const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+        headers,
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
     if (!resp.ok) throw new Error(`GitHub API ${repo}: ${resp.status} ${resp.statusText}`);
     const data = await resp.json();
     const version = data.tag_name;
@@ -66,14 +83,58 @@ async function fetchLatestRelease(repo, matcher) {
     return { version, url: asset.browser_download_url };
 }
 
+async function downloadOnce(url, dest) {
+    // Abort the transfer if no bytes arrive for DOWNLOAD_IDLE_TIMEOUT_MS — an
+    // idle timer (reset on each chunk), not an overall deadline, so a slow but
+    // progressing download of a large asset is never cut off.
+    const controller = new AbortController();
+    let idleTimer;
+    const armIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => controller.abort(new Error('stalled: no data received')), DOWNLOAD_IDLE_TIMEOUT_MS);
+    };
+
+    try {
+        armIdleTimer();
+        const resp = await fetch(url, { redirect: 'follow', signal: controller.signal });
+        if (!resp.ok) throw new Error(`Download failed: ${resp.status} ${resp.statusText} (${url})`);
+
+        const total = Number(resp.headers.get('content-length')) || 0;
+        const chunks = [];
+        let received = 0;
+        for await (const chunk of resp.body) {
+            armIdleTimer();
+            chunks.push(chunk);
+            received += chunk.length;
+            if (total && process.stdout.isTTY) {
+                process.stdout.write(`\r    ${formatSize(received)} / ${formatSize(total)} (${Math.floor((received / total) * 100)}%)`);
+            }
+        }
+        if (total && process.stdout.isTTY) process.stdout.write('\r\x1b[K');
+
+        const buf = Buffer.concat(chunks);
+        const tmp = `${dest}.tmp`;
+        await writeFile(tmp, buf);
+        await rename(tmp, dest);
+        return buf.length;
+    } finally {
+        clearTimeout(idleTimer);
+    }
+}
+
 async function downloadTo(url, dest) {
-    const resp = await fetch(url, { redirect: 'follow' });
-    if (!resp.ok) throw new Error(`Download failed: ${resp.status} ${resp.statusText} (${url})`);
-    const buf = Buffer.from(await resp.arrayBuffer());
-    const tmp = `${dest}.tmp`;
-    await writeFile(tmp, buf);
-    await rename(tmp, dest);
-    return buf.length;
+    let lastErr;
+    for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
+        try {
+            return await downloadOnce(url, dest);
+        } catch (err) {
+            lastErr = err;
+            if (attempt < DOWNLOAD_ATTEMPTS) {
+                console.warn(`  download attempt ${attempt}/${DOWNLOAD_ATTEMPTS} failed (${err.message}); retrying...`);
+            }
+        }
+    }
+    throw new Error(`Download failed after ${DOWNLOAD_ATTEMPTS} attempts: ${lastErr.message} (${url})`);
 }
 
 function formatSize(bytes) {

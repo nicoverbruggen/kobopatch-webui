@@ -17,6 +17,11 @@ function hasCadmusAssets() {
     && fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-release.json'));
 }
 
+function hasNickelClockAssets() {
+  return fs.existsSync(path.join(WEBROOT, 'assets', 'NickelClock.zip'))
+    && fs.existsSync(path.join(WEBROOT, 'assets', 'nickelclock-release.json'));
+}
+
 function hasFontAssets() {
   return fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Readerly.zip'))
     && fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Libron.zip'))
@@ -40,6 +45,7 @@ module.exports = {
   hasNickelMenuAssets,
   hasKOReaderAssets,
   hasCadmusAssets,
+  hasNickelClockAssets,
   hasFontAssets,
   hasFirmwareZip,
   setupFirmwareSymlink,
