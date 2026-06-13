@@ -1213,16 +1213,16 @@ export function initNickelMenu(state) {
 
             // Install flow: either write directly to device or build a ZIP for download.
             const features = state.nickelMenuOption === 'preset' ? getSelectedFeatures() : [];
-            const hasKOReader = features.some(f => f.id === 'koreader');
-            const hasSimplifiedHome = features.some(f =>
-                ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id)
-            );
-            const hasBasicTabs = features.some(f => f.id === 'simplify-tabs');
-            const hasSideloadedMode = features.some(f => f.id === 'sideloaded-mode');
-            track('nm-koreader-addon', { enabled: hasKOReader ? 'yes' : 'no' });
-            track('nm-simplified-home', { enabled: hasSimplifiedHome ? 'yes' : 'no' });
-            track('nm-basic-tabs', { enabled: hasBasicTabs ? 'yes' : 'no' });
-            track('nm-sideloaded-mode', { enabled: hasSideloadedMode ? 'yes' : 'no' });
+            // Addon/feature installs: fire only when actually part of the
+            // install, so each event counts a real install.
+            if (features.some(f => f.id === 'koreader')) track('add-koreader');
+            if (features.some(f => f.id === 'nickelclock')) track('add-nickelclock');
+            if (features.some(f => f.id === 'cadmus')) track('add-cadmus');
+            if (features.some(f => f.id === 'additional-fonts')) track('add-fonts');
+            if (features.some(f => f.id === 'screensaver')) track('add-screensaver');
+            if (features.some(f => ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id))) track('add-minimal-home');
+            if (features.some(f => f.id === 'simplify-tabs')) track('add-basic-tabs');
+            if (features.some(f => f.id === 'sideloaded-mode')) track('add-sideloaded-mode');
 
             if (writeToDevice && state.device.directoryHandle) {
                 // If a legacy `.adds/nm/items` exists and the user chose not to

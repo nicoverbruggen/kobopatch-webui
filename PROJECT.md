@@ -189,6 +189,34 @@ To test analytics UI locally without sending data:
 npm run serve:fake-analytics
 ```
 
+## Analytics
+
+The hosted build sends a small number of anonymous events to [Umami](https://umami.is) via the
+`track()` wrapper in `src/js/shell/analytics.js`. Tracking is a no-op unless Umami is injected
+server-side (`serve-dist.mjs`), and no personal identifiers are ever sent. The user-facing summary
+lives in the "What is tracked" modal in `src/index.html` — keep it in sync with this list.
+
+Events currently emitted:
+
+| Event | Data | Fired |
+| --- | --- | --- |
+| `flow-start` | `{ method: 'manual' \| 'connect' }` | When a flow begins (`app.js`). |
+| `nm-option` | `{ option }` | NickelMenu option chosen (preset / NickelMenu only / removal). |
+| `add-koreader` | — | Only when the add-on is part of the install. |
+| `add-nickelclock` | — | Only when installed. |
+| `add-cadmus` | — | Only when installed. |
+| `add-fonts` | — | Only when the additional fonts are installed. |
+| `add-screensaver` | — | Only when the custom screensaver is installed. |
+| `add-minimal-home` | — | Only when a minimal-home feature is installed. |
+| `add-basic-tabs` | — | Only when the basic tab bar is installed. |
+| `add-sideloaded-mode` | — | Only when sideloaded mode is installed. |
+| `flow-end` | `{ result }` | When a flow completes (write / download / remove). |
+| `feedback` | `{ vote }` | When the user submits the thumbs feedback. |
+
+The `add-*` events fire only when that add-on is actually included in the install (in
+`executeNmInstall`, for both write-to-device and download paths, never on removal), so each event
+counts a real install rather than a yes/no toggle.
+
 ## Output Validation
 
 The WASM patcher performs several checks on each patched binary before including it in the output `KoboRoot.tgz`:
