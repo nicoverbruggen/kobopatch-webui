@@ -1,0 +1,5 @@
+{
+  "type": "commonjs",
+  "private": true,
+  "comment": "Shadows the repo root package.json \"type\": \"module\" so Go's CommonJS wasm_exec_node.js (under ./go) runs correctly when the local Go toolchain lives inside the project tree. See test-integration.sh."
+}
