@@ -157,7 +157,7 @@ test('Better Typography ships the toggle script and contributes its Tweak menu i
     }]);
 });
 
-test('Sideload mode sets SideloadedMode under ApplicationPreferences and declares a 4.31 floor', () => {
+test('Sideload Mode sets SideloadedMode under ApplicationPreferences and declares a 4.31 floor', () => {
     assert.equal(sideloadedMode.minimumVersion, '4.31');
     assert.equal(sideloadedMode.default, false);
     assert.deepEqual(sideloadedMode.confSettings(), [
@@ -167,8 +167,8 @@ test('Sideload mode sets SideloadedMode under ApplicationPreferences and declare
     ]);
 });
 
-test('Sideload mode comments out the home-tab override so the home tab is hidden', () => {
-    // simplify-tabs force-enables the home tab; Sideload mode must comment it out.
+test('Sideload Mode comments out the home-tab override so the home tab is hidden', () => {
+    // simplify-tabs force-enables the home tab; Sideload Mode must comment it out.
     const files = itemsFiles(
         'experimental :menu_main_15505_0_enabled: 1',
         'experimental :menu_main_15505_1_label: Books',
@@ -176,20 +176,20 @@ test('Sideload mode comments out the home-tab override so the home tab is hidden
     const result = itemsText(sideloadedMode.postProcess(files));
     const lines = result.split('\n');
 
-    assert.equal(lines[0], '# Home tab hidden for Sideload mode (no home screen when not signed in).');
+    assert.equal(lines[0], '# Home tab hidden for Sideload Mode (no home screen when not signed in).');
     assert.equal(lines[1], '# experimental :menu_main_15505_0_enabled: 1');
     // Other tab settings are left untouched.
     assert.match(result, /^experimental :menu_main_15505_1_label: Books$/m);
 });
 
-test('Sideload mode postProcess is a no-op when the home-tab override is absent', () => {
-    // Without simplify-tabs there is no override line; Sideload mode hides the
+test('Sideload Mode postProcess is a no-op when the home-tab override is absent', () => {
+    // Without simplify-tabs there is no override line; Sideload Mode hides the
     // home tab on its own, so nothing in the items file changes.
     const files = itemsFiles('menu_item :main :Reboot :power :reboot');
     assert.equal(itemsText(sideloadedMode.postProcess(files)), 'menu_item :main :Reboot :power :reboot');
 });
 
-test('Sideload mode cleanup is conf-only: detect/revert derive from its revertable setting', () => {
+test('Sideload Mode cleanup is conf-only: detect/revert derive from its revertable setting', () => {
     const { cleanup } = sideloadedMode;
     assert.equal(cleanup.mode, 'optional');
     // No files and no separate detectConf/revertConf — the revertable conf
@@ -320,7 +320,7 @@ test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab over
     const items = itemsText(commented);
 
     // The home-tab force-enable line (index 0) is commented out by sideloaded-mode
-    assert.match(items, /^# Home tab hidden for Sideload mode/);
+    assert.match(items, /^# Home tab hidden for Sideload Mode/);
     assert.match(items, /^# experimental :menu_main_15505_0_enabled: 1/m);
     // Other tab config and menu items are left untouched
     assert.match(items, /^experimental :menu_main_15505_label :Toggle$/m);

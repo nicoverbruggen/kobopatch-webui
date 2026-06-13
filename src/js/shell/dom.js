@@ -118,6 +118,14 @@ export function renderNmCheckboxList(container, items) {
         titleSpan.className = 'nm-config-title';
         titleSpan.textContent = item.title;
 
+        // The asset version sits inline right after the title, in a muted style.
+        if (item.version) {
+            const version = document.createElement('span');
+            version.className = 'nm-config-version';
+            version.textContent = item.version;
+            titleSpan.append(version);
+        }
+
         const descSpan = document.createElement('span');
         descSpan.className = 'nm-config-desc';
         descSpan.textContent = item.description;
@@ -191,9 +199,10 @@ export function renderNmCheckboxList(container, items) {
             label.appendChild(side);
         }
 
-        // Optional "learn more" badge. A hint that looks like a URL opens in a new
-        // tab; any other hint is treated as text and shown in a popup. Both are
-        // interactive content, so a click opens them rather than toggling the box.
+        // Optional right-aligned "learn more" badge. A hint that looks like a URL
+        // opens in a new tab; any other hint is treated as text and shown in a
+        // popup. Both are interactive content, so a click opens them rather than
+        // toggling the box.
         if (item.hint) {
             const isUrl = /^https?:\/\//i.test(item.hint);
             const help = document.createElement(isUrl ? 'a' : 'button');

@@ -160,22 +160,22 @@ test.describe('NickelMenu — configuration', () => {
   }
 
 
-  test('with device — factory-reset Kobo (not signed in) recommends Sideload mode', async ({ page }) => {
+  test('with device — factory-reset Kobo (not signed in) recommends Sideload Mode', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, { signedIn: false });
     await goToNmFeatures(page);
 
     // The recommendation banner shows, and the Advanced section it points at is
-    // auto-expanded so the Sideload mode option is visible.
+    // auto-expanded so the Sideload Mode option is visible.
     await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
-    await expect(page.locator('#nm-sideloaded-banner')).toContainText('Sideload mode');
+    await expect(page.locator('#nm-sideloaded-banner')).toContainText('Sideload Mode');
     await expect(page.locator('input[name="nm-cfg-sideloaded-mode"]')).toBeVisible();
     await expect(page.locator('input[name="nm-cfg-sideloaded-mode"]')).toBeEnabled();
   });
 
 
-  test('with device — signed-in Kobo does not recommend Sideload mode', async ({ page }) => {
+  test('with device — signed-in Kobo does not recommend Sideload Mode', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, { signedIn: true });
@@ -185,7 +185,7 @@ test.describe('NickelMenu — configuration', () => {
   });
 
 
-  test('with device — enabling Sideload mode writes SideloadedMode to the config', async ({ page }) => {
+  test('with device — enabling Sideload Mode writes SideloadedMode to the config', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, { signedIn: false });
@@ -198,7 +198,7 @@ test.describe('NickelMenu — configuration', () => {
     await page.click('#btn-nm-features-next');
     await skipNmBackup(page);
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    // The review step warns about what Sideload mode does.
+    // The review step warns about what Sideload Mode does.
     await expect(page.locator('#nm-review-notices')).toContainText('Home tab is hidden');
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
@@ -213,7 +213,7 @@ test.describe('NickelMenu — configuration', () => {
   });
 
 
-  test('with device — removing Sideload mode reverts the config setting', async ({ page }) => {
+  test('with device — removing Sideload Mode reverts the config setting', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, {
@@ -239,10 +239,10 @@ test.describe('NickelMenu — configuration', () => {
   });
 
 
-  test('with device — Sideload mode is disabled on Kobo software older than 4.31', async ({ page }) => {
+  test('with device — Sideload Mode is disabled on Kobo software older than 4.31', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
-    // 4.28 is below Sideload mode's 4.31 minimum (but still a supported OS).
+    // 4.28 is below Sideload Mode's 4.31 minimum (but still a supported OS).
     await connectMockDevice(page, { firmware: '4.28.17820', signedIn: false });
     await goToNmFeatures(page);
 

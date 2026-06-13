@@ -50,7 +50,7 @@ export default {
     id: 'nickelclock',
     section: 'Advanced',
     title: 'Install NickelClock',
-    description: 'Installs NickelClock, which shows a clock (and optional battery indicator) in the header or footer while you read. Adds a "NickelClock" item to the Toggle menu that turns the clock on or off. After installing, adjust its placement and other options in .adds/nickelclock/settings.ini. It is bundled into the same KoboRoot.tgz as NickelMenu and applied on the same reboot.',
+    description: 'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',
     default: false,
     available: false, // set to true at runtime if NickelClock assets exist
     directories: ['.adds/nickelclock'],
@@ -62,7 +62,7 @@ export default {
                 type: 'info',
                 title: 'NickelClock',
                 paragraphs: [
-                    'Applied on the reboot after install. The clock starts on — toggle it from the menu, or edit .adds/nickelclock/settings.ini to change the margin, placement, or battery indicator.',
+                    'Applied on the reboot after install. The clock will be visible immediately. You can toggle it from the menu, or further customize the configuration file to change how NickelClock is configured.',
                 ],
                 link: {
                     label: 'NickelClock on GitHub',

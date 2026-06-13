@@ -240,7 +240,7 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#step-mode .selection-card-note')).toHaveText([
       'For everyone',
       'Offers uninstallation option',
-      'Optionally install KOReader',
+      'Optionally install KOReader & NickelClock',
       'For advanced users',
       'Requires reinstall after updates',
     ]);

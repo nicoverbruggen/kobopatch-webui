@@ -11,6 +11,7 @@ export default {
     default: false,
     available: false, // set to true at runtime if Cadmus assets exist
     directories: ['.adds/cadmus'],
+    hint: 'https://github.com/OGKevin/cadmus',
 
     cleanup: {
         mode: 'optional',

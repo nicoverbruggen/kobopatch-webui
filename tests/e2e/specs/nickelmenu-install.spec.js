@@ -65,10 +65,10 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('input[name="nm-cfg-exclude-calibre"]')).not.toBeChecked();
 
     // Features with a hint render a "?" badge labelled "More about <title>".
-    // Assert Sideload mode's badge specifically rather than a global count, since
+    // Assert Sideload Mode's badge specifically rather than a global count, since
     // other hinted features (e.g. NickelClock, when its assets are present) also
     // contribute badges.
-    await expect(page.getByLabel('More about Enable Sideload mode')).toHaveCount(1);
+    await expect(page.getByLabel('More about Enable Sideload Mode')).toHaveCount(1);
 
     await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
     await expect(page.locator('#nm-customize-dialog')).toBeVisible();
@@ -289,6 +289,25 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     // NickelClock is an Advanced feature; open the section and select only it.
     await openNmSection(page, 'Advanced');
+
+    // Its row shows the asset version (right-aligned, separate from the title)
+    // alongside a "learn more" link to the project.
+    const nickelClockRow = page.locator('.nm-config-item', {
+      has: page.locator('input[name="nm-cfg-nickelclock"]'),
+    });
+    await expect(nickelClockRow.locator('.nm-config-version')).toHaveText(/^v?\d/);
+    await expect(nickelClockRow.locator('a.nm-config-help')).toHaveAttribute('href', 'https://github.com/shermp/NickelClock');
+
+    // Layout: the version sits inline next to the title on the left, with the "?"
+    // badge off on the right — so the version is much closer to the title than to
+    // the badge.
+    const titleBox = await nickelClockRow.locator('.nm-config-title').boundingBox();
+    const versionBox = await nickelClockRow.locator('.nm-config-version').boundingBox();
+    const helpBox = await nickelClockRow.locator('.nm-config-help').boundingBox();
+    expect(versionBox.x).toBeGreaterThanOrEqual(titleBox.x);
+    expect(versionBox.x).toBeLessThan(helpBox.x);
+    expect(versionBox.x - titleBox.x).toBeLessThan(helpBox.x - versionBox.x);
+
     await page.uncheck('input[name="nm-cfg-additional-fonts"]');
     await page.check('input[name="nm-cfg-nickelclock"]');
 

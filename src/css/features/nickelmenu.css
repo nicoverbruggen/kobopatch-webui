@@ -169,6 +169,15 @@
     line-height: 1.15;
 }
 
+/* Asset version shown inline after the title, in a muted secondary style. */
+.nm-config-version {
+    margin-left: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
 /* "Learn more" badge shown for features that declare a hint (url or text). */
 .nm-config-help {
     flex-shrink: 0;

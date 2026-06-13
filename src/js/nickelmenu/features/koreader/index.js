@@ -12,6 +12,7 @@ export default {
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
     directories: ['.adds/koreader'],
+    hint: 'https://github.com/koreader/koreader',
 
     reviewNotices() {
         return [
