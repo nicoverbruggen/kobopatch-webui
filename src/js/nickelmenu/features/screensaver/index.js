@@ -6,7 +6,7 @@
 // its menu item.
 export default {
     id: 'screensaver',
-    section: 'Advanced',
+    section: 'Legacy',
     title: 'Copy sample screensaver',
     description: 'Copies a sample screensaver to .kobo/screensaver and adds a new item to the Toggle menu to toggle the screensaver on or off. You can always add extra screensavers in the .kobo/screensaver folder.',
     default: false,

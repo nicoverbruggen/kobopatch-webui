@@ -31,3 +31,13 @@
         font-size: 0.88rem;
     }
 }
+
+/* "Reveal"/"Hide" toggle for the masked serial number — a compact secondary
+   button (it inherits the base button + .secondary styling). */
+.serial-reveal {
+    margin-left: 0.6rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+}

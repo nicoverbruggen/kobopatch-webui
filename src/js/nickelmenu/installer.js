@@ -61,10 +61,11 @@ export const NICKELMENU_FEATURES = [
     betterTypography,
     koreader,
     cadmus,
-    // "Advanced" section — less common power-user options, rendered last and
-    // collapsed by default in the feature selection step.
+    // "Advanced" section — less common power-user options, collapsed by default
+    // in the feature selection step.
     nickelclock,        // merges its own KoboRoot.tgz payload via koboRootEntries
     sideloadedMode,     // postProcess comments out the home-tab override added by simplifyTabs
+    // "Legacy" section — older tweaks, rendered last and collapsed by default.
     screensaver,
     excludeCalibre,
 ];

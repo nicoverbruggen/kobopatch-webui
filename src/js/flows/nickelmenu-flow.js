@@ -58,6 +58,11 @@ const NM_DEFAULT_ICON_ASSET = 'js/nickelmenu/features/custom-menu/.cog.png';
 const NM_PRESET_ICON_PNG_SIZE = 48;
 const NM_UPLOAD_ICON_SIZE = 64;
 
+// Feature sections that start collapsed in the selection step — less-common
+// options tucked away by default. The render order (and so which section appears
+// last) follows NICKELMENU_FEATURES, where these sections come last.
+const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
+
 // Add-ons whose presence indicates a prior, potentially conflicting mod setup
 // that should block a preset install. NickelClock is intentionally absent: it
 // coexists with NickelMenu and is now offered as an Advanced feature, so an
@@ -145,6 +150,7 @@ export function initNickelMenu(state) {
                     description: f.description,
                     hint: f.hint,
                     sectionTitle: f.section,
+                    sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
                     checked: meetsMinimum && (f.required || f.default),
                     disabled: f.required || !meetsMinimum,
                     disabledReason: meetsMinimum
@@ -894,6 +900,17 @@ export function initNickelMenu(state) {
     /** Entry point into the NickelMenu flow. Probes the device, then shows the config step. */
     async function goToNickelMenuConfig() {
         await checkNickelMenuInstalled();
+
+        // Default to "Install with preset" so it is preselected, but only when the
+        // user hasn't already chosen an option (so back-navigation keeps their
+        // choice). Dispatching change reuses the card-selected styling and the
+        // option's own handler (nav labels, enabling Continue).
+        if (!$q('input[name="nm-option"]:checked', stepNickelMenu)) {
+            const presetRadio = $q('input[name="nm-option"][value="preset"]', stepNickelMenu);
+            presetRadio.checked = true;
+            presetRadio.dispatchEvent(new Event('change'));
+        }
+
         const currentOption = $q('input[name="nm-option"]:checked', stepNickelMenu);
         nmUninstallOptions.hidden = !currentOption || currentOption.value !== 'remove' || detectedOptionalCleanupFeatures.length === 0;
         btnNmNext.disabled = !currentOption;

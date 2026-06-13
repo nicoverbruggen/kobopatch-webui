@@ -356,15 +356,58 @@ btnManualVersionBack.addEventListener('click', () => {
 /** Populate the device info display (model, serial with prefix underlined, firmware). */
 function displayDeviceInfo(info) {
     $('device-model').textContent = info.model;
+    renderSerial(info.serial, info.serialPrefix);
+    $('device-firmware').textContent = info.firmware;
+}
+
+/**
+ * Render the serial as the (underlined) model prefix followed by the rest masked
+ * out, with a Reveal/Hide toggle. The serial is sensitive, so only the first few
+ * characters — the prefix that identifies the model — are shown by default.
+ */
+function renderSerial(serial, serialPrefix) {
     const serialEl = $('device-serial');
     serialEl.textContent = '';
-    // Underline the serial prefix to show which part identifies the model.
-    const prefixLen = info.serialPrefix.length;
-    const u = document.createElement('u');
-    u.textContent = info.serial.slice(0, prefixLen);
-    serialEl.appendChild(u);
-    serialEl.appendChild(document.createTextNode(info.serial.slice(prefixLen)));
-    $('device-firmware').textContent = info.firmware;
+
+    const prefix = serial.slice(0, serialPrefix.length);
+    const rest = serial.slice(serialPrefix.length);
+
+    const prefixEl = document.createElement('u');
+    prefixEl.textContent = prefix;
+    serialEl.appendChild(prefixEl);
+
+    const restEl = document.createElement('span');
+    restEl.className = 'serial-rest';
+    serialEl.appendChild(restEl);
+
+    // Nothing to hide if the serial is just the prefix — show it without a toggle.
+    if (!rest) {
+        restEl.textContent = rest;
+        return;
+    }
+
+    let revealed = false;
+    const masked = '•'.repeat(rest.length);
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'serial-reveal secondary';
+
+    const render = () => {
+        restEl.textContent = revealed ? rest : masked;
+        toggle.textContent = revealed ? 'Hide' : 'Reveal';
+        toggle.setAttribute('aria-label', revealed ? 'Hide full serial number' : 'Reveal full serial number');
+        toggle.setAttribute('aria-pressed', String(revealed));
+    };
+    render();
+
+    toggle.addEventListener('click', () => {
+        revealed = !revealed;
+        render();
+    });
+
+    serialEl.appendChild(document.createTextNode(' '));
+    serialEl.appendChild(toggle);
 }
 
 // Detect the platform-specific file manager name for the connection instructions.

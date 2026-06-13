@@ -141,7 +141,7 @@ test.describe('NickelMenu — configuration', () => {
       await page.click('#btn-nm-next');
 
       if (enableCalibre) {
-        await openNmSection(page, 'Advanced');
+        await openNmSection(page, 'Legacy');
         await page.check('input[name="nm-cfg-exclude-calibre"]');
       }
 

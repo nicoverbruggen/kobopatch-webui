@@ -41,11 +41,14 @@ test.describe('NickelMenu — install', () => {
     // NickelMenu configure step
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
-    // No option pre-selected — Continue should be disabled
-    await expect(page.locator('#btn-nm-next')).toBeDisabled();
+    // "Install with preset" is preselected by default — Continue is enabled and
+    // the preset card shows as selected.
+    await expect(page.locator('input[name="nm-option"][value="preset"]')).toBeChecked();
+    const presetCard = page.locator('#step-nickelmenu label.selection-card')
+      .filter({ has: page.locator('input[value="preset"]') });
+    await expect(presetCard).toHaveClass(/selection-card--selected/);
+    await expect(page.locator('#btn-nm-next')).toBeEnabled();
 
-    // Select "Install NickelMenu and configure"
-    await page.click('input[name="nm-option"][value="preset"]');
     await page.click('#btn-nm-next');
 
     // Feature selection step
@@ -53,6 +56,18 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('#nm-config-options')).toContainText('Interface tweaks');
     await expect(page.locator('#nm-config-options')).toContainText('Text and typography');
     await expect(page.getByRole('button', { name: 'Customize NickelMenu preset tab' })).toBeVisible();
+
+    // Advanced and Legacy both start collapsed; a normal section stays open. And
+    // Legacy renders below Advanced.
+    const sectionByTitle = (title) => page.locator('details.nm-config-section', {
+      has: page.locator('.nm-config-section-title', { hasText: title }),
+    });
+    await expect(sectionByTitle('Interface tweaks')).toHaveJSProperty('open', true);
+    await expect(sectionByTitle('Advanced')).toHaveJSProperty('open', false);
+    await expect(sectionByTitle('Legacy')).toHaveJSProperty('open', false);
+    const advancedBox = await sectionByTitle('Advanced').boundingBox();
+    const legacyBox = await sectionByTitle('Legacy').boundingBox();
+    expect(legacyBox.y).toBeGreaterThan(advancedBox.y);
 
     // Verify default checkbox states
     await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).toBeChecked();
@@ -84,7 +99,7 @@ test.describe('NickelMenu — install', () => {
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-row2col2"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
-    await openNmSection(page, 'Advanced');
+    await openNmSection(page, 'Legacy');
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
@@ -641,7 +656,7 @@ test.describe('NickelMenu — install', () => {
     await page.check('input[name="nm-cfg-simplify-tabs"]');
     await page.check('input[name="nm-cfg-hide-recommendations"]');
     await page.check('input[name="nm-cfg-hide-notices"]');
-    await openNmSection(page, 'Advanced');
+    await openNmSection(page, 'Legacy');
     await page.check('input[name="nm-cfg-exclude-calibre"]');
 
     await page.click('#btn-nm-features-next');
@@ -744,7 +759,7 @@ test.describe('NickelMenu — install', () => {
     await page.click('#btn-nm-next');
 
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
-    await openNmSection(page, 'Advanced');
+    await openNmSection(page, 'Legacy');
     await page.check('input[name="nm-cfg-screensaver"]');
 
     await page.click('#btn-nm-features-next');

@@ -195,6 +195,35 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('with device — serial number is masked until revealed', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, {}); // default serial N4280A0000000
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    const serial = page.locator('#device-serial');
+    // Masked by default: the model prefix shows, the rest is hidden behind dots.
+    await expect(serial).toContainText('N428');
+    await expect(serial).not.toContainText('N4280A0000000');
+    await expect(serial).toContainText('•');
+
+    // Reveal shows the full serial and flips the toggle to "Hide".
+    const toggle = page.locator('.serial-reveal');
+    await expect(toggle).toHaveText('Reveal');
+    await toggle.click();
+    await expect(serial).toContainText('N4280A0000000');
+    await expect(serial).not.toContainText('•');
+    await expect(toggle).toHaveText('Hide');
+
+    // Hiding masks it again.
+    await toggle.click();
+    await expect(serial).not.toContainText('N4280A0000000');
+    await expect(serial).toContainText('•');
+    await expect(toggle).toHaveText('Reveal');
+  });
+
+
   test('with device — unknown model shows warning and requires checkbox', async ({ page }) => {
     await page.goto('/');
     await injectMockDevice(page, { serial: 'X9990A0000000' });

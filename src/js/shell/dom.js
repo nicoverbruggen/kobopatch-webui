@@ -52,14 +52,6 @@ export function populateSelect(selectEl, placeholder, items) {
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
 
-    // Determine the ordered, unique section titles so the last one can start
-    // collapsed (less-popular "Advanced" options are tucked away by default).
-    const sectionOrder = [];
-    for (const item of items) {
-        const key = item.sectionTitle || '';
-        if (key && !sectionOrder.includes(key)) sectionOrder.push(key);
-    }
-    const lastSection = sectionOrder[sectionOrder.length - 1] || null;
     const sectionBodies = new Map();
 
     for (const item of items) {
@@ -68,10 +60,12 @@ export function renderNmCheckboxList(container, items) {
 
         if (sectionKey) {
             if (!sectionBodies.has(sectionKey)) {
-                // Sections are collapsible; every section is open except the last.
+                // Sections are collapsible; a section starts collapsed when its
+                // items declare `sectionCollapsed` (less-popular "Advanced" and
+                // "Legacy" options are tucked away by default).
                 const section = document.createElement('details');
                 section.className = 'nm-config-section';
-                section.open = sectionKey !== lastSection;
+                section.open = !item.sectionCollapsed;
 
                 const heading = document.createElement('summary');
                 heading.className = 'nm-config-section-heading';
