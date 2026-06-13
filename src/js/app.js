@@ -615,6 +615,7 @@ function setupDialog(dialogId, openBtnId, closeBtnId) {
 }
 
 setupDialog('how-it-works-dialog', 'btn-how-it-works', 'btn-close-dialog');
+setupDialog('credits-dialog', 'btn-credits', 'btn-close-credits');
 
 // Hint dialog: opened programmatically from feature "?" badges that carry a
 // text hint. Only the close button and backdrop need wiring here.

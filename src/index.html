@@ -538,6 +538,8 @@
             &nbsp;&middot;&nbsp;
             <a href="https://nicoverbruggen.be/blog/kobopatch-webui" class="site-footer-link" target="_blank">About</a>
             &nbsp;&middot;&nbsp;
+            <a href="#" id="btn-credits" class="site-footer-link">Credits</a>
+            &nbsp;&middot;&nbsp;
             <a id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank"><span id="commit-hash"></span></a>
         </p>
         <p class="site-footer-attribution">
@@ -626,6 +628,51 @@
                     number, firmware version, IP address, and browsing behaviour are never recorded by the
                     analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
                 </p>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="credits-dialog" class="modal" aria-labelledby="credits-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="credits-title">Credits</h2>
+                <button id="btn-close-credits" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    This project stands on the work of many others. It bundles, builds on, or installs the
+                    following third-party projects, all of which remain the property of their respective authors
+                    and are used under their own licenses. My sincere thanks to everyone who maintains them.
+                </p>
+
+                <h3>Patching &amp; menu</h3>
+                <ul>
+                    <li><a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> &mdash; the patching engine, compiled to WebAssembly to patch firmware in the browser. <em>(MIT)</em></li>
+                    <li><a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> &mdash; the custom menu framework. Installed from a <a href="https://github.com/nicoverbruggen/NickelMenu" target="_blank">fork</a> with a <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank">curated configuration</a>. <em>(MIT)</em></li>
+                </ul>
+
+                <h3>Optional add-ons</h3>
+                <ul>
+                    <li><a href="https://github.com/shermp/NickelClock" target="_blank">NickelClock</a> &mdash; a clock on the reading screen. <em>(MIT)</em></li>
+                    <li><a href="https://github.com/koreader/koreader" target="_blank">KOReader</a> &mdash; a feature-rich document and e-book reader. <em>(AGPL-3.0)</em></li>
+                    <li><a href="https://github.com/OGKevin/cadmus" target="_blank">Cadmus</a> &mdash; a reading companion app for Kobo, based on <a href="https://github.com/baskerville/plato" target="_blank">Plato</a>. <em>(AGPL-3.0)</em></li>
+                </ul>
+
+                <h3>Fonts</h3>
+                <ul>
+                    <li>The optional curated fonts &mdash; <a href="https://github.com/nicoverbruggen/readerly" target="_blank">Readerly</a> <em>(OFL-1.1)</em>, <a href="https://github.com/nicoverbruggen/libron" target="_blank">Libron</a> <em>(OFL-1.1)</em>, and <a href="https://github.com/nicoverbruggen/cartisse" target="_blank">Cartisse</a> <em>(Bitstream Charter license)</em> &mdash; part of the <a href="https://github.com/nicoverbruggen/ebook-fonts" target="_blank">ebook-fonts</a> collection (<a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">website</a>), repackaged for Kobo.</li>
+                </ul>
+
+                <h3>Libraries &amp; tooling</h3>
+                <ul>
+                    <li><a href="https://stuk.github.io/jszip/" target="_blank">JSZip</a> &mdash; client-side ZIP reading and writing. <em>(MIT or GPL-3.0)</em></li>
+                    <li><a href="https://github.com/nodeca/js-yaml" target="_blank">js-yaml</a> &mdash; parsing kobopatch patch files. <em>(MIT)</em></li>
+                    <li><a href="https://esbuild.github.io/" target="_blank">esbuild</a> &mdash; JavaScript bundling. <em>(MIT)</em></li>
+                    <li><a href="https://go.dev/" target="_blank">Go</a> &mdash; compiles kobopatch to the WebAssembly module used by this tool. <em>(BSD-3-Clause)</em></li>
+                    <li><a href="https://eslint.org/" target="_blank">ESLint</a> <em>(MIT)</em> and <a href="https://playwright.dev/" target="_blank">Playwright</a> <em>(Apache-2.0)</em> &mdash; linting and end-to-end testing.</li>
+                </ul>
+
+                <p>Patches and discussion come from the <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a> community.</p>
             </div>
         </div>
     </dialog>
