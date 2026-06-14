@@ -42,6 +42,7 @@ const defaultConfig = {
   // { path: ['.kobopatch-webui', 'custom-patches.json'], content: '...' }.
   extraRootFiles: [],
   rootFolders: [],
+  failWritePaths: [],
   // null = leave the placeholder KoboReader.sqlite (sign-in unknown); true/false
   // swaps in a real fixture so detection reads a signed-in or factory-reset db.
   signedIn: null,
@@ -174,8 +175,10 @@ async function injectMockDevice(page, opts = {}) {
     window.__mockFS = filesystem;
     window.__mockWrittenFiles = {};
     window.__mockRemovedEntries = [];
+    window.__mockFailWritePaths = new Set(config.failWritePaths || []);
 
     function makeFileHandle(dirNode, fileName, pathPrefix) {
+      const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
       return {
         getFile: async () => {
           const fileNode = dirNode[fileName];
@@ -200,11 +203,13 @@ async function injectMockDevice(page, opts = {}) {
           return {
             write: async (chunk) => { chunks.push(chunk); },
             close: async () => {
+              if (window.__mockFailWritePaths.has(fullPath)) {
+                throw new TypeError('Name is not allowed');
+              }
               const first = chunks[0];
               const bytes = first instanceof Uint8Array ? first : new TextEncoder().encode(String(first));
               if (!dirNode[fileName]) dirNode[fileName] = { _type: 'file' };
               dirNode[fileName].content = new TextDecoder().decode(bytes);
-              const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
               window.__mockWrittenFiles[fullPath] = true;
             },
           };

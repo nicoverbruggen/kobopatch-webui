@@ -527,9 +527,24 @@
             <p id="error-hint" hidden>Some patches may not work correctly with your software version. You can go back and try a different selection.</p>
             <pre id="error-log" class="error-log" hidden></pre>
             <p id="error-message" class="banner banner--error"></p>
+            <div id="error-device-write-help" class="device-write-help" hidden>
+                <div class="banner banner--warning">
+                    <div class="banner-heading">The Kobo drive rejected a write</div>
+                    <p>This is often caused by a USB connection, removable-drive mount, or storage problem rather than the selected options.</p>
+                </div>
+                <ol class="device-write-steps">
+                    <li><strong>Restart and reconnect.</strong> Safely eject the Kobo, unplug it, restart the device, reconnect it, then try again.</li>
+                    <li><strong>Change the USB connection.</strong> Try another cable or a different USB port.</li>
+                    <li><strong>Use the ZIP fallback.</strong> Build the downloadable ZIP and copy it to the Kobo manually.</li>
+                </ol>
+                <p class="device-write-last-resort">If writes keep failing after that, a factory reset may help, but treat it as a last resort. On older Kobo devices the internal storage may be an SD card, and repeated write failures can also point to storage that is starting to fail.</p>
+            </div>
             <div class="step-actions">
                 <button id="btn-error-back" class="secondary" hidden>&#x2039; Select different patches</button>
-                <button id="btn-retry" class="secondary">Start Over</button>
+                <div class="step-actions-right">
+                    <button id="btn-error-download-log" class="secondary" hidden>Download logs</button>
+                    <button id="btn-retry" class="secondary">Start Over</button>
+                </div>
             </div>
         </section>
     </main>

@@ -10,14 +10,15 @@ test('auditLogFileName formats the run start time and type as yy-mm-dd_hh-mm-typ
 });
 
 test('AuditLog buffers timestamped lines and writes one file under .kobopatch-webui/logs', async () => {
-    const log = new AuditLog('install-nickelmenu', new Date(2026, 5, 11, 14, 30));
+    const device = new RecordingDevice();
+    const log = new AuditLog('install-nickelmenu', new Date(2026, 5, 11, 14, 30), device);
     log.record('Wrote .kobo/KoboRoot.tgz (10 bytes)');
     log.record('Removed .adds/nm');
 
     assert.deepEqual(log.path, ['.kobopatch-webui', 'logs', '26-06-11_14-30-install-nickelmenu.log']);
+    assert.deepEqual(device.writePaths(), []);
 
-    const device = new RecordingDevice();
-    await log.write(device);
+    await log.write();
 
     assert.deepEqual(device.writePaths(), ['.kobopatch-webui/logs/26-06-11_14-30-install-nickelmenu.log']);
     const contents = text(device.writeFor('.kobopatch-webui/logs/26-06-11_14-30-install-nickelmenu.log').data);

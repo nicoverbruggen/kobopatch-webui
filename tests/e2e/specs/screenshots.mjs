@@ -502,6 +502,47 @@ test('connected nickelmenu installing (busy indicator)', async ({ page }, testIn
   await shot(page, dir, '09a-nickelmenu-installing', testInfo);
 });
 
+test('connected nickelmenu failed write error', async ({ page }, testInfo) => {
+  const dir = 'edge-cases';
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page, {
+    failWritePaths: ['KOBOeReader/.kobo/KoboRoot.tgz'],
+  });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+  await page.click('#btn-nm-features-next');
+
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  if (await page.locator('#nm-backup-options').isVisible()) {
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+  }
+  await page.click('#btn-nm-backup-next');
+
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await page.click('#btn-nm-write');
+
+  await expect(page.locator('#step-error')).not.toBeHidden();
+  await expect(page.locator('#error-message')).toContainText('Could not write .kobo/KoboRoot.tgz');
+  await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+  await expect(page.locator('#btn-error-download-log')).toBeVisible();
+  await shot(page, dir, 'failed-write-download-logs', testInfo);
+});
+
 // ============================================================
 // 6. Connected Patches flow
 // ============================================================

@@ -1,5 +1,45 @@
 import { parseKoboVersion } from './version.js';
 
+function formatDevicePath(pathParts) {
+    return pathParts.join('/');
+}
+
+function invalidPathPartReason(part) {
+    if (typeof part !== 'string') return 'path segments must be strings';
+    if (part === '') return 'path segments cannot be empty';
+    if (part === '.' || part === '..') return 'path segments cannot be "." or ".."';
+    if (part.includes('/') || part.includes('\\')) return 'path segments cannot contain path separators';
+    return null;
+}
+
+function assertValidDevicePath(pathParts, operation) {
+    if (!Array.isArray(pathParts) || pathParts.length === 0) {
+        throw new Error(`Invalid device path for ${operation}: expected at least one path segment`);
+    }
+
+    for (const part of pathParts) {
+        const reason = invalidPathPartReason(part);
+        if (reason) {
+            throw new Error(`Invalid device path for ${operation}: ${formatDevicePath(pathParts)} (${reason})`);
+        }
+    }
+}
+
+function describeError(err) {
+    return err?.message || String(err);
+}
+
+function devicePathError(operation, pathParts, err) {
+    const wrapped = new Error(
+        `Could not ${operation} ${formatDevicePath(pathParts)}: ${describeError(err)}`,
+        { cause: err }
+    );
+    wrapped.devicePath = formatDevicePath(pathParts);
+    wrapped.deviceOperation = operation;
+    wrapped.deviceWrite = operation === 'write';
+    return wrapped;
+}
+
 class KoboDevice {
     constructor() {
         this.directoryHandle = null;
@@ -64,11 +104,16 @@ class KoboDevice {
      * pathParts is an array like ['.kobo', 'Kobo'].
      */
     async getNestedDirectory(pathParts) {
+        assertValidDevicePath(pathParts, 'open directory');
         let dir = this.directoryHandle;
-        for (const part of pathParts) {
-            dir = await dir.getDirectoryHandle(part, { create: true });
+        try {
+            for (const part of pathParts) {
+                dir = await dir.getDirectoryHandle(part, { create: true });
+            }
+            return dir;
+        } catch (err) {
+            throw devicePathError('open or create directory', pathParts, err);
         }
-        return dir;
     }
 
     /**
@@ -76,15 +121,20 @@ class KoboDevice {
      * filePath is like ['.kobo', 'KoboRoot.tgz'] or ['.adds', 'nm', 'items'].
      */
     async writeFile(filePath, data) {
-        const dirParts = filePath.slice(0, -1);
-        const fileName = filePath[filePath.length - 1];
-        const dir = dirParts.length > 0
-            ? await this.getNestedDirectory(dirParts)
-            : this.directoryHandle;
-        const fileHandle = await dir.getFileHandle(fileName, { create: true });
-        const writable = await fileHandle.createWritable();
-        await writable.write(data);
-        await writable.close();
+        assertValidDevicePath(filePath, 'write');
+        try {
+            const dirParts = filePath.slice(0, -1);
+            const fileName = filePath[filePath.length - 1];
+            const dir = dirParts.length > 0
+                ? await this.getNestedDirectory(dirParts)
+                : this.directoryHandle;
+            const fileHandle = await dir.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(data);
+            await writable.close();
+        } catch (err) {
+            throw devicePathError('write', filePath, err);
+        }
     }
 
     /**

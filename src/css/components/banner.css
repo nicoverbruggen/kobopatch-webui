@@ -77,6 +77,61 @@
 #device-unknown-warning { margin-bottom: 1.5rem; }
 #existing-tgz-warning { margin-bottom: 1.5rem; }
 #error-message { margin-top: 1rem; }
+.device-write-help {
+    margin-top: 0.75rem;
+    display: grid;
+    gap: 0.75rem;
+
+    & .banner {
+        margin: 0;
+    }
+}
+
+.device-write-steps {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+    list-style: none;
+    counter-reset: device-write-step;
+
+    & li {
+        position: relative;
+        padding-left: 2rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        counter-increment: device-write-step;
+    }
+
+    & li::before {
+        content: counter(device-write-step);
+        position: absolute;
+        left: 0;
+        top: 0.1rem;
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 50%;
+        background: var(--warning-bg);
+        color: var(--warning-text);
+        border: 1px solid var(--warning-border);
+        display: grid;
+        place-items: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    & strong {
+        color: var(--text);
+    }
+}
+
+.device-write-last-resort {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
 
 .install-instructions .banner--warning { margin-bottom: 0.75rem; }
 .install-instructions .banner--success { margin-top: 0; }

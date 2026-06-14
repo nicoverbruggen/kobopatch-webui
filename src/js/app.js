@@ -26,7 +26,7 @@ import { NickelMenuInstaller, NICKELMENU_FEATURES } from './nickelmenu/installer
 import { createDefaultMenuCustomization } from './nickelmenu/customization.js';
 import { TL } from './shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from './shell/analytics.js';
-import { $, $q, $qa, populateSelect } from './shell/dom.js';
+import { $, $q, $qa, populateSelect, triggerDownload } from './shell/dom.js';
 import { showStep, setNavLabels, setNavStep, hideNav, showNav, stepHistory, setupCardRadios } from './shell/navigation.js';
 import { initNickelMenu } from './flows/nickelmenu-flow.js';
 import { initPatchesFlow } from './flows/patches-flow.js';
@@ -122,16 +122,19 @@ const btnModeBack = $('btn-mode-back');
 const btnModeNext = $('btn-mode-next');
 const btnRetry = $('btn-retry');
 const btnErrorBack = $('btn-error-back');
+const btnErrorDownloadLog = $('btn-error-download-log');
 
 const errorMessage = $('error-message');
 const errorLog = $('error-log');
 const errorTitle = $('error-title');
 const errorHint = $('error-hint');
+const errorDeviceWriteHelp = $('error-device-write-help');
 const deviceStatus = $('device-status');
 const deviceUnknownWarning = $('device-unknown-warning');
 const deviceUnknownAck = $('device-unknown-ack');
 const deviceUnknownCheckbox = $('device-unknown-checkbox');
 const patchContainer = $('patch-container');
+let errorAuditLog = null;
 
 // =============================================================================
 // Initialize flow modules
@@ -152,8 +155,11 @@ setupCardRadios($('step-nickelmenu'), 'selection-card--selected');
 // Shared error screen used by both flows. If the user was on the patches step,
 // a "Go Back" button lets them return to fix their selections.
 
-function showError(message, log) {
+function showError(message, log, options = {}) {
+    errorAuditLog = options.auditLog || null;
     errorMessage.textContent = message;
+    errorDeviceWriteHelp.hidden = !options.deviceWrite;
+    btnErrorDownloadLog.hidden = !errorAuditLog;
     if (log) {
         errorLog.textContent = log;
         errorLog.hidden = false;
@@ -581,6 +587,8 @@ btnModeNext.addEventListener('click', async () => {
 // so the user can adjust selections and retry.
 btnErrorBack.addEventListener('click', () => {
     btnErrorBack.hidden = true;
+    btnErrorDownloadLog.hidden = true;
+    errorAuditLog = null;
     btnRetry.classList.remove('danger');
     stepHistory.pop();
     while (stepHistory.length > 0 && stepHistory[stepHistory.length - 1] !== stepPatches) {
@@ -588,6 +596,12 @@ btnErrorBack.addEventListener('click', () => {
     }
     showNav();
     showStep(stepPatches);
+});
+
+btnErrorDownloadLog.addEventListener('click', () => {
+    if (!errorAuditLog) return;
+    const filename = errorAuditLog.path[errorAuditLog.path.length - 1] || 'kobopatch-webui.log';
+    triggerDownload(errorAuditLog.render(), filename, 'text/plain');
 });
 
 // "Start Over" — reload the page for a guaranteed clean slate.

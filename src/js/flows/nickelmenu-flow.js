@@ -1212,10 +1212,12 @@ export function initNickelMenu(state) {
     async function executeNmInstall(writeToDevice) {
         const nmProgress = $('nm-progress');
         const progressFn = (msg) => { nmProgress.textContent = msg; };
+        let audit = null;
         showStep(stepNmInstalling);
 
         try {
             if (state.nickelMenuOption === 'remove') {
+                audit = new AuditLog('remove-nickelmenu', new Date(), state.device);
                 await executeNickelMenuRemoval({
                     device: state.device,
                     installer: state.nmInstaller,
@@ -1225,7 +1227,7 @@ export function initNickelMenu(state) {
                     ],
                     shouldRemoveSyncExclusions: async () => !await hasAddsDirectoriesRequiringSyncExclusionsOnDevice(),
                     onProgress: progressFn,
-                    audit: new AuditLog('remove-nickelmenu', new Date(), state.device),
+                    audit,
                 });
                 showNmDone('remove');
                 return;
@@ -1268,8 +1270,9 @@ export function initNickelMenu(state) {
                 } catch {
                     // best-effort
                 }
+                audit = new AuditLog('install-nickelmenu', new Date(), state.device);
                 await state.nmInstaller.installToDevice(state.device, features, progressFn, {
-                    audit: new AuditLog('install-nickelmenu', new Date(), state.device),
+                    audit,
                     menuCustomization: state.nickelMenuCustomization,
                 });
                 showNmDone('written');
@@ -1281,7 +1284,11 @@ export function initNickelMenu(state) {
                 showNmDone('download');
             }
         } catch (err) {
-            state.showError(TL.STATUS.NM_INSTALL_FAILED(err.message));
+            audit?.record(`Failed: ${err.message}`);
+            state.showError(TL.STATUS.NM_INSTALL_FAILED(err.message), null, {
+                deviceWrite: !!err.deviceWrite,
+                auditLog: audit,
+            });
         }
     }
 

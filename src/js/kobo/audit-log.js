@@ -4,8 +4,9 @@
 // .kobopatch-webui/logs/ at the Kobo onboard root, one file per run, for
 // troubleshooting and auditing.
 //
-// Records are appended to the device in real-time (best-effort) so a partial
-// log survives a crash. The final write() ensures a complete log regardless.
+// Records stay in memory while the operation runs, then write() persists the
+// final log once. If the device write fails, the in-memory log can still be
+// offered as a browser download from the error screen.
 
 function pad2(value) {
     return String(value).padStart(2, '0');
@@ -36,11 +37,9 @@ export class AuditLog {
         this._device = device;
     }
 
-    /** Buffer a timestamped line and attempt a real-time append to the device.
-     *  Returns `this` for convenience. */
+    /** Buffer a timestamped line. Returns `this` for convenience. */
     record(message) {
         this.lines.push(`[${new Date().toISOString()}] ${message}`);
-        this._flush();
         return this;
     }
 
@@ -53,12 +52,6 @@ export class AuditLog {
     render() {
         const header = `kobopatch-webui audit log — started ${this.startedAt.toISOString()}`;
         return [header, ...this.lines].join('\n') + '\n';
-    }
-
-    /** Best-effort real-time write of all buffered content to the device. */
-    _flush() {
-        if (!this._device) return;
-        this._rawWrite(this._device).catch(() => {});
     }
 
     /** Write the full log to the connected device. Overwrites the file. */

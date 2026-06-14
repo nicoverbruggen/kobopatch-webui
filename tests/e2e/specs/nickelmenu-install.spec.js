@@ -765,6 +765,43 @@ test.describe('NickelMenu — install', () => {
     expect(manifest.meta.installed.model).toBe('N428');
   });
 
+  test('with device — failed write offers audit log download', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await connectMockDevice(page, {
+      failWritePaths: ['KOBOeReader/.kobo/KoboRoot.tgz'],
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await page.click('#btn-nm-write');
+
+    await expect(page.locator('#step-error')).not.toBeHidden();
+    await expect(page.locator('#error-message')).toContainText('Could not write .kobo/KoboRoot.tgz');
+    await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+    await expect(page.locator('#btn-error-download-log')).toBeVisible();
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-error-download-log'),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^\d{2}-\d{2}-\d{2}_\d{2}-\d{2}-install-nickelmenu\.log$/);
+    const log = fs.readFileSync(await download.path(), 'utf8');
+    expect(log).toContain('kobopatch-webui audit log');
+    expect(log).toContain('Failed: Could not write .kobo/KoboRoot.tgz');
+    expect(await getWrittenFiles(page)).not.toContainEqual(expect.stringContaining('.kobopatch-webui/logs/'));
+  });
 
   test('with device — preset card title becomes "(Re)install" when a prior KoboPatch Web UI install is detected', async ({ page }) => {
     // The webui-preset file is this tool's marker of a previous install.

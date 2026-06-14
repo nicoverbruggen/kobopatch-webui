@@ -155,6 +155,33 @@ test('writeFile creates nested directories and writes bytes to the target file',
     assert.equal(file.writes.length, 1);
 });
 
+test('writeFile rejects invalid path segments before calling the filesystem API', async () => {
+    const { device, root } = createDevice();
+
+    await assert.rejects(
+        () => device.writeFile(['.adds', 'nm', ''], bytes('bad')),
+        /Invalid device path for write: \.adds\/nm\/ \(path segments cannot be empty\)/
+    );
+    assert.equal(root.children.has('.adds'), false);
+});
+
+test('writeFile adds target path context to filesystem API failures', async () => {
+    const { device, root } = createDevice();
+    const nmDir = await root.addDirectory(['.adds', 'nm']);
+    nmDir.getFileHandle = async () => {
+        throw domError('TypeError', 'Name is not allowed');
+    };
+
+    await assert.rejects(
+        () => device.writeFile(['.adds', 'nm', 'webui-preset'], bytes('items')),
+        (err) => {
+            assert.match(err.message, /Could not write \.adds\/nm\/webui-preset: Name is not allowed/);
+            assert.equal(err.cause.name, 'TypeError');
+            return true;
+        }
+    );
+});
+
 test('removeEntry removes a non-recursive entry directly', async () => {
     const { device, root } = createDevice();
     await root.addFile(['.adds', 'nm', 'items'], 'items');

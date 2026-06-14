@@ -412,11 +412,7 @@ export function initPatchesFlow(state) {
         const audit = new AuditLog('custom-patches', new Date(), state.device);
 
         try {
-            const koboDir = await state.device.directoryHandle.getDirectoryHandle('.kobo');
-            const fileHandle = await koboDir.getFileHandle('KoboRoot.tgz', { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(state.resultTgz);
-            await writable.close();
+            await state.device.writeFile(['.kobo', 'KoboRoot.tgz'], state.resultTgz);
             audit.record(`Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`);
 
             // Best-effort manifest write — but never for a restore. The manifest
@@ -440,11 +436,13 @@ export function initPatchesFlow(state) {
             writeInstructions.hidden = false;
             track('flow-end', { result: state.isRestore ? 'restore-write' : 'patches-write' });
         } catch (err) {
-            // Best-effort: write whatever was recorded so far
-            await audit.write().catch(() => {});
+            audit.record(`Failed: ${err.message}`);
             btnWrite.disabled = false;
             btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
-            state.showError(TL.STATUS.WRITE_FAILED(err.message));
+            state.showError(TL.STATUS.WRITE_FAILED(err.message), null, {
+                deviceWrite: !!err.deviceWrite,
+                auditLog: audit,
+            });
         }
     });
 
