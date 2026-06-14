@@ -190,7 +190,7 @@ test.describe('Custom patches', () => {
     const actualHash = crypto.createHash('sha1').update(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
     // A restore carries no customization, so the package omits the manifest (which
-    // reflects the last customized state) to avoid clobbering it on extract.
+    // reflects the last customized state) to avoid overwriting it on extract.
     expect(zip.file('.kobopatch-webui/custom-patches.json'), 'restore ZIP must not include a manifest').toBeNull();
   });
 
@@ -577,7 +577,7 @@ test.describe('Custom patches', () => {
     const actualHash = crypto.createHash('sha1').update(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
     // A restore carries no customization, so the package omits the manifest (which
-    // reflects the last customized state) to avoid clobbering it on extract.
+    // reflects the last customized state) to avoid overwriting it on extract.
     expect(zip.file('.kobopatch-webui/custom-patches.json'), 'restore ZIP must not include a manifest').toBeNull();
   });
 

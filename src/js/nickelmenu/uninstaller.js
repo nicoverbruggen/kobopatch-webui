@@ -39,7 +39,7 @@ async function removeCleanupParentDirsIfEmpty(device, cleanup, logger, audit = n
  * Undo a feature's Kobo eReader.conf changes — the `revertable` entries it
  * declares in `confSettings`. Each entry only reverts when the current value
  * still matches what the feature set, so user customisations made afterwards are
- * never clobbered. `revertTo: null` (or absent) removes the line entirely; any
+ * never overwritten. `revertTo: null` (or absent) removes the line entirely; any
  * string (including '') sets the key to that value.
  */
 async function applyConfReverts(device, feature, audit = null) {

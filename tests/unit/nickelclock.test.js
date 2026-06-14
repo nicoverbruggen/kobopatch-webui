@@ -110,7 +110,7 @@ test('ships a prefilled settings.ini (Margin=40, clock on) marked ifAbsent', asy
 
     const settings = files.find(f => f.path === '.adds/nickelclock/settings.ini');
     assert.ok(settings, 'expected a settings.ini file');
-    // ifAbsent so a user-edited settings.ini is never clobbered on reinstall.
+    // ifAbsent so a user-edited settings.ini is never overwritten on reinstall.
     assert.equal(settings.ifAbsent, true);
 
     const ini = new TextDecoder().decode(settings.data);

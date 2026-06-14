@@ -459,7 +459,7 @@ export function initPatchesFlow(state) {
             const zip = new JSZip();
             zip.file('.kobo/KoboRoot.tgz', state.resultTgz);
             // A restore carries no customization, so it omits the manifest — both
-            // to reflect that nothing is applied and to avoid clobbering the
+            // to reflect that nothing is applied and to avoid overwriting the
             // device's last-customized manifest when the ZIP is extracted.
             if (!state.isRestore) {
                 const manifest = buildPatchesManifest();

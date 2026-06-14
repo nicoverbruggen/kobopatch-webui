@@ -20,7 +20,7 @@ export default {
     // Cleanup only carries the removal presentation here — detection and revert
     // are derived from the revertable SIDELOADED_MODE conf setting above.
     // Reverting only removes the line when it still matches what we set, so a
-    // value the user changed afterwards is never clobbered.
+    // value the user changed afterwards is never overwritten.
     cleanup: {
         mode: 'optional',
         title: 'Sideload Mode',
