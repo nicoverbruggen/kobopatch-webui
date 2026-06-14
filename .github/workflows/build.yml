@@ -87,15 +87,21 @@ jobs:
         id: cache-date
         run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve cache paths
+        id: cache-paths
+        run: |
+          {
+            echo 'paths<<EOF'
+            echo 'tests/e2e/cached_assets'
+            node tools/installables/installables.mjs --src --cache-paths
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Cache firmware and installable assets
         uses: actions/cache@v5
         with:
-          path: |
-            tests/e2e/cached_assets
-            src/assets/KF_Readerly.zip
-            src/assets/koreader-kobo.zip
-            src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
+          path: ${{ steps.cache-paths.outputs.paths }}
+          key: firmware-installables-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/installables.mjs') }}
 
       - name: Download test firmware
         run: |
@@ -121,15 +127,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Resolve cache paths
+        id: cache-paths
+        run: |
+          {
+            echo 'paths<<EOF'
+            echo 'tests/e2e/cached_assets'
+            node tools/installables/installables.mjs --src --cache-paths
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Restore firmware and installable assets
         uses: actions/cache/restore@v5
         with:
-          path: |
-            tests/e2e/cached_assets
-            src/assets/KF_Readerly.zip
-            src/assets/koreader-kobo.zip
-            src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
+          path: ${{ steps.cache-paths.outputs.paths }}
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/installables.mjs') }}
           fail-on-cache-miss: true
 
       - name: Set up Go
@@ -170,15 +182,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Resolve cache paths
+        id: cache-paths
+        run: |
+          {
+            echo 'paths<<EOF'
+            echo 'tests/e2e/cached_assets'
+            node tools/installables/installables.mjs --src --cache-paths
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Restore firmware and installable assets
         uses: actions/cache/restore@v5
         with:
-          path: |
-            tests/e2e/cached_assets
-            src/assets/KF_Readerly.zip
-            src/assets/koreader-kobo.zip
-            src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
+          path: ${{ steps.cache-paths.outputs.paths }}
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/installables.mjs') }}
           fail-on-cache-miss: true
 
       - name: Set up Go
@@ -207,15 +225,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Resolve cache paths
+        id: cache-paths
+        run: |
+          {
+            echo 'paths<<EOF'
+            echo 'tests/e2e/cached_assets'
+            node tools/installables/installables.mjs --src --cache-paths
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Restore firmware and installable assets
         uses: actions/cache/restore@v5
         with:
-          path: |
-            tests/e2e/cached_assets
-            src/assets/KF_Readerly.zip
-            src/assets/koreader-kobo.zip
-            src/assets/koreader-release.json
-          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/setup.sh') }}
+          path: ${{ steps.cache-paths.outputs.paths }}
+          key: firmware-installables-${{ runner.os }}-${{ needs.assets.outputs.cache-date }}-${{ hashFiles('tests/e2e/config/firmware-config.js', 'tools/installables/installables.mjs') }}
           fail-on-cache-miss: true
 
       - name: Set up Go
