@@ -20,6 +20,19 @@ async function extractKoboRootTgz(download) {
 }
 
 /**
+ * A content signature of a KoboRoot.tgz: each entry's path, mode, and a hash of
+ * its bytes, sorted by path. This compares the *patched payload* and ignores
+ * archive-level metadata (gzip/tar timestamps), which is not reproducible across
+ * builds even for identical inputs.
+ */
+function tgzContentSignature(tgzBytes) {
+  const entries = parseTar(zlib.gunzipSync(tgzBytes));
+  return Object.entries(entries)
+    .map(([path, data]) => ({ path, sha1: crypto.createHash('sha1').update(Buffer.from(data)).digest('hex') }))
+    .sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/**
  * Drive the manual flow up to a loaded patches step for 4.45.23646 / N428.
  * Collapses the version → model → confirm sequence that nearly every patch
  * test repeats. Leaves the page on #step-patches with sections rendered.
@@ -411,6 +424,93 @@ test.describe('Custom patches', () => {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-patches')).not.toBeHidden();
     await expect(page.locator('#patch-reload-banner')).toBeHidden();
+  });
+
+
+  test('with device — reloading the manifest reproduces the identical patched output', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    // Walk the connected device to the patches step.
+    const goToConnectedPatches = async (opts) => {
+      await page.goto('/');
+      await connectMockDevice(page, { overrideFirmware: true, ...opts });
+      await page.click('#btn-device-next');
+      await page.click('input[name="mode"][value="patches"]');
+      await page.click('#btn-mode-next');
+      await expect(page.locator('#step-patches')).not.toBeHidden();
+    };
+
+    // --- Scenario A: configure patches by hand (one enabled + manually edited),
+    // build, and download. The download carries both KoboRoot.tgz and the
+    // custom-patches manifest that a device install would also write.
+    await goToConnectedPatches({ hasNickelMenu: false });
+
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+    const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await expect(patchName).toBeVisible();
+    const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+
+    // Manually edit a value (known to still patch), then enable the patch.
+    await patchItem.locator('.patch-edit-btn').click();
+    const dialog = page.locator('#patch-editor-dialog');
+    const textarea = dialog.locator('.patch-editor-textarea');
+    const editedYaml = (await textarea.inputValue()).replace('min-height: 12px', 'min-height: 99px');
+    await textarea.fill(editedYaml);
+    await dialog.locator('.patch-editor-save').click();
+    await expect(dialog).not.toBeVisible();
+    await patchName.locator('xpath=ancestor::label').locator('input').check();
+    await expect(patchItem.locator('.patch-modified')).toBeVisible();
+
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await page.click('#btn-build');
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+    const [dlA] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+
+    const zipA = await JSZip.loadAsync(fs.readFileSync(await dlA.path()));
+    const sigA = tgzContentSignature(await zipA.file('.kobo/KoboRoot.tgz').async('nodebuffer'));
+    const manifestText = await zipA.file('.kobopatch-webui/custom-patches.json').async('string');
+    const manifestA = JSON.parse(manifestText);
+    // Sanity: the manifest actually carried the manual edit forward.
+    expect(manifestA.customized['src/nickel.yaml']).toBeTruthy();
+
+    // --- Scenario B: a fresh session connects a device carrying that manifest,
+    // restores it via the banner (no manual interaction with patches), and builds.
+    await goToConnectedPatches({
+      extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: manifestText }],
+    });
+
+    await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
+    await page.click('#btn-patch-reload');
+    await expect(page.locator('#patch-reload-banner')).toContainText('reloaded');
+    // The restored patch is enabled and flagged as modified, untouched by hand.
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await page.click('#btn-build');
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+    const [dlB] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#btn-download'),
+    ]);
+
+    const zipB = await JSZip.loadAsync(fs.readFileSync(await dlB.path()));
+    const sigB = tgzContentSignature(await zipB.file('.kobo/KoboRoot.tgz').async('nodebuffer'));
+    const manifestB = JSON.parse(await zipB.file('.kobopatch-webui/custom-patches.json').async('string'));
+
+    // 1. The patched KoboRoot payload must be identical (entry paths, modes, and
+    //    bytes), including the effect of the manual edit.
+    expect(sigB, 'reloaded build should produce the same patched files').toEqual(sigA);
+
+    // 2. The manifest's key characteristics (selections + manual edits) must match,
+    //    so a further reload would round-trip identically again.
+    expect(manifestB.overrides, 'overrides should match').toEqual(manifestA.overrides);
+    expect(manifestB.customized, 'manual edits should match').toEqual(manifestA.customized);
   });
 
 
