@@ -65,6 +65,13 @@
     padding: 1rem 1.25rem;
 }
 
+/* The trailing instructions.txt hint carries a bottom margin that, stacked on
+   the card's own padding, leaves an oversized gap. Drop it so the bottom
+   spacing matches the rest of the card. */
+.install-instructions > :last-child {
+    margin-bottom: 0;
+}
+
 /* Connection instruction steps with numbered accent circles */
 .connect-steps {
     list-style: none;
