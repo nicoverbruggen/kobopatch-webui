@@ -76,18 +76,42 @@ function disclaimer() {
     ].join('\n');
 }
 
-/** Group conf settings by section into copy-paste blocks (mirrors the UI). */
-function renderConfSettings(confSettings) {
-    const sections = new Map();
-    for (const { section, key, value } of confSettings) {
-        if (!sections.has(section)) sections.set(section, []);
-        sections.get(section).push(`${key}=${value}`);
+/** Word-wrap a paragraph to a max line width, returning an array of lines. */
+function wrapText(text, width = 70) {
+    const lines = [];
+    let line = '';
+    for (const word of text.split(/\s+/).filter(Boolean)) {
+        if (line && line.length + 1 + word.length > width) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = line ? `${line} ${word}` : word;
+        }
     }
+    if (line) lines.push(line);
+    return lines;
+}
+
+/**
+ * Render the `Kobo eReader.conf` edits as a single copy-paste block: literal
+ * `[Section]` headers, each followed by its `key=value` lines, with a blank line
+ * between sections. The ExcludeSyncFolders line (when present) leads as a
+ * `[FeatureSettings]` entry so every conf edit reads the same way.
+ */
+function renderConfBlock(confLine, confSettings) {
+    const sections = new Map();
+    const add = (section, line) => {
+        if (!sections.has(section)) sections.set(section, []);
+        sections.get(section).push(line);
+    };
+
+    if (confLine) add('FeatureSettings', confLine);
+    for (const { section, key, value } of confSettings) add(section, `${key}=${value}`);
 
     const lines = [];
     for (const [section, settingLines] of sections) {
-        lines.push(`In the [${section}] section (add it if it is missing):`);
-        for (const settingLine of settingLines) lines.push(`    ${settingLine}`);
+        if (lines.length > 0) lines.push('');
+        lines.push(`[${section}]`, ...settingLines);
     }
     return lines;
 }
@@ -117,28 +141,19 @@ export function buildNickelMenuInstructions({
     steps.push(['Connect your Kobo via USB so it appears as a removable drive.']);
 
     if (isPreset) {
+        const confBlock = renderConfBlock(confLine, confSettings);
+        const confNote = hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT;
         steps.push([
-            'Open .kobo/Kobo/Kobo eReader.conf in a text editor.',
-            'Find the [FeatureSettings] section (or add it at the end of the',
-            'file) and add the following line inside that section (do not',
-            'replace the entire file):',
+            'Open .kobo/Kobo/Kobo eReader.conf in a text editor and add the',
+            'settings shown below. Keep each line under its [Section] header,',
+            'adding a section if it is missing and replacing any existing line',
+            'that has the same key. Do not replace the entire file.',
             '',
-            `    ${confLine}`,
+            ...confBlock.map((line) => (line ? `    ${line}` : '')),
             '',
-            hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT,
+            ...wrapText(confNote),
         ]);
-    }
 
-    if (confSettings.length > 0) {
-        steps.push([
-            'In the same .kobo/Kobo/Kobo eReader.conf, apply the following',
-            'settings (replace any existing lines that have the same key):',
-            '',
-            ...renderConfSettings(confSettings),
-        ]);
-    }
-
-    if (isPreset) {
         steps.push([
             'Safely eject the Kobo, then power it off by holding the power',
             'button until it says "Powered off". Press the power button again',
