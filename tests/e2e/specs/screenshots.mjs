@@ -568,6 +568,46 @@ test('connected patches', async ({ page }, testInfo) => {
   await shot(page, dir, '09-patches-done-download', testInfo);
 });
 
+// Reload-from-device offer: a connected device carrying a custom-patches
+// manifest. No firmware build is involved, so this runs without the zip.
+test('connected patches reload', async ({ page }, testInfo) => {
+  const dir = 'connected-patches';
+
+  const manifest = {
+    overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+    customized: {
+      'src/nickel.yaml': {
+        'Increase library cover size':
+          'Increase library cover size:\n  - Enabled: no\n  - FindReplaceString: {Find: "width: 60px;", Replace: "width: 99px;"}\n',
+      },
+    },
+    meta: { writer: { name: 'kobopatch-webui', version: 'screenshot' } },
+  };
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page, {
+    extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }],
+  });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+  await page.click('#btn-device-next');
+  await page.click('input[name="mode"][value="patches"]');
+  await page.click('#btn-mode-next');
+  await expect(page.locator('#step-patches')).not.toBeHidden();
+
+  // The offer banner with the "Restore previous patches" button.
+  await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
+  await shot(page, dir, '10-patches-reload-offer', testInfo);
+
+  // After restoring, the banner confirms success.
+  await page.click('#btn-patch-reload');
+  await expect(page.locator('#patch-reload-banner')).toContainText('reloaded');
+  await shot(page, dir, '11-patches-reload-applied', testInfo);
+});
+
 // ============================================================
 // 7. Edge cases
 // ============================================================

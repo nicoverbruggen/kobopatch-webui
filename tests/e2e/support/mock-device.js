@@ -38,6 +38,9 @@ const defaultConfig = {
   eReaderConf: null,
   extraAddsDirs: [],
   extraAddsFiles: [],
+  // Files placed at arbitrary device-root paths, e.g.
+  // { path: ['.kobopatch-webui', 'custom-patches.json'], content: '...' }.
+  extraRootFiles: [],
   rootFolders: [],
   // null = leave the placeholder KoboReader.sqlite (sign-in unknown); true/false
   // swaps in a real fixture so detection reads a signed-in or factory-reset db.
@@ -147,6 +150,16 @@ async function injectMockDevice(page, opts = {}) {
 
     for (const folderName of config.rootFolders) {
       filesystem[folderName] = dir();
+    }
+
+    for (const entry of config.extraRootFiles) {
+      const parts = entry.path;
+      let current = filesystem;
+      for (const part of parts.slice(0, -1)) {
+        if (!current[part]) current[part] = dir();
+        current = current[part];
+      }
+      current[parts[parts.length - 1]] = file(entry.content || '');
     }
 
     // Swap the placeholder KoboReader.sqlite for a real fixture (decoded from

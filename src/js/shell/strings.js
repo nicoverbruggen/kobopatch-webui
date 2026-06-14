@@ -58,6 +58,9 @@ export const TL = {
         MODIFIED: 'modified',
         MODIFIED_TITLE: 'You edited this patch’s definition.',
         DISCARD_EDITS_CONFIRM: 'You have unsaved edits to one or more patches. Going back will discard them. Continue?',
+        RELOAD_OFFER: 'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
+        RELOAD_APPLIED: 'Previously applied patches have been reloaded, including any manual edits.',
+        RELOAD_NONE_MATCHED: 'None of the previously applied patches could be matched to the patches for this software version.',
     },
 
 };

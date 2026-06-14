@@ -30,6 +30,10 @@ export function initPatchesFlow(state) {
     const stepPatches = $('step-patches');
     const stepBuilding = $('step-building');
     const stepDone = $('step-done');
+    const patchContainer = $('patch-container');
+    const patchReloadBanner = $('patch-reload-banner');
+    const patchReloadText = $('patch-reload-text');
+    const btnPatchReload = $('btn-patch-reload');
     const btnPatchesBack = $('btn-patches-back');
     const btnPatchesNext = $('btn-patches-next');
     const btnBuildBack = $('btn-build-back');
@@ -81,7 +85,58 @@ export function initPatchesFlow(state) {
     function goToPatches() {
         setNavStep(3);
         showStep(stepPatches);
+        // Offer to reload a previously applied patch set (connected mode only).
+        void maybeOfferReload();
     }
+
+    // --- Reload previously applied patches ---
+    // When a connected device carries a custom-patches manifest from an earlier
+    // run, offer to re-apply its selections and manual edits to the loaded set.
+
+    /** Reset the banner to its default "offer" state and probe the device. */
+    async function maybeOfferReload() {
+        state.reloadManifest = null;
+        patchReloadBanner.hidden = true;
+        btnPatchReload.hidden = false;
+        btnPatchReload.disabled = false;
+        patchReloadBanner.classList.remove('banner--success', 'banner--warning');
+        patchReloadBanner.classList.add('banner--info');
+        patchReloadText.textContent = TL.PATCH.RELOAD_OFFER;
+
+        if (state.manualMode || !state.device?.directoryHandle || !state.patchesLoaded) return;
+
+        try {
+            const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json']);
+            if (!text) return;
+            const manifest = JSON.parse(text);
+            const hasOverrides = manifest?.overrides && Object.keys(manifest.overrides).length > 0;
+            const hasCustomized = manifest?.customized && Object.keys(manifest.customized).length > 0;
+            if (!hasOverrides && !hasCustomized) return;
+            state.reloadManifest = manifest;
+            patchReloadBanner.hidden = false;
+        } catch {
+            // No manifest, unreadable, or invalid JSON — silently skip the offer.
+        }
+    }
+
+    btnPatchReload.addEventListener('click', () => {
+        if (!state.reloadManifest) return;
+        btnPatchReload.disabled = true;
+
+        const summary = state.patchUI.applyReloadManifest(state.reloadManifest);
+        state.patchUI.render(patchContainer);
+        updatePatchCount();
+
+        patchReloadBanner.classList.remove('banner--info');
+        if (summary.edits === 0 && summary.enabled === 0) {
+            patchReloadBanner.classList.add('banner--warning');
+            patchReloadText.textContent = TL.PATCH.RELOAD_NONE_MATCHED;
+        } else {
+            patchReloadBanner.classList.add('banner--success');
+            patchReloadText.textContent = TL.PATCH.RELOAD_APPLIED;
+        }
+        btnPatchReload.hidden = true;
+    });
 
     btnPatchesBack.addEventListener('click', () => {
         // Going back reloads patches from scratch, discarding any edits. Warn first.
@@ -323,7 +378,7 @@ export function initPatchesFlow(state) {
         const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
         return {
             overrides: state.patchUI.getOverrides(),
-            customized: {},
+            customized: state.patchUI.getCustomizations(),
             files: [
                 { path: '.kobo/KoboRoot.tgz', type: 'file' },
             ],

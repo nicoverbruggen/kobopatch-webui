@@ -357,6 +357,63 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('with device — reload previously applied patches from the on-device manifest', async ({ page }) => {
+    // "Increase library cover size" ships disabled; the manifest enables it and
+    // carries a manual edit, so a reload should both check it and flag it modified.
+    const manifest = {
+      overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+      customized: {
+        'src/nickel.yaml': {
+          'Increase library cover size':
+            'Increase library cover size:\n  - Enabled: no\n  - FindReplaceString: {Find: "width: 60px;", Replace: "width: 99px;"}\n',
+        },
+      },
+      meta: { writer: { name: 'kobopatch-webui', version: 'test' } },
+    };
+
+    await connectMockDevice(page, {
+      extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }],
+    });
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+
+    // The reload offer appears because a manifest is present on the device.
+    const banner = page.locator('#patch-reload-banner');
+    await expect(banner).not.toBeHidden();
+    await expect(banner).toContainText('previously patched');
+
+    const patchName = page.locator('.patch-name', { hasText: 'Increase library cover size' }).first();
+    const patchLabel = patchName.locator('xpath=ancestor::label');
+
+    // Before reloading, the patch is unchecked and not flagged as modified.
+    await patchName.locator('xpath=ancestor::details').locator('summary').click();
+    await expect(patchLabel.locator('input')).not.toBeChecked();
+
+    await page.click('#btn-patch-reload');
+
+    // Banner confirms success; the patch is now enabled, modified, and counted.
+    // (render() preserves the already-open section, so no need to re-expand.)
+    await expect(banner).toContainText('reloaded');
+    await expect(page.locator('#btn-patch-reload')).toBeHidden();
+    await expect(patchLabel.locator('input')).toBeChecked();
+    await expect(patchLabel.locator('.patch-modified')).toBeVisible();
+    await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+  });
+
+
+  test('with device — no reload banner when the device has no patches manifest', async ({ page }) => {
+    await connectMockDevice(page, { hasNickelMenu: false });
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-reload-banner')).toBeHidden();
+  });
+
+
   test('with device — restore original firmware', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 

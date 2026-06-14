@@ -352,3 +352,39 @@
 .patch-editor-footer .patch-editor-status {
     margin-right: auto;
 }
+
+/* Reload-from-device banner at the top of the patches step. */
+.patch-reload-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+}
+
+/* Keep the offer state understated — a neutral card rather than the loud
+   info-blue. The success/warning feedback states keep their semantic colours. */
+.patch-reload-banner.banner--info {
+    background: var(--card-bg);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
+}
+
+.patch-reload-banner #patch-reload-text {
+    flex: 1;
+}
+
+.patch-reload-banner #btn-patch-reload {
+    flex-shrink: 0;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-color: var(--border-light);
+    box-shadow: none;
+
+    &:hover {
+        color: var(--text);
+        border-color: var(--border);
+        background: var(--bg);
+    }
+}

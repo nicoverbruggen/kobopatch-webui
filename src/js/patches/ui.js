@@ -858,6 +858,74 @@ class PatchUI {
     }
 
     /**
+     * Capture user-edited patches as raw YAML blocks, keyed by filename → name.
+     * Only patches actually modified from their pristine loaded form are included,
+     * so a reload can transfer manual edits as-is. Enabled/disabled state is not
+     * stored here (that travels in the overrides map).
+     */
+    getCustomizations() {
+        const result = {};
+        for (const [filename, set] of Object.entries(this.modifiedPatches)) {
+            if (!set || set.size === 0) continue;
+            const file = this.patchFiles[filename];
+            if (!file) continue;
+            const lines = file.raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+            const out = {};
+            for (const name of set) {
+                const p = file.patches.find(pp => pp.name === name);
+                if (!p) continue;
+                out[name] = lines.slice(p.lineStart, p.lineEnd).join('\n').replace(/\n+$/, '');
+            }
+            if (Object.keys(out).length > 0) result[filename] = out;
+        }
+        return result;
+    }
+
+    /**
+     * Re-apply a previously saved manifest to the currently loaded patches:
+     * first the manual edits (`customized`), then the enabled/disabled state
+     * (`overrides`). Entries referencing a file or patch that is not present in
+     * the current set (e.g. a different firmware version) are skipped and counted
+     * as `missing`. Returns `{ edits, enabled, missing }`.
+     */
+    applyReloadManifest(manifest) {
+        const summary = { edits: 0, enabled: 0, missing: 0 };
+        if (!manifest || typeof manifest !== 'object') return summary;
+
+        // Manual edits first, reparsing after each so later lookups (and override
+        // matching) see the final patch text and any shifted line ranges.
+        for (const [filename, patches] of Object.entries(manifest.customized || {})) {
+            const file = this.patchFiles[filename];
+            if (!file || !patches || typeof patches !== 'object') {
+                summary.missing += patches ? Object.keys(patches).length : 0;
+                continue;
+            }
+            for (const [name, text] of Object.entries(patches)) {
+                const p = file.patches.find(pp => pp.name === name);
+                if (!p) { summary.missing++; continue; }
+                file.raw = replacePatchLines(file.raw, p.lineStart, p.lineEnd, text);
+                file.patches = parsePatchYAML(file.raw);
+                this._trackEdit(filename, name, text);
+                summary.edits++;
+            }
+        }
+
+        // Then enabled/disabled selections.
+        for (const [filename, patches] of Object.entries(manifest.overrides || {})) {
+            const file = this.patchFiles[filename];
+            if (!file || !patches || typeof patches !== 'object') continue;
+            for (const p of file.patches) {
+                if (Object.prototype.hasOwnProperty.call(patches, p.name)) {
+                    p.enabled = !!patches[p.name];
+                    if (p.enabled) summary.enabled++;
+                }
+            }
+        }
+
+        return summary;
+    }
+
+    /**
      * Generate the kobopatch.yaml config string with current overrides.
      */
     generateConfig() {

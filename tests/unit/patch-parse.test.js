@@ -18,6 +18,15 @@ function seedUI(filename, raw) {
     return ui;
 }
 
+/** Mirror _saveEdit's data effects (raw replace + reparse + track) without the DOM render. */
+function editPatch(ui, filename, patchName, newYaml) {
+    const file = ui.patchFiles[filename];
+    const p = file.patches.find(pp => pp.name === patchName);
+    file.raw = replacePatchLines(file.raw, p.lineStart, p.lineEnd, newYaml);
+    file.patches = parsePatchYAML(file.raw);
+    ui._trackEdit(filename, patchName, newYaml);
+}
+
 test('parsePatchYAML reads name, enabled, description and patchGroup', () => {
     const yaml = [
         'Some patch:',
@@ -140,6 +149,76 @@ test('edit tracking follows a renamed patch and drops the old name', () => {
     assert.equal(editedName, 'Renamed');
     assert.equal(ui.isModified('f.yaml', 'P'), false);
     assert.equal(ui.isModified('f.yaml', 'Renamed'), true);
+});
+
+test('getCustomizations captures only edited patch blocks, keyed by file and name', () => {
+    const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n  - FindReplaceString: a\nQ:\n  - Enabled: no\n');
+
+    // No edits yet → nothing captured.
+    assert.deepEqual(ui.getCustomizations(), {});
+
+    // Edit P in place (the flow's _saveEdit updates raw + reparses + tracks).
+    editPatch(ui, 'f.yaml', 'P', 'P:\n  - Enabled: no\n  - FindReplaceString: b\n');
+
+    const custom = ui.getCustomizations();
+    assert.deepEqual(Object.keys(custom), ['f.yaml']);
+    assert.deepEqual(Object.keys(custom['f.yaml']), ['P']);
+    assert.match(custom['f.yaml']['P'], /FindReplaceString: b/);
+    // Q was never edited, so it is absent.
+    assert.equal('Q' in custom['f.yaml'], false);
+});
+
+test('applyReloadManifest re-applies enabled overrides and manual edits to a fresh set', () => {
+    // Fresh patch set as it would load from the zip for the device's firmware.
+    const fresh = 'P:\n  - Enabled: no\n  - FindReplaceString: a\nQ:\n  - Enabled: no\n';
+    const ui = seedUI('f.yaml', fresh);
+
+    const manifest = {
+        overrides: { 'f.yaml': { P: true, Q: false } },
+        customized: { 'f.yaml': { P: 'P:\n  - Enabled: no\n  - FindReplaceString: edited\n' } },
+    };
+
+    const summary = ui.applyReloadManifest(manifest);
+    assert.equal(summary.enabled, 1);
+    assert.equal(summary.edits, 1);
+    assert.equal(summary.missing, 0);
+
+    // P is enabled (from overrides) and its manual edit is applied and flagged.
+    const p = ui.patchFiles['f.yaml'].patches.find(x => x.name === 'P');
+    assert.equal(p.enabled, true);
+    assert.match(ui.patchFiles['f.yaml'].raw, /FindReplaceString: edited/);
+    assert.equal(ui.isModified('f.yaml', 'P'), true);
+    // Q stays disabled and untouched.
+    assert.equal(ui.patchFiles['f.yaml'].patches.find(x => x.name === 'Q').enabled, false);
+});
+
+test('applyReloadManifest counts entries with no matching file or patch as missing', () => {
+    const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n');
+    const summary = ui.applyReloadManifest({
+        overrides: { 'gone.yaml': { X: true } },
+        customized: { 'gone.yaml': { X: 'X:\n  - Enabled: yes\n' }, 'f.yaml': { Missing: 'Missing:\n  - Enabled: yes\n' } },
+    });
+    assert.equal(summary.edits, 0);
+    assert.equal(summary.enabled, 0);
+    // gone.yaml/X plus f.yaml/Missing → two unmatched customizations.
+    assert.equal(summary.missing, 2);
+});
+
+test('manifest round-trips overrides and edits back onto an identical fresh set', () => {
+    const fresh = 'P:\n  - Enabled: no\n  - FindReplaceString: a\nQ:\n  - Enabled: no\n';
+
+    // Session 1: user enables P and edits its value.
+    const ui1 = seedUI('f.yaml', fresh);
+    editPatch(ui1, 'f.yaml', 'P', 'P:\n  - Enabled: no\n  - FindReplaceString: custom\n');
+    ui1.patchFiles['f.yaml'].patches.find(p => p.name === 'P').enabled = true;
+    const manifest = { overrides: ui1.getOverrides(), customized: ui1.getCustomizations() };
+
+    // Session 2: reload onto a freshly loaded set reproduces selection + edit.
+    const ui2 = seedUI('f.yaml', fresh);
+    ui2.applyReloadManifest(manifest);
+    assert.equal(ui2.patchFiles['f.yaml'].patches.find(p => p.name === 'P').enabled, true);
+    assert.match(ui2.patchFiles['f.yaml'].raw, /FindReplaceString: custom/);
+    assert.equal(ui2.isModified('f.yaml', 'P'), true);
 });
 
 test('yamlScalar leaves plain names bare and quotes significant characters', () => {
