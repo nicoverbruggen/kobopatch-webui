@@ -76,24 +76,26 @@ for i in $(seq 0 $((COUNT - 1))); do
         continue
     fi
 
-    # Copy patches to a temp directory.
-    TMPDIR="$(mktemp -d)"
-    trap 'rm -rf "$TMPDIR"' EXIT
+    # Copy patches to a temp directory. Do not assign to TMPDIR itself:
+    # mktemp reads that environment variable, so deleting it here would make the
+    # next loop iteration try to create its directory inside a removed path.
+    PATCH_TMPDIR="$(mktemp -d)"
+    trap 'rm -rf "$PATCH_TMPDIR"' EXIT
 
     echo ""
     echo "=== Copying patches from $PATCHES_SOURCE ==="
-    cp -r "$PATCHES_SRC_DIR"/* "$TMPDIR/"
+    cp -r "$PATCHES_SRC_DIR"/* "$PATCH_TMPDIR/"
 
     # Rewrite the config to point at the cached firmware and create output dir.
-    sed "s|^in:.*|in: $FIRMWARE_FILE|" "$TMPDIR/kobopatch.yaml" > "$TMPDIR/kobopatch.yaml.tmp"
-    mv "$TMPDIR/kobopatch.yaml.tmp" "$TMPDIR/kobopatch.yaml"
-    mkdir -p "$TMPDIR/out"
+    sed "s|^in:.*|in: $FIRMWARE_FILE|" "$PATCH_TMPDIR/kobopatch.yaml" > "$PATCH_TMPDIR/kobopatch.yaml.tmp"
+    mv "$PATCH_TMPDIR/kobopatch.yaml.tmp" "$PATCH_TMPDIR/kobopatch.yaml"
+    mkdir -p "$PATCH_TMPDIR/out"
 
     # Run patch tests and capture output.
     echo ""
     echo "=== Testing patches against kobo-update-${VERSION}.zip ==="
     echo ""
-    OUTPUT=$(./kobopatch -t -f "$FIRMWARE_FILE" "$TMPDIR/kobopatch.yaml" 2>&1 || true)
+    OUTPUT=$(./kobopatch -t -f "$FIRMWARE_FILE" "$PATCH_TMPDIR/kobopatch.yaml" 2>&1 || true)
     echo "$OUTPUT"
 
     # Update blacklist.json with failed patches for this version.
@@ -104,7 +106,7 @@ import sys, json, os
 
 version = '$SHORT_VERSION'
 blacklist_file = '$BLACKLIST_FILE'
-tmpdir = '$TMPDIR'
+tmpdir = '$PATCH_TMPDIR'
 
 with open(blacklist_file) as f:
     blacklist = json.load(f)
@@ -165,7 +167,7 @@ total_failed = sum(len(v) for v in version_entry.values())
 print(f'Wrote {total_failed} blacklisted patch(es) for version {version}')
 "
 
-    rm -rf "$TMPDIR"
+    rm -rf "$PATCH_TMPDIR"
     trap - EXIT
 done
 
