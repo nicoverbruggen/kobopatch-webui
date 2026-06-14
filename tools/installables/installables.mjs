@@ -6,9 +6,14 @@ import { fileURLToPath } from 'node:url';
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+const TARGET_ROOTS = {
+    src:  'src/assets',
+    dist: 'dist/assets',
+};
+
 const TARGETS = {
-    src:  join(APP_DIR, 'src',  'assets'),
-    dist: join(APP_DIR, 'dist', 'assets'),
+    src:  join(APP_DIR, TARGET_ROOTS.src),
+    dist: join(APP_DIR, TARGET_ROOTS.dist),
 };
 
 const INSTALLABLES = [
@@ -199,16 +204,17 @@ async function ensureInstallable(item, target, opts, resolvedCache) {
 }
 
 function parseArgs(argv) {
-    const opts = { force: false, targets: [], only: null, skipIfPresent: false };
+    const opts = { force: false, targets: [], only: null, skipIfPresent: false, cachePaths: false };
     for (const arg of argv) {
         if (arg === '--force') opts.force = true;
         else if (arg === '--dist') opts.targets.push('dist');
         else if (arg === '--src') opts.targets.push('src');
         else if (arg === '--skip-if-present') opts.skipIfPresent = true;
+        else if (arg === '--cache-paths') opts.cachePaths = true;
         else if (arg.startsWith('--only=')) opts.only = arg.slice('--only='.length);
         else {
             console.error(`Unknown argument: ${arg}`);
-            console.error('Usage: installables.mjs (--src|--dist)... [--force] [--skip-if-present] [--only=<name>]');
+            console.error('Usage: installables.mjs (--src|--dist)... [--force] [--skip-if-present] [--cache-paths] [--only=<name>]');
             process.exit(2);
         }
     }
@@ -221,6 +227,18 @@ function parseArgs(argv) {
     return opts;
 }
 
+function printCachePaths(items, targets) {
+    const paths = [];
+    for (const target of targets) {
+        const root = TARGET_ROOTS[target];
+        for (const item of items) {
+            paths.push(`${root}/${item.asset}`);
+            if (item.versionFile) paths.push(`${root}/${item.versionFile}`);
+        }
+    }
+    console.log(paths.join('\n'));
+}
+
 const opts = parseArgs(process.argv.slice(2));
 const items = opts.only
     ? INSTALLABLES.filter((i) => i.name === opts.only)
@@ -230,6 +248,11 @@ if (opts.only && items.length === 0) {
     console.error(`Unknown installable: ${opts.only}`);
     console.error(`Known: ${INSTALLABLES.map((i) => i.name).join(', ')}`);
     process.exit(2);
+}
+
+if (opts.cachePaths) {
+    printCachePaths(items, opts.targets);
+    process.exit(0);
 }
 
 const resolvedCache = new Map();
