@@ -3,6 +3,7 @@ import { NM_ITEMS_FILE } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
 import { fetchOrThrow } from '../shell/dom.js';
+import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import {
     removeExcludeSyncFoldersLine,
     setConfSetting,
@@ -333,7 +334,7 @@ export class NickelMenuInstaller {
     /**
      * Build a zip for manual download.
      */
-    async buildDownloadZip(features, progressFn, deviceInfo = null, { menuCustomization = null } = {}) {
+    async buildDownloadZip(features, progressFn, deviceInfo = null, { menuCustomization = null, isPreset = features.length > 0 } = {}) {
         await this.loadNickelMenu(progressFn);
 
         progressFn('Building download package...');
@@ -363,10 +364,34 @@ export class NickelMenuInstaller {
             zip.file(`${AUDIT_LOG_DIRECTORY}/nickelmenu.json`, data);
         }
 
+        // Bundle the same manual-install guidance the wizard shows on screen,
+        // so the steps travel with the download.
+        zip.file('instructions.txt', this.buildInstructionsText(features, deviceInfo, isPreset));
+
         progressFn('Compressing...');
         const result = await zip.generateAsync({ type: 'uint8array' });
         progressFn('Done.');
         return result;
+    }
+
+    /**
+     * Render the plain-text manual-install instructions bundled in the download
+     * ZIP. The conf steps are only relevant for a curated preset install, which
+     * is exactly when the on-screen instructions show them too.
+     */
+    buildInstructionsText(features, deviceInfo, isPreset) {
+        const version = (typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : null) || 'unknown';
+        const settingsCtx = { deviceInfo: deviceInfo ?? null, features };
+        const confSettings = isPreset
+            ? features.flatMap(feature => (feature.confSettings ? feature.confSettings(settingsCtx) : []))
+            : [];
+        return buildNickelMenuInstructions({
+            version,
+            isPreset,
+            confLine: getExcludeSyncFoldersLine(features),
+            confSettings,
+            hasExcludeCalibre: features.some(f => f.id === excludeCalibre.id),
+        });
     }
 
     /**

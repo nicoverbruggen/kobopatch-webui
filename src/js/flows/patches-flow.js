@@ -17,6 +17,7 @@
 import { AuditLog, AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { $, formatMB, triggerDownload, populateList, setupFeedback } from '../shell/dom.js';
 import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
+import { buildPatchesInstructions } from '../shell/instructions.js';
 import { koboModels } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from '../shell/analytics.js';
@@ -391,6 +392,12 @@ export function initPatchesFlow(state) {
             const manifest = buildPatchesManifest();
             const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
             zip.file(`${AUDIT_LOG_DIRECTORY}/custom-patches.json`, manifestData);
+            // Bundle the same manual-install guidance the wizard shows on screen.
+            const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
+            zip.file('instructions.txt', buildPatchesInstructions({
+                version,
+                deviceName: koboModels[state.selectedPrefix] || 'Kobo',
+            }));
             const bytes = await zip.generateAsync({ type: 'uint8array' });
             triggerDownload(bytes, 'custom-patches.zip', 'application/zip');
         } finally {

@@ -18,6 +18,7 @@
 import JSZip from 'jszip';
 import { $, $q, $qa, triggerDownload, renderNmCheckboxList, populateList, setupFeedback } from '../shell/dom.js';
 import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
+import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
 import { NICKELMENU_FEATURES, getExcludeSyncFoldersLine, revertableConfSettings } from '../nickelmenu/installer.js';
 import {
     createDefaultMenuCustomization,
@@ -1256,6 +1257,7 @@ export function initNickelMenu(state) {
             } else {
                 state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
                     menuCustomization: state.nickelMenuCustomization,
+                    isPreset: state.nickelMenuOption === 'preset',
                 });
                 showNmDone('download');
             }
@@ -1296,8 +1298,8 @@ export function initNickelMenu(state) {
             $('nm-download-reboot-step').hidden = state.nickelMenuOption !== 'preset';
             $('nm-download-conf-line').textContent = getExcludeSyncFoldersLine(features);
             $('nm-download-conf-desc').textContent = hasExcludeCalibre
-                ? 'This prevents new books in the calibre folder from showing up in Kobo\'s list of books. Move Calibre-transferred books into a "calibre" folder first.'
-                : 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
+                ? CONF_DESC_EXCLUDE_CALIBRE
+                : CONF_DESC_DEFAULT;
             // Feature-declared conf settings (e.g. better-typography) can't be
             // written to a device in manual mode, so show them as instructions.
             const confSettings = getFeatureConfSettings(features);
