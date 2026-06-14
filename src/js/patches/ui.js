@@ -889,7 +889,7 @@ class PatchUI {
      * as `missing`. Returns `{ edits, enabled, missing }`.
      */
     applyReloadManifest(manifest) {
-        const summary = { edits: 0, enabled: 0, missing: 0 };
+        const summary = { matched: 0, edits: 0, enabled: 0, missing: 0 };
         if (!manifest || typeof manifest !== 'object') return summary;
 
         // Manual edits first, reparsing after each so later lookups (and override
@@ -917,6 +917,7 @@ class PatchUI {
             for (const p of file.patches) {
                 if (Object.prototype.hasOwnProperty.call(patches, p.name)) {
                     p.enabled = !!patches[p.name];
+                    summary.matched++;
                     if (p.enabled) summary.enabled++;
                 }
             }

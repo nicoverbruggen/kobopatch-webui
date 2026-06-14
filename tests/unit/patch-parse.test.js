@@ -182,6 +182,8 @@ test('applyReloadManifest re-applies enabled overrides and manual edits to a fre
     assert.equal(summary.enabled, 1);
     assert.equal(summary.edits, 1);
     assert.equal(summary.missing, 0);
+    // Both P and Q exist in the loaded set, so both override entries matched.
+    assert.equal(summary.matched, 2);
 
     // P is enabled (from overrides) and its manual edit is applied and flagged.
     const p = ui.patchFiles['f.yaml'].patches.find(x => x.name === 'P');
@@ -200,8 +202,22 @@ test('applyReloadManifest counts entries with no matching file or patch as missi
     });
     assert.equal(summary.edits, 0);
     assert.equal(summary.enabled, 0);
+    assert.equal(summary.matched, 0);
     // gone.yaml/X plus f.yaml/Missing → two unmatched customizations.
     assert.equal(summary.missing, 2);
+});
+
+test('applyReloadManifest reports matches even when the restored selection enables nothing', () => {
+    // A "restore original firmware" manifest lists every patch as disabled. These
+    // still match the loaded set — the reload is valid, just enables nothing — so
+    // the flow must not mistake it for a version mismatch.
+    const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\nQ:\n  - Enabled: yes\n');
+    const summary = ui.applyReloadManifest({ overrides: { 'f.yaml': { P: false, Q: false } }, customized: {} });
+    assert.equal(summary.matched, 2);
+    assert.equal(summary.enabled, 0);
+    assert.equal(summary.edits, 0);
+    // Q, enabled by default, is turned off to match the restored (empty) selection.
+    assert.equal(ui.patchFiles['f.yaml'].patches.find(p => p.name === 'Q').enabled, false);
 });
 
 test('manifest round-trips overrides and edits back onto an identical fresh set', () => {

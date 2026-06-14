@@ -186,9 +186,12 @@ test.describe('Custom patches', () => {
     ]);
 
     expect(download.suggestedFilename()).toBe('custom-patches.zip');
-    const tgzData = await extractKoboRootTgz(download);
-    const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
+    const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+    const actualHash = crypto.createHash('sha1').update(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
+    // A restore carries no customization, so the package omits the manifest (which
+    // reflects the last customized state) to avoid clobbering it on extract.
+    expect(zip.file('.kobopatch-webui/custom-patches.json'), 'restore ZIP must not include a manifest').toBeNull();
   });
 
 
@@ -427,6 +430,26 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('with device — no reload banner for a manifest with every patch disabled', async ({ page }) => {
+    // Defensive: a manifest with all overrides false and no edits (e.g. one left
+    // by an older build's restore) describes nothing to re-apply, so the banner
+    // must not appear. Current builds no longer write such a manifest on restore.
+    const restoreManifest = {
+      overrides: { 'src/nickel.yaml': { 'Increase library cover size': false, 'Show all games': false } },
+      customized: {},
+      meta: { writer: { name: 'kobopatch-webui', version: 'test' } },
+    };
+    await connectMockDevice(page, {
+      extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(restoreManifest) }],
+    });
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-reload-banner')).toBeHidden();
+  });
+
+
   test('with device — reloading the manifest reproduces the identical patched output', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
@@ -550,9 +573,31 @@ test.describe('Custom patches', () => {
     ]);
 
     expect(download.suggestedFilename()).toBe('custom-patches.zip');
-    const tgzData = await extractKoboRootTgz(download);
-    const actualHash = crypto.createHash('sha1').update(tgzData).digest('hex');
+    const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+    const actualHash = crypto.createHash('sha1').update(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')).digest('hex');
     expect(actualHash, 'restored KoboRoot.tgz SHA1 mismatch').toBe(await getOriginalTgzSha1());
+    // A restore carries no customization, so the package omits the manifest (which
+    // reflects the last customized state) to avoid clobbering it on extract.
+    expect(zip.file('.kobopatch-webui/custom-patches.json'), 'restore ZIP must not include a manifest').toBeNull();
+  });
+
+
+  test('with device — restoring stock firmware does not overwrite the patches manifest', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+    await page.click('#btn-device-restore');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await page.click('#btn-build');
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+
+    await page.click('#btn-write');
+    await expect(page.locator('#write-instructions')).not.toBeHidden();
+
+    // KoboRoot.tgz is written, but the manifest (last customized state) is left untouched.
+    const writtenFiles = await getWrittenFiles(page);
+    expect(writtenFiles).toContainEqual(expect.stringContaining('.kobo/KoboRoot.tgz'));
+    expect(writtenFiles.some(f => f.includes('custom-patches.json')), 'restore must not write the manifest').toBe(false);
   });
 
 

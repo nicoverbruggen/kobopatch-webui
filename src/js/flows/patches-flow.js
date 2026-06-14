@@ -109,9 +109,15 @@ export function initPatchesFlow(state) {
             const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json']);
             if (!text) return;
             const manifest = JSON.parse(text);
-            const hasOverrides = manifest?.overrides && Object.keys(manifest.overrides).length > 0;
+            // Only offer when there is actually something to re-apply: at least one
+            // enabled patch or a manual edit. A manifest left by a "restore original
+            // firmware" run has every override set to false and no edits — there is
+            // nothing to restore, so don't offer.
+            const hasEnabled = manifest?.overrides && Object.values(manifest.overrides).some(
+                file => file && typeof file === 'object' && Object.values(file).some(Boolean)
+            );
             const hasCustomized = manifest?.customized && Object.keys(manifest.customized).length > 0;
-            if (!hasOverrides && !hasCustomized) return;
+            if (!hasEnabled && !hasCustomized) return;
             state.reloadManifest = manifest;
             patchReloadBanner.hidden = false;
         } catch {
@@ -128,7 +134,10 @@ export function initPatchesFlow(state) {
         updatePatchCount();
 
         patchReloadBanner.classList.remove('banner--info');
-        if (summary.edits === 0 && summary.enabled === 0) {
+        // "None matched" only when nothing in the manifest lined up with the loaded
+        // patch set (e.g. a different software version) — not merely when the
+        // restored selection happens to enable nothing.
+        if (summary.matched === 0 && summary.edits === 0) {
             patchReloadBanner.classList.add('banner--warning');
             patchReloadText.textContent = TL.PATCH.RELOAD_NONE_MATCHED;
         } else {
@@ -410,14 +419,19 @@ export function initPatchesFlow(state) {
             await writable.close();
             audit.record(`Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`);
 
-            // Best-effort manifest write
-            try {
-                const manifest = buildPatchesManifest();
-                const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-                await state.device.writeFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json'], data);
-                audit.record('Wrote .kobopatch-webui/custom-patches.json manifest');
-            } catch (e) {
-                console.warn('Could not write custom-patches manifest:', e);
+            // Best-effort manifest write — but never for a restore. The manifest
+            // reflects the last *customized* state; restoring stock firmware is a
+            // de-customization, so it must leave any existing manifest untouched
+            // (so a later reload can still re-apply the genuine last patch set).
+            if (!state.isRestore) {
+                try {
+                    const manifest = buildPatchesManifest();
+                    const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+                    await state.device.writeFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json'], data);
+                    audit.record('Wrote .kobopatch-webui/custom-patches.json manifest');
+                } catch (e) {
+                    console.warn('Could not write custom-patches manifest:', e);
+                }
             }
 
             await audit.write();
@@ -444,9 +458,14 @@ export function initPatchesFlow(state) {
             // carries the definitional info about the chosen patches/config.
             const zip = new JSZip();
             zip.file('.kobo/KoboRoot.tgz', state.resultTgz);
-            const manifest = buildPatchesManifest();
-            const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-            zip.file(`${AUDIT_LOG_DIRECTORY}/custom-patches.json`, manifestData);
+            // A restore carries no customization, so it omits the manifest — both
+            // to reflect that nothing is applied and to avoid clobbering the
+            // device's last-customized manifest when the ZIP is extracted.
+            if (!state.isRestore) {
+                const manifest = buildPatchesManifest();
+                const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+                zip.file(`${AUDIT_LOG_DIRECTORY}/custom-patches.json`, manifestData);
+            }
             // Bundle the same manual-install guidance the wizard shows on screen.
             const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
             zip.file('instructions.txt', buildPatchesInstructions({
