@@ -106,6 +106,8 @@ test.describe('Custom patches', () => {
 
     expect(download.suggestedFilename()).toBe('custom-patches.zip');
     await expect(page.locator('#download-device-name')).toHaveText('Kobo Libra Colour');
+    // The screen points users at the bundled instructions.txt file.
+    await expect(page.locator('#download-instructions')).toContainText('instructions.txt');
 
     // The ZIP bundles plain-text instructions naming the selected device, with
     // the credit header and the hard-lock disclaimer.
