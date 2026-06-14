@@ -155,6 +155,61 @@
     & input[type="radio"] {
         accent-color: var(--error-text);
     }
+
+    & .selection-card-icon {
+        color: var(--error-text);
+    }
+}
+
+/* --- NickelMenu option cards: hide the native radio and use the icon as the
+   selection cue (primary when selected). The radio stays in the DOM (visually
+   hidden but focusable) so keyboard navigation and screen readers still work. */
+
+#step-nickelmenu .selection-card {
+    position: relative;
+
+    /* The radio fills the card invisibly so the whole card is the click/hit
+       target (and remains focusable), while the visible cue is the icon. */
+    & input[type="radio"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    &:has(input[type="radio"]:focus-visible) {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    &:has(input[type="radio"]:checked) {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 1px var(--primary), var(--shadow);
+
+        & .selection-card-icon {
+            color: var(--primary);
+        }
+    }
+}
+
+/* The danger (remove) card keeps its error colour when selected/focused. */
+#step-nickelmenu .selection-card--danger {
+    &:has(input[type="radio"]:focus-visible) {
+        outline-color: var(--error-text);
+    }
+
+    &:has(input[type="radio"]:checked) {
+        border-color: var(--error-text);
+        box-shadow: 0 0 0 1px var(--error-text), var(--shadow);
+
+        & .selection-card-icon {
+            color: var(--error-text);
+        }
+    }
 }
 
 /* --- Uninstall options nested inside selection cards --- */

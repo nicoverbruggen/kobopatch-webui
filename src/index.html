@@ -236,13 +236,15 @@
             <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
                 <label class="selection-card">
                     <input type="radio" name="nm-option" value="preset">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z"/></svg>
                     <div class="selection-card-body">
-                        <div class="selection-card-title">Install with preset (and customize)</div>
+                        <div id="nm-option-preset-title" class="selection-card-title">Install with preset (and customize)</div>
                         <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You also get to decide which extra optional features you'd like to enable, including enabling some home screen tweaks and installing KOReader, among others.</div>
                     </div>
                 </label>
                 <label class="selection-card">
                     <input type="radio" name="nm-option" value="nickelmenu-only">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z"/></svg>
                     <div class="selection-card-body">
                         <div class="selection-card-title">Barebones install</div>
                         <div class="selection-card-desc">Installs <u>only</u> NickelMenu without any configuration or preset. You will need to set it up yourself later by editing the NickelMenu config file. For tinkerers.</div>
@@ -250,6 +252,7 @@
                 </label>
                 <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">
                     <input type="radio" name="nm-option" value="remove" disabled>
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
                     <div class="selection-card-body">
                         <div class="selection-card-title">Remove NickelMenu</div>
                         <div class="selection-card-desc" id="nm-remove-desc">Removes NickelMenu from your device. (Only available when a Kobo with NickelMenu installed is connected.)</div>

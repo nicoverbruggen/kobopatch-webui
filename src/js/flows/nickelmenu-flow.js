@@ -116,6 +116,11 @@ export function initNickelMenu(state) {
     const btnNmCustomizeCancel = $('btn-nm-customize-cancel');
     const btnNmCustomizeReset = $('btn-nm-customize-reset');
     const btnNmCustomizeSave = $('btn-nm-customize-save');
+    const nmOptionPresetTitle = $('nm-option-preset-title');
+    // The preset card title swaps to the "(Re)install" variant when a previous
+    // KoboPatch Web UI install is detected on a connected device.
+    const NM_PRESET_TITLE_INSTALL = nmOptionPresetTitle.textContent;
+    const NM_PRESET_TITLE_REINSTALL = '(Re)install with preset (and customize)';
 
     // Features detected on the device that can optionally be cleaned up during
     // removal (e.g. KOReader). Populated by checkNickelMenuInstalled().
@@ -507,6 +512,7 @@ export function initNickelMenu(state) {
         detectedPresetConflicts = [];
         legacyItemsDetected = false;
         legacyItemsWasOurs = false;
+        nmOptionPresetTitle.textContent = NM_PRESET_TITLE_INSTALL;
         state.koboUserCount = undefined;
         $('nm-sideloaded-banner').hidden = true;
         nmUninstallOptions.hidden = true;
@@ -773,6 +779,10 @@ export function initNickelMenu(state) {
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
+        // Default the preset card back to "Install"; the webui-preset probe below
+        // upgrades it to "(Re)install" when a prior KoboPatch Web UI install exists.
+        nmOptionPresetTitle.textContent = NM_PRESET_TITLE_INSTALL;
+
         if (state.manualMode) {
             removeRadio.disabled = false;
             removeOption.classList.remove('selection-card--disabled');
@@ -787,10 +797,19 @@ export function initNickelMenu(state) {
                 const addsDir = await state.device.directoryHandle.getDirectoryHandle('.adds');
                 const nmDir = await addsDir.getDirectoryHandle('nm');
                 // Check for either the legacy items or the new webui-preset file.
+                // The webui-preset file is this tool's own marker, so its presence
+                // means a prior KoboPatch Web UI install — offer "(Re)install".
+                let webuiPresetPresent = false;
                 try {
-                    await nmDir.getFileHandle('items');
-                } catch {
                     await nmDir.getFileHandle('webui-preset');
+                    webuiPresetPresent = true;
+                } catch {
+                    // Not our preset file — require the legacy items file to treat
+                    // NickelMenu as installed (otherwise throw to the outer catch).
+                    await nmDir.getFileHandle('items');
+                }
+                if (webuiPresetPresent) {
+                    nmOptionPresetTitle.textContent = NM_PRESET_TITLE_REINSTALL;
                 }
                 // NickelMenu is installed — enable removal option.
                 removeRadio.disabled = false;
