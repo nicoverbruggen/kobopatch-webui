@@ -430,7 +430,7 @@ export function initPatchesFlow(state) {
                 }
             }
 
-            await audit.writeBestEffort();
+            await audit.write();
             btnWrite.textContent = TL.BUTTON.WRITTEN;
             btnWrite.className = 'btn-success';
             writeInstructions.hidden = false;

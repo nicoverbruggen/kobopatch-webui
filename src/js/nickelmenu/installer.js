@@ -153,12 +153,12 @@ function buildItemsFile(features, deviceInfo, menuCustomization = null) {
 }
 
 /**
- * Best-effort write of the on-device audit log. Logging must never fail an
- * install or removal, so write errors are logged and swallowed.
+ * Write the on-device audit log as the final signal that all preceding device
+ * writes completed. If this fails, the caller reports the operation as failed.
  */
-export async function writeAuditLog(audit, device, logger = console) {
+export async function writeAuditLog(audit, device) {
     if (!audit) return;
-    await audit.writeBestEffort(device, logger);
+    await audit.write(device);
 }
 
 export class NickelMenuInstaller {

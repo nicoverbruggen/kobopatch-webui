@@ -125,7 +125,7 @@ async function executeNickelMenuRemoval({
         await installer.repairLegacyExcludeSyncFolders(device);
     }
 
-    await writeAuditLog(audit, device, logger);
+    await writeAuditLog(audit, device);
 }
 
 export {

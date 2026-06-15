@@ -61,15 +61,6 @@ export class AuditLog {
         await this._rawWrite(dev);
     }
 
-    /** Best-effort persistence for install/remove flows; write failures are logged and swallowed. */
-    async writeBestEffort(device, logger = console) {
-        try {
-            await this.write(device);
-        } catch (err) {
-            logger.warn('Could not write audit log:', err);
-        }
-    }
-
     async _rawWrite(device) {
         await device.writeFile(this.path, new TextEncoder().encode(this.render()));
     }

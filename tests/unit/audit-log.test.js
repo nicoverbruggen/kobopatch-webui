@@ -28,23 +28,3 @@ test('AuditLog buffers timestamped lines and writes one file under .kobopatch-we
     // Each recorded line is timestamped.
     assert.match(contents, /\[\d{4}-\d{2}-\d{2}T[\d:.]+Z\] Removed \.adds\/nm/);
 });
-
-test('AuditLog writeBestEffort logs and swallows device write failures', async () => {
-    const device = new RecordingDevice({
-        failWritePath: '.kobopatch-webui/logs/26-06-11_14-30-custom-patches.log',
-    });
-    const log = new AuditLog('custom-patches', new Date(2026, 5, 11, 14, 30), device);
-    const warnings = [];
-    const logger = {
-        warn(...args) {
-            warnings.push(args);
-        },
-    };
-
-    await assert.doesNotReject(() => log.writeBestEffort(undefined, logger));
-
-    assert.deepEqual(device.writePaths(), []);
-    assert.equal(warnings.length, 1);
-    assert.equal(warnings[0][0], 'Could not write audit log:');
-    assert.match(warnings[0][1].message, /Refusing write/);
-});
