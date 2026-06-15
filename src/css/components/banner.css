@@ -76,14 +76,27 @@
 #step-connect > .banner { margin-bottom: 1.5rem; }
 #device-unknown-warning { margin-bottom: 1.5rem; }
 #existing-tgz-warning { margin-bottom: 1.5rem; }
-#error-message { margin-top: 1rem; }
 .device-write-help {
-    margin-top: 0.75rem;
+    width: 100%;
+    margin-top: 1rem;
+    padding-top: 1rem;
     display: grid;
-    gap: 0.75rem;
+    gap: 0.6rem;
+    text-align: left;
+    border-top: 1px solid var(--border-light);
+}
 
-    & .banner {
+.device-write-help-heading {
+    & .banner-heading {
+        color: var(--warning-text);
+        margin-bottom: 0.2rem;
+    }
+
+    & p {
         margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+        line-height: 1.5;
     }
 }
 
@@ -91,46 +104,50 @@
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.5rem;
+    gap: 0;
     list-style: none;
-    counter-reset: device-write-step;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
 
     & li {
-        position: relative;
-        padding-left: 2rem;
+        padding: 0.5rem 0;
         color: var(--text-secondary);
-        font-size: 0.9rem;
+        font-size: 0.84rem;
         line-height: 1.5;
-        counter-increment: device-write-step;
     }
 
-    & li::before {
-        content: counter(device-write-step);
-        position: absolute;
-        left: 0;
-        top: 0.1rem;
-        width: 1.35rem;
-        height: 1.35rem;
-        border-radius: 50%;
-        background: var(--warning-bg);
-        color: var(--warning-text);
-        border: 1px solid var(--warning-border);
-        display: grid;
-        place-items: center;
-        font-size: 0.72rem;
-        font-weight: 700;
+    & li + li {
+        border-top: 1px solid var(--border-light);
     }
 
     & strong {
         color: var(--text);
+        font-weight: 600;
     }
 }
 
-.device-write-last-resort {
-    margin: 0;
+.device-write-details {
     color: var(--text-muted);
-    font-size: 0.84rem;
+    font-size: 0.8rem;
     line-height: 1.55;
+
+    & summary {
+        width: fit-content;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    & summary:hover {
+        color: var(--text);
+    }
+
+    & p {
+        margin: 0.4rem 0 0;
+        color: var(--text-muted);
+        font-size: inherit;
+        line-height: inherit;
+    }
 }
 
 .install-instructions .banner--warning { margin-bottom: 0.75rem; }

@@ -40,6 +40,34 @@ function devicePathError(operation, pathParts, err) {
     return wrapped;
 }
 
+function deviceWriteError(pathParts, phase, err) {
+    const wrapped = new Error(
+        `Could not write ${formatDevicePath(pathParts)} while ${phase}: ${describeError(err)}`,
+        { cause: err }
+    );
+    wrapped.devicePath = formatDevicePath(pathParts);
+    wrapped.deviceOperation = 'write';
+    wrapped.deviceWrite = true;
+    wrapped.devicePhase = phase;
+    return wrapped;
+}
+
+const WRITE_PROBE_PATH = ['.kobopatch-webui', 'write-test.tmp'];
+const WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
+
+function deviceWriteProbeError(err) {
+    const wrapped = new Error(
+        'Could not verify write access to the Kobo drive. The app could read ' +
+        '.kobo/version, but a small test write failed. Direct install is not safe ' +
+        `for this connection. Details: ${describeError(err)}`,
+        { cause: err }
+    );
+    wrapped.devicePath = formatDevicePath(WRITE_PROBE_PATH);
+    wrapped.deviceOperation = 'write probe';
+    wrapped.deviceWrite = true;
+    return wrapped;
+}
+
 class KoboDevice {
     constructor() {
         this.directoryHandle = null;
@@ -86,6 +114,16 @@ class KoboDevice {
         const file = await versionFile.getFile();
         const content = await file.text();
         this.deviceInfo = KoboDevice.parseVersion(content.trim());
+
+        if (!this.deviceInfo.isIncompatible) {
+            try {
+                await this.verifyWriteAccess();
+            } catch (err) {
+                this.disconnect();
+                throw err;
+            }
+        }
+
         return this.deviceInfo;
     }
 
@@ -122,18 +160,80 @@ class KoboDevice {
      */
     async writeFile(filePath, data) {
         assertValidDevicePath(filePath, 'write');
+        const dirParts = filePath.slice(0, -1);
+        const fileName = filePath[filePath.length - 1];
+        let dir = this.directoryHandle;
+
+        for (let i = 0; i < dirParts.length; i++) {
+            const part = dirParts[i];
+            const directoryPath = dirParts.slice(0, i + 1);
+            try {
+                dir = await dir.getDirectoryHandle(part, { create: true });
+            } catch (err) {
+                throw deviceWriteError(
+                    filePath,
+                    `opening or creating directory ${formatDevicePath(directoryPath)}`,
+                    err
+                );
+            }
+        }
+
+        let fileHandle;
         try {
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            const dir = dirParts.length > 0
-                ? await this.getNestedDirectory(dirParts)
-                : this.directoryHandle;
-            const fileHandle = await dir.getFileHandle(fileName, { create: true });
-            const writable = await fileHandle.createWritable();
+            fileHandle = await dir.getFileHandle(fileName, { create: true });
+        } catch (err) {
+            throw deviceWriteError(filePath, 'opening or creating the target file', err);
+        }
+
+        let writable;
+        try {
+            writable = await fileHandle.createWritable();
+        } catch (err) {
+            throw deviceWriteError(filePath, 'creating the writable stream', err);
+        }
+
+        try {
             await writable.write(data);
+        } catch (err) {
+            throw deviceWriteError(filePath, 'writing data', err);
+        }
+
+        try {
             await writable.close();
         } catch (err) {
-            throw devicePathError('write', filePath, err);
+            throw deviceWriteError(filePath, 'committing the write', err);
+        }
+    }
+
+    /**
+     * Confirm that the selected Kobo root can complete the same basic
+     * create/write/commit/remove operations the install flows need.
+     */
+    async verifyWriteAccess() {
+        let probeWritten = false;
+        let probeError = null;
+        try {
+            await this.writeFile(WRITE_PROBE_PATH, new TextEncoder().encode(WRITE_PROBE_CONTENT));
+            probeWritten = true;
+
+            const written = await this.readFile(WRITE_PROBE_PATH);
+            if (written !== WRITE_PROBE_CONTENT) {
+                throw new Error('The write probe could not be read back from the Kobo drive.');
+            }
+        } catch (err) {
+            probeError = err;
+        }
+
+        if (probeWritten) {
+            try {
+                await this.removeEntry(WRITE_PROBE_PATH);
+            } catch (err) {
+                probeError = probeError || err;
+            }
+        }
+
+        if (probeError) {
+            throw deviceWriteProbeError(probeError);
         }
     }
 

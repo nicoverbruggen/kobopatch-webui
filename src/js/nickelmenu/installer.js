@@ -158,11 +158,7 @@ function buildItemsFile(features, deviceInfo, menuCustomization = null) {
  */
 export async function writeAuditLog(audit, device, logger = console) {
     if (!audit) return;
-    try {
-        await audit.write(device);
-    } catch (err) {
-        logger.warn('Could not write audit log:', err);
-    }
+    await audit.writeBestEffort(device, logger);
 }
 
 export class NickelMenuInstaller {

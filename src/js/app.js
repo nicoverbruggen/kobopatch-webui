@@ -173,7 +173,12 @@ function showError(message, log, options = {}) {
     // If the user came from the patches step, offer a "Go Back" button
     // so they can adjust their selections and retry.
     const hasBackStep = stepHistory.includes(stepPatches);
-    if (hasBackStep) {
+    if (options.deviceWrite) {
+        errorTitle.textContent = 'Direct write failed';
+        errorHint.hidden = true;
+        btnErrorBack.hidden = true;
+        btnRetry.classList.remove('danger');
+    } else if (hasBackStep) {
         errorTitle.textContent = TL.ERROR.PATCH_FAILED;
         errorHint.hidden = false;
         btnErrorBack.hidden = false;
@@ -500,7 +505,7 @@ btnConnectReady.addEventListener('click', async () => {
     } catch (err) {
         // AbortError = user cancelled the file picker; not an error.
         if (err.name === 'AbortError') return;
-        showError(err.message);
+        showError(err.message, null, { deviceWrite: !!err.deviceWrite });
     }
 });
 

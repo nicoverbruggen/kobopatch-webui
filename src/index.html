@@ -523,21 +523,29 @@
 
         <!-- Error state -->
         <section id="step-error" class="step" hidden>
-            <h2 id="error-title">Something went wrong</h2>
-            <p id="error-hint" hidden>Some patches may not work correctly with your software version. You can go back and try a different selection.</p>
-            <pre id="error-log" class="error-log" hidden></pre>
-            <p id="error-message" class="banner banner--error"></p>
-            <div id="error-device-write-help" class="device-write-help" hidden>
-                <div class="banner banner--warning">
-                    <div class="banner-heading">The Kobo drive rejected a write</div>
-                    <p>This is often caused by a USB connection, removable-drive mount, or storage problem rather than the selected options.</p>
+            <div class="done-card error-card">
+                <div class="done-card-icon error-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>
                 </div>
-                <ol class="device-write-steps">
-                    <li><strong>Restart and reconnect.</strong> Safely eject the Kobo, unplug it, restart the device, reconnect it, then try again.</li>
-                    <li><strong>Change the USB connection.</strong> Try another cable or a different USB port.</li>
-                    <li><strong>Use the ZIP fallback.</strong> Build the downloadable ZIP and copy it to the Kobo manually.</li>
-                </ol>
-                <p class="device-write-last-resort">If writes keep failing after that, a factory reset may help, but treat it as a last resort. On older Kobo devices the internal storage may be an SD card, and repeated write failures can also point to storage that is starting to fail.</p>
+                <h2 id="error-title" class="done-card-title">Something went wrong</h2>
+                <p id="error-hint" class="done-card-detail" hidden>Some patches may not work correctly with your software version. You can go back and try a different selection.</p>
+                <p id="error-message" class="done-card-detail error-card-message"></p>
+                <pre id="error-log" class="error-log" hidden></pre>
+                <div id="error-device-write-help" class="device-write-help" hidden>
+                    <div class="device-write-help-heading">
+                        <div class="banner-heading">What to try next</div>
+                        <p>This is usually a USB connection or removable-drive mount problem, not your selected options. On Android Chrome, it can happen even after the folder picker and device read succeed.</p>
+                    </div>
+                    <ul class="device-write-steps">
+                        <li><strong>Restart and reconnect.</strong> Eject the Kobo, unplug it, restart the device, reconnect, then try again.</li>
+                        <li><strong>Try another connection.</strong> Use a different cable or USB port.</li>
+                        <li><strong>Use the ZIP fallback.</strong> Download the ZIP and copy it to the Kobo manually.</li>
+                    </ul>
+                    <details class="device-write-details">
+                        <summary>If writes keep failing</summary>
+                        <p>A factory reset may help, but treat it as a last resort. On older Kobo devices the internal storage may be an SD card, and repeated write failures can also point to storage that is starting to fail.</p>
+                    </details>
+                </div>
             </div>
             <div class="step-actions">
                 <button id="btn-error-back" class="secondary" hidden>&#x2039; Select different patches</button>

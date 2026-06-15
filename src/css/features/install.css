@@ -30,6 +30,11 @@
     }
 }
 
+.error-card .error-card-icon {
+    background: var(--error-bg);
+    color: var(--error-text);
+}
+
 /* Scoped under .done-card to outrank the generic `.step p` rule */
 .done-card .done-card-title {
     margin: 0;
@@ -44,6 +49,15 @@
     font-size: 0.9rem;
     line-height: 1.6;
     color: var(--text-secondary);
+}
+
+.done-card .error-card-message {
+    max-width: 100%;
+}
+
+.done-card .error-log {
+    width: 100%;
+    text-align: left;
 }
 
 /* Inside the done card the instructions sit flush — no nested card chrome */

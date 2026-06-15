@@ -223,6 +223,23 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('with device — write probe failure shows direct-write recovery guidance', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, {
+      failWritePaths: ['KOBOeReader/.kobopatch-webui/write-test.tmp'],
+    });
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-error')).not.toBeHidden();
+    await expect(page.locator('#error-message')).toContainText('Could not verify write access');
+    await expect(page.locator('#error-message')).toContainText('.kobopatch-webui/write-test.tmp');
+    await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+    await expect(page.locator('#error-device-write-help')).toContainText('Use the ZIP fallback');
+  });
+
+
   test('with device — serial number is masked until revealed', async ({ page }) => {
     await page.goto('/');
     await injectMockDevice(page, {}); // default serial N4280A0000000

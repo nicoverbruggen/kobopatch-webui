@@ -144,6 +144,96 @@ function createDevice(root = new MockDirectoryHandle('root')) {
     return { device, root };
 }
 
+const versionText = 'N4280A0000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390';
+
+test('connect verifies write access with a small probe after reading the version', async () => {
+    const root = new MockDirectoryHandle('root');
+    await root.addFile(['.kobo', 'version'], versionText);
+    window.showDirectoryPicker = async () => root;
+
+    const device = new KoboDevice();
+    const info = await device.connect();
+
+    assert.equal(info.model, 'Kobo Libra Colour');
+    assert.equal(await device.pathExists(['.kobopatch-webui', 'write-test.tmp']), false);
+
+    const metadataDir = await getDirectory(root, ['.kobopatch-webui']);
+    assert.deepEqual(metadataDir.removals, [
+        { name: 'write-test.tmp', options: {} },
+    ]);
+});
+
+test('connect reports write-probe failures as device write errors and disconnects', async () => {
+    const root = new MockDirectoryHandle('root');
+    await root.addFile(['.kobo', 'version'], versionText);
+    const metadataDir = await root.addDirectory(['.kobopatch-webui']);
+    metadataDir.getFileHandle = async (name, options = {}) => {
+        if (!options.create) throw domError('NotFoundError', `Missing file ${name}`);
+
+        const file = new MockFileHandle(name);
+        file.createWritable = async () => ({
+            async write() {},
+            async close() {
+                throw domError(
+                    'NotFoundError',
+                    'A requested file or directory could not be found at the time an operation was processed'
+                );
+            },
+        });
+        metadataDir.children.set(name, file);
+        return file;
+    };
+    window.showDirectoryPicker = async () => root;
+
+    const device = new KoboDevice();
+
+    await assert.rejects(
+        () => device.connect(),
+        (err) => {
+            assert.match(err.message, /Could not verify write access to the Kobo drive/);
+            assert.match(err.message, /Could not write \.kobopatch-webui\/write-test\.tmp/);
+            assert.match(err.message, /while committing the write/);
+            assert.equal(err.deviceWrite, true);
+            assert.equal(err.devicePath, '.kobopatch-webui/write-test.tmp');
+            assert.equal(err.deviceOperation, 'write probe');
+            return true;
+        }
+    );
+    assert.equal(device.directoryHandle, null);
+    assert.equal(device.deviceInfo, null);
+});
+
+test('verifyWriteAccess removes the probe file even when readback verification fails', async () => {
+    const { device, root } = createDevice();
+    device.readFile = async () => 'different contents';
+
+    await assert.rejects(
+        () => device.verifyWriteAccess(),
+        /The write probe could not be read back from the Kobo drive/
+    );
+
+    assert.equal(await device.pathExists(['.kobopatch-webui', 'write-test.tmp']), false);
+    const metadataDir = await getDirectory(root, ['.kobopatch-webui']);
+    assert.deepEqual(metadataDir.removals, [
+        { name: 'write-test.tmp', options: {} },
+    ]);
+});
+
+test('connect skips the write probe for incompatible firmware', async () => {
+    const root = new MockDirectoryHandle('root');
+    await root.addFile([
+        '.kobo',
+        'version',
+    ], 'N4280A0000000,4.9.77,5.0.0,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390');
+    window.showDirectoryPicker = async () => root;
+
+    const device = new KoboDevice();
+    const info = await device.connect();
+
+    assert.equal(info.isIncompatible, true);
+    assert.equal(root.children.has('.kobopatch-webui'), false);
+});
+
 test('writeFile creates nested directories and writes bytes to the target file', async () => {
     const { device, root } = createDevice();
     const payload = bytes('tgz payload');
@@ -175,8 +265,42 @@ test('writeFile adds target path context to filesystem API failures', async () =
     await assert.rejects(
         () => device.writeFile(['.adds', 'nm', 'webui-preset'], bytes('items')),
         (err) => {
-            assert.match(err.message, /Could not write \.adds\/nm\/webui-preset: Name is not allowed/);
+            assert.match(
+                err.message,
+                /Could not write \.adds\/nm\/webui-preset while opening or creating the target file: Name is not allowed/
+            );
             assert.equal(err.cause.name, 'TypeError');
+            assert.equal(err.devicePhase, 'opening or creating the target file');
+            return true;
+        }
+    );
+});
+
+test('writeFile identifies commit failures separately from data writes', async () => {
+    const { device, root } = createDevice();
+    const target = await root.addFile(['.kobo', 'KoboRoot.tgz'], '');
+    target.createWritable = async () => ({
+        async write() {},
+        async close() {
+            throw domError(
+                'NotFoundError',
+                'A requested file or directory could not be found at the time an operation was processed'
+            );
+        },
+    });
+
+    await assert.rejects(
+        () => device.writeFile(['.kobo', 'KoboRoot.tgz'], bytes('tgz')),
+        (err) => {
+            assert.match(
+                err.message,
+                /Could not write \.kobo\/KoboRoot\.tgz while committing the write: A requested file or directory/
+            );
+            assert.equal(err.cause.name, 'NotFoundError');
+            assert.equal(err.devicePath, '.kobo/KoboRoot.tgz');
+            assert.equal(err.deviceOperation, 'write');
+            assert.equal(err.deviceWrite, true);
+            assert.equal(err.devicePhase, 'committing the write');
             return true;
         }
     );
