@@ -174,7 +174,16 @@ function showError(message, log, options = {}) {
     // so they can adjust their selections and retry.
     const hasBackStep = stepHistory.includes(stepPatches);
     if (options.deviceWrite) {
-        errorTitle.textContent = 'Direct write failed';
+        // A failed connect-time write probe and a failed install write share the
+        // same recovery guidance, but the framing differs: the probe is a
+        // pre-flight check at connect, the other is a real write that failed.
+        if (options.writeProbe) {
+            errorTitle.textContent = TL.ERROR.DEVICE_PROBE_FAILED_TITLE;
+            errorMessage.textContent = TL.ERROR.DEVICE_PROBE_FAILED_MESSAGE;
+        } else {
+            errorTitle.textContent = TL.ERROR.DEVICE_WRITE_FAILED_TITLE;
+            errorMessage.textContent = TL.ERROR.DEVICE_WRITE_FAILED_MESSAGE;
+        }
         errorHint.hidden = true;
         btnErrorBack.hidden = true;
         btnRetry.classList.remove('danger');
@@ -512,7 +521,10 @@ btnConnectReady.addEventListener('click', async () => {
     } catch (err) {
         // AbortError = user cancelled the file picker; not an error.
         if (err.name === 'AbortError') return;
-        showError(err.message, null, { deviceWrite: !!err.deviceWrite });
+        showError(err.message, null, {
+            deviceWrite: !!err.deviceWrite,
+            writeProbe: err.deviceOperation === 'write probe',
+        });
     }
 });
 

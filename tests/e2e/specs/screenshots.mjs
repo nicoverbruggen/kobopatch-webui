@@ -537,10 +537,34 @@ test('connected nickelmenu failed write error', async ({ page }, testInfo) => {
   await page.click('#btn-nm-write');
 
   await expect(page.locator('#step-error')).not.toBeHidden();
-  await expect(page.locator('#error-message')).toContainText('Could not write .kobo/KoboRoot.tgz');
+  await expect(page.locator('#error-title')).toContainText('Writing to your device didn’t work');
+  await expect(page.locator('#error-message')).toContainText('the installation could not be completed');
   await expect(page.locator('#error-device-write-help')).not.toBeHidden();
   await expect(page.locator('#btn-error-download-log')).toBeVisible();
   await shot(page, dir, 'failed-write-download-logs', testInfo);
+});
+
+test('connected device failed write probe', async ({ page }, testInfo) => {
+  const dir = 'edge-cases';
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  // The connect-time write probe writes (and removes) a small file in the
+  // device root. Failing that write means a direct install isn't safe, so the
+  // flow stops at connect with the device-write recovery guidance.
+  await injectMockDevice(page, {
+    failWritePaths: ['KOBOeReader/.kobopatch-webui-probe'],
+  });
+
+  await page.click('#btn-connect');
+  await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+  await page.click('#btn-connect-ready');
+
+  await expect(page.locator('#step-error')).not.toBeHidden();
+  await expect(page.locator('#error-title')).toContainText('Connection to device failed');
+  await expect(page.locator('#error-message')).toContainText('A small test file to verify your device can be written to');
+  await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+  await shot(page, dir, 'failed-write-probe', testInfo);
 });
 
 // ============================================================

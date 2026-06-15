@@ -52,7 +52,7 @@ function deviceWriteError(pathParts, phase, err) {
     return wrapped;
 }
 
-const WRITE_PROBE_PATH = ['.kobopatch-webui', 'write-test.tmp'];
+const WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
 const WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
 
 function deviceWriteProbeError(err) {

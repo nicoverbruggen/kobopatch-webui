@@ -788,7 +788,8 @@ test.describe('NickelMenu — install', () => {
     await page.click('#btn-nm-write');
 
     await expect(page.locator('#step-error')).not.toBeHidden();
-    await expect(page.locator('#error-message')).toContainText('Could not write .kobo/KoboRoot.tgz');
+    await expect(page.locator('#error-title')).toContainText('Writing to your device didn’t work');
+    await expect(page.locator('#error-message')).toContainText('the installation could not be completed');
     await expect(page.locator('#error-device-write-help')).not.toBeHidden();
     await expect(page.locator('#btn-error-download-log')).toBeVisible();
 

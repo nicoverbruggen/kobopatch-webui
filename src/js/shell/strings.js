@@ -51,6 +51,10 @@ export const TL = {
         PATCH_FAILED: 'The patch failed to apply',
         SOMETHING_WENT_WRONG: 'Something went wrong',
         LOAD_PATCHES_FAILED: (v) => `Could not load patches for software version ${v}`,
+        DEVICE_WRITE_FAILED_TITLE: 'Writing to your device didn’t work',
+        DEVICE_WRITE_FAILED_MESSAGE: 'Something went wrong while writing files to your device, so the installation could not be completed. You can download the logs for more information.',
+        DEVICE_PROBE_FAILED_TITLE: 'Connection to device failed',
+        DEVICE_PROBE_FAILED_MESSAGE: 'A small test file to verify your device can be written to was not written correctly. This is usually an indicator of a potential connection issue.',
     },
 
     PATCH: {

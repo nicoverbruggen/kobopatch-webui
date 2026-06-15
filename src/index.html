@@ -534,23 +534,19 @@
                 <div id="error-device-write-help" class="device-write-help" hidden>
                     <div class="device-write-help-heading">
                         <div class="banner-heading">What to try next</div>
-                        <p>This is usually a USB connection or removable-drive mount problem, not your selected options.</p>
+                        <p>This is almost always a problem with the USB connection between your computer and your Kobo, not with the patches or options you picked.</p>
                     </div>
-                    <ul class="device-write-steps">
-                        <li><strong>Restart and reconnect.</strong> Eject the Kobo, unplug it, restart the device, reconnect, then try again.</li>
-                        <li><strong>Try another connection.</strong> Use a different cable or USB port.</li>
-                        <li><strong>Use the ZIP fallback.</strong> Download the ZIP and copy it to the Kobo manually.</li>
-                    </ul>
-                    <details class="device-write-details">
-                        <summary>If writes keep failing</summary>
-                        <p>A factory reset may help, but treat it as a last resort. On older Kobo devices the internal storage may be an SD card, and repeated write failures can also point to storage that is starting to fail.</p>
-                    </details>
+                    <ol class="device-write-steps">
+                        <li><strong>Reconnect your Kobo.</strong> Safely eject the Kobo, unplug the cable, turn the Kobo off and on again, then plug it back in and try once more.</li>
+                        <li><strong>Try a different cable or port.</strong> Some USB cables can only charge and can’t transfer files. Use another cable, and try a different USB port on your computer.</li>
+                        <li><strong>Copy the files yourself instead.</strong> Choose the download option to save a ZIP file, then carefully follow the included instructions to copy its contents onto your Kobo. Following each step closely is important to avoid damaging your device.</li>
+                    </ol>
                 </div>
             </div>
             <div class="step-actions">
                 <button id="btn-error-back" class="secondary" hidden>&#x2039; Select different patches</button>
+                <button id="btn-error-download-log" class="secondary" hidden>Download Logs</button>
                 <div class="step-actions-right">
-                    <button id="btn-error-download-log" class="secondary" hidden>Download logs</button>
                     <button id="btn-retry" class="secondary">Start Over</button>
                 </div>
             </div>

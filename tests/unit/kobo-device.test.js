@@ -155,19 +155,17 @@ test('connect verifies write access with a small probe after reading the version
     const info = await device.connect();
 
     assert.equal(info.model, 'Kobo Libra Colour');
-    assert.equal(await device.pathExists(['.kobopatch-webui', 'write-test.tmp']), false);
+    assert.equal(await device.pathExists(['.kobopatch-webui-probe']), false);
 
-    const metadataDir = await getDirectory(root, ['.kobopatch-webui']);
-    assert.deepEqual(metadataDir.removals, [
-        { name: 'write-test.tmp', options: {} },
+    assert.deepEqual(root.removals, [
+        { name: '.kobopatch-webui-probe', options: {} },
     ]);
 });
 
 test('connect reports write-probe failures as device write errors and disconnects', async () => {
     const root = new MockDirectoryHandle('root');
     await root.addFile(['.kobo', 'version'], versionText);
-    const metadataDir = await root.addDirectory(['.kobopatch-webui']);
-    metadataDir.getFileHandle = async (name, options = {}) => {
+    root.getFileHandle = async (name, options = {}) => {
         if (!options.create) throw domError('NotFoundError', `Missing file ${name}`);
 
         const file = new MockFileHandle(name);
@@ -180,7 +178,7 @@ test('connect reports write-probe failures as device write errors and disconnect
                 );
             },
         });
-        metadataDir.children.set(name, file);
+        root.children.set(name, file);
         return file;
     };
     window.showDirectoryPicker = async () => root;
@@ -191,10 +189,10 @@ test('connect reports write-probe failures as device write errors and disconnect
         () => device.connect(),
         (err) => {
             assert.match(err.message, /Could not verify write access to the Kobo drive/);
-            assert.match(err.message, /Could not write \.kobopatch-webui\/write-test\.tmp/);
+            assert.match(err.message, /Could not write \.kobopatch-webui-probe/);
             assert.match(err.message, /while committing the write/);
             assert.equal(err.deviceWrite, true);
-            assert.equal(err.devicePath, '.kobopatch-webui/write-test.tmp');
+            assert.equal(err.devicePath, '.kobopatch-webui-probe');
             assert.equal(err.deviceOperation, 'write probe');
             return true;
         }
@@ -212,10 +210,9 @@ test('verifyWriteAccess removes the probe file even when readback verification f
         /The write probe could not be read back from the Kobo drive/
     );
 
-    assert.equal(await device.pathExists(['.kobopatch-webui', 'write-test.tmp']), false);
-    const metadataDir = await getDirectory(root, ['.kobopatch-webui']);
-    assert.deepEqual(metadataDir.removals, [
-        { name: 'write-test.tmp', options: {} },
+    assert.equal(await device.pathExists(['.kobopatch-webui-probe']), false);
+    assert.deepEqual(root.removals, [
+        { name: '.kobopatch-webui-probe', options: {} },
     ]);
 });
 
@@ -231,7 +228,7 @@ test('connect skips the write probe for incompatible firmware', async () => {
     const info = await device.connect();
 
     assert.equal(info.isIncompatible, true);
-    assert.equal(root.children.has('.kobopatch-webui'), false);
+    assert.equal(root.children.has('.kobopatch-webui-probe'), false);
 });
 
 test('writeFile creates nested directories and writes bytes to the target file', async () => {
