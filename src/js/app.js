@@ -259,13 +259,20 @@ if (isMobileDevice) {
 // Detect iOS (Safari/WebKit) — the File System Access API is unavailable on iOS.
 const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isAndroidDevice = /Android/i.test(navigator.userAgent);
 
-// Disable the "Connect" button if the File System Access API isn't available.
+// Disable the "Connect" button if the File System Access API isn't available
+// or the platform exposes it unreliably for removable-device writes.
 const hasFileSystemAccess = KoboDevice.isSupported();
-if (!hasFileSystemAccess) {
+const canConnectDirectly = hasFileSystemAccess && !isAndroidDevice;
+if (!canConnectDirectly) {
     btnConnect.disabled = true;
     $('connect-unsupported-hint').hidden = false;
-    if (isAppleMobileDevice) {
+    if (isAndroidDevice) {
+        $('connect-unsupported-text').innerHTML =
+            'Directly connecting your Kobo is not available on Android because Chrome on Android cannot reliably write to a connected Kobo drive. ' +
+            'Use the <b>manual download</b> option below, then copy the ZIP contents to your Kobo from a computer.';
+    } else if (isAppleMobileDevice) {
         $('connect-unsupported-text').innerHTML =
             'Directly connecting your Kobo is not available on iOS because Safari does not support the ' +
             '<a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>. ' +

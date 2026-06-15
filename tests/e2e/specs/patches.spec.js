@@ -223,6 +223,35 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('Android mobile disables direct Kobo connection even when folder picker is available', async ({ browser }) => {
+    const context = await browser.newContext({
+      baseURL: 'http://localhost:8889',
+      viewport: { width: 393, height: 852 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+    });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      window.showDirectoryPicker = async () => ({});
+    });
+
+    try {
+      await page.goto('/');
+      await expect(page.locator('#mobile-dialog')).toBeVisible();
+      await page.click('#btn-mobile-continue');
+
+      await expect(page.locator('#btn-connect')).toBeDisabled();
+      await expect(page.locator('#connect-unsupported-hint')).toBeVisible();
+      await expect(page.locator('#connect-unsupported-text')).toContainText('not available on Android');
+      await expect(page.locator('#connect-unsupported-text')).toContainText('manual download');
+    } finally {
+      await context.close();
+    }
+  });
+
+
   test('with device — write probe failure shows direct-write recovery guidance', async ({ page }) => {
     await page.goto('/');
     await injectMockDevice(page, {
