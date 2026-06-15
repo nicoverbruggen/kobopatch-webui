@@ -472,6 +472,11 @@ export function initPatchesFlow(state) {
             }));
             const bytes = await zip.generateAsync({ type: 'uint8array' });
             triggerDownload(bytes, 'custom-patches.zip', 'application/zip');
+        } catch (err) {
+            state.showError(TL.ERROR.DOWNLOAD_FAILED_MESSAGE, err.message, {
+                title: TL.ERROR.DOWNLOAD_FAILED_TITLE,
+            });
+            return;
         } finally {
             btnDownload.disabled = false;
         }

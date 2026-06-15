@@ -269,6 +269,83 @@ test.describe('Custom patches', () => {
   });
 
 
+  test('connect — blocked drive permission shows a friendly error screen', async ({ page }) => {
+    // Simulate the browser denying read/write access to the picked folder.
+    await page.addInitScript(() => {
+      window.showDirectoryPicker = async () => {
+        const err = new Error('Permission denied');
+        err.name = 'NotAllowedError';
+        throw err;
+      };
+    });
+    await page.goto('/');
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-error')).not.toBeHidden();
+    await expect(page.locator('#error-title')).toContainText('Access to your device was blocked');
+    await expect(page.locator('#error-message')).toContainText('did not get permission');
+    // Not a device-write failure, so the write-recovery steps stay hidden.
+    await expect(page.locator('#error-device-write-help')).toBeHidden();
+  });
+
+
+  test('unexpected errors are caught by the global safety net', async ({ page }) => {
+    await page.goto('/');
+    // An exception escaping every explicit handler should still surface a screen
+    // rather than leaving the UI stranded.
+    await page.evaluate(() => {
+      window.dispatchEvent(new ErrorEvent('error', {
+        error: new Error('boom'),
+        message: 'boom',
+      }));
+    });
+
+    await expect(page.locator('#step-error')).not.toBeHidden();
+    await expect(page.locator('#error-title')).toContainText('Something went wrong');
+    await expect(page.locator('#error-message')).toContainText('unexpected error occurred');
+    // The thrown detail is shown in the log area for reporting.
+    await expect(page.locator('#error-log')).toContainText('boom');
+  });
+
+
+  test('no device — download archive failure shows an error screen', async ({ page }) => {
+    test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await overrideFirmwareURLs(page);
+    await page.selectOption('#manual-version', '4.45.23646');
+    await expect(page.locator('#manual-model')).not.toBeHidden();
+    await page.selectOption('#manual-model', 'N428');
+    await page.click('#btn-manual-confirm');
+
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+    const section = page.locator('.patch-file-section').first();
+    await section.locator('summary').click();
+    await section.locator('label').filter({ has: page.locator('input[type="checkbox"]') }).first().locator('input').check();
+
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await page.click('#btn-build');
+    await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+
+    // Force archive creation to fail, then attempt the download.
+    await page.evaluate(() => {
+      URL.createObjectURL = () => { throw new Error('forced download failure'); };
+    });
+    await page.click('#btn-download');
+
+    await expect(page.locator('#step-error')).not.toBeHidden();
+    await expect(page.locator('#error-title')).toContainText('Preparing the download didn’t work');
+    await expect(page.locator('#error-message')).toContainText('creating the archive to download');
+  });
+
+
   test('with device — serial number is masked until revealed', async ({ page }) => {
     await page.goto('/');
     await injectMockDevice(page, {}); // default serial N4280A0000000

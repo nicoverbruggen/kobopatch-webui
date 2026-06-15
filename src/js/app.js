@@ -187,6 +187,14 @@ function showError(message, log, options = {}) {
         errorHint.hidden = true;
         btnErrorBack.hidden = true;
         btnRetry.classList.remove('danger');
+    } else if (options.title) {
+        // A caller-supplied title marks a standalone error (e.g. a failed
+        // download, blocked permission, or an unexpected crash) that isn't tied
+        // to the patch selection — show it cleanly with just "Start Over".
+        errorTitle.textContent = options.title;
+        errorHint.hidden = true;
+        btnErrorBack.hidden = true;
+        btnRetry.classList.remove('danger');
     } else if (hasBackStep) {
         errorTitle.textContent = TL.ERROR.PATCH_FAILED;
         errorHint.hidden = false;
@@ -203,6 +211,40 @@ function showError(message, log, options = {}) {
 }
 
 state.showError = showError;
+
+// =============================================================================
+// Global safety net
+// =============================================================================
+// Any exception or promise rejection that escapes an explicit handler would
+// otherwise leave the UI stranded (e.g. a spinner on the "Building..." or
+// "Installing..." screen that never resolves). Route those to the same error
+// screen so the user always gets feedback and a way to start over.
+let handlingUnexpectedError = false;
+function handleUnexpectedError(err) {
+    // Re-entrancy guard: never let a failure inside showError loop back here.
+    if (handlingUnexpectedError) return;
+    // AbortError is the user cancelling a picker — expected, never an error.
+    if (err && err.name === 'AbortError') return;
+    handlingUnexpectedError = true;
+    try {
+        const detail = err ? (err.stack || err.message || String(err)) : 'Unknown error';
+        showError(TL.ERROR.UNEXPECTED_MESSAGE, detail, { title: TL.ERROR.UNEXPECTED_TITLE });
+    } catch (e) {
+        console.error('Failed to display the error screen:', e);
+    } finally {
+        handlingUnexpectedError = false;
+    }
+}
+
+window.addEventListener('error', (event) => {
+    // Resource-load failures (img/script/link) don't bubble to window in this
+    // phase; only genuine script exceptions reach here, and they carry `error`.
+    if (!event.error) return;
+    handleUnexpectedError(event.error);
+});
+window.addEventListener('unhandledrejection', (event) => {
+    handleUnexpectedError(event.reason);
+});
 
 // =============================================================================
 // Mode selection
@@ -521,6 +563,13 @@ btnConnectReady.addEventListener('click', async () => {
     } catch (err) {
         // AbortError = user cancelled the file picker; not an error.
         if (err.name === 'AbortError') return;
+        // The user (or browser policy) denied read/write access to the drive.
+        if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+            showError(TL.ERROR.PERMISSION_DENIED_MESSAGE, null, {
+                title: TL.ERROR.PERMISSION_DENIED_TITLE,
+            });
+            return;
+        }
         showError(err.message, null, {
             deviceWrite: !!err.deviceWrite,
             writeProbe: err.deviceOperation === 'write probe',

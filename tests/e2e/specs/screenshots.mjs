@@ -567,6 +567,89 @@ test('connected device failed write probe', async ({ page }, testInfo) => {
   await shot(page, dir, 'failed-write-probe', testInfo);
 });
 
+test('connect blocked permission', async ({ page }, testInfo) => {
+  const dir = 'edge-cases';
+
+  // Simulate the browser denying read/write access to the picked folder.
+  await page.addInitScript(() => {
+    window.showDirectoryPicker = async () => {
+      const err = new Error('Permission denied');
+      err.name = 'NotAllowedError';
+      throw err;
+    };
+  });
+  await page.goto('/');
+  await dismissMobileModal(page);
+
+  await page.click('#btn-connect');
+  await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+  await page.click('#btn-connect-ready');
+
+  await expect(page.locator('#step-error')).not.toBeHidden();
+  await expect(page.locator('#error-title')).toContainText('Access to your device was blocked');
+  await shot(page, dir, 'connect-permission-denied', testInfo);
+});
+
+test('unexpected error safety net', async ({ page }, testInfo) => {
+  const dir = 'edge-cases';
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  // An exception escaping every explicit handler still surfaces a screen.
+  await page.evaluate(() => {
+    window.dispatchEvent(new ErrorEvent('error', {
+      error: new Error('Something exploded'),
+      message: 'Something exploded',
+    }));
+  });
+
+  await expect(page.locator('#step-error')).not.toBeHidden();
+  await expect(page.locator('#error-title')).toContainText('Something went wrong');
+  await shot(page, dir, 'unexpected-error', testInfo);
+});
+
+test('download archive failure', async ({ page }, testInfo) => {
+  test.skip(!hasFirmwareZip(), 'Firmware zip not available');
+  const dir = 'edge-cases';
+
+  await page.goto('/');
+  await injectMockDevice(page);
+  await page.waitForFunction(() => !!window.FIRMWARE_DOWNLOADS);
+  await overrideFirmwareURLs(page);
+  await dismissMobileModal(page);
+
+  await page.click('#btn-manual');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="patches"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-manual-version')).not.toBeHidden();
+  await page.selectOption('#manual-version', { index: 1 });
+  await expect(page.locator('#manual-model')).not.toBeHidden();
+  await page.selectOption('#manual-model', { index: 1 });
+  await page.click('#btn-manual-confirm');
+
+  await expect(page.locator('#step-patches')).not.toBeHidden();
+  const section = page.locator('.patch-file-section').first();
+  await section.locator('summary').click();
+  await section.locator('label').filter({ has: page.locator('input[type="checkbox"]') }).first().locator('input').check();
+
+  await page.click('#btn-patches-next');
+  await expect(page.locator('#step-firmware')).not.toBeHidden();
+  await page.click('#btn-build');
+  await expect(page.locator('#step-done')).toBeVisible({ timeout: 60_000 });
+
+  // Force archive creation to fail, then attempt the download.
+  await page.evaluate(() => {
+    URL.createObjectURL = () => { throw new Error('forced download failure'); };
+  });
+  await page.click('#btn-download');
+
+  await expect(page.locator('#step-error')).not.toBeHidden();
+  await expect(page.locator('#error-title')).toContainText('Preparing the download didn’t work');
+  await shot(page, dir, 'download-failure', testInfo);
+});
+
 // ============================================================
 // 6. Connected Patches flow
 // ============================================================

@@ -55,6 +55,12 @@ export const TL = {
         DEVICE_WRITE_FAILED_MESSAGE: 'Something went wrong while writing files to your device, so the installation could not be completed. You can download the logs for more information.',
         DEVICE_PROBE_FAILED_TITLE: 'Connection to device failed',
         DEVICE_PROBE_FAILED_MESSAGE: 'A small test file to verify your device can be written to was not written correctly. This is usually an indicator of a potential connection issue.',
+        DOWNLOAD_FAILED_TITLE: 'Preparing the download didn’t work',
+        DOWNLOAD_FAILED_MESSAGE: 'Something went wrong while creating the archive to download. Please start over and try again.',
+        PERMISSION_DENIED_TITLE: 'Access to your device was blocked',
+        PERMISSION_DENIED_MESSAGE: 'Your browser did not get permission to read and write to your Kobo. When the permission prompt appears, choose “Allow” (or “Edit files”) so the app can access your device, then connect again.',
+        UNEXPECTED_TITLE: 'Something went wrong',
+        UNEXPECTED_MESSAGE: 'An unexpected error occurred and the app couldn’t continue. Please start over and try again. The technical details below may help if you report this.',
     },
 
     PATCH: {
