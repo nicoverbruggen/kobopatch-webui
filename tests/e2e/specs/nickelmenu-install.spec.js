@@ -981,7 +981,7 @@ test.describe('NickelMenu — install', () => {
     // Should NOT have written items, fonts, etc. (the audit log is a meta file,
     // not a config/feature file, so it is expected alongside KoboRoot.tgz.)
     const configWrites = writtenFiles.filter(
-      f => !f.includes('KoboRoot.tgz') && !f.includes('.kobopatch-webui/'),
+      f => !f.includes('KoboRoot.tgz') && !f.includes('.kobopatch-webui'),
     );
     expect(configWrites).toHaveLength(0);
     // Manifest should be written with empty feature list
