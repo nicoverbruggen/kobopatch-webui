@@ -48,7 +48,7 @@ function getIndexVariants() {
     const identity = Buffer.from(html, 'utf-8');
     const v = {
         html,
-        etag: `W/"idx-${createHash('md5').update(identity).digest('hex').slice(0, 12)}"`,
+        etag: `"idx-${createHash('md5').update(identity).digest('hex').slice(0, 12)}"`,
         identity,
         gz: gzipSync(identity, { level: 9 }),
         br: brotliCompressSync(identity),
@@ -76,38 +76,51 @@ const MIME = {
 const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '.webmanifest', '.txt', '.xml']);
 
 /**
- * Cache-Control policy. Three tiers:
- *  - index.html / root: always revalidate — it references the hash-busted assets.
- *  - hash-busted URLs (`?h=...`, e.g. bundle.js / style.css / kobopatch.wasm): the
- *    URL changes whenever the bytes do, so cache forever as immutable.
- *  - everything else (large `assets/*` archives, feature scripts, JSON): short TTL
- *    plus revalidation. NOT immutable, on purpose — `npm run update:installables`
- *    can replace `dist/assets/*` on a live container between rebuilds, and those
- *    URLs are not hash-busted, so clients must be able to pick up the new bytes
- *    (a conditional request returns a tiny 304 when unchanged — no 40 MB re-download).
+ * Cache-Control policy. Two tiers:
+ *  - versioned URLs (`?h=<content hash>` on bundle.js / style.css / kobopatch.wasm,
+ *    or `?v=<pinned version>` on the `assets/*` add-on archives): the URL changes
+ *    whenever the bytes do, so cache forever as immutable. This is what lets a CDN
+ *    serve the 40 MB archives without ever revalidating.
+ *  - everything else (index.html, `*.json` metadata, feature scripts): `no-cache` —
+ *    stored, but revalidated before reuse. There
+ *    is deliberately no `max-age` window: nothing here is fetched repeatedly within
+ *    seconds (the archives are fetched once, on demand, at install time), so a TTL
+ *    would save no round-trips while being the only place stale bytes could serve
+ *    after a deploy. Paired with the content-hash ETag, an unchanged asset (incl. a
+ *    40 MB archive) is reused on a tiny 304 — `no-cache` does not mean re-download —
+ *    while a deploy or `update:installables` bump is picked up on the next request.
  */
-function cacheControl(pathname, search) {
+function cacheControl(search) {
     if (noCache) return 'no-cache';
-    if (pathname === '/' || pathname.endsWith('/index.html')) return 'no-cache';
-    if (/[?&]h=/.test(search)) return 'public, max-age=31536000, immutable';
-    return 'public, max-age=300, must-revalidate';
+    if (/[?&][hv]=/.test(search)) return 'public, max-age=31536000, immutable';
+    return 'no-cache';
 }
 
-/** Weak validator from a file's size+mtime — identifies the resource for 304s. */
-function validators(stat) {
-    return {
-        etag: `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`,
-        lastModified: stat.mtime.toUTCString(),
-    };
+// Strong content-hash ETag, memoized per server lifetime. The validator is the
+// hash of the file's *bytes*, not its size+mtime — so a slight edit that leaves
+// the size unchanged still yields a new ETag. This is what makes a deploy reliably
+// override caches: the URLs of these assets don't change, and crucially the fetched
+// GitHub archives (KOReader/Cadmus/fonts) aren't tied to any commit hash, so only
+// their content identifies them.
+//
+// The memo (keyed by size+mtime) just avoids re-hashing on every request within one
+// process. It self-clears exactly when content can change: a deploy starts a fresh
+// container (empty memo → re-hash), and `update:installables` rewrites files with a
+// new mtime (memo miss → re-hash). Unchanged files keep their hash, so large archives
+// still answer revalidation with 304 instead of re-downloading.
+const etagCache = new Map();
+function contentEtag(filePath, stat) {
+    const hit = etagCache.get(filePath);
+    if (hit && hit.size === stat.size && hit.mtimeMs === stat.mtimeMs) return hit.etag;
+    const etag = `"${createHash('md5').update(readFileSync(filePath)).digest('hex').slice(0, 16)}"`;
+    etagCache.set(filePath, { size: stat.size, mtimeMs: stat.mtimeMs, etag });
+    return etag;
 }
 
 /** Whether a conditional request may be answered with 304 Not Modified. */
-function notModified(req, etag, lastModified) {
+function notModified(req, etag) {
     const inm = req.headers['if-none-match'];
-    if (inm !== undefined) return inm.split(',').some((t) => t.trim() === etag);
-    const ims = req.headers['if-modified-since'];
-    if (ims && lastModified) return new Date(ims).getTime() >= new Date(lastModified).getTime();
-    return false;
+    return inm !== undefined && inm.split(',').some((t) => t.trim() === etag);
 }
 
 /**
@@ -167,7 +180,7 @@ createServer((req, res) => {
         const v = getIndexVariants();
         if (v) {
             const headers = { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache', 'Vary': 'Accept-Encoding', 'ETag': v.etag };
-            if (notModified(req, v.etag, null)) {
+            if (notModified(req, v.etag)) {
                 res.writeHead(304, headers);
                 res.end();
                 return;
@@ -189,18 +202,17 @@ createServer((req, res) => {
         const picked = pickEncoding(filePath, srcStat, accept);
         const serveStat = picked ? picked.stat : srcStat;
 
-        // Validators identify the identity resource, so a conditional request 304s
-        // regardless of which encoding the client cached (paired with Vary below).
-        const { etag, lastModified } = validators(srcStat);
+        // The ETag hashes the identity bytes, so it 304s regardless of which encoding
+        // the client cached (paired with Vary below) and changes iff the content does.
+        const etag = contentEtag(filePath, srcStat);
         const headers = {
             'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
-            'Cache-Control': cacheControl(url.pathname, url.search),
+            'Cache-Control': cacheControl(url.search),
             'ETag': etag,
-            'Last-Modified': lastModified,
         };
         if (COMPRESSIBLE.has(extname(filePath))) headers['Vary'] = 'Accept-Encoding';
 
-        if (notModified(req, etag, lastModified)) {
+        if (notModified(req, etag)) {
             res.writeHead(304, headers);
             res.end();
             return;

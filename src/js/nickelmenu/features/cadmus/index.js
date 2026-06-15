@@ -1,5 +1,6 @@
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
+import { installableVersion, installableAssetUrl } from '../../installables.js';
 
 // Installs Cadmus, an alternative Kobo reader app, from its Kobo tarball.
 // The upstream archive is rooted at the app directory contents, so each file is
@@ -26,15 +27,13 @@ export default {
     },
 
     async install(ctx) {
-        ctx.progress('Fetching Cadmus release info...');
-        const metaResp = await fetch('/assets/cadmus-release.json');
-        if (!metaResp.ok) throw new Error('Cadmus assets not available (run npm run setup:installables)');
-        const meta = await metaResp.json();
+        const version = installableVersion('cadmus');
+        if (!version) throw new Error('Cadmus assets not available (run npm run setup:installables)');
 
-        const label = 'Downloading Cadmus ' + meta.version + '...';
+        const label = 'Downloading Cadmus ' + version + '...';
         ctx.progress(label);
         const tarBytes = await fetchWithProgress(
-            '/assets/cadmus-kobo.tar.gz',
+            installableAssetUrl('cadmus', 'cadmus-kobo.tar.gz'),
             downloadProgress(ctx.progress, label),
             'Failed to download Cadmus',
         );

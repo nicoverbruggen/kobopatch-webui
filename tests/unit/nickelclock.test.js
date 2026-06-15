@@ -27,12 +27,13 @@ const nickelclockEntries = [
 // wrapping a real KoboRoot.tgz, mirroring the published asset layout.
 function useNickelClockAssetFetch() {
     const originalFetch = globalThis.fetch;
+    // The version/availability come from the build-time manifest (esbuild define);
+    // set it here so koboRootEntries resolves the pinned version + versioned URL.
+    const originalManifest = globalThis.__INSTALLABLES__;
+    globalThis.__INSTALLABLES__ = { nickelclock: { version: 'v0.4.0', available: true } };
 
     globalThis.fetch = async (url) => {
-        if (url === '/assets/nickelclock-release.json') {
-            return { ok: true, status: 200, async json() { return { version: 'v0.4.0' }; } };
-        }
-        if (url === '/assets/NickelClock.zip') {
+        if (url === '/assets/NickelClock.zip?v=v0.4.0') {
             const zip = new JSZip();
             zip.file('KoboRoot.tgz', await buildTarGz(nickelclockEntries));
             const buf = await zip.generateAsync({ type: 'uint8array' });
@@ -57,7 +58,10 @@ function useNickelClockAssetFetch() {
         return { ok: false, status: 404 };
     };
 
-    return () => { globalThis.fetch = originalFetch; };
+    return () => {
+        globalThis.fetch = originalFetch;
+        globalThis.__INSTALLABLES__ = originalManifest;
+    };
 }
 
 // A real gzipped tar to stand in for NickelMenu's base KoboRoot.tgz, so the

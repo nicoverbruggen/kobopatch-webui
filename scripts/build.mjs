@@ -117,6 +117,26 @@ function precompressDir(dir) {
     }
 }
 
+/**
+ * Derive the build-time installables manifest from `installables.lock`: each id's
+ * pinned version, plus whether its asset is present in `src/assets/` (i.e. this
+ * build will ship it). Injected into the bundle via esbuild `define` so the app
+ * reads versions/availability with no runtime `*-release.json` fetch.
+ */
+function installablesManifest() {
+    const lockPath = join(appDir, 'installables.lock');
+    if (!existsSync(lockPath)) return {};
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+    const manifest = {};
+    for (const [name, entry] of Object.entries(lock.installables || {})) {
+        manifest[name] = {
+            version: entry.version,
+            available: existsSync(join(srcDir, 'assets', entry.asset)),
+        };
+    }
+    return manifest;
+}
+
 async function build() {
     // Clean dist/ (preserve wasm/ which is built separately)
     if (existsSync(distDir)) {
@@ -134,6 +154,8 @@ async function build() {
         ({ versionStr, versionLink } = await generateVersion());
     } catch {}
 
+    const installables = installablesManifest();
+
     // Build JS bundle
     await esbuild.build({
         entryPoints: [join(srcDir, 'js', 'app.js')],
@@ -149,6 +171,8 @@ async function build() {
             // True only for the watch build, which is exclusively what the local
             // dev server (`npm run dev`) runs — so the UI can mark itself "DEV".
             'globalThis.__DEV_BUILD__': JSON.stringify(isWatch),
+            // Installable add-on versions + availability, from installables.lock.
+            'globalThis.__INSTALLABLES__': JSON.stringify(installables),
         },
     });
 
@@ -282,6 +306,9 @@ if (isDev) {
         minify: false,
         sourcemap: true,
         logLevel: 'warning',
+        define: {
+            'globalThis.__INSTALLABLES__': JSON.stringify(installablesManifest()),
+        },
     });
 
     await ctx.watch();

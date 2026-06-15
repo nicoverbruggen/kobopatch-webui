@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
+import { installableAssetUrl } from '../../installables.js';
 
 // Installs three bundled font families (Readerly, Libron, Cartisse) so they
 // appear in the in-book font dropdown. Each family ships as a zip asset that is
@@ -42,9 +43,9 @@ export default {
         // Each archive contains four .ttf weights named
         // KF_<Family>-{Regular,Italic,Bold,BoldItalic}.ttf.
         const archives = [
-            { name: 'KF Readerly', asset: '/assets/KF_Readerly.zip' },
-            { name: 'KF Libron', asset: '/assets/KF_Libron.zip' },
-            { name: 'KF Cartisse', asset: '/assets/KF_Cartisse.zip' },
+            { name: 'KF Readerly', id: 'readerly', file: 'KF_Readerly.zip' },
+            { name: 'KF Libron', id: 'libron', file: 'KF_Libron.zip' },
+            { name: 'KF Cartisse', id: 'cartisse', file: 'KF_Cartisse.zip' },
         ];
 
         const files = [];
@@ -52,7 +53,7 @@ export default {
             const label = `Downloading ${archive.name} font...`;
             ctx.progress(label);
             const zipBytes = await fetchWithProgress(
-                archive.asset,
+                installableAssetUrl(archive.id, archive.file),
                 downloadProgress(ctx.progress, label),
                 `Failed to download ${archive.name}`,
             );

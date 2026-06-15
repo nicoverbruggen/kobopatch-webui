@@ -3,6 +3,7 @@ import { NM_ITEMS_FILE } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
 import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.js';
+import { installableAssetUrl } from './installables.js';
 import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import {
     removeExcludeSyncFoldersLine,
@@ -174,7 +175,7 @@ export class NickelMenuInstaller {
         const label = 'Downloading NickelMenu...';
         progressFn(label);
         const zipBytes = await fetchWithProgress(
-            'assets/NickelMenu.zip',
+            installableAssetUrl('nickelmenu', 'NickelMenu.zip'),
             downloadProgress(progressFn, label),
             'Failed to download NickelMenu.zip',
         );

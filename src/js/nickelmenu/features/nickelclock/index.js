@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
+import { installableVersion, installableAssetUrl } from '../../installables.js';
 
 // A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
 // existing user-edited file is never overwritten). NickelClock otherwise creates
@@ -118,15 +119,13 @@ export default {
      * is a release zip wrapping a KoboRoot.tgz, mirroring NickelMenu's own asset.
      */
     async koboRootEntries(ctx) {
-        ctx.progress('Fetching NickelClock release info...');
-        const metaResp = await fetch('/assets/nickelclock-release.json');
-        if (!metaResp.ok) throw new Error('NickelClock assets not available (run npm run setup:installables)');
-        const meta = await metaResp.json();
+        const version = installableVersion('nickelclock');
+        if (!version) throw new Error('NickelClock assets not available (run npm run setup:installables)');
 
-        const label = 'Downloading NickelClock ' + meta.version + '...';
+        const label = 'Downloading NickelClock ' + version + '...';
         ctx.progress(label);
         const zipBytes = await fetchWithProgress(
-            '/assets/NickelClock.zip',
+            installableAssetUrl('nickelclock', 'NickelClock.zip'),
             downloadProgress(ctx.progress, label),
             'Failed to download NickelClock',
         );

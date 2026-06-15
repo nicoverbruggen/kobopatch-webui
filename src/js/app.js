@@ -24,6 +24,7 @@ import { PatchUI, scanAvailablePatches } from './patches/ui.js';
 import { KoboPatchRunner } from './patches/runner.js';
 import { NickelMenuInstaller, NICKELMENU_FEATURES } from './nickelmenu/installer.js';
 import { createDefaultMenuCustomization } from './nickelmenu/customization.js';
+import { installablesManifest } from './nickelmenu/installables.js';
 import { TL } from './shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from './shell/analytics.js';
 import { $, $q, $qa, populateSelect, triggerDownload } from './shell/dom.js';
@@ -74,25 +75,15 @@ const softwareUrlsReady = loadSoftwareUrls();
 const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 const blacklistReady = state.patchUI.loadBlacklist();
 
-// Best-effort availability checks for bundled add-ons (reading apps, NickelClock).
-// If the server has the add-on's assets, mark the feature as available so it
-// shows up in the NickelMenu features list. Runs in the background — failure is
-// silently ignored.
-for (const { id, releaseJson } of [
-    { id: 'koreader', releaseJson: '/assets/koreader-release.json' },
-    { id: 'cadmus', releaseJson: '/assets/cadmus-release.json' },
-    { id: 'nickelclock', releaseJson: '/assets/nickelclock-release.json' },
-]) {
+// Mark bundled add-ons (reading apps, NickelClock) available from the build-time
+// installables manifest (baked from installables.lock — see nickelmenu/installables.js).
+// `available` means this deployment shipped the asset; no runtime fetch needed.
+for (const [id, info] of Object.entries(installablesManifest())) {
     const feature = NICKELMENU_FEATURES.find(f => f.id === id);
-    fetch(releaseJson)
-        .then(r => r.ok ? r.json() : null)
-        .then(meta => {
-            if (meta && meta.version) {
-                feature.available = true;
-                feature.version = meta.version;
-            }
-        })
-        .catch(() => {});
+    if (feature && info.available) {
+        feature.available = true;
+        feature.version = info.version;
+    }
 }
 
 // =============================================================================

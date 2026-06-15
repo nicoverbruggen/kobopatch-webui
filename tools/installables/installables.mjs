@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import { mkdir, writeFile, rename, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const LOCK_PATH = join(APP_DIR, 'installables.lock');
 
 const TARGET_ROOTS = {
     src:  'src/assets',
@@ -16,82 +18,67 @@ const TARGETS = {
     dist: join(APP_DIR, TARGET_ROOTS.dist),
 };
 
+// Each installable declares where its asset comes from. `repo` + `match` resolves
+// the download via the GitHub releases API; `pinned` is an explicit version+url
+// (NickelMenu tracks a specific fork release, not "latest"). `name` is the lock key
+// and the id used by the build-time manifest (see scripts/build.mjs).
 const INSTALLABLES = [
     {
         name: 'nickelmenu',
         asset: 'NickelMenu.zip',
-        versionFile: 'nickelmenu-release.json',
-        // NickelMenu is pinned to a specific fork release rather than tracking "latest".
-        fetchLatest: async () => ({
+        pinned: {
             version: 'fork-v1.1',
             url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.1/NickelMenu.zip',
-        }),
+        },
     },
-    {
-        name: 'nickelclock',
-        asset: 'NickelClock.zip',
-        versionFile: 'nickelclock-release.json',
-        fetchLatest: () => fetchLatestRelease('shermp/NickelClock', (n) => /^NickelClock-.*\.zip$/.test(n)),
-    },
-    {
-        name: 'koreader',
-        asset: 'koreader-kobo.zip',
-        versionFile: 'koreader-release.json',
-        fetchLatest: () => fetchLatestRelease('koreader/koreader', (n) => /^koreader-kobo-.*\.zip$/.test(n)),
-    },
-    {
-        name: 'cadmus',
-        asset: 'cadmus-kobo.tar.gz',
-        versionFile: 'cadmus-release.json',
-        fetchLatest: () => fetchLatestRelease('OGKevin/cadmus', (n) => n === 'cadmus-kobo.tar.gz'),
-    },
-    {
-        name: 'readerly',
-        asset: 'KF_Readerly.zip',
-        versionFile: 'readerly-release.json',
-        fetchLatest: () => fetchLatestRelease('nicoverbruggen/readerly', (n) => n === 'KF_Readerly.zip'),
-    },
-    {
-        name: 'libron',
-        asset: 'KF_Libron.zip',
-        versionFile: 'libron-release.json',
-        fetchLatest: () => fetchLatestRelease('nicoverbruggen/libron', (n) => n === 'KF_Libron.zip'),
-    },
-    {
-        name: 'cartisse',
-        asset: 'KF_Cartisse.zip',
-        versionFile: 'cartisse-release.json',
-        fetchLatest: () => fetchLatestRelease('nicoverbruggen/cartisse', (n) => n === 'KF_Cartisse.zip'),
-    },
+    { name: 'nickelclock', asset: 'NickelClock.zip', repo: 'shermp/NickelClock', match: (n) => /^NickelClock-.*\.zip$/.test(n) },
+    { name: 'koreader', asset: 'koreader-kobo.zip', repo: 'koreader/koreader', match: (n) => /^koreader-kobo-.*\.zip$/.test(n) },
+    { name: 'cadmus', asset: 'cadmus-kobo.tar.gz', repo: 'OGKevin/cadmus', match: (n) => n === 'cadmus-kobo.tar.gz' },
+    { name: 'readerly', asset: 'KF_Readerly.zip', repo: 'nicoverbruggen/readerly', match: (n) => n === 'KF_Readerly.zip' },
+    { name: 'libron', asset: 'KF_Libron.zip', repo: 'nicoverbruggen/libron', match: (n) => n === 'KF_Libron.zip' },
+    { name: 'cartisse', asset: 'KF_Cartisse.zip', repo: 'nicoverbruggen/cartisse', match: (n) => n === 'KF_Cartisse.zip' },
 ];
 
 // A stalled GitHub download otherwise hangs the whole setup forever (no body
 // timeout in fetch). Abort a transfer that makes no progress for this long, and
-// retry a few times, so `setup:installables` fails fast with a clear error
-// instead of appearing to hang (most visibly on the large cadmus archive).
+// retry a few times, so setup fails fast with a clear error instead of hanging
+// (most visibly on the large cadmus archive).
 const API_TIMEOUT_MS = 30_000;
 const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000;
 const DOWNLOAD_ATTEMPTS = 3;
 
-async function fetchLatestRelease(repo, matcher) {
+function githubHeaders() {
     const headers = { 'Accept': 'application/vnd.github+json', 'User-Agent': 'kobopatch-webui-installables' };
     if (process.env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
-    const resp = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
-        headers,
-        signal: AbortSignal.timeout(API_TIMEOUT_MS),
-    });
-    if (!resp.ok) throw new Error(`GitHub API ${repo}: ${resp.status} ${resp.statusText}`);
-    const data = await resp.json();
-    const version = data.tag_name;
-    const asset = (data.assets || []).find((a) => matcher(a.name));
-    if (!version || !asset) throw new Error(`No matching asset in latest release of ${repo}`);
+    return headers;
+}
+
+function pickAsset(release, item) {
+    const version = release.tag_name;
+    const asset = (release.assets || []).find((a) => item.match(a.name));
+    if (!version || !asset) throw new Error(`No matching asset in release ${version || '?'} of ${item.repo}`);
     return { version, url: asset.browser_download_url };
 }
 
+// Resolve the *latest* upstream release (used by `update`). Pinned items skip the API.
+async function resolveLatest(item) {
+    if (item.pinned) return item.pinned;
+    const resp = await fetch(`https://api.github.com/repos/${item.repo}/releases/latest`, {
+        headers: githubHeaders(),
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
+    if (!resp.ok) throw new Error(`GitHub API ${item.repo}: ${resp.status} ${resp.statusText}`);
+    return pickAsset(await resp.json(), item);
+}
+
+async function sha256File(path) {
+    return createHash('sha256').update(await readFile(path)).digest('hex');
+}
+
 async function downloadOnce(url, dest) {
-    // Abort the transfer if no bytes arrive for DOWNLOAD_IDLE_TIMEOUT_MS — an
-    // idle timer (reset on each chunk), not an overall deadline, so a slow but
-    // progressing download of a large asset is never cut off.
+    // Abort the transfer if no bytes arrive for DOWNLOAD_IDLE_TIMEOUT_MS — an idle
+    // timer (reset on each chunk), not an overall deadline, so a slow but progressing
+    // download of a large asset is never cut off.
     const controller = new AbortController();
     let idleTimer;
     const armIdleTimer = () => {
@@ -121,7 +108,7 @@ async function downloadOnce(url, dest) {
         const tmp = `${dest}.tmp`;
         await writeFile(tmp, buf);
         await rename(tmp, dest);
-        return buf.length;
+        return buf;
     } finally {
         clearTimeout(idleTimer);
     }
@@ -148,73 +135,81 @@ function formatSize(bytes) {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-async function readCurrentVersion(dir, versionFile) {
-    if (!versionFile) return null;
-    const path = join(dir, versionFile);
-    if (!existsSync(path)) return null;
-    try {
-        const json = JSON.parse(await readFile(path, 'utf8'));
-        return typeof json.version === 'string' ? json.version : null;
-    } catch {
-        return null;
-    }
+async function readLock() {
+    if (!existsSync(LOCK_PATH)) return { lockfileVersion: 1, installables: {} };
+    return JSON.parse(await readFile(LOCK_PATH, 'utf8'));
 }
 
-async function ensureInstallable(item, target, opts, resolvedCache) {
+async function writeLock(lock) {
+    await writeFile(LOCK_PATH, JSON.stringify(lock, null, 2) + '\n');
+}
+
+// setup: install exactly what the lock pins (like `npm ci`). Downloads from the
+// locked URL and verifies the locked sha256; reuses an on-disk asset whose hash
+// already matches. Never touches "latest" — reproducible across CI and deploys.
+async function setupInstallable(item, target, lock) {
+    const entry = lock.installables[item.name];
+    if (!entry) throw new Error(`[${item.name}] missing from installables.lock — run \`npm run update:installables\``);
+
     const dir = TARGETS[target];
     await mkdir(dir, { recursive: true });
-
     const assetPath = join(dir, item.asset);
-    const assetExists = existsSync(assetPath);
-    const currentVersion = await readCurrentVersion(dir, item.versionFile);
 
-    // Setup fast path: if asked to skip-when-present and the asset is already on disk
-    // (with a recorded version, or no version tracking), don't hit the network at all.
-    if (opts.skipIfPresent && !opts.force && assetExists && (!item.versionFile || currentVersion)) {
-        const tag = currentVersion ? ` (${currentVersion})` : '';
-        console.log(`[${target}/${item.name}] already present${tag}, skipping.`);
+    if (existsSync(assetPath) && (await sha256File(assetPath)) === entry.sha256) {
+        console.log(`[${target}/${item.name}] present and verified (${entry.version}), skipping.`);
         return;
     }
 
-    // Resolve upstream once per run and share across targets.
-    let resolved = resolvedCache.get(item.name);
-    if (!resolved) {
-        console.log(`[${item.name}] resolving latest release...`);
-        resolved = await item.fetchLatest();
-        resolvedCache.set(item.name, resolved);
+    console.log(`[${target}/${item.name}] fetching ${entry.version}`);
+    const buf = await downloadTo(entry.url, assetPath);
+    const got = createHash('sha256').update(buf).digest('hex');
+    if (got !== entry.sha256) {
+        throw new Error(`[${item.name}] sha256 mismatch: lock ${entry.sha256.slice(0, 12)}… got ${got.slice(0, 12)}… (${entry.url})`);
     }
-    const { version, url } = resolved;
+    console.log(`[${target}/${item.name}] -> ${formatSize(buf.length)} (verified)`);
+}
 
-    if (!opts.force && assetExists && currentVersion === version) {
-        console.log(`[${target}/${item.name}] already up to date (${version}).`);
-        return;
+// update: resolve the latest upstream release, download, and rewrite the lock
+// entry (version/url/sha256/size). The resolved bytes are written to every target.
+// Run by a maintainer; commit the updated installables.lock.
+async function updateInstallable(item, targets, lock) {
+    console.log(`[${item.name}] resolving latest release...`);
+    const { version, url } = await resolveLatest(item);
+
+    const existing = lock.installables[item.name];
+    const firstDir = TARGETS[targets[0]];
+    await mkdir(firstDir, { recursive: true });
+    const firstPath = join(firstDir, item.asset);
+
+    const buf = await downloadTo(url, firstPath);
+    const sha256 = createHash('sha256').update(buf).digest('hex');
+
+    for (const target of targets.slice(1)) {
+        const dir = TARGETS[target];
+        await mkdir(dir, { recursive: true });
+        await writeFile(join(dir, item.asset), buf);
     }
 
-    if (currentVersion && currentVersion !== version) {
-        console.log(`[${target}/${item.name}] updating ${currentVersion} -> ${version}`);
-    } else {
-        console.log(`[${target}/${item.name}] installing ${version}`);
-    }
-
-    const size = await downloadTo(url, assetPath);
-    if (item.versionFile) {
-        await writeFile(join(dir, item.versionFile), `${JSON.stringify({ version })}\n`);
-    }
-    console.log(`[${target}/${item.name}] -> ${formatSize(size)}`);
+    const changed = !existing || existing.version !== version || existing.sha256 !== sha256;
+    lock.installables[item.name] = { asset: item.asset, version, url, sha256, size: buf.length };
+    const note = !existing ? 'added' : changed ? `${existing.version} -> ${version}` : `unchanged (${version})`;
+    console.log(`[${item.name}] ${note} -> ${formatSize(buf.length)}`);
 }
 
 function parseArgs(argv) {
-    const opts = { force: false, targets: [], only: null, skipIfPresent: false, cachePaths: false };
+    const opts = { update: false, targets: [], only: null, cachePaths: false };
     for (const arg of argv) {
-        if (arg === '--force') opts.force = true;
+        if (arg === '--update') opts.update = true;
         else if (arg === '--dist') opts.targets.push('dist');
         else if (arg === '--src') opts.targets.push('src');
-        else if (arg === '--skip-if-present') opts.skipIfPresent = true;
         else if (arg === '--cache-paths') opts.cachePaths = true;
+        // Accepted for backward compatibility (CI/shell scripts); the lock-based
+        // setup already skips assets whose hash matches, so these are no-ops.
+        else if (arg === '--skip-if-present' || arg === '--force') continue;
         else if (arg.startsWith('--only=')) opts.only = arg.slice('--only='.length);
         else {
             console.error(`Unknown argument: ${arg}`);
-            console.error('Usage: installables.mjs (--src|--dist)... [--force] [--skip-if-present] [--cache-paths] [--only=<name>]');
+            console.error('Usage: installables.mjs (--src|--dist)... [--update] [--cache-paths] [--only=<name>]');
             process.exit(2);
         }
     }
@@ -222,7 +217,6 @@ function parseArgs(argv) {
         console.error('Error: at least one of --src or --dist is required.');
         process.exit(2);
     }
-    // Deduplicate while preserving order.
     opts.targets = [...new Set(opts.targets)];
     return opts;
 }
@@ -231,18 +225,13 @@ function printCachePaths(items, targets) {
     const paths = [];
     for (const target of targets) {
         const root = TARGET_ROOTS[target];
-        for (const item of items) {
-            paths.push(`${root}/${item.asset}`);
-            if (item.versionFile) paths.push(`${root}/${item.versionFile}`);
-        }
+        for (const item of items) paths.push(`${root}/${item.asset}`);
     }
     console.log(paths.join('\n'));
 }
 
 const opts = parseArgs(process.argv.slice(2));
-const items = opts.only
-    ? INSTALLABLES.filter((i) => i.name === opts.only)
-    : INSTALLABLES;
+const items = opts.only ? INSTALLABLES.filter((i) => i.name === opts.only) : INSTALLABLES;
 
 if (opts.only && items.length === 0) {
     console.error(`Unknown installable: ${opts.only}`);
@@ -255,11 +244,15 @@ if (opts.cachePaths) {
     process.exit(0);
 }
 
-const resolvedCache = new Map();
-for (const item of items) {
-    for (const target of opts.targets) {
-        await ensureInstallable(item, target, opts, resolvedCache);
-    }
-}
+const lock = await readLock();
 
-console.log(`Done. Installables ready in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
+if (opts.update) {
+    for (const item of items) await updateInstallable(item, opts.targets, lock);
+    await writeLock(lock);
+    console.log(`Done. Updated installables.lock and assets in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
+} else {
+    for (const item of items) {
+        for (const target of opts.targets) await setupInstallable(item, target, lock);
+    }
+    console.log(`Done. Installables ready in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
+}

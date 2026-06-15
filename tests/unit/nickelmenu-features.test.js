@@ -69,6 +69,18 @@ function createTarGzFixture(entries) {
     return gzipSync(Buffer.concat(blocks));
 }
 
+// Set the build-time installables manifest (normally injected by esbuild define)
+// so features can resolve their pinned version and versioned asset URL in tests.
+async function withManifest(manifest, fn) {
+    const original = globalThis.__INSTALLABLES__;
+    globalThis.__INSTALLABLES__ = manifest;
+    try {
+        await fn();
+    } finally {
+        globalThis.__INSTALLABLES__ = original;
+    }
+}
+
 async function withMockFetch(responses, fn) {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async (url) => {
@@ -241,27 +253,26 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
     });
     const progressMessages = [];
 
-    await withMockFetch(new Map([
-        ['/assets/koreader-release.json', createResponse('', { json: { version: 'v2026.01' } })],
-        ['/assets/koreader-kobo.zip', createResponse(zipData)],
-    ]), async () => {
-        const files = await koreader.install({
-            progress(message) {
-                progressMessages.push(message);
-            },
-        });
+    await withManifest({ koreader: { version: 'v2026.01', available: true } }, () =>
+        withMockFetch(new Map([
+            ['/assets/koreader-kobo.zip?v=v2026.01', createResponse(zipData)],
+        ]), async () => {
+            const files = await koreader.install({
+                progress(message) {
+                    progressMessages.push(message);
+                },
+            });
 
-        assert.deepEqual(files.map(file => file.path), [
-            '.adds/koreader/koreader.sh',
-            '.adds/koreader/defaults.lua',
-        ]);
-        assert.equal(text(files[0].data), '#!/bin/sh');
-        assert.deepEqual(progressMessages, [
-            'Fetching KOReader release info...',
-            'Downloading KOReader v2026.01...',
-            'Extracting KOReader...',
-        ]);
-    });
+            assert.deepEqual(files.map(file => file.path), [
+                '.adds/koreader/koreader.sh',
+                '.adds/koreader/defaults.lua',
+            ]);
+            assert.equal(text(files[0].data), '#!/bin/sh');
+            assert.deepEqual(progressMessages, [
+                'Downloading KOReader v2026.01...',
+                'Extracting KOReader...',
+            ]);
+        }));
 });
 
 test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {
@@ -273,27 +284,26 @@ test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {
     });
     const progressMessages = [];
 
-    await withMockFetch(new Map([
-        ['/assets/cadmus-release.json', createResponse('', { json: { version: 'v0.10.1' } })],
-        ['/assets/cadmus-kobo.tar.gz', createResponse(tarData)],
-    ]), async () => {
-        const files = await cadmus.install({
-            progress(message) {
-                progressMessages.push(message);
-            },
-        });
+    await withManifest({ cadmus: { version: 'v0.10.1', available: true } }, () =>
+        withMockFetch(new Map([
+            ['/assets/cadmus-kobo.tar.gz?v=v0.10.1', createResponse(tarData)],
+        ]), async () => {
+            const files = await cadmus.install({
+                progress(message) {
+                    progressMessages.push(message);
+                },
+            });
 
-        assert.deepEqual(files.map(file => file.path), [
-            '.adds/cadmus/cadmus.sh',
-            '.adds/cadmus/libs/libcadmus.so',
-        ]);
-        assert.equal(text(files[0].data), '#!/bin/sh');
-        assert.deepEqual(progressMessages, [
-            'Fetching Cadmus release info...',
-            'Downloading Cadmus v0.10.1...',
-            'Extracting Cadmus...',
-        ]);
-    });
+            assert.deepEqual(files.map(file => file.path), [
+                '.adds/cadmus/cadmus.sh',
+                '.adds/cadmus/libs/libcadmus.so',
+            ]);
+            assert.equal(text(files[0].data), '#!/bin/sh');
+            assert.deepEqual(progressMessages, [
+                'Downloading Cadmus v0.10.1...',
+                'Extracting Cadmus...',
+            ]);
+        }));
 });
 
 test('NickelMenu postProcess features prepend tab config and append hide flags', () => {

@@ -54,7 +54,7 @@ tools/
   kobopatch-wasm/               # Go/WASM wrapper around kobopatch
 
 scripts/
-  build.mjs                     # esbuild build script + asset copy + static-asset precompression (.br/.gz)
+  build.mjs                     # esbuild build (+ installables manifest, precompression .br/.gz)
   serve-dist.mjs                # Production static server: Content-Length, cache tiers, ETag revalidation, br/gzip negotiation (see "Production Serving")
   test.mjs                      # Runs all tests
   serve-local.mjs               # Sets up, builds, and serves locally (dev mode uses a throwaway dist-dev/)
@@ -102,29 +102,38 @@ npm run setup:wasm    # first time only: clones kobopatch source, sets up Go if 
 npm run build:wasm    # compiles WASM, copies to dist/wasm/ and src/js/
 ```
 
-Set up installable assets:
+### Installable assets (lock-pinned)
+
+NickelMenu, NickelClock, the reading apps (KOReader, Cadmus) and the font families
+(Readerly, Libron, Cartisse) are downloaded from upstream GitHub releases, not committed.
+`installables.lock` (committed at the repo root) is the single source of truth — it pins each
+asset's `version`, `url`, `sha256` and `size`. The archives themselves stay gitignored.
 
 ```bash
-npm run setup:installables
+npm run setup:installables     # like `npm ci`: fetch exactly what the lock pins, verify sha256
+npm run update:installables    # like `npm update`: resolve latest upstream, rewrite the lock
 ```
 
-This downloads NickelMenu, NickelClock, reading app assets (KOReader and Cadmus), and the font assets (Readerly, Libron, Cartisse) into `src/assets/`. Add-on and font archives are ignored local assets. Each asset is skipped if already present; pass `--force` to re-download all.
+- **`setup:installables`** (run by `npm run serve`, the test runners, CI, and the production
+  build) downloads each asset from its **locked URL** and verifies the **locked sha256**, skipping
+  any on-disk file whose hash already matches. It never queries "latest" and never hits the GitHub
+  API — so a clean checkout and a deploy build are byte-for-byte reproducible.
+- **`update:installables`** is the *only* path that resolves "latest" (NickelMenu is pinned to a
+  fork release). It downloads, recomputes the hashes, and rewrites `installables.lock`. **Commit
+  the updated lock**; a rebuild + redeploy then ships the new versions. Use `--only=<name>` to
+  bump one. Set `GITHUB_TOKEN` if you hit GitHub's unauthenticated rate limit.
 
-To update assets between fixed deployments (e.g. on a running production container):
+Updating an installable is therefore a deliberate, reviewable change (a lock diff), not a silent
+"latest" pull — and there is no longer a live `update:installables --dist` step on a running
+container (it conflicted with the immutable, version-suffixed asset URLs the CDN caches).
 
-```bash
-npm run update:installables                                 # refresh all installables in both src/assets/ and dist/assets/
-node tools/installables/installables.mjs --src --dist --only=koreader
-node tools/installables/installables.mjs --src --dist --only=cadmus
-node tools/installables/installables.mjs --src --dist --only=readerly
-node tools/installables/installables.mjs --src --dist --only=libron
-node tools/installables/installables.mjs --src --dist --only=cartisse
-node tools/installables/installables.mjs --src --dist --only=nickelmenu
-```
-
-`update:installables` checks each release upstream and only downloads when the resolved version differs from the local `<name>-release.json`. Updating both folders keeps the dev/build source (`src/assets/`) in sync with the live serving directory (`dist/assets/`), so the next rebuild won't regress to an older release. Set `GITHUB_TOKEN` in the environment if you hit GitHub's unauthenticated API rate limit.
-
-The setup variant (`npm run setup:installables`) instead passes `--skip-if-present` and only fetches missing archives — that's what `npm run serve`, the test runners, and CI use to avoid hitting GitHub on every invocation.
+The build derives a **build-time manifest** from the lock — each id's pinned `version` plus whether
+its asset is present (`scripts/build.mjs` → `installablesManifest()`) — and injects it into the
+bundle via esbuild `define` (`globalThis.__INSTALLABLES__`). The app reads it through
+`src/js/nickelmenu/installables.js` (`installableVersion`/`installableAvailable`/`installableAssetUrl`):
+add-on availability and the on-screen version come from the bundle with **no runtime metadata
+fetch** — the per-asset `*-release.json` files no longer exist. Asset downloads use
+`/assets/<file>?v=<version>` so the URL changes with the pinned version (see Production Serving).
 
 ## Testing
 
@@ -208,15 +217,25 @@ injection, so the server is kept but made production-grade. The behaviour and *w
   **excluded on purpose**: re-compressing them gains nothing, and adding `Content-Encoding` to an
   archive would make its `Content-Length` (compressed) smaller than the decompressed stream the
   browser reads, breaking the progress percentage. Precompression is skipped for dev/watch builds.
-- **Cache tiers** (`cacheControl`): `index.html` is always `no-cache` (it references the hash-busted
-  assets); hash-busted URLs (`?h=…` on `bundle.js`/`style.css`/`kobopatch.wasm`) are
-  `immutable, max-age=1yr` since their URL changes with their bytes; **everything else, including the
-  large `assets/*` archives, uses `max-age=300, must-revalidate` — intentionally not immutable.**
-  `npm run update:installables` can replace `dist/assets/*` on a live container between rebuilds and
-  those URLs are not hash-busted, so clients must be able to pick up new bytes. Revalidation makes
-  that a tiny `304` when unchanged (no 40 MB re-download) yet never serves a stale archive.
-- **Conditional requests / `ETag` + `Last-Modified`** (`validators`/`notModified`) back the
-  revalidating tier with `304`s. `index.html` carries its own content-hash `ETag`.
+- **Cache tiers** (`cacheControl`): just two. **Versioned URLs are `immutable, max-age=1yr`** —
+  `?h=<content hash>` on `bundle.js`/`style.css`/`kobopatch.wasm`, and `?v=<pinned version>` on the
+  `assets/*` add-on archives (the version comes from the build-time manifest; see Build And Assets).
+  Their URL changes whenever the bytes do, so a CDN can serve even the 40 MB archives forever without
+  revalidating. **Everything else** (`index.html`, `*.json` metadata, feature scripts, and any
+  *bare* `assets/*` request) is `no-cache`: stored, but revalidated before reuse. `no-cache` does
+  **not** mean re-download — paired with the content-hash ETag below, an unchanged asset is reused on
+  a tiny `304`, while a changed one is fetched fresh on the next request.
+- **Content-hash `ETag`s** (`contentEtag`/`notModified`) make `no-cache` correct and cheap. The
+  validator hashes the file's *bytes*, not its `size`+`mtime`, so a slight edit that leaves the size
+  unchanged still produces a new `ETag` — the case a weak `size+mtime` validator misses when a deploy
+  preserves timestamps. This is what makes a deploy reliably override caches: these assets' URLs don't
+  change, and the fetched GitHub archives (KOReader/Cadmus/fonts) aren't tied to any commit hash, so
+  only their content can identify them. A per-file content hash is used (rather than one global
+  build/commit stamp) precisely so an *unchanged* 40 MB archive still answers revalidation with a `304`
+  instead of being re-downloaded on every deploy. The hash is memoized per process (keyed by
+  `size`+`mtime`); that memo self-clears exactly when content can change — a deploy starts a fresh
+  container, and `update:installables` rewrites files with a new `mtime`. `index.html` carries its own
+  content-hash `ETag`.
 - **Stale-sibling guard** (`pickEncoding`): a `.br`/`.gz` sibling is only served when at least as new
   as its source file, so a compressible asset replaced live without regenerating siblings falls back
   to serving the fresh identity bytes rather than a stale compressed copy.

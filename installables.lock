@@ -1,0 +1,54 @@
+{
+  "lockfileVersion": 1,
+  "installables": {
+    "nickelmenu": {
+      "asset": "NickelMenu.zip",
+      "version": "fork-v1.1",
+      "url": "https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.1/NickelMenu.zip",
+      "sha256": "2f1455bea0c47d632cc9ed7537939977c4d670252fede7f544532520bee9ec7e",
+      "size": 69643
+    },
+    "nickelclock": {
+      "asset": "NickelClock.zip",
+      "version": "v0.4.0",
+      "url": "https://github.com/shermp/NickelClock/releases/download/v0.4.0/NickelClock-v0.4.0.zip",
+      "sha256": "3b55a98cc52bb0434a745affca66a3d4c0f3a346b3cc6be095c04409213d3808",
+      "size": 38385
+    },
+    "koreader": {
+      "asset": "koreader-kobo.zip",
+      "version": "v2026.03",
+      "url": "https://github.com/koreader/koreader/releases/download/v2026.03/koreader-kobo-v2026.03.zip",
+      "sha256": "510bbc4618dcc5a2fc54a2a8069f94ea5aa7a47a5d6c5a92b75c22d7b701146f",
+      "size": 41589964
+    },
+    "cadmus": {
+      "asset": "cadmus-kobo.tar.gz",
+      "version": "v0.10.1",
+      "url": "https://github.com/OGKevin/cadmus/releases/download/v0.10.1/cadmus-kobo.tar.gz",
+      "sha256": "ddd079a6f361fcc43984d25905b0bac6af28faf27a2388efdc803a0cc5c1cc11",
+      "size": 29724790
+    },
+    "readerly": {
+      "asset": "KF_Readerly.zip",
+      "version": "v1.9",
+      "url": "https://github.com/nicoverbruggen/readerly/releases/download/v1.9/KF_Readerly.zip",
+      "sha256": "993e2676d298d4079ada74a273081c809d89052cb3614925df2f8d614dbddfca",
+      "size": 681160
+    },
+    "libron": {
+      "asset": "KF_Libron.zip",
+      "version": "v0.10",
+      "url": "https://github.com/nicoverbruggen/libron/releases/download/v0.10/KF_Libron.zip",
+      "sha256": "9260344598394a118cbb73e61df6247327a8c95948e311c101756d3cde53bfec",
+      "size": 677606
+    },
+    "cartisse": {
+      "asset": "KF_Cartisse.zip",
+      "version": "v2.2",
+      "url": "https://github.com/nicoverbruggen/cartisse/releases/download/v2.2/KF_Cartisse.zip",
+      "sha256": "9bd98b1e9412c0a792f7aa20267d03741dd77937122c572834010ceb3b147179",
+      "size": 402243
+    }
+  }
+}

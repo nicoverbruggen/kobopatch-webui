@@ -16,7 +16,6 @@ const required = [
   'patches/downloads.json',
   'assets/NickelMenu.zip',
   'assets/koreader-kobo.zip',
-  'assets/koreader-release.json',
   'assets/KF_Readerly.zip',
   // Runtime-fetched NickelMenu feature assets (the items file is generated from
   // feature menuItems hooks, so it is no longer shipped as a static asset).

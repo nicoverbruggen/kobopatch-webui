@@ -12,7 +12,7 @@ tools/kobopatch-wasm/wasm_exec.js
 # Generated files in src (written by build scripts, regenerated on demand)
 src/js/wasm_exec.js
 
-# Downloaded installable assets
+# Downloaded installable assets (pinned by installables.lock, which IS committed)
 src/assets/KF_Readerly.zip
 src/assets/KF_Libron.zip
 src/assets/KF_Cartisse.zip
@@ -20,13 +20,6 @@ src/assets/koreader-kobo.zip
 src/assets/cadmus-kobo.tar.gz
 src/assets/NickelMenu.zip
 src/assets/NickelClock.zip
-src/assets/koreader-release.json
-src/assets/cadmus-release.json
-src/assets/nickelmenu-release.json
-src/assets/nickelclock-release.json
-src/assets/readerly-release.json
-src/assets/libron-release.json
-src/assets/cartisse-release.json
 
 # Build output
 dist/

@@ -24,14 +24,11 @@ const dismissMobileModal = async (page) => {
   }
 };
 
-const makeKOReaderAvailable = async (page) => {
-  await page.route('**/assets/koreader-release.json', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ version: 'v2026.03' }),
-    });
-  });
+const makeKOReaderAvailable = async (_page) => {
+  // No-op: add-on availability is now baked into the bundle from installables.lock
+  // at build time (esbuild define), not probed at runtime, so it can't be forced via
+  // a route. The screenshot/e2e build runs setup:installables, so KOReader is present
+  // and marked available already.
 };
 
 const shotNickelMenuCustomizeModal = async (page, folder, name, testInfo) => {

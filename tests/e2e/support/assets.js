@@ -8,18 +8,15 @@ function hasNickelMenuAssets() {
 }
 
 function hasKOReaderAssets() {
-  return fs.existsSync(path.join(WEBROOT, 'assets', 'koreader-kobo.zip'))
-    && fs.existsSync(path.join(WEBROOT, 'assets', 'koreader-release.json'));
+  return fs.existsSync(path.join(WEBROOT, 'assets', 'koreader-kobo.zip'));
 }
 
 function hasCadmusAssets() {
-  return fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-kobo.tar.gz'))
-    && fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-release.json'));
+  return fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-kobo.tar.gz'));
 }
 
 function hasNickelClockAssets() {
-  return fs.existsSync(path.join(WEBROOT, 'assets', 'NickelClock.zip'))
-    && fs.existsSync(path.join(WEBROOT, 'assets', 'nickelclock-release.json'));
+  return fs.existsSync(path.join(WEBROOT, 'assets', 'NickelClock.zip'));
 }
 
 function hasFontAssets() {
