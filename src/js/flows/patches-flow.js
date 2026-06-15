@@ -15,7 +15,7 @@
  */
 
 import { AuditLog, AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { $, formatMB, triggerDownload, populateList, setupFeedback } from '../shell/dom.js';
+import { $, formatMB, fetchWithProgress, triggerDownload, populateList, setupFeedback } from '../shell/dom.js';
 import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
 import { koboModels } from '../kobo/version.js';
@@ -220,41 +220,11 @@ export function initPatchesFlow(state) {
      * so we can show "Downloading X / Y MB (Z%)".
      */
     async function downloadFirmware(url) {
-        const resp = await fetch(url);
-        if (!resp.ok) {
-            throw new Error('Download failed: HTTP ' + resp.status);
-        }
-
-        const contentLength = resp.headers.get('Content-Length');
-        if (!contentLength || !resp.body) {
-            // No progress info available — download in one shot.
-            buildProgress.textContent = TL.STATUS.DOWNLOADING;
-            return new Uint8Array(await resp.arrayBuffer());
-        }
-
-        // Stream download with progress updates.
-        const total = parseInt(contentLength, 10);
-        const reader = resp.body.getReader();
-        const chunks = [];
-        let received = 0;
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunks.push(value);
-            received += value.length;
+        buildProgress.textContent = TL.STATUS.DOWNLOADING;
+        return fetchWithProgress(url, (received, total) => {
             const pct = ((received / total) * 100).toFixed(0);
             buildProgress.textContent = TL.STATUS.DOWNLOADING_PROGRESS(formatMB(received), formatMB(total), pct);
-        }
-
-        // Reassemble chunks into a single Uint8Array.
-        const result = new Uint8Array(received);
-        let offset = 0;
-        for (const chunk of chunks) {
-            result.set(chunk, offset);
-            offset += chunk.length;
-        }
-        return result;
+        }, 'Download failed');
     }
 
     /** Extract the original KoboRoot.tgz from a Kobo firmware ZIP. */

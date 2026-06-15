@@ -2,7 +2,7 @@ import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { NM_ITEMS_FILE } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
-import { fetchOrThrow } from '../shell/dom.js';
+import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.js';
 import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import {
     removeExcludeSyncFoldersLine,
@@ -171,9 +171,14 @@ export class NickelMenuInstaller {
      */
     async loadNickelMenu(progressFn) {
         if (this.nickelMenuZip) return;
-        progressFn('Downloading NickelMenu...');
-        const resp = await fetchOrThrow('assets/NickelMenu.zip', 'Failed to download NickelMenu.zip');
-        this.nickelMenuZip = await JSZip.loadAsync(await resp.arrayBuffer());
+        const label = 'Downloading NickelMenu...';
+        progressFn(label);
+        const zipBytes = await fetchWithProgress(
+            'assets/NickelMenu.zip',
+            downloadProgress(progressFn, label),
+            'Failed to download NickelMenu.zip',
+        );
+        this.nickelMenuZip = await JSZip.loadAsync(zipBytes);
     }
 
     /**

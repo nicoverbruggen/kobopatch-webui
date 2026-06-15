@@ -88,7 +88,13 @@ createServer((req, res) => {
     try {
         const stat = statSync(filePath);
         if (!stat.isFile()) throw new Error();
-        res.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
+        // Send Content-Length (rather than letting Node chunk the response) so
+        // the browser can report download progress for large assets — see
+        // fetchWithProgress in src/js/shell/dom.js.
+        res.writeHead(200, {
+            'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
+            'Content-Length': stat.size,
+        });
         createReadStream(filePath).pipe(res);
     } catch {
         res.writeHead(404, { 'Content-Type': 'text/plain' });

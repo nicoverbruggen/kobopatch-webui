@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 
 import { parseTarGz } from '../../archive.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
 
 // A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
 // existing user-edited file is never overwritten). NickelClock otherwise creates
@@ -122,10 +123,14 @@ export default {
         if (!metaResp.ok) throw new Error('NickelClock assets not available (run npm run setup:installables)');
         const meta = await metaResp.json();
 
-        ctx.progress('Downloading NickelClock ' + meta.version + '...');
-        const zipResp = await fetch('/assets/NickelClock.zip');
-        if (!zipResp.ok) throw new Error('Failed to download NickelClock: HTTP ' + zipResp.status);
-        const zip = await JSZip.loadAsync(await zipResp.arrayBuffer());
+        const label = 'Downloading NickelClock ' + meta.version + '...';
+        ctx.progress(label);
+        const zipBytes = await fetchWithProgress(
+            '/assets/NickelClock.zip',
+            downloadProgress(ctx.progress, label),
+            'Failed to download NickelClock',
+        );
+        const zip = await JSZip.loadAsync(zipBytes);
 
         const tgzFile = zip.file('KoboRoot.tgz');
         if (!tgzFile) throw new Error('KoboRoot.tgz not found in NickelClock.zip');

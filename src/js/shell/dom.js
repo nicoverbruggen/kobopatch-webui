@@ -255,6 +255,59 @@ export async function fetchOrThrow(url, errorPrefix = 'Fetch failed') {
 }
 
 /**
+ * Fetch a URL as bytes while reporting download progress.
+ *
+ * When the server reports a Content-Length and streaming is available, the body
+ * is read chunk by chunk and `onProgress(received, total)` is called after each
+ * chunk so callers can render a percentage. When neither is available (no
+ * Content-Length or no `resp.body`), it falls back to a single-shot read with no
+ * progress callbacks. Returns a `Uint8Array` of the full payload.
+ */
+export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download failed') {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`${errorPrefix}: HTTP ${resp.status}`);
+
+    const contentLength = resp.headers?.get?.('Content-Length');
+    if (!contentLength || !resp.body) {
+        // No progress info available — download in one shot.
+        return new Uint8Array(await resp.arrayBuffer());
+    }
+
+    const total = parseInt(contentLength, 10);
+    const reader = resp.body.getReader();
+    const chunks = [];
+    let received = 0;
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (onProgress) onProgress(received, total);
+    }
+
+    // Reassemble chunks into a single Uint8Array.
+    const result = new Uint8Array(received);
+    let offset = 0;
+    for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+    }
+    return result;
+}
+
+/**
+ * Build an `onProgress(received, total)` handler for `fetchWithProgress` that
+ * renders byte counts as a "<label> X.X / Y.Y MB (Z%)" status string through
+ * `report` (e.g. a feature's `ctx.progress`).
+ */
+export function downloadProgress(report, label) {
+    return (received, total) => {
+        const pct = ((received / total) * 100).toFixed(0);
+        report(`${label} ${formatMB(received)} / ${formatMB(total)} (${pct}%)`);
+    };
+}
+
+/**
  * Wire up a .feedback banner inside a container element.
  * Shows text + vote buttons; clicking one replaces all with a thank-you message.
  * @param {HTMLElement} container - element containing the .feedback widget
