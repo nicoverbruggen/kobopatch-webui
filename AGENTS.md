@@ -57,5 +57,5 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 - Keep README user-facing. Put architecture, module maps, and detailed testing notes in `PROJECT.md`.
 - Update documentation when the project changes. README, PROJECT.md, and AGENTS.md should stay accurate when architecture, commands, testing expectations, or workflows change.
 - Do not edit generated or cached outputs such as `dist/`, `tests/e2e/cached_assets/`, or downloaded installable assets unless the task specifically requires it.
-- After completing feature work, run `npm run test:e2e:fresh` so `dist` is rebuilt from scratch before Playwright verifies the app. (Keep in mind this may not work in a sandbox.)
+- After completing feature work, run the **entire** E2E suite with `npm run test:e2e:fresh` so `dist` is rebuilt from scratch before Playwright verifies the app. Run *all* tests — never just a `-g` filtered subset — because a change can break seemingly unrelated specs (e.g. a shared device-write path or written-files assumption), and only a full run catches that. (Keep in mind this may not work in a sandbox.)
 - The worktree may contain unrelated changes. Do not revert user changes while making a focused patch.
