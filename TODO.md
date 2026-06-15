@@ -225,6 +225,141 @@ patches, instead of forcing a page reload.
 
 ---
 
+### Gotchas & concerns (read before finalizing the API)
+
+These are concrete traps found in the current code. Each notes the **API
+implication** so the contracts above can be adjusted before implementation.
+
+#### G1. `navIndex` is not constant per step — it depends on the active label set
+
+The progress-bar position of a logical step changes with which `NAV_*` set is
+active (`strings.js:2-6`):
+
+- `NAV_NICKELMENU` / `NAV_NICKELMENU_REMOVE`: 6 labels (`Device, Mode, Configure,
+  Backup, Review, Install/Remove`).
+- `NAV_NICKELMENU_MANUAL_REMOVE`: **4 labels** (`Device, Mode, Configure, Remove`)
+  — no Backup/Review. The manual-remove step is `setNavStep(4)` (`nickelmenu-flow.js:953`),
+  but the equivalent "terminal" step is index 6 in the full set.
+
+So a fixed `navIndex` on `StepDescriptor` is wrong. **API implication:** either
+(a) map a step to a label *identity* and let the machine compute the index within
+the active label array, or (b) make `navIndex` a `(ctx) => number`. Note `Configure`
+is index 3 in every set, but the tail diverges — option (a) needs the label
+strings to line up across variants, which they don't today (`Install` vs `Remove`).
+
+#### G2. The active label set switches *mid-step*, reactively
+
+`updateNmNavLabelsForOption` swaps the label set based on the selected radio
+*while still on the config step* (`nickelmenu-flow.js:897-906`, called from the
+radio `change` handler at `915`, and again in `goToNickelMenuConfig`). So labels
+aren't static per flow — they change in response to in-step input before any
+transition. **API implication:** the flow's `navLabels` must be resolvable per
+session/option (a function of `ctx`), and the machine needs a `refreshNav()` the
+config step can call on selection change without advancing.
+
+#### G3. Selection state lives in the DOM, not in any model
+
+`getSelectedFeatures()` reads `$q('input[name="nm-cfg-${id}]').checked` directly
+(`nickelmenu-flow.js:588`); backup choice, `nm-option`, and the keep-config
+checkbox are read the same way; patch selection lives inside `patchUI`. There is
+no model copy. **API implication:** the Stage 3 `Session` can't be the source of
+truth for selections without migrating these reads. Decide explicitly: either the
+session stays out of selection state (read DOM at advance time, as today), or
+selections are lifted into the session — but the latter is a much bigger change.
+Don't half-do it.
+
+#### G4. "Render once" guards preserve selections across back-nav — `onEnter` must be idempotent
+
+Steps deliberately render only on first visit so DOM selection state survives
+back-navigation: `if (!nmConfigOptions.children.length) renderFeatureCheckboxes()`
+(`nickelmenu-flow.js:988`), `if (nmCustomizePresets.children.length) return`
+(`264`). A naive `onEnter` that re-renders every entry would **wipe the user's
+checkboxes** (compounds G3). **API implication:** either `onEnter` must be
+guaranteed-once, or it must carry the guard itself, or selections move to the
+session (G3). The machine should document whether `onEnter` fires on every entry
+or only the first.
+
+#### G5. `onEnter` is not "done when it returns" — steps kick off best-effort async DOM updates
+
+After showing a step, code fires async work that mutates the DOM in place later:
+`updateSideloadedRecommendation().catch(()=>{})` (`nickelmenu-flow.js:998`),
+`checkExistingTgz()` after `showBuildResult` (`patches-flow.js:376`). These must
+*not* block navigation and must tolerate the user leaving the step. **API
+implication:** `onEnter` returning a promise should not gate the transition for
+these; consider a separate `afterEnter`/fire-and-forget hook, or document that
+awaiting `onEnter` is optional and side-effects may land post-transition.
+
+#### G6. Services are NOT created-once — `device` is reassigned
+
+`app.js:586` does `state.device = new KoboDevice()` on back-from-device. The
+Stage 3 "services created once, never reset" claim is false for `device`. Any
+`ctx` that captured/destructured `device` would go stale. **API implication:**
+always reach the device via `ctx.services.device` (never capture a local
+reference), or give `KoboDevice` a `reset()` so the instance is stable. The
+terminal (Stage 2) and probes (Stage 4) both call `state.device.*` repeatedly —
+they must re-read through the live reference.
+
+#### G7. Flow control is driven by synthetic DOM events
+
+`presetRadio.dispatchEvent(new Event('change'))` is used to reuse handlers and
+apply card-selected styling (`nickelmenu-flow.js:850,931`; `app.js:279`). **API
+implication:** if the machine owns transitions, ensure these synthetic events
+(for styling/defaults) don't also trigger navigation, or the radio `change`
+handler will fight the machine. Keep "selection styling" wiring separate from
+"advance" wiring.
+
+#### G8. Not every flow end goes through a terminal/"done" step
+
+The manual NickelMenu removal path fires `track('flow-end', {result:'nm-remove-manual'})`
+at a plain instructions step (`nickelmenu-flow.js:951-956`), not a build/done
+terminal. **API implication:** the Stage 2 terminal can't be the sole owner of
+`flow-end` analytics; dead-end info steps end the flow too. Either let any step
+declare a `flowEnd` result, or keep `track('flow-end')` at the flow level rather
+than inside the terminal.
+
+#### G9. Transient-step / history handling is already inconsistent
+
+Only the patches flow marks transient steps `push=false` (`patches-flow.js:193`
+build, `354` building). The NM flow pushes **both** `installing` (`nickelmenu-flow.js:1216`)
+and `done` (`1344`) into history. So today, NM's terminal screens are in the
+back-stack and the patches ones aren't. **API implication:** the machine must
+normalize this (`transient` flag), and `back()` must define what happens when the
+active step is transient (skip it). Decide the intended behavior — this is a
+latent bug, not just cosmetic.
+
+#### G10. The error screen reads the history array and hardcodes one step
+
+`showError` branches on `stepHistory.includes(stepPatches)` (`app.js:175`) and
+"Go Back" walks the stack to `stepPatches` (`661-672`). **API implication:** once
+the machine owns history, this coupling must move to the `recoveryStep`/`recover`
+contract (Stage 5). Also note the error contract the terminal depends on: device
+errors carry `err.deviceWrite` (true when `operation==='write'`) and
+`err.deviceOperation` (`'write'` | `'write probe'`), set in `device.js:38-67`;
+`AbortError` (user-cancelled picker) is explicitly *not* an error and is swallowed
+(`app.js:565`, `227`). Preserve both behaviors in any wrapper.
+
+#### G11. `setupFeedback` stacks listeners if a "done" step is re-entered
+
+`setupFeedback` re-runs on every done-step show and adds fresh `{once:true}`
+click listeners without removing prior ones (`dom.js:263-282`, called at
+`patches-flow.js:325`, `nickelmenu-flow.js:1338`). Harmless today because done is
+terminal and entered once — but a step machine that can re-enter `done` (e.g. via
+back) would double-bind and double-fire the `feedback` analytics event. **API
+implication:** wire feedback once (init-time) or make the call idempotent before
+relying on machine re-entry.
+
+#### G12. Patches flow has two entry points with state-dependent back
+
+Normal entry is `goToPatches()` → back goes to mode/manual-version
+(`patches-flow.js:150-161`); the "Restore" shortcut jumps straight to
+`goToBuild()` with `isRestore=true` from the device step (`app.js:601-607`), and
+its build-step back returns to `step-device` (`patches-flow.js:196-202`). **API
+implication:** a flow needs more than one `start`/entry, and `back()` for the
+build step must branch on `isRestore`. The declarative `back(ctx)` hook covers
+this, but the descriptor must support multiple entry points into the same flow.
+
+---
+
 ### Migration order & testing
 
 1. Stage 1 (step machine) behind the existing DOM — convert one flow, keep the
