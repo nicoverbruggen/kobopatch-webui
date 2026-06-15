@@ -30,6 +30,23 @@ for (let index = 2; index < process.argv.length; index += 1) {
   }
 }
 
+const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+const color = (code, text) => (useColor ? `\x1b[${code}m${text}\x1b[0m` : text);
+const bold = (text) => color('1', text);
+const dim = (text) => color('2', text);
+const green = (text) => color('32', text);
+const red = (text) => color('31', text);
+const yellow = (text) => color('33', text);
+
+function formatDuration(ms) {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const seconds = ms / 1000;
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.round(seconds % 60);
+  return `${minutes}m ${remainder}s`;
+}
+
 function run(command, args, options = {}) {
   const result = spawn(command, args, {
     cwd: options.cwd ?? appDir,
@@ -49,6 +66,50 @@ function run(command, args, options = {}) {
 async function download(url, filePath) {
   await run('curl', ['-fL', '--progress-bar', '-o', `${filePath}.tmp`, url]);
   renameSync(`${filePath}.tmp`, filePath);
+}
+
+const results = [];
+
+// Runs a named phase, timing it and recording the outcome for the final summary.
+// `task` may return the string 'skipped' to mark the phase as skipped.
+async function phase(name, task) {
+  console.log(`\n${bold(`━━━ ${name} `.padEnd(60, '━'))}`);
+  const start = performance.now();
+  let status = 'passed';
+  try {
+    const outcome = await task();
+    if (outcome === 'skipped') status = 'skipped';
+  } catch (error) {
+    status = 'failed';
+    results.push({ name, status, duration: performance.now() - start });
+    printSummary();
+    console.error(`\n${red('✗')} ${name} failed:\n  ${error.message}`);
+    process.exit(1);
+  }
+  const duration = performance.now() - start;
+  results.push({ name, status, duration });
+  const mark = status === 'skipped' ? yellow('○ skipped') : green('✓ done');
+  console.log(dim(`    ${mark} in ${formatDuration(duration)}`));
+}
+
+function printSummary() {
+  const totalWidth = Math.max(...results.map((r) => r.name.length), 'Phase'.length);
+  const total = results.reduce((sum, r) => sum + r.duration, 0);
+
+  console.log(`\n${bold('━━━ Test summary '.padEnd(60, '━'))}`);
+  console.log(dim(`  ${'Phase'.padEnd(totalWidth)}   Status     Duration`));
+  console.log(dim(`  ${'─'.repeat(totalWidth)}   ────────   ────────`));
+
+  for (const { name, status, duration } of results) {
+    const statusLabel =
+      status === 'passed' ? green('passed '.padEnd(8))
+      : status === 'skipped' ? yellow('skipped')
+      : red('failed ');
+    console.log(`  ${name.padEnd(totalWidth)}   ${statusLabel}   ${formatDuration(duration).padStart(8)}`);
+  }
+
+  console.log(dim(`  ${'─'.repeat(totalWidth)}   ────────   ────────`));
+  console.log(`  ${bold('Total'.padEnd(totalWidth))}   ${' '.repeat(8)}   ${bold(formatDuration(total).padStart(8))}`);
 }
 
 const missing = [firmwareConfig.primary, firmwareConfig.secondary]
@@ -79,38 +140,35 @@ if (!existsSync(join(toolsDir, 'kobopatch-wasm/kobopatch-src'))) {
 
 await run('node', [join(toolsDir, 'installables/installables.mjs'), '--src', '--skip-if-present']);
 
-console.log('=== Installing dependencies ===');
-await run('npm', ['install']);
+const suiteStart = performance.now();
 
-console.log('\n=== Linting ===');
-await run('npx', ['eslint', '.']);
+await phase('Install dependencies', () => run('npm', ['install']));
 
-console.log('\n=== Running unit tests ===');
-await run('npm', ['run', 'test:unit']);
+await phase('Lint', () => run('npx', ['eslint', '.']));
 
-console.log('\n=== Building WASM ===');
-await run(join(toolsDir, 'kobopatch-wasm/build.sh'), []);
+await phase('Unit tests', () => run('npm', ['run', 'test:unit']));
 
-console.log('\n=== Building web app ===');
-await run('node', ['scripts/build.mjs']);
+await phase('Build WASM', () => run(join(toolsDir, 'kobopatch-wasm/build.sh'), []));
 
-console.log('\n=== Validating dist resources ===');
-await run('npm', ['run', 'validate:dist']);
+await phase('Build web app', () => run('node', ['scripts/build.mjs']));
 
-console.log('\n=== Checking patches/blacklist.json is up to date ===');
-await run('npm', ['run', 'test:patches:check']);
+await phase('Validate dist resources', () => run('npm', ['run', 'validate:dist']));
 
-console.log('\n=== Running WASM integration test ===');
-const primaryFirmware = join(cachedAssets, `kobo-update-${firmwareConfig.primary.version}.zip`);
-if (existsSync(primaryFirmware)) {
-  await run(join(toolsDir, 'kobopatch-wasm/test-integration.sh'), []);
-} else {
-  console.log('Skipped (firmware not downloaded)');
-}
+await phase('Check patches blacklist', () => run('npm', ['run', 'test:patches:check']));
 
-console.log('\n=== Running E2E tests (Playwright) ===');
-const e2eArgs = [];
-if (headed) e2eArgs.push('--headed');
-if (grep) e2eArgs.push('--', '--grep', grep);
-e2eArgs.push(...extraArgs);
-await run(join(e2eDir, 'scripts/run-e2e.sh'), e2eArgs);
+await phase('WASM integration test', () => {
+  const primaryFirmware = join(cachedAssets, `kobo-update-${firmwareConfig.primary.version}.zip`);
+  if (!existsSync(primaryFirmware)) return 'skipped';
+  return run(join(toolsDir, 'kobopatch-wasm/test-integration.sh'), []);
+});
+
+await phase('E2E tests (Playwright)', () => {
+  const e2eArgs = [];
+  if (headed) e2eArgs.push('--headed');
+  if (grep) e2eArgs.push('--', '--grep', grep);
+  e2eArgs.push(...extraArgs);
+  return run(join(e2eDir, 'scripts/run-e2e.sh'), e2eArgs);
+});
+
+printSummary();
+console.log(`\n${green('✓ All test phases passed')} ${dim(`(${formatDuration(performance.now() - suiteStart)} total)`)}`);
