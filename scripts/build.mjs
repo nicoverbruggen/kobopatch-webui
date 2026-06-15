@@ -1,7 +1,8 @@
 import esbuild from 'esbuild';
 import { cpSync, mkdirSync, readFileSync, writeFileSync, existsSync, rmSync, readdirSync, statSync, watch } from 'fs';
-import { join } from 'path';
+import { join, extname } from 'path';
 import { createHash } from 'crypto';
+import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'zlib';
 import { execSync } from 'child_process';
 import JSZip from 'jszip';
 import { generateVersion } from './version-generate.mjs';
@@ -71,6 +72,48 @@ async function buildPatchZips() {
     for (const jsonFile of ['blacklist.json', 'downloads.json']) {
         const src = join(patchesSrcDir, jsonFile);
         if (existsSync(src)) cpSync(src, join(patchesDistDir, jsonFile));
+    }
+}
+
+// Extensions worth precompressing. Deliberately excludes already-compressed
+// archives (.zip/.tgz/.gz) and images: re-compressing them wastes CPU for ~0
+// gain, and — crucially — the asset download-progress UI assumes the served
+// Content-Length equals the on-wire byte count it streams (see
+// scripts/serve-dist.mjs and fetchWithProgress in src/js/shell/dom.js). Adding
+// Content-Encoding to those archives would make the compressed Content-Length
+// smaller than the decompressed stream the browser reads, breaking the percentage.
+const PRECOMPRESS_EXT = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '.webmanifest', '.txt', '.xml']);
+
+/**
+ * Write `.gz` and `.br` siblings next to each compressible file in `dir`, so the
+ * production server (scripts/serve-dist.mjs) can serve them with Content-Encoding
+ * at zero per-request CPU. Only kept when actually smaller; tiny files are skipped
+ * (compression overhead isn't worth it and can grow them). Brotli quality is eased
+ * for multi-MB files (e.g. the WASM blob) where q11 is disproportionately slow.
+ */
+function precompressDir(dir) {
+    for (const name of readdirSync(dir)) {
+        if (name.endsWith('.gz') || name.endsWith('.br')) continue;
+        const full = join(dir, name);
+        const st = statSync(full);
+        if (st.isDirectory()) {
+            precompressDir(full);
+            continue;
+        }
+        if (!PRECOMPRESS_EXT.has(extname(name)) || st.size < 1024) continue;
+
+        const data = readFileSync(full);
+        const gz = gzipSync(data, { level: 9 });
+        if (gz.length < st.size) writeFileSync(full + '.gz', gz);
+
+        const quality = st.size > 1_000_000 ? 9 : 11;
+        const br = brotliCompressSync(data, {
+            params: {
+                [zlibConstants.BROTLI_PARAM_QUALITY]: quality,
+                [zlibConstants.BROTLI_PARAM_SIZE_HINT]: st.size,
+            },
+        });
+        if (br.length < st.size) writeFileSync(full + '.br', br);
     }
 }
 
@@ -195,6 +238,14 @@ async function build() {
     );
 
     writeFileSync(join(distDir, 'index.html'), html);
+
+    // Precompress static assets for the production server. Skipped for dev/watch
+    // builds: brotli is slow, and the dev server (NO_CACHE) serves identity anyway.
+    // index.html is intentionally not on disk-compressed here — serve-dist.mjs
+    // injects analytics into it at request time and compresses that result itself.
+    if (!isDev && !isWatch) {
+        precompressDir(distDir);
+    }
 
     console.log(`Built to ${distDir} (bundle: ${bundleHash}, css: ${cssHash}, version: ${versionStr})`);
 }

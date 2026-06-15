@@ -54,8 +54,8 @@ tools/
   kobopatch-wasm/               # Go/WASM wrapper around kobopatch
 
 scripts/
-  build.mjs                     # esbuild build script + asset copy
-  serve-dist.mjs                # Static server for existing dist output
+  build.mjs                     # esbuild build script + asset copy + static-asset precompression (.br/.gz)
+  serve-dist.mjs                # Production static server: Content-Length, cache tiers, ETag revalidation, br/gzip negotiation (see "Production Serving")
   test.mjs                      # Runs all tests
   serve-local.mjs               # Sets up, builds, and serves locally (dev mode uses a throwaway dist-dev/)
   validate-dist.mjs             # Validates all required dist resources exist
@@ -188,6 +188,42 @@ To test analytics UI locally without sending data:
 ```bash
 npm run serve:fake-analytics
 ```
+
+## Production Serving
+
+Production (`npm start` → `scripts/serve-dist.mjs`) deliberately stays a small Node static
+server rather than nginx/Caddy. The app is effectively static except for one dynamic step —
+injecting the Umami analytics snippet into `index.html` from env vars at request time — and on
+Coolify it already sits behind a reverse proxy that terminates TLS and routes. At this scale
+(a handful of concurrent users) a separate web server buys little and would complicate that
+injection, so the server is kept but made production-grade. The behaviour and *why*:
+
+- **`Content-Length` on every static response.** Node would otherwise chunk piped streams with no
+  length, leaving the browser unable to compute download progress. The asset download-progress UI
+  (`fetchWithProgress` in `src/js/shell/dom.js`) depends on this header — without it, progress
+  silently degrades to the no-percentage fallback.
+- **Build-time precompression, not on-the-fly.** `scripts/build.mjs` writes `.br`/`.gz` siblings for
+  compressible types (`PRECOMPRESS_EXT`); the server negotiates them via `Accept-Encoding` (brotli
+  preferred) at zero per-request CPU. Already-compressed archives (`.zip`/`.tgz`) and images are
+  **excluded on purpose**: re-compressing them gains nothing, and adding `Content-Encoding` to an
+  archive would make its `Content-Length` (compressed) smaller than the decompressed stream the
+  browser reads, breaking the progress percentage. Precompression is skipped for dev/watch builds.
+- **Cache tiers** (`cacheControl`): `index.html` is always `no-cache` (it references the hash-busted
+  assets); hash-busted URLs (`?h=…` on `bundle.js`/`style.css`/`kobopatch.wasm`) are
+  `immutable, max-age=1yr` since their URL changes with their bytes; **everything else, including the
+  large `assets/*` archives, uses `max-age=300, must-revalidate` — intentionally not immutable.**
+  `npm run update:installables` can replace `dist/assets/*` on a live container between rebuilds and
+  those URLs are not hash-busted, so clients must be able to pick up new bytes. Revalidation makes
+  that a tiny `304` when unchanged (no 40 MB re-download) yet never serves a stale archive.
+- **Conditional requests / `ETag` + `Last-Modified`** (`validators`/`notModified`) back the
+  revalidating tier with `304`s. `index.html` carries its own content-hash `ETag`.
+- **Stale-sibling guard** (`pickEncoding`): a `.br`/`.gz` sibling is only served when at least as new
+  as its source file, so a compressible asset replaced live without regenerating siblings falls back
+  to serving the fresh identity bytes rather than a stale compressed copy.
+
+`scripts/serve-dist.mjs` is the single server for production, `npm run serve`, `npm run dev` (via
+`serve-local.mjs`, with `NO_CACHE=1` so caching/compression are bypassed for fast iteration), and the
+screenshot runner — so this behaviour is exercised by the E2E suite, not just in production.
 
 ## Analytics
 
