@@ -89,11 +89,20 @@ const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '
  *    after a deploy. Paired with the content-hash ETag, an unchanged asset (incl. a
  *    40 MB archive) is reused on a tiny 304 — `no-cache` does not mean re-download —
  *    while a deploy or `update:installables` bump is picked up on the next request.
+ *
+ * `compressible` is false for the binary archives (zip/tgz/png/wasm), which are
+ * already compressed. For those we add `no-transform`: it tells any TLS-terminating
+ * reverse proxy in front of this (HTTP/1.1-only) Node server not to gzip them. That
+ * recompression saves ~0 bytes but drops Content-Length (the proxy switches to
+ * chunked), and without Content-Length the browser can't show download progress —
+ * `fetchWithProgress` falls back to a single unmetered read. `no-transform` (RFC 7234)
+ * is the standard signal to forbid that; honoured by nginx's gzip module and others.
  */
-function cacheControl(search) {
-    if (noCache) return 'no-cache';
-    if (/[?&][hv]=/.test(search)) return 'public, max-age=31536000, immutable';
-    return 'no-cache';
+function cacheControl(search, compressible) {
+    const base = noCache ? 'no-cache'
+        : /[?&][hv]=/.test(search) ? 'public, max-age=31536000, immutable'
+        : 'no-cache';
+    return compressible ? base : `${base}, no-transform`;
 }
 
 // Strong content-hash ETag, memoized per server lifetime. The validator is the
@@ -205,12 +214,13 @@ createServer((req, res) => {
         // The ETag hashes the identity bytes, so it 304s regardless of which encoding
         // the client cached (paired with Vary below) and changes iff the content does.
         const etag = contentEtag(filePath, srcStat);
+        const compressible = COMPRESSIBLE.has(extname(filePath));
         const headers = {
             'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
-            'Cache-Control': cacheControl(url.search),
+            'Cache-Control': cacheControl(url.search, compressible),
             'ETag': etag,
         };
-        if (COMPRESSIBLE.has(extname(filePath))) headers['Vary'] = 'Accept-Encoding';
+        if (compressible) headers['Vary'] = 'Accept-Encoding';
 
         if (notModified(req, etag)) {
             res.writeHead(304, headers);
