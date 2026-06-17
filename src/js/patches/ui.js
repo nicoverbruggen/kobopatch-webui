@@ -1,7 +1,7 @@
 import JSZip from 'jszip';
 import yaml from 'js-yaml';
 import { TL } from '../shell/strings.js';
-import { fetchOrThrow } from '../shell/dom.js';
+import { fetchOrThrow, trapFocus } from '../shell/dom.js';
 
 /**
  * Friendly display names for patch files.
@@ -644,6 +644,8 @@ class PatchUI {
                 dialog.close();
             }
         });
+
+        trapFocus(dialog);
 
         // Clicking the backdrop (outside the content) dismisses the dialog.
         dialog.addEventListener('click', (e) => {

@@ -7,7 +7,7 @@ import { installablesManifest } from './nickelmenu/installables.js';
 import { Session } from './shell/session.js';
 import { TL } from './shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from './shell/analytics.js';
-import { $, $q, $qa, collect, populateSelect, triggerDownload } from './shell/dom.js';
+import { $, $q, $qa, collect, populateSelect, trapFocus, triggerDownload } from './shell/dom.js';
 import { showStep, setNavLabels, setNavStep, hideNav, showNav, stepHistory, setupCardRadios } from './shell/navigation.js';
 import { getActiveFlow, deactivateFlow } from './shell/step-machine.js';
 import { initNickelMenu } from './flows/nickelmenu-flow.js';
@@ -549,9 +549,12 @@ btnRetry.addEventListener('click', () => {
 
 function setupDialog(dialogId, openBtnId, closeBtnId) {
     const dlg = $(dialogId);
+    trapFocus(dlg);
     $(openBtnId).addEventListener('click', (e) => {
         e.preventDefault();
         dlg.showModal();
+        const closeBtn = $(closeBtnId);
+        if (closeBtn) closeBtn.focus();
     });
     $(closeBtnId).addEventListener('click', () => dlg.close());
     dlg.addEventListener('click', (e) => {

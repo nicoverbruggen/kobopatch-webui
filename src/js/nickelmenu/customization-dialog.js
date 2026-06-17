@@ -1,3 +1,4 @@
+import { trapFocus } from '../shell/dom.js';
 import {
     findPresetIcon,
     NM_MENU_PRESET_ICONS,
@@ -340,15 +341,15 @@ function wireFocusReturn(dlg) {
     });
 }
 
-// Lazy-wire focus return when the import first runs.
+// Lazy-wire focus management when the import first runs.
 document.addEventListener('DOMContentLoaded', () => {
     const dlg = document.getElementById('nm-customize-dialog');
-    if (dlg) wireFocusReturn(dlg);
+    if (dlg) { wireFocusReturn(dlg); trapFocus(dlg); }
 }, { once: true });
 // Also wire if DOM is already ready.
 if (document.readyState !== 'loading') {
     const dlg = document.getElementById('nm-customize-dialog');
-    if (dlg) wireFocusReturn(dlg);
+    if (dlg) { wireFocusReturn(dlg); trapFocus(dlg); }
 }
 
 export { NM_DEFAULT_ICON_ASSET, NM_PRESET_ICON_PNG_SIZE, NM_UPLOAD_ICON_SIZE };

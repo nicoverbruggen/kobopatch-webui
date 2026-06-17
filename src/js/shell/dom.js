@@ -244,6 +244,37 @@ export function renderNmCheckboxList(container, items) {
     }
 }
 
+const _trappedDialogs = new WeakSet();
+
+/**
+ * Trap Tab focus within a modal dialog so keyboard users can't tab behind it.
+ * Idempotent — safe to call multiple times on the same element.
+ */
+export function trapFocus(dialog) {
+    if (_trappedDialogs.has(dialog)) return;
+    _trappedDialogs.add(dialog);
+
+    const focusable = 'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+
+    dialog.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+
+        const elements = dialog.querySelectorAll(focusable);
+        if (elements.length === 0) return;
+
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    });
+}
+
 /** Show a text hint in the shared hint dialog (used by feature "?" badges). */
 export function showHint(title, text) {
     const dialog = document.getElementById('hint-dialog');
@@ -252,7 +283,10 @@ export function showHint(title, text) {
     const heading = document.getElementById('hint-dialog-title');
     if (heading && title) heading.textContent = title;
     body.textContent = text;
+    trapFocus(dialog);
     dialog.showModal();
+    const closeBtn = document.getElementById('btn-hint-close');
+    if (closeBtn) closeBtn.focus();
 }
 
 /** Populate a <ul>/<ol> with text items, clearing existing content. */
