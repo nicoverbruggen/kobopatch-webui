@@ -1,0 +1,233 @@
+/**
+ * connect-flow.js — The "connect a Kobo" front of the wizard.
+ *
+ * Owns step-connect, step-connect-instructions, and step-device: browser
+ * support detection, the direct device connection, device-info display
+ * (including the reveal-able serial), the unknown-model acknowledgement, and
+ * the "restore original" shortcut. Hands off to mode selection once a device
+ * is recognised.
+ */
+
+import { KoboDevice } from '../kobo/device.js';
+import { $, collect } from '../shell/dom.js';
+import { setNavLabels, setNavStep, showStep } from '../shell/navigation.js';
+import { TL } from '../shell/strings.js';
+import { track } from '../shell/analytics.js';
+
+export function initConnectFlow(state, { patches }) {
+    const {
+        'step-connect': stepConnect,
+        'step-connect-instructions': stepConnectInstructions,
+        'step-device': stepDevice,
+        'btn-connect': btnConnect,
+        'btn-connect-ready': btnConnectReady,
+        'btn-connect-instructions-back': btnConnectInstructionsBack,
+        'btn-device-back': btnDeviceBack,
+        'btn-device-next': btnDeviceNext,
+        'btn-device-restore': btnDeviceRestore,
+        'device-status': deviceStatus,
+        'device-unknown-warning': deviceUnknownWarning,
+        'device-unknown-ack': deviceUnknownAck,
+        'device-unknown-checkbox': deviceUnknownCheckbox,
+        'patch-container': patchContainer,
+    } = collect([
+        'step-connect', 'step-connect-instructions', 'step-device',
+        'btn-connect', 'btn-connect-ready', 'btn-connect-instructions-back',
+        'btn-device-back', 'btn-device-next', 'btn-device-restore',
+        'device-status', 'device-unknown-warning', 'device-unknown-ack', 'device-unknown-checkbox',
+        'patch-container',
+    ]);
+
+    const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroidDevice = /Android/i.test(navigator.userAgent);
+
+    const hasFileSystemAccess = KoboDevice.isSupported();
+    const canConnectDirectly = hasFileSystemAccess && !isAndroidDevice;
+    if (!canConnectDirectly) {
+        btnConnect.disabled = true;
+        $('connect-unsupported-hint').hidden = false;
+        if (isAndroidDevice) {
+            $('connect-unsupported-text').innerHTML =
+                'Directly connecting your Kobo is not available on Android because Chrome on Android cannot reliably write to a connected Kobo drive. ' +
+                'Use the <b>manual download</b> option below, then copy the ZIP contents to your Kobo from a computer.';
+        } else if (isAppleMobileDevice) {
+            $('connect-unsupported-text').innerHTML =
+                'Directly connecting your Kobo is not available on iOS because Safari does not support the ' +
+                '<a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>. ' +
+                'For the best experience, use <b>Chrome, Edge, or Opera</b> on a desktop or laptop computer. ' +
+                'You can still use the <b>manual download</b> option below.';
+        }
+    }
+
+    {
+        const fileManagerEl = $('connect-file-manager');
+        const ua = navigator.userAgent;
+        if (/Windows/.test(ua)) fileManagerEl.textContent = 'File Explorer';
+        else if (/Mac/.test(ua)) fileManagerEl.textContent = 'Finder';
+        else fileManagerEl.textContent = 'your file manager';
+    }
+
+    function displayDeviceInfo(info) {
+        $('device-model').textContent = info.model;
+        renderSerial(info.serial, info.serialPrefix);
+        $('device-firmware').textContent = info.firmware;
+    }
+
+    function renderSerial(serial, serialPrefix) {
+        const serialEl = $('device-serial');
+        serialEl.textContent = '';
+
+        const prefix = serial.slice(0, serialPrefix.length);
+        const rest = serial.slice(serialPrefix.length);
+
+        const prefixEl = document.createElement('u');
+        prefixEl.textContent = prefix;
+        serialEl.appendChild(prefixEl);
+
+        const restEl = document.createElement('span');
+        restEl.className = 'serial-rest';
+        serialEl.appendChild(restEl);
+
+        if (!rest) {
+            restEl.textContent = rest;
+            return;
+        }
+
+        let revealed = false;
+        const masked = '•'.repeat(rest.length);
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'serial-reveal secondary';
+
+        const render = () => {
+            restEl.textContent = revealed ? rest : masked;
+            toggle.textContent = revealed ? 'Hide' : 'Reveal';
+            toggle.setAttribute('aria-label', revealed ? 'Hide full serial number' : 'Reveal full serial number');
+            toggle.setAttribute('aria-pressed', String(revealed));
+        };
+        render();
+
+        toggle.addEventListener('click', () => {
+            revealed = !revealed;
+            render();
+        });
+
+        serialEl.appendChild(document.createTextNode(' '));
+        serialEl.appendChild(toggle);
+    }
+
+    state.goBackToDeviceStep = () => {
+        setNavLabels(TL.NAV_DEFAULT);
+        setNavStep(1);
+        showStep(stepDevice);
+    };
+
+    btnConnect.addEventListener('click', () => {
+        state.manualMode = false;
+        state.patchesLoaded = false;
+        track('flow-start', { method: 'connect' });
+        showStep(stepConnectInstructions);
+    });
+
+    btnConnectInstructionsBack.addEventListener('click', () => {
+        showStep(stepConnect);
+    });
+
+    btnConnectReady.addEventListener('click', async () => {
+        try {
+            const info = await state.device.connect();
+
+            displayDeviceInfo(info);
+
+            if (info.isIncompatible) {
+                deviceStatus.textContent =
+                    'You seem to have an incompatible Kobo software version installed. ' +
+                    'NickelMenu does not support it, and the custom patches are incompatible with this version.';
+                deviceStatus.classList.add('banner', 'banner--error');
+                btnDeviceNext.hidden = true;
+                btnDeviceRestore.hidden = true;
+                showStep(stepDevice);
+                return;
+            }
+
+            state.selectedPrefix = info.serialPrefix;
+
+            await Promise.all([state.softwareUrlsReady, state.availablePatchesReady]);
+            const match = state.availablePatches.find(p => p.version === info.firmware);
+
+            patches.configureFirmwareStep(info.firmware, info.serialPrefix);
+
+            if (match) {
+                await state.patchUI.loadFromURL('patches/' + match.filename);
+                state.patchUI.render(patchContainer);
+                patches.updatePatchCount();
+                state.patchesLoaded = true;
+            }
+
+            btnDeviceRestore.hidden = !state.patchesLoaded || !state.firmwareURL;
+
+            deviceStatus.classList.remove('banner', 'banner--error');
+            const isUnknownModel = info.model.startsWith('Unknown');
+            if (isUnknownModel) {
+                deviceStatus.textContent = '';
+                deviceUnknownWarning.hidden = false;
+                deviceUnknownAck.hidden = false;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = true;
+            } else {
+                deviceStatus.textContent = TL.STATUS.DEVICE_RECOGNIZED;
+                deviceUnknownWarning.hidden = true;
+                deviceUnknownAck.hidden = true;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = false;
+            }
+            btnDeviceNext.hidden = false;
+            showStep(stepDevice);
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+                state.showError(TL.ERROR.PERMISSION_DENIED_MESSAGE, null, {
+                    title: TL.ERROR.PERMISSION_DENIED_TITLE,
+                });
+                return;
+            }
+            state.showError(err.message, null, {
+                deviceWrite: !!err.deviceWrite,
+                writeProbe: err.deviceOperation === 'write probe',
+            });
+        }
+    });
+
+    btnDeviceBack.addEventListener('click', () => {
+        state.resetDeviceContext();
+        state.device.reset();
+        setNavStep(1);
+        showStep(stepConnect);
+    });
+
+    btnDeviceNext.addEventListener('click', () => {
+        state.goToModeSelection();
+    });
+
+    deviceUnknownCheckbox.addEventListener('change', () => {
+        btnDeviceNext.disabled = !deviceUnknownCheckbox.checked;
+    });
+
+    btnDeviceRestore.addEventListener('click', () => {
+        if (!state.patchesLoaded) return;
+        state.selectedMode = 'patches';
+        state.isRestore = true;
+        setNavLabels(TL.NAV_PATCHES);
+        patches.goToBuild();
+    });
+
+    function start() {
+        setNavLabels(TL.NAV_DEFAULT);
+        setNavStep(1);
+        showStep(stepConnect);
+    }
+
+    return { start };
+}

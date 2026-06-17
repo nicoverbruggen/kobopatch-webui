@@ -1,9 +1,11 @@
 import { $, $q, $qa, collect, renderNmCheckboxList, populateList } from '../shell/dom.js';
+import { setupCardRadios } from '../shell/navigation.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import {
     NICKELMENU_FEATURES,
 } from '../nickelmenu/installer.js';
+import { installablesManifest } from '../nickelmenu/installables.js';
 import {
     createDefaultMenuCustomization,
     isDefaultMenuCustomization,
@@ -93,6 +95,19 @@ export function initNickelMenu(state) {
         'btn-nm-customize-close', 'btn-nm-customize-cancel', 'btn-nm-customize-reset', 'btn-nm-customize-save',
         'nm-option-preset-title',
     ]);
+
+    // Gate runtime-available installables (reading apps, NickelClock, ...) on the
+    // baked-in manifest so unavailable add-ons stay hidden from the feature list.
+    for (const [id, info] of Object.entries(installablesManifest())) {
+        const feature = NICKELMENU_FEATURES.find(f => f.id === id);
+        if (feature && info.available) {
+            feature.available = true;
+            feature.version = info.version;
+        }
+    }
+
+    setupCardRadios(stepNickelMenu, 'selection-card--selected');
+
     const NM_PRESET_TITLE_INSTALL = nmOptionPresetTitle.textContent;
     const NM_PRESET_TITLE_REINSTALL = '(Re)install with preset (and customize)';
 
