@@ -82,471 +82,58 @@
         </nav>
 
         <!-- Step 1: Choose connection method -->
-        <section id="step-connect" class="step" hidden>
-            <div class="banner banner--info">
-                <div class="banner-heading">Important information</div>
-                If you choose to modify your Kobo's system files via this tool, your warranty may be affected. A backup of any extra ("sideloaded") books is recommended. If something goes wrong, follow the official instructions on <a href="https://help.kobo.com/hc/en-us/articles/360017765713-Manual-reset-your-Kobo-eReader" target="_blank">how to manually reset your device</a>.
-            </div>
-            <p>How would you like to set up your Kobo?</p>
-            <div class="selection-cards">
-                <button id="btn-connect" class="selection-card selection-card--btn selection-card--recommended">
-                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15,7V11H16V13H13V5H15L12,1L9,5H11V13H8V10.93C8.66,10.59 9.1,9.87 9.1,9A2.1,2.1 0 0,0 7,6.9C5.84,6.9 4.9,7.84 4.9,9C4.9,9.87 5.34,10.59 6,10.93V13A2,2 0 0,0 8,15H11V18.05C10.29,18.32 9.75,18.93 9.75,19.75A1.75,1.75 0 0,0 11.5,21.5C12.47,21.5 13.25,20.72 13.25,19.75C13.25,18.93 12.71,18.32 12,18.05V15H16A2,2 0 0,0 18,13V11H19V7H15Z"/></svg>
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">Connect my Kobo</div>
-                        <div class="recommended-label">Recommended</div>
-                        <div class="selection-card-desc">Connect your device via USB. Your device will be automatically identified, and this is the easiest way to apply customizations. You will have the option to apply these changes directly, or you can download a ZIP.</div>
-                    </div>
-                </button>
-                <button id="btn-manual" class="selection-card selection-card--btn">
-                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">
-                            Build downloadable archive
-                        </div>
-                        <div class="selection-card-desc">You may need to identify your device based on model number. Go through the wizard, download the files and copy them to your Kobo yourself. Works in any browser, but a bit more complicated. Recommended for tinkerers.</div>
-                    </div>
-                </button>
-            </div>
-            <p id="connect-unsupported-hint" class="fallback-hint" hidden>
-                <b>Note:</b> <span id="connect-unsupported-text">Your browser does not support direct device access via the <a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>, which is required for a seamless patching experience. Directly connecting to your Kobo is not available because of this. Use Chrome, Edge or Opera to connect your Kobo directly, or choose the manual download option.</span>
-            </p>
-        </section>
+<!-- include: steps/step-connect.html -->
 
         <!-- Step 1a (auto): Connection instructions -->
-        <section id="step-connect-instructions" class="step" hidden>
-            <h2>Connect your Kobo</h2>
-            <p>Your Kobo's model and version number can be automatically identified. Based on this information, certain options will be presented to you as part of the next step.</p>
-            <ol class="connect-steps">
-                <li>Connect your Kobo to this computer using a USB cable.</li>
-                <li>Your Kobo will show a <strong>"Computer detected"</strong> screen. Tap <strong>Connect</strong> to continue.</li>
-                <li>In <span id="connect-file-manager">your file manager</span>, you should now see <strong>KOBOeReader</strong> appear as a drive.</li>
-                <li>When you press the button below, your browser will open a folder picker. Select the <strong>KOBOeReader</strong> volume, then click <strong>"Allow"</strong> when your browser asks if you want to give this site permission to write to this folder.</li>
-            </ol>
-            <details class="banner banner--accent">
-                <summary><strong>Anything else I should know?</strong></summary>
-                <ol>
-                    <li>Information about your device is <b>never</b> collected. It is only displayed on this page, temporarily, and used to determine which options are compatible with your device.</li>
-                    <li>This website will <b>only</b> write to your device when you press the "Write to Kobo" button at the end of the wizard. You also have the option to download an archive instead.</li>
-                </ol>
-            </details>
-            <div class="step-actions">
-                <button id="btn-connect-instructions-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-connect-ready" class="primary">Select "KOBOeReader"</button>
-            </div>
-        </section>
+<!-- include: steps/step-connect-instructions.html -->
 
         <!-- Step 1b (manual): Select device model + firmware for custom patches -->
-        <section id="step-manual-version" class="step" hidden>
-            <p>Since you have chosen not to connect your device, you will need to look up some information related to the device you want to patch.</p>
-            <p class="fallback-hint">
-                <strong>Select the version number currently installed on your device.</strong> If it does not appear in this list, your software version is not supported for custom patching. You can go back and choose NickelMenu instead, which works with all versions.
-            </p>
-            <select id="manual-version" aria-label="Software version">
-                <option value="">-- Select software version --</option>
-            </select>
-            <p id="manual-version-hint" class="fallback-hint">
-                You can find the version number on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> &gt; <strong>Software version</strong>. Make sure it's a complete match, or you may encounter issues!
-            </p>
-            <select id="manual-model" aria-label="Kobo model" hidden>
-                <option value="">-- Select your Kobo model --</option>
-            </select>
-            <p id="manual-model-hint" class="fallback-hint" hidden>
-                Match the first characters of your serial number (e.g. N428) to the list above. You can find it under <strong>More &gt; Settings &gt; Device information</strong>. Keep in mind that older devices (released prior to Kobo Libra 2) are not supported by this website at this time, but you may be able to patch them manually.
-            </p>
-            <div class="step-actions" style="margin-top: 25px">
-                <button id="btn-manual-version-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-manual-confirm" class="primary" disabled>Continue &#x203A;</button>
-            </div>
-        </section>
+<!-- include: steps/step-manual-version.html -->
 
         <!-- Step 1c: Device detected (auto mode info card) -->
-        <section id="step-device" class="step" hidden>
-            <div id="device-info" class="info-card">
-                <div class="info-row">
-                    <span class="label">Model</span>
-                    <span id="device-model" class="value">--</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Serial</span>
-                    <span id="device-serial" class="value">--</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Software</span>
-                    <span id="device-firmware" class="value">--</span>
-                </div>
-            </div>
-            <p id="device-status"></p>
-            <p id="device-unknown-warning" class="banner banner--warning" hidden>
-                You seem to have a Kobo device that cannot be identified. While you can continue since a supported software version seems to be installed, please
-                <a href="https://github.com/nicoverbruggen/kobopatch-webui/issues/new" target="_blank">file an issue on GitHub</a>
-                so the developer can add this device to the list.
-            </p>
-            <label id="device-unknown-ack" class="device-unknown-ack" hidden>
-                <input type="checkbox" id="device-unknown-checkbox">
-                <span>I understand that this model is likely not officially supported by NickelMenu yet, but I wish to continue regardless, and I understand it may not work correctly.</span>
-            </label>
-            <div class="step-actions">
-                <button id="btn-device-back" class="secondary">&#x2039; Back</button>
-                <div class="step-actions-right">
-                    <button id="btn-device-restore" class="secondary">Restore Software</button>
-                    <button id="btn-device-next" class="primary">Continue &#x203A;</button>
-                </div>
-            </div>
-        </section>
+<!-- include: steps/step-device.html -->
 
         <!-- Step 2: Mode selection -->
-        <section id="step-mode" class="step" hidden>
-            <p>Do you want to tweak your device or apply system patches? You cannot do both at once, so you will need to choose.</p>
-            <div class="selection-cards" role="radiogroup" aria-label="Mode selection">
-                <label class="selection-card selection-card--recommended">
-                    <input type="radio" name="mode" value="nickelmenu">
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">Tweak my device with NickelMenu</div>
-                        <div class="recommended-label">Recommended</div>
-                        <div class="selection-card-desc">Installs a custom menu and various tweaks for your device. Works with most Kobo devices. The safest solution, as it has a lot of error checking and a failsafe mechanism which will automatically uninstall it as a last resort. </div>
-                        <div class="selection-card-notes">
-                            <div class="selection-card-note">For everyone</div>
-                            <div class="selection-card-note">Offers uninstallation option</div>
-                            <div class="selection-card-note">Optionally install KOReader & NickelClock</div>
-                        </div>
-                    </div>
-                </label>
-                <label class="selection-card">
-                    <input type="radio" name="mode" value="patches">
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">Patch system software</div>
-                        <div class="selection-card-desc">Apply community patches to your Kobo's system software or restore the original software. Requires a supported software version and supported device.</div>
-                        <div class="selection-card-notes">
-                            <div class="selection-card-note selection-card-note--warning">For advanced users</div>
-                            <div class="selection-card-note selection-card-note--warning">Requires reinstall after updates</div>
-                        </div>
-                    </div>
-                </label>
-            </div>
-            <p id="mode-patches-hint" class="fallback-hint" hidden>Custom patches are not available for your software version. You can still install NickelMenu and choose what you want to do with your Kobo.</p>
-            <div class="step-actions">
-                <button id="btn-mode-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-mode-next" class="primary" disabled>Continue &#x203A;</button>
-            </div>
-        </section>
+<!-- include: steps/step-mode.html -->
 
         <!-- Step 2b: NickelMenu configuration -->
-        <section id="step-nickelmenu" class="step" hidden>
-            <p>How would you like to configure NickelMenu?</p>
-            <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
-                <label class="selection-card">
-                    <input type="radio" name="nm-option" value="preset">
-                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z"/></svg>
-                    <div class="selection-card-body">
-                        <div id="nm-option-preset-title" class="selection-card-title">Install with preset (and customize)</div>
-                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You also get to decide which extra optional features you'd like to enable, including enabling some home screen tweaks and installing KOReader, among others.</div>
-                    </div>
-                </label>
-                <label class="selection-card">
-                    <input type="radio" name="nm-option" value="nickelmenu-only">
-                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15M5,15.91L11,19.29V12.58L5,9.21V15.91M19,15.91V9.21L13,12.58V19.29L19,15.91Z"/></svg>
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">Barebones install</div>
-                        <div class="selection-card-desc">Installs <u>only</u> NickelMenu without any configuration or preset. You will need to set it up yourself later by editing the NickelMenu config file. For tinkerers.</div>
-                    </div>
-                </label>
-                <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">
-                    <input type="radio" name="nm-option" value="remove" disabled>
-                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">Remove NickelMenu</div>
-                        <div class="selection-card-desc" id="nm-remove-desc">Removes NickelMenu from your device. (Only available when a Kobo with NickelMenu installed is connected.)</div>
-                    </div>
-                </label>
-                <div id="nm-uninstall-options" hidden></div>
-            </div>
-            <div class="step-actions">
-                <button id="btn-nm-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-nm-next" class="primary">Continue &#x203A;</button>
-            </div>
-        </section>
+<!-- include: steps/step-nickelmenu.html -->
 
         <!-- Step 2b-1: NickelMenu manual removal instructions -->
-        <section id="step-nm-manual-remove" class="step" hidden>
-            <p>If you installed NickelMenu manually from a downloaded ZIP, remove it manually by following these instructions. Some folders may be hidden, so you may need to make hidden files and folders visible.</p>
-            <div id="nm-manual-remove-instructions" class="install-instructions">
-                <ol class="install-steps">
-                    <li>Connect your Kobo via USB so it appears as a removable drive.</li>
-                    <li>Create an empty file named <strong>uninstall</strong> inside <strong>.adds/nm</strong>. This signals to NickelMenu it should remove itself when the device reboots. If the folder is missing, create <strong>.adds/nm</strong> first.</li>
-                    <li><strong>Safely eject</strong> the Kobo, then restart it by long-pressing the power button until it turns off. Press the power button again to turn it back on. NickelMenu will finish removing itself during startup.</li>
-                    <li>If you installed this tool's preset, you can remove <strong>.adds/scripts</strong>.</li>
-                    <li>If there are no other folders inside <strong>.adds</strong> besides <strong>nm</strong> and <strong>scripts</strong>, open <strong>.kobo/Kobo/Kobo eReader.conf</strong> and remove the line that starts with <code>ExcludeSyncFolders=</code>.</li>
-                </ol>
-            </div>
-            <p id="nm-manual-remove-retry" class="restart-hint">You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.</p>
-        </section>
+<!-- include: steps/step-nm-manual-remove.html -->
 
         <!-- Step 2b-1: NickelMenu preset conflict -->
-        <section id="step-nm-preset-conflict" class="step" hidden>
-            <p id="nm-preset-conflict-summary" class="banner banner--warning"></p>
-            <p>In most cases that is fine, but if any of these installed mods are too old, they may conflict with the preset or with each other. Please update them to their latest versions first if you can. These mods were detected:</p>
-            <ul id="nm-preset-conflict-list" class="selected-patches-list"></ul>
-            <label class="selection-card">
-                <input id="nm-preset-conflict-ack" type="checkbox">
-                <div class="selection-card-body">
-                    <div class="selection-card-title">I understand and want to continue anyway</div>
-                    <div class="selection-card-desc">I understand that these installed mods should ideally be updated first, and that older versions may conflict with this preset or with each other.</div>
-                </div>
-            </label>
-            <div class="step-actions">
-                <button id="btn-nm-preset-conflict-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-nm-preset-conflict-next" class="primary" disabled>Continue &#x203A;</button>
-            </div>
-        </section>
+<!-- include: steps/step-nm-preset-conflict.html -->
 
         <!-- Step 2b-2: NickelMenu feature selection (preset only) -->
-        <section id="step-nm-features" class="step" hidden>
-            <p>Select which features you'd like to enable.</p>
-            <div id="nm-sideloaded-banner" class="banner banner--accent" hidden>
-                This Kobo doesn't appear to be signed into a Kobo account &mdash; it may have been factory reset. If you'd rather not sign in, enable <strong>Sideload Mode</strong> under <strong>Advanced</strong> below so you can use the device without connecting to WiFi and signing in.
-            </div>
-            <div id="nm-config-options" class="nm-config-options"></div>
-            <div class="step-actions">
-                <button id="btn-nm-features-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-nm-features-next" class="primary">Continue &#x203A;</button>
-            </div>
-        </section>
+<!-- include: steps/step-nm-features.html -->
 
         <!-- Step 2c: NickelMenu backup -->
-        <section id="step-nm-backup" class="step" hidden>
-            <p id="nm-backup-intro">Before continuing, choose whether you want to create a local backup from your Kobo first. This happens entirely in your browser on this computer and is never uploaded to any server.</p>
-            <div id="nm-backup-options" class="selection-cards" role="radiogroup" aria-label="NickelMenu backup options">
-                <label class="selection-card selection-card--recommended">
-                    <input type="radio" name="nm-backup-option" value="key-files">
-                    <div class="selection-card-body">
-                        <div class="recommended-label">Recommended (and safest)</div>
-                        <div class="selection-card-title">Back up important files</div>
-                        <div class="selection-card-desc">This minimal backup includes key database and configuration files that you cannot easily re-download. For example, the database includes all information about your reading time, stats, and annotations.</div>
-                    </div>
-                </label>
-                <label class="selection-card">
-                    <input type="radio" name="nm-backup-option" value="skip">
-                    <div class="selection-card-body">
-                        <div class="selection-card-title">Don't make a backup</div>
-                        <div class="selection-card-desc">If you previously made a backup, you can probably skip this.</div>
-                    </div>
-                </label>
-            </div>
-            <div id="nm-keep-config-option" class="nm-keep-config" hidden>
-                <label class="nm-keep-config-label">
-                    <input type="checkbox" id="nm-keep-items">
-                    <span id="nm-keep-config-title" class="nm-keep-config-title">Keep my custom NickelMenu configuration</span>
-                    <span id="nm-keep-config-desc" class="nm-keep-config-desc"></span>
-                </label>
-            </div>
-            <p id="nm-backup-local-note">
-                A backup of your files is only created locally via your browser. Your backup is never uploaded anywhere. Once ready, your browser will "download" an archive that you can use to restore files. Store this archive in a safe location, in the unlikely event that something goes wrong.
-            </p>
-            <div id="nm-manual-backup-instructions" class="install-instructions" hidden>
-                <ol class="install-steps">
-                    <li>Connect your Kobo via USB so it appears as a removable drive.</li>
-                    <li>Copy the hidden <strong>.kobo</strong> folder to a safe folder on your computer.</li>
-                    <li>When the files have been copied, you can continue with the wizard. Make sure to store this copy in a safe location, in the unlikely event something goes wrong.</li>
-                </ol>
-            </div>
-            <div class="step-actions">
-                <button id="btn-nm-backup-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-nm-backup-next" class="primary" disabled>Continue &#x203A;</button>
-            </div>
-        </section>
+<!-- include: steps/step-nm-backup.html -->
 
         <!-- Step 2d: NickelMenu review -->
-        <section id="step-nm-review" class="step" hidden>
-            <div class="review-summary">
-                <p id="nm-review-summary" class="review-summary-desc" hidden></p>
-                <p id="nm-review-list-label" class="review-summary-heading"></p>
-                <ul id="nm-review-list" class="review-list"></ul>
-            </div>
-            <div id="nm-review-kept" class="review-summary review-summary--kept" hidden>
-                <p id="nm-review-kept-label" class="review-summary-heading"></p>
-                <ul id="nm-review-kept-list" class="review-list review-list--kept"></ul>
-            </div>
-            <div id="nm-review-notices" class="review-notices" hidden></div>
-            <p class="review-footnote">Before continuing, make sure these are the changes you want. You can always use the wizard again to uninstall NickelMenu, if you want to.</p>
-            <div id="nm-review-actions" class="step-actions">
-                <button id="btn-nm-review-back" class="secondary">&#x2039; Back</button>
-                <div class="step-actions-right">
-                    <button id="btn-nm-download" class="secondary">Download ZIP</button>
-                    <button id="btn-nm-write" class="primary">Write to Kobo</button>
-                </div>
-            </div>
-        </section>
+<!-- include: steps/step-nm-review.html -->
 
         <!-- NickelMenu installing -->
-        <section id="step-nm-installing" class="step" hidden>
-            <div class="busy-indicator" role="status" aria-live="polite">
-                <div class="spinner" aria-hidden="true"></div>
-                <p id="nm-progress" class="busy-status">Starting...</p>
-                <p class="busy-hint">Please keep this tab open until it's done.</p>
-            </div>
-        </section>
+<!-- include: steps/step-nm-installing.html -->
 
         <!-- NickelMenu done -->
-        <section id="step-nm-done" class="step" hidden>
-            <div class="done-card">
-                <div class="done-card-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-                </div>
-                <p id="nm-done-status" class="done-card-title"></p>
-                <p id="nm-write-instructions" class="done-card-detail" hidden>
-                    Files have been written to your Kobo.
-                    <strong>Safely eject</strong> the device before unplugging the USB cable &mdash; it will reboot and install NickelMenu automatically.
-                </p>
-                <div id="nm-download-instructions" class="install-instructions" hidden>
-                    <ol class="install-steps">
-                        <li>Connect your Kobo via USB so it appears as a removable drive.</li>
-                        <li id="nm-download-conf-step" hidden>Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor.<br>
-                            Find the <code>[FeatureSettings]</code> section (or add it at the end of the file) and add the following line <strong>inside</strong> that section (do not replace the entire file):<br>
-                            <code id="nm-download-conf-line"></code><br>
-                            <span id="nm-download-conf-desc"></span></li>
-                        <li id="nm-download-conf-settings-step" hidden>In the same <strong>.kobo/Kobo/Kobo eReader.conf</strong>, apply the following settings (replace any existing lines that have the same key):
-                            <div id="nm-download-conf-settings"></div></li>
-                        <li id="nm-download-reboot-step" hidden><strong>Safely eject</strong> the Kobo, then power it off by holding the power button until it says "Powered off". Press the power button again to boot it back up. The config change takes effect after reboot. Reconnect the Kobo via USB afterwards.</li>
-                        <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure. Make sure hidden folders like <code>.kobo</code> and <code>.adds</code> are also copied.</li>
-                        <li><strong>Safely eject</strong> the Kobo before unplugging the USB cable &mdash; it will reboot and install NickelMenu automatically.</li>
-                    </ol>
-                    <p class="fallback-hint">The downloaded ZIP also contains an <code>instructions.txt</code> file with these steps for offline reference.</p>
-                </div>
-                <p id="nm-reboot-instructions" class="done-card-detail" hidden>
-                    <strong>Safely eject your Kobo and let it reboot.</strong> Please be patient, NickelMenu will be automatically removed during the reboot.
-                    A "glitchy" horizontal line may briefly appear on screen after restarting — this is normal, as NickelMenu removes itself.
-                </p>
-            </div>
-            <p class="restart-hint">You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.</p>
-            <div class="banner banner--info feedback" hidden>
-                <span class="feedback-text">Did you find the wizard easy to use?</span>
-                <span class="feedback-thanks" hidden>Thank you for your feedback!</span>
-                <span class="feedback-buttons">
-                    <button class="feedback-btn feedback-btn--up" data-vote="up" type="button" aria-label="Yes, it was easy to use">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/></svg>
-                    </button>
-                    <button class="feedback-btn feedback-btn--down" data-vote="down" type="button" aria-label="No, it was hard to use">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/></svg>
-                    </button>
-                </span>
-            </div>
-        </section>
+<!-- include: steps/step-nm-done.html -->
 
         <!-- Step 2 (patches path): Configure patches -->
-        <section id="step-patches" class="step" hidden>
-            <div id="patch-reload-banner" class="banner banner--info patch-reload-banner" hidden>
-                <span id="patch-reload-text">You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.</span>
-                <button id="btn-patch-reload" class="secondary" type="button">Restore previous patches</button>
-            </div>
-            <p>Enable or disable patches below. Patches in the same group are mutually exclusive.</p>
-            <div id="patch-container" class="patch-container-scroll"></div>
-            <div class="step-actions">
-                <button id="btn-patches-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-patches-next" class="primary" disabled>Continue &#x203A;</button>
-            </div>
-            <p id="patch-count-hint" class="fallback-hint"></p>
-        </section>
+<!-- include: steps/step-patches.html -->
 
         <!-- Step 3: Review & Build -->
-        <section id="step-firmware" class="step" hidden>
-            <p id="firmware-auto-info">
-                Software update <strong id="firmware-version-label"></strong> for
-                <strong id="firmware-device-label"></strong>
-                <span id="firmware-description">will be downloaded automatically from Kobo's servers and will be patched after the download completes.</span>
-            </p>
-            <p id="selected-patches-heading" hidden>The following patches will be applied:</p>
-            <ul id="selected-patches-list" class="selected-patches-list"></ul>
-            <details class="log-details">
-                <summary>Software download URL</summary>
-                <code id="firmware-download-url"></code>
-            </details>
-            <div class="step-actions">
-                <button id="btn-build-back" class="secondary">&#x2039; Back</button>
-                <button id="btn-build" class="primary">Build Patched Software</button>
-            </div>
-        </section>
+<!-- include: steps/step-firmware.html -->
 
         <!-- Step 4: Building -->
-        <section id="step-building" class="step" hidden>
-            <div class="build-header" role="status" aria-live="polite">
-                <div class="spinner" aria-hidden="true"></div>
-                <p id="build-progress">Starting...</p>
-            </div>
-            <pre id="build-log" class="build-log"></pre>
-            <p id="build-wait-hint" class="fallback-hint">Please wait while the patch is being applied...</p>
-        </section>
+<!-- include: steps/step-building.html -->
 
         <!-- Step 5: Install -->
-        <section id="step-done" class="step" hidden>
-            <p id="build-status" class="install-summary"></p>
-            <div id="existing-tgz-warning" class="banner banner--warning" hidden>
-                An <b>existing</b> KoboRoot.tgz file was found on your Kobo. This means an update has not been applied yet. If you choose to write the new file to your Kobo, the existing one will be overwritten.
-            </div>
-            <details class="log-details">
-                <summary>Build log</summary>
-                <pre id="done-log" class="build-log done-log"></pre>
-            </details>
-            <div id="build-actions">
-                <button id="btn-write" class="primary">Write to Kobo</button>
-                <button id="btn-download" class="secondary">Download ZIP</button>
-            </div>
-            <p id="write-instructions" class="banner banner--success" hidden>
-                KoboRoot.tgz has been written to your Kobo.
-                <strong>Safely eject</strong> the device before unplugging the USB cable — it will reboot and apply the patches automatically.
-            </p>
-            <div id="download-instructions" class="install-instructions" hidden>
-                <ol class="install-steps">
-                    <li>Connect your <span id="download-device-name">Kobo</span> via USB so it appears as a removable drive.</li>
-                    <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure. Make sure the hidden <code>.kobo</code> folder is also copied.</li>
-                    <li><strong>Safely eject</strong> the Kobo before unplugging the USB cable — it will reboot and apply the patches automatically.</li>
-                </ol>
-                <p class="fallback-hint">The downloaded ZIP also contains an <code>instructions.txt</code> file with these steps for offline reference.</p>
-            </div>
-            <p class="restart-hint">You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.</p>
-            <div class="banner banner--info feedback" hidden>
-                <span class="feedback-text">Did you find the wizard easy to use?</span>
-                <span class="feedback-thanks" hidden>Thank you for your feedback!</span>
-                <span class="feedback-buttons">
-                    <button class="feedback-btn feedback-btn--up" data-vote="up" type="button" aria-label="Yes, it was easy to use">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/><path d="M7 10v12"/></svg>
-                    </button>
-                    <button class="feedback-btn feedback-btn--down" data-vote="down" type="button" aria-label="No, it was hard to use">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z"/><path d="M17 14V2"/></svg>
-                    </button>
-                </span>
-            </div>
-        </section>
+<!-- include: steps/step-done.html -->
 
         <!-- Error state -->
-        <section id="step-error" class="step" hidden>
-            <div class="done-card error-card">
-                <div class="done-card-icon error-card-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>
-                </div>
-                <h2 id="error-title" class="done-card-title">Something went wrong</h2>
-                <p id="error-hint" class="done-card-detail" hidden>Some patches may not work correctly with your software version. You can go back and try a different selection.</p>
-                <p id="error-message" class="done-card-detail error-card-message"></p>
-                <pre id="error-log" class="error-log" hidden></pre>
-                <div id="error-device-write-help" class="device-write-help" hidden>
-                    <div class="device-write-help-heading">
-                        <div class="banner-heading">What to try next</div>
-                        <p>This is almost always a problem with the USB connection between your computer and your Kobo, not with the patches or options you picked.</p>
-                    </div>
-                    <ol class="device-write-steps">
-                        <li><strong>Reconnect your Kobo.</strong> Safely eject the Kobo, unplug the cable, turn the Kobo off and on again, then plug it back in and try once more.</li>
-                        <li><strong>Try a different cable or port.</strong> Some USB cables can only charge and can’t transfer files. Use another cable, and try a different USB port on your computer.</li>
-                        <li><strong>Copy the files yourself instead.</strong> Choose the download option to save a ZIP file, then carefully follow the included instructions to copy its contents onto your Kobo. Following each step closely is important to avoid damaging your device.</li>
-                    </ol>
-                </div>
-            </div>
-            <div class="step-actions">
-                <button id="btn-error-back" class="secondary" hidden>&#x2039; Select different patches</button>
-                <button id="btn-error-download-log" class="secondary" hidden>Download Logs</button>
-                <div class="step-actions-right">
-                    <button id="btn-retry" class="secondary">Start Over</button>
-                </div>
-            </div>
-        </section>
+<!-- include: steps/step-error.html -->
     </main>
 
     <footer class="site-footer">

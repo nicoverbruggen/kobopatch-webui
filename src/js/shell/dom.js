@@ -14,6 +14,21 @@ export const $q = (sel, ctx = document) => ctx.querySelector(sel);
 /** querySelectorAll shorthand; defaults to searching the whole document. */
 export const $qa = (sel, ctx = document) => ctx.querySelectorAll(sel);
 
+/**
+ * Collect multiple elements by ID in one call, returning a frozen object.
+ * Throws loudly on any missing id so typos fail at init time instead of
+ * producing silent `null` references mid-flow.
+ */
+export function collect(ids) {
+    const els = {};
+    for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) throw new Error(`Element #${id} not found`);
+        els[id] = el;
+    }
+    return Object.freeze(els);
+}
+
 /** Format a byte count as a human-readable "X.X MB" string. */
 export function formatMB(bytes) {
     return (bytes / 1024 / 1024).toFixed(1) + ' MB';
@@ -335,6 +350,8 @@ export function downloadProgress(report, label, expectedTotal = null) {
 export function setupFeedback(container, onVote) {
     const widget = container.querySelector('.feedback');
     if (!widget) return;
+    if (widget.dataset.feedbackWired) return;
+    widget.dataset.feedbackWired = 'true';
     widget.hidden = false;
     const text = widget.querySelector('.feedback-text');
     const buttons = widget.querySelectorAll('.feedback-btn');

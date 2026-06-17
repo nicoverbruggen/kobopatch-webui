@@ -1,0 +1,29 @@
+        <section id="step-connect" class="step" hidden>
+            <div class="banner banner--info">
+                <div class="banner-heading">Important information</div>
+                If you choose to modify your Kobo's system files via this tool, your warranty may be affected. A backup of any extra ("sideloaded") books is recommended. If something goes wrong, follow the official instructions on <a href="https://help.kobo.com/hc/en-us/articles/360017765713-Manual-reset-your-Kobo-eReader" target="_blank">how to manually reset your device</a>.
+            </div>
+            <p>How would you like to set up your Kobo?</p>
+            <div class="selection-cards">
+                <button id="btn-connect" class="selection-card selection-card--btn selection-card--recommended">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15,7V11H16V13H13V5H15L12,1L9,5H11V13H8V10.93C8.66,10.59 9.1,9.87 9.1,9A2.1,2.1 0 0,0 7,6.9C5.84,6.9 4.9,7.84 4.9,9C4.9,9.87 5.34,10.59 6,10.93V13A2,2 0 0,0 8,15H11V18.05C10.29,18.32 9.75,18.93 9.75,19.75A1.75,1.75 0 0,0 11.5,21.5C12.47,21.5 13.25,20.72 13.25,19.75C13.25,18.93 12.71,18.32 12,18.05V15H16A2,2 0 0,0 18,13V11H19V7H15Z"/></svg>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Connect my Kobo</div>
+                        <div class="recommended-label">Recommended</div>
+                        <div class="selection-card-desc">Connect your device via USB. Your device will be automatically identified, and this is the easiest way to apply customizations. You will have the option to apply these changes directly, or you can download a ZIP.</div>
+                    </div>
+                </button>
+                <button id="btn-manual" class="selection-card selection-card--btn">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">
+                            Build downloadable archive
+                        </div>
+                        <div class="selection-card-desc">You may need to identify your device based on model number. Go through the wizard, download the files and copy them to your Kobo yourself. Works in any browser, but a bit more complicated. Recommended for tinkerers.</div>
+                    </div>
+                </button>
+            </div>
+            <p id="connect-unsupported-hint" class="fallback-hint" hidden>
+                <b>Note:</b> <span id="connect-unsupported-text">Your browser does not support direct device access via the <a href="https://caniuse.com/native-filesystem-api">native filesystem API</a>, which is required for a seamless patching experience. Directly connecting to your Kobo is not available because of this. Use Chrome, Edge or Opera to connect your Kobo directly, or choose the manual download option.</span>
+            </p>
+        </section>

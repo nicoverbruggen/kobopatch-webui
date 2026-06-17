@@ -228,6 +228,11 @@ async function build() {
 
     let html = readFileSync(join(srcDir, 'index.html'), 'utf-8');
 
+    // Expand <!-- include: path --> directives with the contents of
+    // src/html/<path>. Single-level, no nesting, kept deliberately simple.
+    html = html.replace(/<!--\s*include:\s*([\w./-]+)\s*-->/g,
+        (_, p) => readFileSync(join(srcDir, 'html', p), 'utf-8'));
+
     // Inline critical.css into the <head> so :root tokens and loading styles
     // are available before style.css arrives on slow connections.
     const criticalCss = readFileSync(join(srcDir, 'css', 'critical.css'), 'utf-8');

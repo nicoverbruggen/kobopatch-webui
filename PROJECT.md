@@ -19,7 +19,7 @@ src/                            # Source assets (committed)
   css/
   js/
     app.js                      # Orchestrator: shared state, device connection, mode selection, error/retry, dialogs
-    shell/                      # DOM utilities, navigation, strings, analytics
+    shell/                      # App-shell orchestration: step machine, session, terminal, navigation, DOM utilities, strings, analytics
     flows/                      # NickelMenu and custom patch user journeys
     kobo/                       # Kobo device/version/firmware URL/configuration logic
     patches/                    # Custom patch UI and runner modules
@@ -65,15 +65,15 @@ scripts/
 
 The JS source lives in `src/js/` as ES modules, organized by role:
 
-- **`app.js`** — the orchestrator: creates shared state, handles device connection, mode selection, error recovery, and dialogs.
-- **`shell/`** — app-shell helpers shared by multiple flows: DOM helpers, navigation, strings, and analytics.
-- **`flows/`** — the two main user journeys: NickelMenu and custom patches.
+- **`app.js`** — the orchestrator: creates the shared `Session` plus the long-lived services bag, handles device connection, mode selection, error recovery, and dialogs.
+- **`shell/`** — app-shell helpers shared by multiple flows: the declarative step machine (`step-machine.js`), the wizard `Session` (`session.js`), the shared result terminal (`terminal.js`), navigation/breadcrumb rendering, DOM helpers, strings, and analytics.
+- **`flows/`** — the two main user journeys: NickelMenu and custom patches. Each declares its steps to the step machine and routes its build→write/download tail through the terminal.
 - **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`audit-log.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
 - **`patches/`** — custom patch UI and runner modules.
-- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
+- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, preset-conflict, legacy-items, optional-cleanup, and Kobo-user-count probes) live in `probes.js`; the menu-icon customization dialog and its image processing (canvas resize, SVG→PNG rendering) live in `customization-dialog.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
-Flow modules receive a shared `state` object by reference and call back into the orchestrator via `state.showError()` and `state.goToModeSelection()` when they need to cross module boundaries. esbuild bundles everything into `dist/bundle.js`.
+The wizard's mutable state is a `Session` (`shell/session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/step-machine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/terminal.js`), which both flows construct and configure. esbuild bundles everything into `dist/bundle.js`.
 
 ## Adding a Software Version
 

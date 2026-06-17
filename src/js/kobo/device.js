@@ -74,6 +74,11 @@ class KoboDevice {
         this.deviceInfo = null;
     }
 
+    reset() {
+        this.directoryHandle = null;
+        this.deviceInfo = null;
+    }
+
     /**
      * Check if the File System Access API is available.
      */

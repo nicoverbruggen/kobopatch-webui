@@ -1,83 +1,31 @@
-/**
- * app.js — Main orchestrator.
- *
- * This is the entry point for the application. It:
- *   - Creates the shared state object used by all flow modules
- *   - Kicks off eager data fetches (software URLs, available patches, reading apps)
- *   - Initializes the two flow modules (NickelMenu and custom patches)
- *   - Handles the steps that are shared between flows:
- *       • Step 1: Connection method (connect device or manual mode)
- *       • Device info display and unknown-model warning
- *       • Mode selection (NickelMenu vs custom patches)
- *       • Manual version/model selection
- *       • Error display and retry
- *       • Info dialogs (How It Works, Privacy)
- *
- * Flow modules (nickelmenu-flow.js, patches-flow.js) own their own steps
- * and call back into the orchestrator via `state.goToModeSelection()` and
- * `state.showError()` when they need to cross module boundaries.
- */
-
 import { KoboDevice } from './kobo/device.js';
 import { loadSoftwareUrls, getSoftwareUrl, getDevicesForVersion } from './kobo/software-urls.js';
 import { PatchUI, scanAvailablePatches } from './patches/ui.js';
 import { KoboPatchRunner } from './patches/runner.js';
 import { NickelMenuInstaller, NICKELMENU_FEATURES } from './nickelmenu/installer.js';
-import { createDefaultMenuCustomization } from './nickelmenu/customization.js';
 import { installablesManifest } from './nickelmenu/installables.js';
+import { Session } from './shell/session.js';
 import { TL } from './shell/strings.js';
 import { isEnabled as analyticsEnabled, track } from './shell/analytics.js';
-import { $, $q, $qa, populateSelect, triggerDownload } from './shell/dom.js';
+import { $, $q, $qa, collect, populateSelect, triggerDownload } from './shell/dom.js';
 import { showStep, setNavLabels, setNavStep, hideNav, showNav, stepHistory, setupCardRadios } from './shell/navigation.js';
+import { getActiveFlow, deactivateFlow } from './shell/step-machine.js';
 import { initNickelMenu } from './flows/nickelmenu-flow.js';
 import { initPatchesFlow } from './flows/patches-flow.js';
 
-// =============================================================================
-// Shared state
-// =============================================================================
-// Plain object passed by reference to flow modules so mutations are visible
-// everywhere. Contains service instances, mutable UI state, and cross-module
-// function references that are set after the functions are defined below.
-
-const state = {
-    // Service instances (created once, used throughout the session).
+const state = Object.assign(new Session(), {
     device: new KoboDevice(),
     patchUI: new PatchUI(),
     runner: new KoboPatchRunner(),
     nmInstaller: new NickelMenuInstaller(),
-    // Mutable state that changes as the user progresses through the wizard.
-    firmwareURL: null,       // URL to download firmware from (set during device detection or manual selection)
-    firmwareVersion: null,   // Firmware version string (e.g. "4.45.23646"), set when patches are configured
-    deviceModelLabel: null,  // Human-readable device model name (e.g. "Kobo Libra Colour")
-    resultTgz: null,         // Built KoboRoot.tgz bytes (set after successful patch/extract)
-    resultNmZip: null,       // Built NickelMenu ZIP bytes (set after NM download flow)
-    manualMode: false,       // True when user chose "manual download" instead of connecting a device
-    selectedPrefix: null,    // Kobo serial prefix identifying the device model (e.g. "N428")
-    patchesLoaded: false,    // True once patch definitions have been loaded for the detected firmware
-    isRestore: false,        // True when restoring original firmware (no patches selected)
-    selectedMode: null,      // "nickelmenu" or "patches"
-    nickelMenuOption: null,  // "preset", "nickelmenu-only", or "remove"
-    nickelMenuCustomization: createDefaultMenuCustomization(),
-    // Cross-module callbacks — set below after the functions are defined.
-    goToModeSelection: null,
-    showError: null,
     getSoftwareUrl,
-};
-
-// =============================================================================
-// Eager fetches
-// =============================================================================
-// Start loading data immediately so it's ready by the time the user reaches
-// a step that needs it. These promises are awaited where needed.
+});
 
 let availablePatches = null;
 const softwareUrlsReady = loadSoftwareUrls();
 const availablePatchesReady = scanAvailablePatches().then(p => { availablePatches = p; });
 const blacklistReady = state.patchUI.loadBlacklist();
 
-// Mark bundled add-ons (reading apps, NickelClock) available from the build-time
-// installables manifest (baked from installables.lock — see nickelmenu/installables.js).
-// `available` means this deployment shipped the asset; no runtime fetch needed.
 for (const [id, info] of Object.entries(installablesManifest())) {
     const feature = NICKELMENU_FEATURES.find(f => f.id === id);
     if (feature && info.available) {
@@ -86,65 +34,60 @@ for (const [id, info] of Object.entries(installablesManifest())) {
     }
 }
 
-// =============================================================================
-// DOM elements (orchestrator-only)
-// =============================================================================
-
-const stepConnect = $('step-connect');
-const stepConnectInstructions = $('step-connect-instructions');
-const stepManualVersion = $('step-manual-version');
-const stepDevice = $('step-device');
-const stepMode = $('step-mode');
-const stepPatches = $('step-patches');
-const stepError = $('step-error');
-
-const btnConnect = $('btn-connect');
-const btnConnectReady = $('btn-connect-ready');
-const btnConnectInstructionsBack = $('btn-connect-instructions-back');
-const btnManual = $('btn-manual');
-const btnManualConfirm = $('btn-manual-confirm');
-const btnManualVersionBack = $('btn-manual-version-back');
-const manualVersion = $('manual-version');
-const manualModel = $('manual-model');
-const btnDeviceBack = $('btn-device-back');
-const btnDeviceNext = $('btn-device-next');
-const btnDeviceRestore = $('btn-device-restore');
-const btnModeBack = $('btn-mode-back');
-const btnModeNext = $('btn-mode-next');
-const btnRetry = $('btn-retry');
-const btnErrorBack = $('btn-error-back');
-const btnErrorDownloadLog = $('btn-error-download-log');
-
-const errorMessage = $('error-message');
-const errorLog = $('error-log');
-const errorTitle = $('error-title');
-const errorHint = $('error-hint');
-const errorDeviceWriteHelp = $('error-device-write-help');
-const deviceStatus = $('device-status');
-const deviceUnknownWarning = $('device-unknown-warning');
-const deviceUnknownAck = $('device-unknown-ack');
-const deviceUnknownCheckbox = $('device-unknown-checkbox');
-const patchContainer = $('patch-container');
+const {
+    'step-connect': stepConnect,
+    'step-connect-instructions': stepConnectInstructions,
+    'step-manual-version': stepManualVersion,
+    'step-device': stepDevice,
+    'step-mode': stepMode,
+    'step-patches': stepPatches,
+    'step-error': stepError,
+    'btn-connect': btnConnect,
+    'btn-connect-ready': btnConnectReady,
+    'btn-connect-instructions-back': btnConnectInstructionsBack,
+    'btn-manual': btnManual,
+    'btn-manual-confirm': btnManualConfirm,
+    'btn-manual-version-back': btnManualVersionBack,
+    'manual-version': manualVersion,
+    'manual-model': manualModel,
+    'btn-device-back': btnDeviceBack,
+    'btn-device-next': btnDeviceNext,
+    'btn-device-restore': btnDeviceRestore,
+    'btn-mode-back': btnModeBack,
+    'btn-mode-next': btnModeNext,
+    'btn-retry': btnRetry,
+    'btn-error-back': btnErrorBack,
+    'btn-error-download-log': btnErrorDownloadLog,
+    'error-message': errorMessage,
+    'error-log': errorLog,
+    'error-title': errorTitle,
+    'error-hint': errorHint,
+    'error-device-write-help': errorDeviceWriteHelp,
+    'device-status': deviceStatus,
+    'device-unknown-warning': deviceUnknownWarning,
+    'device-unknown-ack': deviceUnknownAck,
+    'device-unknown-checkbox': deviceUnknownCheckbox,
+    'patch-container': patchContainer,
+} = collect([
+    'step-connect', 'step-connect-instructions', 'step-manual-version', 'step-device',
+    'step-mode', 'step-patches', 'step-error',
+    'btn-connect', 'btn-connect-ready', 'btn-connect-instructions-back',
+    'btn-manual', 'btn-manual-confirm', 'btn-manual-version-back',
+    'manual-version', 'manual-model',
+    'btn-device-back', 'btn-device-next', 'btn-device-restore',
+    'btn-mode-back', 'btn-mode-next',
+    'btn-retry', 'btn-error-back', 'btn-error-download-log',
+    'error-message', 'error-log', 'error-title', 'error-hint', 'error-device-write-help',
+    'device-status', 'device-unknown-warning', 'device-unknown-ack', 'device-unknown-checkbox',
+    'patch-container',
+]);
 let errorAuditLog = null;
-
-// =============================================================================
-// Initialize flow modules
-// =============================================================================
-// Each flow module receives the shared state, wires up its own event listeners,
-// and returns a small API of functions the orchestrator needs.
 
 const nm = initNickelMenu(state);
 const patches = initPatchesFlow(state);
 
-// Wire up card-radio interactivity for mode selection and NM option cards.
 setupCardRadios(stepMode, 'selection-card--selected', () => { btnModeNext.disabled = false; });
 setupCardRadios($('step-nickelmenu'), 'selection-card--selected');
-
-// =============================================================================
-// Error handling
-// =============================================================================
-// Shared error screen used by both flows. If the user was on the patches step,
-// a "Go Back" button lets them return to fix their selections.
 
 function showError(message, log, options = {}) {
     errorAuditLog = options.auditLog || null;
@@ -161,13 +104,11 @@ function showError(message, log, options = {}) {
         errorLog.hidden = true;
     }
 
-    // If the user came from the patches step, offer a "Go Back" button
-    // so they can adjust their selections and retry.
+    const flow = getActiveFlow();
+    const hasRecovery = flow && flow.recoveryTarget() && flow.current();
     const hasBackStep = stepHistory.includes(stepPatches);
+
     if (options.deviceWrite) {
-        // A failed connect-time write probe and a failed install write share the
-        // same recovery guidance, but the framing differs: the probe is a
-        // pre-flight check at connect, the other is a real write that failed.
         if (options.writeProbe) {
             errorTitle.textContent = TL.ERROR.DEVICE_PROBE_FAILED_TITLE;
             errorMessage.textContent = TL.ERROR.DEVICE_PROBE_FAILED_MESSAGE;
@@ -179,13 +120,15 @@ function showError(message, log, options = {}) {
         btnErrorBack.hidden = true;
         btnRetry.classList.remove('danger');
     } else if (options.title) {
-        // A caller-supplied title marks a standalone error (e.g. a failed
-        // download, blocked permission, or an unexpected crash) that isn't tied
-        // to the patch selection — show it cleanly with just "Start Over".
         errorTitle.textContent = options.title;
         errorHint.hidden = true;
         btnErrorBack.hidden = true;
         btnRetry.classList.remove('danger');
+    } else if (hasRecovery) {
+        errorTitle.textContent = TL.ERROR.PATCH_FAILED;
+        errorHint.hidden = false;
+        btnErrorBack.hidden = false;
+        btnRetry.classList.add('danger');
     } else if (hasBackStep) {
         errorTitle.textContent = TL.ERROR.PATCH_FAILED;
         errorHint.hidden = false;
@@ -203,18 +146,9 @@ function showError(message, log, options = {}) {
 
 state.showError = showError;
 
-// =============================================================================
-// Global safety net
-// =============================================================================
-// Any exception or promise rejection that escapes an explicit handler would
-// otherwise leave the UI stranded (e.g. a spinner on the "Building..." or
-// "Installing..." screen that never resolves). Route those to the same error
-// screen so the user always gets feedback and a way to start over.
 let handlingUnexpectedError = false;
 function handleUnexpectedError(err) {
-    // Re-entrancy guard: never let a failure inside showError loop back here.
     if (handlingUnexpectedError) return;
-    // AbortError is the user cancelling a picker — expected, never an error.
     if (err && err.name === 'AbortError') return;
     handlingUnexpectedError = true;
     try {
@@ -228,8 +162,6 @@ function handleUnexpectedError(err) {
 }
 
 window.addEventListener('error', (event) => {
-    // Resource-load failures (img/script/link) don't bubble to window in this
-    // phase; only genuine script exceptions reach here, and they carry `error`.
     if (!event.error) return;
     handleUnexpectedError(event.error);
 });
@@ -237,18 +169,11 @@ window.addEventListener('unhandledrejection', (event) => {
     handleUnexpectedError(event.reason);
 });
 
-// =============================================================================
-// Mode selection
-// =============================================================================
-// The screen where the user picks between NickelMenu and custom patches.
-// In auto mode, the patches option is disabled if no patches are available
-// for the detected firmware version.
-
 function goToModeSelection() {
+    deactivateFlow();
     nm.resetNickelMenuState();
     btnModeNext.disabled = true;
 
-    // Clear any previous mode selection so the user must pick again.
     for (const radio of $qa('input[name="mode"]', stepMode)) {
         radio.checked = false;
         radio.closest('.selection-card')?.classList.remove('selection-card--selected');
@@ -258,13 +183,11 @@ function goToModeSelection() {
     const patchesCard = patchesRadio.closest('.selection-card');
     const autoModeNoPatchesAvailable = !state.manualMode && (!state.patchesLoaded || !state.firmwareURL);
 
-    // Disable the patches card if firmware patches aren't available.
     const patchesHint = $('mode-patches-hint');
     if (autoModeNoPatchesAvailable) {
         patchesRadio.disabled = true;
         patchesCard.classList.add('selection-card--disabled');
         patchesHint.hidden = false;
-        // Auto-select NickelMenu since it's the only available option.
         const nmRadio = $q('input[value="nickelmenu"]', stepMode);
         nmRadio.checked = true;
         nmRadio.dispatchEvent(new Event('change'));
@@ -281,16 +204,9 @@ function goToModeSelection() {
 
 state.goToModeSelection = goToModeSelection;
 
-// =============================================================================
-// Initial state
-// =============================================================================
-// Remove the loading spinner and show the first step.
-
 const loader = $('initial-loader');
 if (loader) loader.remove();
 
-// Show a warning modal on mobile/tablet devices. Patching requires a USB connection
-// to a computer, so mobile use is inherently limited.
 const isMobileDevice = navigator.maxTouchPoints > 0 && window.innerWidth < 820;
 if (isMobileDevice) {
     const mobileDialog = $('mobile-dialog');
@@ -298,13 +214,10 @@ if (isMobileDevice) {
     $('btn-mobile-continue').addEventListener('click', () => mobileDialog.close());
 }
 
-// Detect iOS (Safari/WebKit) — the File System Access API is unavailable on iOS.
 const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const isAndroidDevice = /Android/i.test(navigator.userAgent);
 
-// Disable the "Connect" button if the File System Access API isn't available
-// or the platform exposes it unreliably for removable-device writes.
 const hasFileSystemAccess = KoboDevice.isSupported();
 const canConnectDirectly = hasFileSystemAccess && !isAndroidDevice;
 if (!canConnectDirectly) {
@@ -327,28 +240,16 @@ setNavLabels(TL.NAV_DEFAULT);
 setNavStep(1);
 showStep(stepConnect);
 
-// =============================================================================
-// Step 1: Connection method
-// =============================================================================
-
-// "Manual mode" skips device detection and goes straight to mode selection.
 btnManual.addEventListener('click', () => {
     state.manualMode = true;
     track('flow-start', { method: 'manual' });
     goToModeSelection();
 });
 
-// =============================================================================
-// Manual version/model selection
-// =============================================================================
-// In manual + patches mode, the user picks a software version and model
-// from dropdowns before proceeding to the patch configuration step.
-
 manualVersion.addEventListener('change', () => {
     const version = manualVersion.value;
     state.selectedPrefix = null;
 
-    // Show or hide the model dropdown based on whether a version is selected.
     const modelHint = $('manual-model-hint');
     if (!version) {
         manualModel.hidden = true;
@@ -357,7 +258,6 @@ manualVersion.addEventListener('change', () => {
         return;
     }
 
-    // Populate the model dropdown with devices that support this version.
     const devices = getDevicesForVersion(version);
     populateSelect(manualModel, '-- Select your Kobo model --',
         devices.map(d => ({ value: d.prefix, text: d.model }))
@@ -389,7 +289,6 @@ btnManualConfirm.addEventListener('click', async () => {
     }
 });
 
-/** Show the manual version selection screen (awaits eager fetches first). */
 async function enterManualVersionSelection() {
     await Promise.all([softwareUrlsReady, availablePatchesReady]);
     populateSelect(manualVersion, '-- Select software version --',
@@ -406,25 +305,12 @@ btnManualVersionBack.addEventListener('click', () => {
     goToModeSelection();
 });
 
-// =============================================================================
-// Device connection
-// =============================================================================
-// Uses the File System Access API to read device info from the connected Kobo.
-// Detects firmware version, model, and serial number. Pre-loads patches if
-// available for the detected firmware.
-
-/** Populate the device info display (model, serial with prefix underlined, firmware). */
 function displayDeviceInfo(info) {
     $('device-model').textContent = info.model;
     renderSerial(info.serial, info.serialPrefix);
     $('device-firmware').textContent = info.firmware;
 }
 
-/**
- * Render the serial as the (underlined) model prefix followed by the rest masked
- * out, with a Reveal/Hide toggle. The serial is sensitive, so only the first few
- * characters — the prefix that identifies the model — are shown by default.
- */
 function renderSerial(serial, serialPrefix) {
     const serialEl = $('device-serial');
     serialEl.textContent = '';
@@ -440,14 +326,13 @@ function renderSerial(serial, serialPrefix) {
     restEl.className = 'serial-rest';
     serialEl.appendChild(restEl);
 
-    // Nothing to hide if the serial is just the prefix — show it without a toggle.
     if (!rest) {
         restEl.textContent = rest;
         return;
     }
 
     let revealed = false;
-    const masked = '•'.repeat(rest.length);
+    const masked = '\u2022'.repeat(rest.length);
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
@@ -470,7 +355,6 @@ function renderSerial(serial, serialPrefix) {
     serialEl.appendChild(toggle);
 }
 
-// Detect the platform-specific file manager name for the connection instructions.
 {
     const fileManagerEl = $('connect-file-manager');
     const ua = navigator.userAgent;
@@ -479,31 +363,23 @@ function renderSerial(serial, serialPrefix) {
     else fileManagerEl.textContent = 'your file manager';
 }
 
-// "Connect my Kobo" shows the instructions step first (not the file picker).
 btnConnect.addEventListener('click', () => {
-    // Reset any state from a previous manual-mode attempt so it does not
-    // leak into the device-connected flow (e.g. back navigation would
-    // otherwise land on the manual version picker, or stale patches from
-    // a manual selection would be used instead of the device's firmware).
     state.manualMode = false;
     state.patchesLoaded = false;
     track('flow-start', { method: 'connect' });
     showStep(stepConnectInstructions);
 });
 
-// Back from instructions → connect step.
 btnConnectInstructionsBack.addEventListener('click', () => {
     showStep(stepConnect);
 });
 
-// "Select KOBOeReader folder" opens the file picker and proceeds.
 btnConnectReady.addEventListener('click', async () => {
     try {
         const info = await state.device.connect();
 
         displayDeviceInfo(info);
 
-        // Block incompatible firmware versions (e.g. 5.x) with a dead-end message.
         if (info.isIncompatible) {
             deviceStatus.textContent =
                 'You seem to have an incompatible Kobo software version installed. ' +
@@ -517,7 +393,6 @@ btnConnectReady.addEventListener('click', async () => {
 
         state.selectedPrefix = info.serialPrefix;
 
-        // Wait for eager fetches and try to match patches for this firmware.
         await Promise.all([softwareUrlsReady, availablePatchesReady]);
         const match = availablePatches.find(p => p.version === info.firmware);
 
@@ -530,10 +405,8 @@ btnConnectReady.addEventListener('click', async () => {
             state.patchesLoaded = true;
         }
 
-        // Only show "Restore" shortcut if patches and firmware URL are available.
         btnDeviceRestore.hidden = !state.patchesLoaded || !state.firmwareURL;
 
-        // Handle unknown models — require explicit acknowledgment before continuing.
         deviceStatus.classList.remove('banner', 'banner--error');
         const isUnknownModel = info.model.startsWith('Unknown');
         if (isUnknownModel) {
@@ -552,9 +425,7 @@ btnConnectReady.addEventListener('click', async () => {
         btnDeviceNext.hidden = false;
         showStep(stepDevice);
     } catch (err) {
-        // AbortError = user cancelled the file picker; not an error.
         if (err.name === 'AbortError') return;
-        // The user (or browser policy) denied read/write access to the drive.
         if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
             showError(TL.ERROR.PERMISSION_DENIED_MESSAGE, null, {
                 title: TL.ERROR.PERMISSION_DENIED_TITLE,
@@ -569,12 +440,8 @@ btnConnectReady.addEventListener('click', async () => {
 });
 
 btnDeviceBack.addEventListener('click', () => {
-    // Reset state from the previous connection so it doesn't leak
-    // into a subsequent manual mode or a different device connection.
-    state.selectedPrefix = null;
-    state.patchesLoaded = false;
-    state.firmwareURL = null;
-    state.device = new KoboDevice();
+    state.resetDeviceContext();
+    state.device.reset();
     setNavStep(1);
     showStep(stepConnect);
 });
@@ -583,12 +450,10 @@ btnDeviceNext.addEventListener('click', () => {
     goToModeSelection();
 });
 
-// Unknown model checkbox gate — user must acknowledge the warning to proceed.
 deviceUnknownCheckbox.addEventListener('change', () => {
     btnDeviceNext.disabled = !deviceUnknownCheckbox.checked;
 });
 
-// "Restore original" shortcut from the device step — skips mode/patch selection.
 btnDeviceRestore.addEventListener('click', () => {
     if (!state.patchesLoaded) return;
     state.selectedMode = 'patches';
@@ -597,7 +462,6 @@ btnDeviceRestore.addEventListener('click', () => {
     patches.goToBuild();
 });
 
-/** Load patch definitions for a given firmware version. */
 async function loadPatchesForVersion(version, available) {
     const match = available.find(p => p.version === version);
     if (!match) return false;
@@ -609,12 +473,6 @@ async function loadPatchesForVersion(version, available) {
     return true;
 }
 
-// =============================================================================
-// Mode selection navigation
-// =============================================================================
-// "Back" returns to the appropriate previous step depending on whether
-// the user is in manual or auto (device-connected) mode.
-
 btnModeBack.addEventListener('click', () => {
     setNavStep(1);
     if (state.manualMode) {
@@ -624,7 +482,6 @@ btnModeBack.addEventListener('click', () => {
     }
 });
 
-// "Next" enters the selected flow (NickelMenu or custom patches).
 btnModeNext.addEventListener('click', async () => {
     const selected = $q('input[name="mode"]:checked', stepMode);
     if (!selected) return;
@@ -634,7 +491,6 @@ btnModeNext.addEventListener('click', async () => {
         setNavLabels(TL.NAV_NICKELMENU);
         await nm.goToNickelMenuConfig();
     } else if (state.manualMode && !state.patchesLoaded) {
-        // Manual mode + patches: need to pick version/model first.
         setNavLabels(TL.NAV_PATCHES);
         await enterManualVersionSelection();
     } else {
@@ -643,13 +499,23 @@ btnModeNext.addEventListener('click', async () => {
     }
 });
 
-// =============================================================================
-// Error recovery
-// =============================================================================
-
-// "Go Back" on the error screen — unwinds history to the patches step
-// so the user can adjust selections and retry.
 btnErrorBack.addEventListener('click', () => {
+    const flow = getActiveFlow();
+    const recoveryDomId = flow && flow.recoveryTarget();
+
+    if (recoveryDomId) {
+        showNav();
+        btnErrorBack.hidden = true;
+        btnErrorDownloadLog.hidden = true;
+        errorAuditLog = null;
+        btnRetry.classList.remove('danger');
+        const recoveryDomStep = document.getElementById(recoveryDomId);
+        if (recoveryDomStep) {
+            showStep(recoveryDomStep);
+        }
+        return;
+    }
+
     btnErrorBack.hidden = true;
     btnErrorDownloadLog.hidden = true;
     errorAuditLog = null;
@@ -668,18 +534,10 @@ btnErrorDownloadLog.addEventListener('click', () => {
     triggerDownload(errorAuditLog.render(), filename, 'text/plain');
 });
 
-// "Start Over" — reload the page for a guaranteed clean slate.
 btnRetry.addEventListener('click', () => {
     location.reload();
 });
 
-// =============================================================================
-// Dialogs
-// =============================================================================
-// Modal dialogs for "How It Works" (disclaimer) and "Privacy" (analytics info).
-// Clicking the backdrop (the <dialog> element itself) also closes them.
-
-/** Wire up a <dialog>: open button, close button, and backdrop click to close. */
 function setupDialog(dialogId, openBtnId, closeBtnId) {
     const dlg = $(dialogId);
     $(openBtnId).addEventListener('click', (e) => {
@@ -695,24 +553,18 @@ function setupDialog(dialogId, openBtnId, closeBtnId) {
 setupDialog('how-it-works-dialog', 'btn-how-it-works', 'btn-close-dialog');
 setupDialog('credits-dialog', 'btn-credits', 'btn-close-credits');
 
-// Hint dialog: opened programmatically from feature "?" badges that carry a
-// text hint. Only the close button and backdrop need wiring here.
 const hintDialog = $('hint-dialog');
 $('btn-hint-close').addEventListener('click', () => hintDialog.close());
 hintDialog.addEventListener('click', (e) => {
     if (e.target === hintDialog) hintDialog.close();
 });
 
-// Privacy dialog is only shown when analytics are enabled.
 if (analyticsEnabled()) {
     $('btn-privacy').hidden = false;
     $('privacy-link-separator').hidden = false;
 }
 setupDialog('privacy-dialog', 'btn-privacy', 'btn-close-privacy');
 
-// Mark non-production environments in the header. "DEV" when served by the
-// local dev server (the watch build sets __DEV_BUILD__); "Preview" on a
-// preview deployment, identified by a "-dev" hostname (e.g. kp-dev.…).
 function showEnvironmentPill() {
     const pill = $('env-pill');
     if (!pill) return;

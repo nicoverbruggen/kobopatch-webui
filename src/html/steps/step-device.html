@@ -1,0 +1,33 @@
+        <section id="step-device" class="step" hidden>
+            <div id="device-info" class="info-card">
+                <div class="info-row">
+                    <span class="label">Model</span>
+                    <span id="device-model" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Serial</span>
+                    <span id="device-serial" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Software</span>
+                    <span id="device-firmware" class="value">--</span>
+                </div>
+            </div>
+            <p id="device-status"></p>
+            <p id="device-unknown-warning" class="banner banner--warning" hidden>
+                You seem to have a Kobo device that cannot be identified. While you can continue since a supported software version seems to be installed, please
+                <a href="https://github.com/nicoverbruggen/kobopatch-webui/issues/new" target="_blank">file an issue on GitHub</a>
+                so the developer can add this device to the list.
+            </p>
+            <label id="device-unknown-ack" class="device-unknown-ack" hidden>
+                <input type="checkbox" id="device-unknown-checkbox">
+                <span>I understand that this model is likely not officially supported by NickelMenu yet, but I wish to continue regardless, and I understand it may not work correctly.</span>
+            </label>
+            <div class="step-actions">
+                <button id="btn-device-back" class="secondary">&#x2039; Back</button>
+                <div class="step-actions-right">
+                    <button id="btn-device-restore" class="secondary">Restore Software</button>
+                    <button id="btn-device-next" class="primary">Continue &#x203A;</button>
+                </div>
+            </div>
+        </section>

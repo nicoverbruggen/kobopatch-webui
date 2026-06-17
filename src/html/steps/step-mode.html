@@ -1,0 +1,34 @@
+        <section id="step-mode" class="step" hidden>
+            <p>Do you want to tweak your device or apply system patches? You cannot do both at once, so you will need to choose.</p>
+            <div class="selection-cards" role="radiogroup" aria-label="Mode selection">
+                <label class="selection-card selection-card--recommended">
+                    <input type="radio" name="mode" value="nickelmenu">
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Tweak my device with NickelMenu</div>
+                        <div class="recommended-label">Recommended</div>
+                        <div class="selection-card-desc">Installs a custom menu and various tweaks for your device. Works with most Kobo devices. The safest solution, as it has a lot of error checking and a failsafe mechanism which will automatically uninstall it as a last resort. </div>
+                        <div class="selection-card-notes">
+                            <div class="selection-card-note">For everyone</div>
+                            <div class="selection-card-note">Offers uninstallation option</div>
+                            <div class="selection-card-note">Optionally install KOReader & NickelClock</div>
+                        </div>
+                    </div>
+                </label>
+                <label class="selection-card">
+                    <input type="radio" name="mode" value="patches">
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Patch system software</div>
+                        <div class="selection-card-desc">Apply community patches to your Kobo's system software or restore the original software. Requires a supported software version and supported device.</div>
+                        <div class="selection-card-notes">
+                            <div class="selection-card-note selection-card-note--warning">For advanced users</div>
+                            <div class="selection-card-note selection-card-note--warning">Requires reinstall after updates</div>
+                        </div>
+                    </div>
+                </label>
+            </div>
+            <p id="mode-patches-hint" class="fallback-hint" hidden>Custom patches are not available for your software version. You can still install NickelMenu and choose what you want to do with your Kobo.</p>
+            <div class="step-actions">
+                <button id="btn-mode-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-mode-next" class="primary" disabled>Continue &#x203A;</button>
+            </div>
+        </section>
