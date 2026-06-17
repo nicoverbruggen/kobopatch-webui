@@ -172,3 +172,33 @@ test('search filters items by name and shows the empty-state when nothing matche
     assert.ok(!itemByName(el, 'Enabled standalone').classList.contains('patch-item-hidden'));
     assert.equal(none.hidden, true);
 });
+
+test('search query and saved open state reset when rendering a different patch set', () => {
+    const ui = makeUI();
+    const el = container();
+    ui.render(el);
+
+    const section = el.querySelector('.patch-file-section');
+    section.open = false;
+    const search = el.querySelector('.patch-search');
+    search.value = 'Font';
+    search.dispatchEvent(new window.Event('input'));
+    assert.equal(section.open, true);
+
+    const nextUi = new PatchUI();
+    nextUi.firmwareVersion = '4.46.99999';
+    nextUi.patchFiles = {
+        'src/other.yaml': {
+            raw: '',
+            patches: [
+                { name: 'Other patch', enabled: false, description: '', patchGroup: null, lineStart: 0, lineEnd: 1 },
+            ],
+        },
+    };
+
+    nextUi.render(el);
+
+    assert.equal(el.querySelector('.patch-search').value, '');
+    assert.equal(el.querySelector('.patch-search-none').hidden, true);
+    assert.equal(el.querySelector('.patch-file-section').open, false);
+});

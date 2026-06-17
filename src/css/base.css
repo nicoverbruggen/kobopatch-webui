@@ -55,6 +55,75 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+.preview-banner {
+    width: 100%;
+    background: #b91c1c;
+    color: #fff;
+    border-bottom: 1px solid #991b1b;
+}
+
+.preview-banner-inner {
+    position: relative;
+    min-height: 28px;
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-banner-message {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.preview-banner-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.preview-banner-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.preview-banner-text {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.preview-banner a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.preview-banner-close {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    border-radius: 6px;
+}
+
 main {
     max-width: 640px;
     margin: 0 auto;

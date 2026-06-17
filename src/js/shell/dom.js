@@ -202,23 +202,31 @@ export function downloadProgress(report, label, expectedTotal = null) {
 export function setupFeedback(container, onVote) {
     const widget = container.querySelector('.feedback');
     if (!widget) return;
-    if (widget.dataset.feedbackWired) return;
-    widget.dataset.feedbackWired = 'true';
-    widget.hidden = false;
     const text = widget.querySelector('.feedback-text');
     const buttons = widget.querySelectorAll('.feedback-btn');
     const thanks = widget.querySelector('.feedback-thanks');
+
+    widget.hidden = false;
     text.hidden = false;
     thanks.hidden = true;
     buttons.forEach((btn) => {
         btn.hidden = false;
         btn.disabled = false;
-        btn.addEventListener('click', () => {
-            text.hidden = true;
-            buttons.forEach((b) => { b.hidden = true; });
-            thanks.hidden = false;
-            onVote(btn.dataset.vote);
-        }, { once: true });
+    });
+
+    if (widget.dataset.feedbackWired) return;
+    widget.dataset.feedbackWired = 'true';
+    widget.addEventListener('click', (e) => {
+        const btn = e.target.closest('.feedback-btn');
+        if (!btn || btn.disabled || !widget.contains(btn)) return;
+
+        text.hidden = true;
+        buttons.forEach((b) => {
+            b.hidden = true;
+            b.disabled = true;
+        });
+        thanks.hidden = false;
+        onVote(btn.dataset.vote);
     });
 }
 

@@ -104,7 +104,7 @@ export async function renderPresetSvgToPng(svg, size = NM_PRESET_ICON_PNG_SIZE) 
     }
 }
 
-export async function handleNmIconUpload(file, customizationDraft, updateDialog) {
+export async function handleNmIconUpload(file, customizationDraft, updateDialog, shouldApply = () => true) {
     if (!file) return;
     const lowerName = file.name.toLowerCase();
     const isSvg = file.type === 'image/svg+xml' || lowerName.endsWith('.svg');
@@ -113,6 +113,7 @@ export async function handleNmIconUpload(file, customizationDraft, updateDialog)
     try {
         if (isSvg) {
             const resized = await resizeSvgUpload(file);
+            if (!shouldApply()) return;
             customizationDraft.icon = {
                 type: 'upload',
                 name: file.name,
@@ -127,6 +128,7 @@ export async function handleNmIconUpload(file, customizationDraft, updateDialog)
         }
 
         const resized = await resizeRasterUpload(file);
+        if (!shouldApply()) return;
         customizationDraft.icon = {
             type: 'upload',
             name: file.name,
@@ -134,6 +136,7 @@ export async function handleNmIconUpload(file, customizationDraft, updateDialog)
         };
         updateDialog('Image resized to 64x64 PNG.');
     } catch (err) {
+        if (!shouldApply()) return;
         updateDialog(err.message);
     }
 }
@@ -175,6 +178,7 @@ function getGridIndex(grid, el) {
 }
 
 export function renderNmCustomizationPresets(container, onSelect) {
+    container._onSelect = onSelect;
     if (container.children.length) return;
 
     for (const icon of NM_MENU_PRESET_ICONS) {
@@ -202,7 +206,7 @@ export function renderNmCustomizationPresets(container, onSelect) {
 
         button.append(image, title);
         button.addEventListener('click', async () => {
-            await onSelect(icon);
+            await container._onSelect?.(icon);
         });
         container.appendChild(button);
     }

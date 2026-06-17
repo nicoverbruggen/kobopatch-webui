@@ -11,14 +11,21 @@ import { TL } from '../shell/strings.js';
 import { PATCH_FILE_LABELS } from './patch-yaml.js';
 import { openPatchEditor } from './patch-editor.js';
 
-// Remembers each section's expand/collapse state for the duration of a search,
-// so clearing the query restores what the user had open. View-only concern.
-let savedOpenState = null;
+function patchSetKey(ui) {
+    return `${ui.firmwareVersion || ''}\n${Object.keys(ui.patchFiles).join('\n')}`;
+}
 
 /**
  * Render the patch configuration UI into a container element.
  */
 export function renderPatchList(ui, container) {
+    const currentPatchSetKey = patchSetKey(ui);
+    const samePatchSet = container.dataset.patchSetKey === currentPatchSetKey;
+    if (container.dataset.patchSetKey !== currentPatchSetKey) {
+        delete container.dataset.patchSearch;
+        delete container.dataset.patchSavedOpenState;
+    }
+
     // Preserve which sections are expanded across re-renders (e.g. after a save).
     const openFiles = new Set(
         [...container.querySelectorAll('.patch-file-section[open]')].map(s => s.dataset.filename)
@@ -26,8 +33,11 @@ export function renderPatchList(ui, container) {
     // Preserve an active search query so an edit/save (which re-renders) keeps
     // the search box and its filtered view instead of resetting to show all.
     const previousSearch = container.querySelector('.patch-search');
-    const searchQuery = previousSearch ? previousSearch.value : '';
+    const searchQuery = samePatchSet
+        ? (previousSearch ? previousSearch.value : (container.dataset.patchSearch || ''))
+        : '';
     container.innerHTML = '';
+    container.dataset.patchSetKey = currentPatchSetKey;
 
     const searchWrap = document.createElement('div');
     searchWrap.className = 'patch-search-wrap';
@@ -44,7 +54,7 @@ export function renderPatchList(ui, container) {
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         clearBtn.hidden = true;
-        filterPatches(listWrapper, nullEl, '');
+        filterPatches(container, listWrapper, nullEl, '');
     });
     searchWrap.appendChild(clearBtn);
     container.appendChild(searchWrap);
@@ -246,7 +256,7 @@ export function renderPatchList(ui, container) {
 
     searchInput.addEventListener('input', () => {
         clearBtn.hidden = !searchInput.value;
-        filterPatches(listWrapper, nullEl, searchInput.value);
+        filterPatches(container, listWrapper, nullEl, searchInput.value);
     });
 
     // Restore an in-progress search after a re-render (e.g. saving an edit),
@@ -254,7 +264,7 @@ export function renderPatchList(ui, container) {
     if (searchQuery) {
         searchInput.value = searchQuery;
         clearBtn.hidden = false;
-        filterPatches(listWrapper, nullEl, searchQuery);
+        filterPatches(container, listWrapper, nullEl, searchQuery);
     }
 }
 
@@ -271,17 +281,23 @@ export function updatePatchCounts(ui, container) {
     if (ui.onChange) ui.onChange();
 }
 
-function filterPatches(wrapper, nullEl, query) {
+function filterPatches(container, wrapper, nullEl, query) {
     const q = query.toLowerCase().trim();
+    container.dataset.patchSearch = q;
     const sections = wrapper.querySelectorAll('.patch-file-section');
     let anyVisible = false;
 
     // Remember the user's expand/collapse state on the first keystroke of a
     // search so it can be restored when the query is cleared, instead of
     // force-collapsing every section on each keystroke.
+    let savedOpenState = null;
+    if (container.dataset.patchSavedOpenState) {
+        savedOpenState = new Map(JSON.parse(container.dataset.patchSavedOpenState));
+    }
     if (q && !savedOpenState) {
         savedOpenState = new Map();
         for (const section of sections) savedOpenState.set(section.dataset.filename, section.open);
+        container.dataset.patchSavedOpenState = JSON.stringify([...savedOpenState.entries()]);
     }
 
     for (const section of sections) {
@@ -330,7 +346,7 @@ function filterPatches(wrapper, nullEl, query) {
             const filename = section.dataset.filename;
             if (savedOpenState.has(filename)) section.open = savedOpenState.get(filename);
         }
-        savedOpenState = null;
+        delete container.dataset.patchSavedOpenState;
     }
 
     nullEl.hidden = q ? anyVisible : true;

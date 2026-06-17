@@ -117,6 +117,7 @@ export function initNickelMenu(state) {
     let legacyItemsDetected = false;
     let legacyItemsWasOurs = false;
     let nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
+    let nmCustomizationSession = 0;
 
     function resolveNavLabels(ctx) {
         const option = ctx.nickelMenuOption;
@@ -164,9 +165,7 @@ export function initNickelMenu(state) {
             navIndex: 3,
             back: () => 'config',
             onEnter: async () => {
-                if (!nmConfigOptions.children.length) {
-                    renderFeatureCheckboxes();
-                }
+                renderFeatureCheckboxes();
                 updateSideloadedRecommendation().catch(() => {});
             },
         },
@@ -429,6 +428,8 @@ export function initNickelMenu(state) {
         state.nmBackupChoice = null;
         state.nickelMenuCustomization = createDefaultMenuCustomization();
         nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
+        nmCustomizationSession++;
+        nmConfigOptions.innerHTML = '';
         updateMenuCustomizationSummary(state);
         btnNmBackupNext.disabled = true;
         btnNmBackupNext.textContent = 'Continue \u203A';
@@ -558,14 +559,18 @@ export function initNickelMenu(state) {
 
     nmCustomizeLabel.addEventListener('input', () => updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom));
     nmCustomizeUpload.addEventListener('change', () => {
-        handleNmIconUpload(nmCustomizeUpload.files?.[0], nmCustomizationDraft, (msg) => {
+        const draft = nmCustomizationDraft;
+        const session = nmCustomizationSession;
+        handleNmIconUpload(nmCustomizeUpload.files?.[0], draft, (msg) => {
+            if (draft !== nmCustomizationDraft || session !== nmCustomizationSession) return;
             updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, msg);
-        });
+        }, () => draft === nmCustomizationDraft && session === nmCustomizationSession);
         nmCustomizeUpload.value = '';
     });
     btnNmCustomizeClose.addEventListener('click', () => nmCustomizeDialog.close());
     btnNmCustomizeCancel.addEventListener('click', () => nmCustomizeDialog.close());
     btnNmCustomizeReset.addEventListener('click', () => {
+        nmCustomizationSession++;
         nmCustomizationDraft = createDefaultMenuCustomization();
         nmCustomizeLabel.value = NM_MENU_DEFAULT_LABEL;
         updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, isDefaultMenuCustomization(state.nickelMenuCustomization) ? '' : 'Defaults restored.');
@@ -581,6 +586,7 @@ export function initNickelMenu(state) {
             ...nmCustomizationDraft,
             label,
         };
+        nmCustomizationSession++;
         updateMenuCustomizationSummary(state);
         nmCustomizeDialog.close();
     });

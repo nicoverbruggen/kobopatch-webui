@@ -1,9 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
 
 import { createTerminal } from '../../src/js/shell/terminal.js';
 import { AUDIT_LOG_DIRECTORY } from '../../src/js/kobo/audit-log.js';
 import { RecordingDevice, bytes, text } from './test-helpers.js';
+
+async function withDom(run) {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <div id="done-step">
+            <div class="banner banner--info feedback" hidden>
+                <span class="feedback-text">Prompt</span>
+                <span class="feedback-thanks" hidden>Thanks</span>
+                <span class="feedback-buttons">
+                    <button class="feedback-btn" data-vote="up" type="button">Up</button>
+                    <button class="feedback-btn" data-vote="down" type="button">Down</button>
+                </span>
+            </div>
+        </div>
+    </body></html>`, { url: 'https://example.test/' });
+
+    const previousWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+    const previousDocumentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
+
+    Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        writable: true,
+        value: dom.window,
+    });
+    Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        writable: true,
+        value: dom.window.document,
+    });
+    dom.window.__ANALYTICS_ENABLED = true;
+
+    try {
+        await run(dom.window.document);
+    } finally {
+        if (previousWindowDescriptor) Object.defineProperty(globalThis, 'window', previousWindowDescriptor);
+        else delete globalThis.window;
+
+        if (previousDocumentDescriptor) Object.defineProperty(globalThis, 'document', previousDocumentDescriptor);
+        else delete globalThis.document;
+    }
+}
 
 test('writeToDevice writes every entry and persists an audit log on success', async () => {
     const device = new RecordingDevice();
@@ -74,4 +115,26 @@ test('writeToDevice skips a failing optional write without failing the operation
     assert.ok(device.writeFor('.kobo/KoboRoot.tgz'));
     assert.equal(device.writeFor('.kobopatch-webui/custom-patches.json'), undefined);
     assert.equal(errors.length, 0);
+});
+
+test('wireFeedback resets the widget state when the done step is revisited', async () => {
+    await withDom(async (document) => {
+        const terminal = createTerminal({ doneStep: document.getElementById('done-step'), showError: () => {} });
+        const widget = document.querySelector('.feedback');
+        const textEl = widget.querySelector('.feedback-text');
+        const thanksEl = widget.querySelector('.feedback-thanks');
+        const upButton = widget.querySelector('[data-vote="up"]');
+
+        terminal.wireFeedback();
+        upButton.click();
+        assert.equal(textEl.hidden, true);
+        assert.equal(thanksEl.hidden, false);
+
+        terminal.wireFeedback();
+        assert.equal(widget.hidden, false);
+        assert.equal(textEl.hidden, false);
+        assert.equal(thanksEl.hidden, true);
+        assert.equal(upButton.hidden, false);
+        assert.equal(upButton.disabled, false);
+    });
 });

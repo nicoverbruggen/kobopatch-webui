@@ -29,7 +29,7 @@ unlocks DOM-coupled modules. Pick up the remaining gaps below.
 ### E2E territory (low unit-test ROI — leave to Playwright)
 - Flow controllers: `connect-flow`, `manual-flow`, `mode-flow`, `nickelmenu-flow`,
   `patches-flow`, `nickelmenu-execute`, and `app.js` (orchestrator).
-- `shell/chrome.js`, `nickelmenu/customization-dialog.js` (canvas/image processing),
+- `shell/global-ui.js`, `nickelmenu/customization-dialog.js` (canvas/image processing),
   `patches/runner.js` + `workers/patch-worker.js` (web worker).
 
 ## Coverage tooling

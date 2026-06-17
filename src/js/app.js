@@ -14,7 +14,7 @@ import { NickelMenuInstaller } from './nickelmenu/installer.js';
 import { Session } from './shell/session.js';
 import { $ } from './shell/dom.js';
 import { initErrorScreen } from './shell/error-screen.js';
-import { initChrome } from './shell/chrome.js';
+import { initGlobalUI } from './shell/global-ui.js';
 import { initNickelMenu } from './flows/nickelmenu-flow.js';
 import { initPatchesFlow } from './flows/patches-flow.js';
 import { initConnectFlow } from './flows/connect-flow.js';
@@ -42,7 +42,7 @@ initErrorScreen(state);
 const manual = initManualFlow(state, { patches });
 initModeFlow(state, { patches, nm, manual });
 const connect = initConnectFlow(state, { patches });
-initChrome();
+initGlobalUI();
 
 const loader = $('initial-loader');
 if (loader) loader.remove();
