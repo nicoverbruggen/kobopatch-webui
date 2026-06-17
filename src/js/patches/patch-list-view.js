@@ -11,6 +11,10 @@ import { TL } from '../shell/strings.js';
 import { PATCH_FILE_LABELS } from './patch-yaml.js';
 import { openPatchEditor } from './patch-editor.js';
 
+// Remembers each section's expand/collapse state for the duration of a search,
+// so clearing the query restores what the user had open. View-only concern.
+let savedOpenState = null;
+
 /**
  * Render the patch configuration UI into a container element.
  */
@@ -40,7 +44,7 @@ export function renderPatchList(ui, container) {
     clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         clearBtn.hidden = true;
-        filterPatches(ui, listWrapper, nullEl, '');
+        filterPatches(listWrapper, nullEl, '');
     });
     searchWrap.appendChild(clearBtn);
     container.appendChild(searchWrap);
@@ -242,7 +246,7 @@ export function renderPatchList(ui, container) {
 
     searchInput.addEventListener('input', () => {
         clearBtn.hidden = !searchInput.value;
-        filterPatches(ui, listWrapper, nullEl, searchInput.value);
+        filterPatches(listWrapper, nullEl, searchInput.value);
     });
 
     // Restore an in-progress search after a re-render (e.g. saving an edit),
@@ -250,7 +254,7 @@ export function renderPatchList(ui, container) {
     if (searchQuery) {
         searchInput.value = searchQuery;
         clearBtn.hidden = false;
-        filterPatches(ui, listWrapper, nullEl, searchQuery);
+        filterPatches(listWrapper, nullEl, searchQuery);
     }
 }
 
@@ -267,7 +271,7 @@ export function updatePatchCounts(ui, container) {
     if (ui.onChange) ui.onChange();
 }
 
-export function filterPatches(ui, wrapper, nullEl, query) {
+function filterPatches(wrapper, nullEl, query) {
     const q = query.toLowerCase().trim();
     const sections = wrapper.querySelectorAll('.patch-file-section');
     let anyVisible = false;
@@ -275,9 +279,9 @@ export function filterPatches(ui, wrapper, nullEl, query) {
     // Remember the user's expand/collapse state on the first keystroke of a
     // search so it can be restored when the query is cleared, instead of
     // force-collapsing every section on each keystroke.
-    if (q && !ui._savedOpenState) {
-        ui._savedOpenState = new Map();
-        for (const section of sections) ui._savedOpenState.set(section.dataset.filename, section.open);
+    if (q && !savedOpenState) {
+        savedOpenState = new Map();
+        for (const section of sections) savedOpenState.set(section.dataset.filename, section.open);
     }
 
     for (const section of sections) {
@@ -321,12 +325,12 @@ export function filterPatches(ui, wrapper, nullEl, query) {
         }
     }
 
-    if (!q && ui._savedOpenState) {
+    if (!q && savedOpenState) {
         for (const section of sections) {
             const filename = section.dataset.filename;
-            if (ui._savedOpenState.has(filename)) section.open = ui._savedOpenState.get(filename);
+            if (savedOpenState.has(filename)) section.open = savedOpenState.get(filename);
         }
-        ui._savedOpenState = null;
+        savedOpenState = null;
     }
 
     nullEl.hidden = q ? anyVisible : true;

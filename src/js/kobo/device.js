@@ -243,17 +243,30 @@ class KoboDevice {
     }
 
     /**
+     * Resolve a directory handle by walking `pathParts` from the device root.
+     * An empty array returns the root. Throws if any segment is missing — the
+     * read helpers catch that and degrade to null/[].
+     */
+    async resolveDirectory(pathParts) {
+        let dir = this.directoryHandle;
+        for (const part of pathParts) {
+            dir = await dir.getDirectoryHandle(part);
+        }
+        return dir;
+    }
+
+    /** Resolve the file handle at `filePath` (directory walk + final getFileHandle). */
+    async resolveFileHandle(filePath) {
+        const dir = await this.resolveDirectory(filePath.slice(0, -1));
+        return dir.getFileHandle(filePath[filePath.length - 1]);
+    }
+
+    /**
      * Read a file at a nested path. Returns the text content, or null if not found.
      */
     async readFile(filePath) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const fileHandle = await dir.getFileHandle(fileName);
+            const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             return await file.text();
         } catch {
@@ -266,10 +279,7 @@ class KoboDevice {
      */
     async listDirectory(pathParts) {
         try {
-            let dir = this.directoryHandle;
-            for (const part of pathParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
+            const dir = await this.resolveDirectory(pathParts);
             const entries = [];
             for await (const entry of dir.values()) {
                 entries.push({ name: entry.name, kind: entry.kind });
@@ -285,12 +295,8 @@ class KoboDevice {
      */
     async pathExists(pathParts) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = pathParts.slice(0, -1);
+            const dir = await this.resolveDirectory(pathParts.slice(0, -1));
             const lastPart = pathParts[pathParts.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
             try {
                 await dir.getDirectoryHandle(lastPart);
                 return true;
@@ -303,45 +309,9 @@ class KoboDevice {
         }
     }
 
-    /**
-     * List the names of files and directories directly inside a directory.
-     * Returns an empty array if the path cannot be read.
-     */
-    async listDirectoryNames(pathParts = []) {
-        try {
-            let dir = this.directoryHandle;
-            for (const part of pathParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-
-            const names = [];
-            if (typeof dir.values === 'function') {
-                for await (const entry of dir.values()) {
-                    names.push(entry.name);
-                }
-                return names;
-            }
-            if (typeof dir[Symbol.asyncIterator] === 'function') {
-                for await (const entry of dir) {
-                    names.push(entry.name);
-                }
-                return names;
-            }
-            return [];
-        } catch {
-            return [];
-        }
-    }
-
     async readFileBytes(filePath) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const fileHandle = await dir.getFileHandle(fileName);
+            const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             return new Uint8Array(await file.arrayBuffer());
         } catch {
@@ -358,13 +328,7 @@ class KoboDevice {
      */
     async readFileRange(filePath, offset, length) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const fileHandle = await dir.getFileHandle(fileName);
+            const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             const slice = file.slice(offset, offset + length);
             return new Uint8Array(await slice.arrayBuffer());
@@ -382,17 +346,13 @@ class KoboDevice {
     }
 
     async collectExistingFilePaths(pathParts, filePaths) {
-        let dir = this.directoryHandle;
-        const dirParts = pathParts.slice(0, -1);
-        const entryName = pathParts[pathParts.length - 1];
-
+        let dir;
         try {
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
+            dir = await this.resolveDirectory(pathParts.slice(0, -1));
         } catch {
             return;
         }
+        const entryName = pathParts[pathParts.length - 1];
 
         try {
             const childDir = await dir.getDirectoryHandle(entryName);
@@ -470,12 +430,7 @@ class KoboDevice {
      * Resolve the directory handle that contains the final segment of `pathParts`.
      */
     async resolveParentHandle(pathParts) {
-        let dir = this.directoryHandle;
-        const dirParts = pathParts.slice(0, -1);
-        for (const part of dirParts) {
-            dir = await dir.getDirectoryHandle(part);
-        }
-        return dir;
+        return this.resolveDirectory(pathParts.slice(0, -1));
     }
 
     /**

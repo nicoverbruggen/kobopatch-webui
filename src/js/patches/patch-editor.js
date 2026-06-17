@@ -2,14 +2,18 @@
  * patch-editor.js — The "edit patch values" modal dialog.
  *
  * Owns the YAML textarea editor: opening it for a patch, validating the edited
- * YAML, and wiring its footer buttons. It reads/writes the editing state on the
- * PatchUI instance (`ui._editing`, `ui._editorBound`) and saves through the
- * model's `ui._saveEdit`; it does not own patch state itself.
+ * YAML, and wiring its footer buttons. The transient editing state lives here
+ * (there is one dialog and one PatchUI instance); saving is delegated to the
+ * model's `ui.applyEdit`. It does not own patch state itself.
  */
 
 import yaml from 'js-yaml';
 import { trapFocus } from '../shell/dom.js';
 import { parsePatchYAML } from './patch-yaml.js';
+
+// One shared dialog, bound once; `editing` holds the patch currently open.
+let editorBound = false;
+let editing = null;
 
 function getEditorDialog() {
     return document.getElementById('patch-editor-dialog');
@@ -107,12 +111,12 @@ export function validatePatchEdit(textarea, statusEl) {
 
 /**
  * Wire up the editor dialog's buttons exactly once. The handlers read the
- * patch currently being edited from `ui._editing`, so there are no per-open
- * listeners to leak or tear down.
+ * patch currently being edited from the module-level `editing`, so there are no
+ * per-open listeners to leak or tear down.
  */
 function ensureEditorBound(ui, dialog) {
-    if (ui._editorBound) return;
-    ui._editorBound = true;
+    if (editorBound) return;
+    editorBound = true;
 
     const textarea = dialog.querySelector('.patch-editor-textarea');
     const statusEl = dialog.querySelector('.patch-editor-status');
@@ -120,14 +124,14 @@ function ensureEditorBound(ui, dialog) {
 
     footer.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
-        if (!btn || !ui._editing) return;
+        if (!btn || !editing) return;
 
         if (btn.classList.contains('patch-editor-validate')) {
             validatePatchEdit(textarea, statusEl);
         } else if (btn.classList.contains('patch-editor-save')) {
             if (validatePatchEdit(textarea, statusEl)) {
-                const { patch, filename, container } = ui._editing;
-                ui._saveEdit(patch, filename, textarea.value, container);
+                const { patch, filename, container, displayedEnabled } = editing;
+                ui.applyEdit(patch, filename, textarea.value, container, displayedEnabled);
                 dialog.close();
             }
         } else if (btn.classList.contains('patch-editor-cancel')) {
@@ -142,7 +146,7 @@ function ensureEditorBound(ui, dialog) {
         if (e.target === dialog) dialog.close();
     });
 
-    dialog.addEventListener('close', () => { ui._editing = null; });
+    dialog.addEventListener('close', () => { editing = null; });
 }
 
 export function openPatchEditor(ui, patch, filename, container) {
@@ -168,7 +172,7 @@ export function openPatchEditor(ui, patch, filename, container) {
     // default when the user only edited other fields.
     const displayedEnabled = parsePatchYAML(patchYaml)[0]?.enabled;
 
-    ui._editing = { patch, filename, container, displayedEnabled };
+    editing = { patch, filename, container, displayedEnabled };
 
     dialog.showModal();
     textarea.focus();

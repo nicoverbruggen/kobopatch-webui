@@ -151,7 +151,13 @@ class PatchUI {
         renderPatchList(this, container);
     }
 
-    _saveEdit(patch, filename, newYaml, container) {
+    /**
+     * Apply an edited patch block: rewrite the file text, reparse, restore live
+     * toggle state, and track the modification. `displayedEnabled` is the Enabled
+     * value the editor opened with (or undefined), passed in by the editor so the
+     * model never has to reach back into editor state.
+     */
+    applyEdit(patch, filename, newYaml, container, displayedEnabled) {
         const updatedRaw = replacePatchLines(this.patchFiles[filename].raw, patch.lineStart, patch.lineEnd, newYaml);
 
         const oldPatches = this.patchFiles[filename].patches;
@@ -162,7 +168,6 @@ class PatchUI {
         // toggle state lives on the patch objects, not in the file. Restore it so
         // an edit doesn't reset selections to the file's defaults.
         const editedName = parsePatchYAML(newYaml)[0]?.name ?? patch.name;
-        const displayedEnabled = this._editing?.displayedEnabled;
 
         for (const newPatch of this.patchFiles[filename].patches) {
             if (newPatch.name === editedName) {
