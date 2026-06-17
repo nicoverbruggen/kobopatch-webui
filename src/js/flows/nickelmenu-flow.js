@@ -216,11 +216,9 @@ export function initNickelMenu(state) {
                 const reviewNotices = $('nm-review-notices');
 
                 const model = nmReviewModel(state, detectedOptionalCleanupFeatures, state.device.deviceInfo);
-                const rebootWarning = $('nm-reboot-warning');
                 $('step-nm-review').classList.toggle('review--removal', model.mode === 'remove');
 
                 if (model.mode === 'remove') {
-                    rebootWarning.hidden = false;
                     summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
                     summary.hidden = false;
                     listLabel.textContent = TL.STATUS.NM_SELECTED_REMOVALS;
@@ -236,7 +234,6 @@ export function initNickelMenu(state) {
                     btnNmDownload.hidden = true;
                     renderReviewNotices(reviewNotices, []);
                 } else {
-                    rebootWarning.hidden = true;
                     summary.hidden = true;
                     summary.textContent = '';
                     keptCard.hidden = true;

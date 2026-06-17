@@ -110,7 +110,7 @@
 }
 
 .selection-card--recommended {
-    border-left-color: var(--primary);
+    border-color: var(--primary);
 }
 
 /* --- Button variant (connect step cards with SVG icons) --- */
