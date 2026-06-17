@@ -1,10 +1,8 @@
-import { $, $q, $qa, collect, triggerDownload, renderNmCheckboxList, populateList } from '../shell/dom.js';
+import { $, $q, $qa, collect, renderNmCheckboxList, populateList } from '../shell/dom.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
-import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
 import {
     NICKELMENU_FEATURES,
-    getExcludeSyncFoldersLine,
 } from '../nickelmenu/installer.js';
 import {
     createDefaultMenuCustomization,
@@ -17,18 +15,11 @@ import {
     sanitizeMenuLabel,
 } from '../nickelmenu/customization.js';
 import {
-    executeNickelMenuRemoval,
-    hasAddsDirectoriesRequiringSyncExclusions,
-} from '../nickelmenu/uninstaller.js';
-import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
 } from '../nickelmenu/probes.js';
 import {
-    featuresToInstall,
-    alwaysCleanupFeatures,
-    optionalCleanupToRemove,
     nmReviewModel,
 } from '../nickelmenu/selection.js';
 import {
@@ -38,22 +29,18 @@ import {
     renderPresetSvgToPng,
     NM_DEFAULT_ICON_ASSET,
 } from '../nickelmenu/customization-dialog.js';
-import { AuditLog } from '../kobo/audit-log.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
-
-const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
-
-const NM_REVIEW_BACKUP_PATHS = [
-    ['.kobo', 'Kobo'],
-    ['.kobo', 'markups'],
-    ['.kobo', 'BookReader.sqlite'],
-    ['.kobo', 'device.salt.conf'],
-    ['.kobo', 'fonts.sqlite'],
-    ['.kobo', 'KoboReader.sqlite'],
-    ['.kobo', 'version'],
-];
+import {
+    shouldOfferNmBackup,
+    prepareNmBackup,
+} from './nickelmenu-backup.js';
+import {
+    executeNmInstall as executeNmInstallFn,
+    renderNmDoneStatus,
+    renderReviewNotices,
+} from './nickelmenu-execute.js';
 
 const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
 
@@ -176,7 +163,7 @@ export function initNickelMenu(state) {
             navIndex: 4,
             back: (ctx) => ctx.nickelMenuOption === 'preset' ? 'features' : 'config',
             onEnter: async () => {
-                const canCreateBackup = shouldOfferNmBackup();
+                const canCreateBackup = shouldOfferNmBackup(state);
                 if (canCreateBackup && !state.nmBackupChoice) {
                     state.nmBackupChoice = 'key-files';
                     for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {
@@ -231,9 +218,11 @@ export function initNickelMenu(state) {
                 const reviewNotices = $('nm-review-notices');
 
                 const model = nmReviewModel(state, detectedOptionalCleanupFeatures, state.device.deviceInfo);
+                const rebootWarning = $('nm-reboot-warning');
                 $('step-nm-review').classList.toggle('review--removal', model.mode === 'remove');
 
                 if (model.mode === 'remove') {
+                    rebootWarning.hidden = false;
                     summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
                     summary.hidden = false;
                     listLabel.textContent = TL.STATUS.NM_SELECTED_REMOVALS;
@@ -249,6 +238,7 @@ export function initNickelMenu(state) {
                     btnNmDownload.hidden = true;
                     renderReviewNotices(reviewNotices, []);
                 } else {
+                    rebootWarning.hidden = true;
                     summary.hidden = true;
                     summary.textContent = '';
                     keptCard.hidden = true;
@@ -286,38 +276,18 @@ export function initNickelMenu(state) {
             navLabels: resolveNavLabels,
             navIndex: 6,
             onEnter: async () => {
-                const nmDoneStatus = $('nm-done-status');
-                $('nm-write-instructions').hidden = true;
-                $('nm-download-instructions').hidden = true;
-                $('nm-reboot-instructions').hidden = true;
-
-                if (state._nmDoneMode === 'remove') {
-                    nmDoneStatus.textContent = TL.STATUS.NM_REMOVED_ON_REBOOT;
-                    $('nm-reboot-instructions').hidden = false;
-                    terminal.end('nm-remove');
-                } else if (state._nmDoneMode === 'written') {
-                    nmDoneStatus.textContent = TL.STATUS.NM_INSTALLED;
-                    $('nm-write-instructions').hidden = false;
-                    terminal.end('nm-write');
-                } else {
-                    nmDoneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
-                    triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
-                    $('nm-download-instructions').hidden = false;
-                    const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
-                    const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
-                    $('nm-download-conf-step').hidden = state.nickelMenuOption !== 'preset';
-                    $('nm-download-reboot-step').hidden = state.nickelMenuOption !== 'preset';
-                    $('nm-download-conf-line').textContent = getExcludeSyncFoldersLine(features);
-                    $('nm-download-conf-desc').textContent = hasExcludeCalibre
-                        ? CONF_DESC_EXCLUDE_CALIBRE
-                        : CONF_DESC_DEFAULT;
-                    const confSettings = getFeatureConfSettings(features);
-                    renderDownloadConfSettings($('nm-download-conf-settings'), confSettings);
-                    $('nm-download-conf-settings-step').hidden = confSettings.length === 0;
-                    terminal.end('nm-download');
-                }
-
-                terminal.wireFeedback();
+                renderNmDoneStatus(state, terminal, {
+                    doneStatus: $('nm-done-status'),
+                    writeInstructions: $('nm-write-instructions'),
+                    downloadInstructions: $('nm-download-instructions'),
+                    rebootInstructions: $('nm-reboot-instructions'),
+                    downloadConfStep: $('nm-download-conf-step'),
+                    downloadRebootStep: $('nm-download-reboot-step'),
+                    downloadConfLine: $('nm-download-conf-line'),
+                    downloadConfDesc: $('nm-download-conf-desc'),
+                    downloadConfSettings: $('nm-download-conf-settings'),
+                    downloadConfSettingsStep: $('nm-download-conf-settings-step'),
+                });
             },
         },
         {
@@ -572,110 +542,7 @@ export function initNickelMenu(state) {
         }
     }
 
-    function getFeatureConfSettings(features) {
-        const ctx = { deviceInfo: state.device.deviceInfo ?? null, features };
-        return features.flatMap(feature =>
-            feature.confSettings ? feature.confSettings(ctx) : []
-        );
-    }
 
-    function renderDownloadConfSettings(container, settings) {
-        container.innerHTML = '';
-
-        const sections = new Map();
-        for (const { section, key, value } of settings) {
-            if (!sections.has(section)) sections.set(section, []);
-            sections.get(section).push(`${key}=${value}`);
-        }
-
-        for (const [section, lines] of sections) {
-            const intro = document.createElement('p');
-            const sectionCode = document.createElement('code');
-            sectionCode.textContent = `[${section}]`;
-            intro.append('In the ', sectionCode, ' section (add it if it is missing):');
-            container.appendChild(intro);
-
-            for (const line of lines) {
-                const lineCode = document.createElement('code');
-                lineCode.textContent = line;
-                container.append(lineCode, document.createElement('br'));
-            }
-        }
-    }
-
-    function renderReviewNotices(container, notices) {
-        container.innerHTML = '';
-        container.hidden = notices.length === 0;
-
-        for (const notice of notices) {
-            const banner = document.createElement('div');
-            banner.className = `banner banner--${notice.type || 'info'}`;
-
-            if (notice.title) {
-                const heading = document.createElement('div');
-                heading.className = 'banner-heading';
-                heading.textContent = notice.title;
-                banner.appendChild(heading);
-            }
-
-            for (const paragraphText of notice.paragraphs || []) {
-                const paragraph = document.createElement('p');
-                paragraph.textContent = paragraphText;
-                banner.appendChild(paragraph);
-            }
-
-            if (notice.link) {
-                const paragraph = document.createElement('p');
-                const link = document.createElement('a');
-                link.href = notice.link.href;
-                link.target = '_blank';
-                link.rel = 'noopener';
-                link.textContent = notice.link.label;
-                paragraph.append('See ', link, ' for details.');
-                banner.appendChild(paragraph);
-            }
-
-            container.appendChild(banner);
-        }
-    }
-
-    function shouldOfferNmBackup() {
-        return !state.manualMode && !!state.device.directoryHandle;
-    }
-
-    function getNmBackupFilename() {
-        const serial = state.device.deviceInfo?.serial || 'UNKNOWN SERIAL';
-        const now = new Date();
-        const timestamp = [
-            now.getFullYear(),
-            String(now.getMonth() + 1).padStart(2, '0'),
-            String(now.getDate()).padStart(2, '0'),
-        ].join('-') + ' ' + [
-            String(now.getHours()).padStart(2, '0'),
-            String(now.getMinutes()).padStart(2, '0'),
-            String(now.getSeconds()).padStart(2, '0'),
-        ].join('-');
-        return `KoboPatch Backup (${serial}) - ${timestamp}.zip`;
-    }
-
-    async function prepareNmBackup() {
-        if (state.nmBackupChoice !== 'key-files') {
-            return null;
-        }
-
-        const backupPaths = [...NM_REVIEW_BACKUP_PATHS];
-        if (await state.device.pathExists(['.adds', 'nm'])) {
-            backupPaths.push(['.adds', 'nm']);
-        }
-
-        const entries = await state.device.collectExistingEntries(backupPaths);
-
-        if (entries.length === 0) {
-            throw new Error('No backup files were found on the connected Kobo.');
-        }
-
-        return { entries, filename: getNmBackupFilename() };
-    }
 
     async function checkNmInstalledState() {
         const removeOption = $('nm-option-remove');
@@ -842,7 +709,7 @@ export function initNickelMenu(state) {
     });
 
     btnNmBackupNext.addEventListener('click', async () => {
-        if (!shouldOfferNmBackup()) {
+        if (!shouldOfferNmBackup(state)) {
             await flow.go('review', state);
             return;
         }
@@ -861,7 +728,7 @@ export function initNickelMenu(state) {
         }
 
         try {
-            const backup = await prepareNmBackup();
+            const backup = await prepareNmBackup(state);
             if (backup) {
                 await terminal.download({ entries: backup.entries, filename: backup.filename });
             }
@@ -882,86 +749,20 @@ export function initNickelMenu(state) {
         if (target) await flow.go(target, state);
     });
 
-    async function executeNmInstall(writeToDevice) {
-        const nmProgress = $('nm-progress');
-        const progressFn = (msg) => { nmProgress.textContent = msg; };
-        let audit = null;
-        await flow.go('installing', state);
-
-        try {
-            if (state.nickelMenuOption === 'remove') {
-                audit = new AuditLog('remove-nickelmenu', new Date(), state.device);
-                await executeNickelMenuRemoval({
-                    device: state.device,
-                    installer: state.nmInstaller,
-                    cleanupFeatures: [
-                        ...alwaysCleanupFeatures(),
-                        ...optionalCleanupToRemove(state, detectedOptionalCleanupFeatures),
-                    ],
-                    shouldRemoveSyncExclusions: async () => {
-                        const entries = await state.device.listDirectory(['.adds']);
-                        return !hasAddsDirectoriesRequiringSyncExclusions(entries);
-                    },
-                    onProgress: progressFn,
-                    audit,
-                });
-                state._nmDoneMode = 'remove';
-                await flow.go('done', state);
-                return;
-            }
-
-            const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
-            if (features.some(f => f.id === 'koreader')) track('add-koreader');
-            if (features.some(f => f.id === 'nickelclock')) track('add-nickelclock');
-            if (features.some(f => f.id === 'cadmus')) track('add-cadmus');
-            if (features.some(f => f.id === 'additional-fonts')) track('add-fonts');
-            if (features.some(f => f.id === 'screensaver')) track('add-screensaver');
-            if (features.some(f => ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id))) track('add-minimal-home');
-            if (features.some(f => f.id === 'simplify-tabs')) track('add-basic-tabs');
-            if (features.some(f => f.id === 'sideloaded-mode')) track('add-sideloaded-mode');
-
-            if (writeToDevice && state.device.directoryHandle) {
-                if (legacyItemsDetected && state.nickelMenuOption === 'preset') {
-                    if (!state.nmKeepLegacyConfig) {
-                        try {
-                            await state.device.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
-                        } catch {
-                        }
-                    }
-                }
-                try {
-                    const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
-                    if (await state.device.pathExists(legacyScriptPath)) {
-                        await state.device.removeEntry(legacyScriptPath);
-                    }
-                } catch {
-                }
-                audit = new AuditLog('install-nickelmenu', new Date(), state.device);
-                await state.nmInstaller.installToDevice(state.device, features, progressFn, {
-                    audit,
-                    menuCustomization: state.nickelMenuCustomization,
-                });
-                state._nmDoneMode = 'written';
-                await flow.go('done', state);
-            } else {
-                state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
-                    menuCustomization: state.nickelMenuCustomization,
-                    isPreset: state.nickelMenuOption === 'preset',
-                });
-                state._nmDoneMode = 'download';
-                await flow.go('done', state);
-            }
-        } catch (err) {
-            audit?.record(`Failed: ${err.message}`);
-            state.showError(TL.STATUS.NM_INSTALL_FAILED(err.message), null, {
-                deviceWrite: !!err.deviceWrite,
-                auditLog: audit,
-            });
-        }
-    }
-
-    btnNmWrite.addEventListener('click', () => executeNmInstall(true));
-    btnNmDownload.addEventListener('click', () => executeNmInstall(false));
+    btnNmWrite.addEventListener('click', () => {
+        executeNmInstallFn({
+            state, flow, terminal,
+            dom: { progress: $('nm-progress'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: true },
+            showError: (...args) => state.showError(...args),
+        });
+    });
+    btnNmDownload.addEventListener('click', () => {
+        executeNmInstallFn({
+            state, flow, terminal,
+            dom: { progress: $('nm-progress'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: false },
+            showError: (...args) => state.showError(...args),
+        });
+    });
 
     return { goToNickelMenuConfig, resetNickelMenuState };
 }

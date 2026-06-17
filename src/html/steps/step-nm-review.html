@@ -1,14 +1,17 @@
         <section id="step-nm-review" class="step" hidden>
             <div class="review-summary">
-                <p id="nm-review-summary" class="review-summary-desc" hidden></p>
+                <p id="nm-review-summary" class="review-summary-desc" hidden aria-live="polite"></p>
                 <p id="nm-review-list-label" class="review-summary-heading"></p>
-                <ul id="nm-review-list" class="review-list"></ul>
+                <ul id="nm-review-list" class="review-list" aria-live="polite"></ul>
+            </div>
+            <div id="nm-reboot-warning" class="banner banner--warning" hidden>
+                <strong>Your Kobo will restart automatically.</strong> Removing NickelMenu requires a reboot. Make sure you <strong>safely eject</strong> your Kobo first, then let the device restart — NickelMenu will remove itself during startup.
             </div>
             <div id="nm-review-kept" class="review-summary review-summary--kept" hidden>
                 <p id="nm-review-kept-label" class="review-summary-heading"></p>
                 <ul id="nm-review-kept-list" class="review-list review-list--kept"></ul>
             </div>
-            <div id="nm-review-notices" class="review-notices" hidden></div>
+            <div id="nm-review-notices" class="review-notices" hidden aria-live="polite"></div>
             <p class="review-footnote">Before continuing, make sure these are the changes you want. You can always use the wizard again to uninstall NickelMenu, if you want to.</p>
             <div id="nm-review-actions" class="step-actions">
                 <button id="btn-nm-review-back" class="secondary">&#x2039; Back</button>

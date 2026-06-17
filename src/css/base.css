@@ -1,3 +1,19 @@
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0.5rem;
+    z-index: 1000;
+    background: var(--primary);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 0 0 4px 4px;
+    text-decoration: none;
+    font-size: 0.88rem;
+}
+.skip-link:focus {
+    top: 0;
+}
+
 /* Reset */
 *,
 *::before,

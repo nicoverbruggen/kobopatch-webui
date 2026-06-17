@@ -145,6 +145,15 @@ function showError(message, log, options = {}) {
 }
 
 state.showError = showError;
+state.goBackToDeviceStep = () => {
+    setNavLabels(TL.NAV_DEFAULT);
+    setNavStep(1);
+    showStep(stepDevice);
+};
+state.goToManualVersionStep = () => {
+    setNavStep(2);
+    showStep(stepManualVersion);
+};
 
 let handlingUnexpectedError = false;
 function handleUnexpectedError(err) {

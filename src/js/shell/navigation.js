@@ -42,6 +42,8 @@ export function showStep(step, push = true) {
     for (const s of allSteps) {
         s.hidden = (s !== step);
     }
+    step.setAttribute('tabindex', '-1');
+    step.focus({ preventScroll: true });
     if (!push) return;
     const idx = stepHistory.indexOf(step);
     if (idx >= 0) {

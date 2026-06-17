@@ -1,6 +1,5 @@
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { $, collect, formatMB, fetchWithProgress, populateList } from '../shell/dom.js';
-import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
+import { collect, formatMB, fetchWithProgress, populateList } from '../shell/dom.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
@@ -204,8 +203,7 @@ export function initPatchesFlow(state) {
             return;
         }
         if (state.manualMode) {
-            setNavStep(2);
-            showStep($('step-manual-version'));
+            state.goToManualVersionStep();
         } else {
             state.goToModeSelection();
         }
@@ -232,9 +230,7 @@ export function initPatchesFlow(state) {
     btnBuildBack.addEventListener('click', async () => {
         if (state.isRestore) {
             state.isRestore = false;
-            setNavLabels(TL.NAV_DEFAULT);
-            setNavStep(1);
-            showStep($('step-device'));
+            state.goBackToDeviceStep();
         } else {
             const target = flow.back(state);
             if (target) await flow.go(target, state);

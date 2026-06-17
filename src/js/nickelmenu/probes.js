@@ -42,7 +42,7 @@ export async function checkNickelMenuInstalled(state, {
         removeRadio.disabled = false;
         removeOption.classList.remove('selection-card--disabled');
         removeOption.classList.remove('selection-card--danger');
-        removeDesc.textContent = 'Shows instructions for manually removing NickelMenu from a Kobo.';
+            removeDesc.textContent = 'Shows instructions for manually removing NickelMenu from a Kobo. After following the removal steps, safely eject your Kobo and let it restart — NickelMenu will remove itself during startup.';
         return;
     }
 
@@ -64,7 +64,7 @@ export async function checkNickelMenuInstalled(state, {
             }
             removeRadio.disabled = false;
             removeOption.classList.remove('selection-card--disabled');
-            removeDesc.textContent = 'Removes NickelMenu from your device. Your device will restart automatically.';
+            removeDesc.textContent = 'Removes NickelMenu from your device. After writing, safely eject your Kobo — it will restart and remove NickelMenu automatically.';
 
             if (onOptionalCleanupDetected) {
                 const conf = await device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']) || '';

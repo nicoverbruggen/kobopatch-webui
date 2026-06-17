@@ -71,6 +71,10 @@ export function createFlow({ id, steps }) {
         if (step.onEnter && !options.skipOnEnter) {
             await step.onEnter(ctx);
         }
+
+        const visibleEl = $(step.domId);
+        visibleEl.setAttribute('tabindex', '-1');
+        visibleEl.focus({ preventScroll: true });
     }
 
     function back(ctx) {
