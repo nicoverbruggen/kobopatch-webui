@@ -1,11 +1,18 @@
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { collect, formatMB, fetchWithProgress, populateList } from '../shell/dom.js';
+import { collect, formatMB, populateList } from '../shell/dom.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
 import { koboModels } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
-import JSZip from 'jszip';
+import {
+    appendLog,
+    downloadFirmware,
+    extractOriginalTgz,
+    runPatcher,
+    buildPatchesManifest,
+    checkExistingTgz,
+} from './patches-execute.js';
 
 export function initPatchesFlow(state) {
 
@@ -117,7 +124,9 @@ export function initPatchesFlow(state) {
                     doneLog.scrollTop = doneLog.scrollHeight;
                 });
 
-                await checkExistingTgz();
+                if (await checkExistingTgz(state.device, state.manualMode)) {
+                    existingTgzWarning.hidden = false;
+                }
             },
         },
     ];
@@ -237,62 +246,7 @@ export function initPatchesFlow(state) {
         }
     });
 
-    function appendLog(msg) {
-        buildLog.textContent += msg + '\n';
-        buildLog.scrollTop = buildLog.scrollHeight;
-    }
 
-    async function downloadFirmware(url) {
-        buildProgress.textContent = TL.STATUS.DOWNLOADING;
-        return fetchWithProgress(url, (received, total) => {
-            if (!total) {
-                // No usable Content-Length (e.g. a gzip-encoded response) — show
-                // received bytes without a percentage rather than "NaN%".
-                buildProgress.textContent = `${TL.STATUS.DOWNLOADING} ${formatMB(received)}`;
-                return;
-            }
-            const pct = ((received / total) * 100).toFixed(0);
-            buildProgress.textContent = TL.STATUS.DOWNLOADING_PROGRESS(formatMB(received), formatMB(total), pct);
-        }, 'Download failed');
-    }
-
-    async function extractOriginalTgz(firmwareBytes) {
-        buildProgress.textContent = TL.STATUS.EXTRACTING;
-        appendLog('Extracting original KoboRoot.tgz from firmware...');
-        const zip = await JSZip.loadAsync(firmwareBytes);
-        const koboRoot = zip.file('KoboRoot.tgz');
-        if (!koboRoot) throw new Error(TL.STATUS.EXTRACT_FAILED);
-        const tgz = new Uint8Array(await koboRoot.async('arraybuffer'));
-        appendLog('Extracted KoboRoot.tgz: ' + formatMB(tgz.length));
-        return tgz;
-    }
-
-    async function runPatcher(firmwareBytes) {
-        buildProgress.textContent = TL.STATUS.APPLYING_PATCHES;
-        const configYAML = state.patchUI.generateConfig();
-        const patchFiles = state.patchUI.getPatchFileBytes();
-
-        const result = await state.runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
-            appendLog(msg);
-            const trimmed = msg.trimStart();
-            if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
-                trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
-                buildProgress.textContent = trimmed;
-            }
-        });
-
-        return result.tgz;
-    }
-
-    async function checkExistingTgz() {
-        if (state.manualMode || !state.device.directoryHandle) return;
-        try {
-            const koboDir = await state.device.directoryHandle.getDirectoryHandle('.kobo');
-            await koboDir.getFileHandle('KoboRoot.tgz');
-            existingTgzWarning.hidden = false;
-        } catch {
-        }
-    }
 
     btnBuild.addEventListener('click', async () => {
         await flow.go('building', state, { skipHistory: true });
@@ -308,37 +262,20 @@ export function initPatchesFlow(state) {
                 return;
             }
 
-            const firmwareBytes = await downloadFirmware(state.firmwareURL);
-            appendLog('Download complete: ' + formatMB(firmwareBytes.length));
+            const log = (msg) => appendLog(buildLog, msg);
+
+            const firmwareBytes = await downloadFirmware(state.firmwareURL, buildProgress);
+            log('Download complete: ' + formatMB(firmwareBytes.length));
 
             state.resultTgz = state.isRestore
-                ? await extractOriginalTgz(firmwareBytes)
-                : await runPatcher(firmwareBytes);
+                ? await extractOriginalTgz(firmwareBytes, buildProgress, log)
+                : await runPatcher(state.runner, state.patchUI.generateConfig(), firmwareBytes, state.patchUI.getPatchFileBytes(), buildProgress, log);
 
             await flow.go('done', state);
         } catch (err) {
             state.showError('Build failed: ' + err.message, buildLog.textContent);
         }
     });
-
-    function buildPatchesManifest() {
-        const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
-        return {
-            overrides: state.patchUI.getOverrides(),
-            customized: state.patchUI.getCustomizations(),
-            files: [
-                { path: '.kobo/KoboRoot.tgz', type: 'file' },
-            ],
-            meta: {
-                writer: { name: 'kobopatch-webui', version },
-                installed: {
-                    timestamp: new Date().toISOString(),
-                    firmware: state.firmwareVersion,
-                    model: state.selectedPrefix,
-                },
-            },
-        };
-    }
 
     btnWrite.addEventListener('click', async () => {
         if (!state.resultTgz || !state.device.directoryHandle) return;
@@ -353,7 +290,8 @@ export function initPatchesFlow(state) {
             label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
         }];
         if (!state.isRestore) {
-            const manifestData = new TextEncoder().encode(JSON.stringify(buildPatchesManifest(), null, 2) + '\n');
+            const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedPrefix);
+            const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
             writes.push({
                 path: [AUDIT_LOG_DIRECTORY, 'custom-patches.json'],
                 data: manifestData,
@@ -388,7 +326,8 @@ export function initPatchesFlow(state) {
         try {
             const entries = [{ path: '.kobo/KoboRoot.tgz', data: state.resultTgz }];
             if (!state.isRestore) {
-                const manifestData = new TextEncoder().encode(JSON.stringify(buildPatchesManifest(), null, 2) + '\n');
+                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedPrefix);
+                const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
                 entries.push({ path: `${AUDIT_LOG_DIRECTORY}/custom-patches.json`, data: manifestData });
             }
             const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
