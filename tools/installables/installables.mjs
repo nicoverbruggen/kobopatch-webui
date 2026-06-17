@@ -140,6 +140,21 @@ async function readLock() {
     return JSON.parse(await readFile(LOCK_PATH, 'utf8'));
 }
 
+// Write a frontend-consumable asset index next to the served assets. The lockfile
+// (installables.lock) isn't served, so the app reads sizes from /assets/index.json
+// to show the expected download size. Keyed by installable id; sizes are byte-exact
+// because the lock pins each asset. Regenerated for every target the tool touches.
+async function writeIndex(target, lock) {
+    const index = {};
+    for (const [name, entry] of Object.entries(lock.installables || {})) {
+        index[name] = { asset: entry.asset, version: entry.version, size: entry.size };
+    }
+    const dir = TARGETS[target];
+    await mkdir(dir, { recursive: true });
+    await writeFile(join(dir, 'index.json'), JSON.stringify(index, null, 2) + '\n');
+    console.log(`[${target}] wrote index.json (${Object.keys(index).length} entries)`);
+}
+
 async function writeLock(lock) {
     await writeFile(LOCK_PATH, JSON.stringify(lock, null, 2) + '\n');
 }
@@ -249,10 +264,12 @@ const lock = await readLock();
 if (opts.update) {
     for (const item of items) await updateInstallable(item, opts.targets, lock);
     await writeLock(lock);
+    for (const target of opts.targets) await writeIndex(target, lock);
     console.log(`Done. Updated installables.lock and assets in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
 } else {
     for (const item of items) {
         for (const target of opts.targets) await setupInstallable(item, target, lock);
     }
+    for (const target of opts.targets) await writeIndex(target, lock);
     console.log(`Done. Installables ready in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
 }

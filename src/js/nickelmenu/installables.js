@@ -32,6 +32,28 @@ export function installablesManifest() {
 }
 
 /**
+ * The served asset index (`/assets/index.json`, written by tools/installables).
+ * It maps each id to `{ asset, version, size }` so the app can show the expected
+ * download size — the lockfile that holds these sizes isn't served. Fetched once
+ * and cached; resolves to `{}` if the index is missing (e.g. an old deployment).
+ */
+let indexPromise = null;
+function loadIndex() {
+    if (!indexPromise) {
+        indexPromise = fetch('/assets/index.json')
+            .then((r) => (r.ok ? r.json() : {}))
+            .catch(() => ({}));
+    }
+    return indexPromise;
+}
+
+/** Expected download size in bytes for an installable id, or null if unknown. */
+export async function installableSize(id) {
+    const entry = (await loadIndex())[id];
+    return entry && typeof entry.size === 'number' ? entry.size : null;
+}
+
+/**
  * Build a version-suffixed, cacheable asset URL: `/assets/<file>?v=<version>`.
  * The `?v=` makes the URL change whenever the pinned version does, so the server
  * (and a CDN) can serve the large archives as `immutable`. Falls back to the bare

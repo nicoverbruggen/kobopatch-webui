@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAssetUrl } from '../../installables.js';
+import { installableAssetUrl, installableSize } from '../../installables.js';
 
 // Installs three bundled font families (Readerly, Libron, Cartisse) so they
 // appear in the in-book font dropdown. Each family ships as a zip asset that is
@@ -54,7 +54,7 @@ export default {
             ctx.progress(label);
             const zipBytes = await fetchWithProgress(
                 installableAssetUrl(archive.id, archive.file),
-                downloadProgress(ctx.progress, label),
+                downloadProgress(ctx.progress, label, await installableSize(archive.id)),
                 `Failed to download ${archive.name}`,
             );
             const zip = await JSZip.loadAsync(zipBytes);

@@ -2,7 +2,7 @@ import JSZip from 'jszip';
 
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl } from '../../installables.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
 
 // A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
 // existing user-edited file is never overwritten). NickelClock otherwise creates
@@ -126,7 +126,7 @@ export default {
         ctx.progress(label);
         const zipBytes = await fetchWithProgress(
             installableAssetUrl('nickelclock', 'NickelClock.zip'),
-            downloadProgress(ctx.progress, label),
+            downloadProgress(ctx.progress, label, await installableSize('nickelclock')),
             'Failed to download NickelClock',
         );
         const zip = await JSZip.loadAsync(zipBytes);

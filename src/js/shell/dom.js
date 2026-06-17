@@ -304,17 +304,24 @@ export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download
 /**
  * Build an `onProgress(received, total)` handler for `fetchWithProgress` that
  * renders byte counts as a status string through `report` (e.g. a feature's
- * `ctx.progress`). With a known `total` it shows "<label> X.X / Y.Y MB (Z%)";
- * when `total` is null (server sent no usable Content-Length, e.g. a gzip-encoded
- * response) it shows the indeterminate "<label> X.X MB" so progress still moves.
+ * `ctx.progress`).
+ *
+ * It shows "<label> X.X / Y.Y MB (Z%)" against the best total available: the
+ * server's Content-Length when present, else `expectedTotal` — the size baked into
+ * /assets/index.json. That fallback is what keeps the percentage working in
+ * production, where the proxy serves these archives gzip-encoded and strips
+ * Content-Length. Only with neither does it show the indeterminate "<label>
+ * (X.X MB)". The percentage is capped at 100% so a slightly-off estimate can't
+ * read over.
  */
-export function downloadProgress(report, label) {
+export function downloadProgress(report, label, expectedTotal = null) {
     return (received, total) => {
-        if (total) {
-            const pct = ((received / total) * 100).toFixed(0);
-            report(`${label} ${formatMB(received)} / ${formatMB(total)} (${pct}%)`);
+        const knownTotal = total || expectedTotal;
+        if (knownTotal) {
+            const pct = Math.min(100, (received / knownTotal) * 100).toFixed(0);
+            report(`${label} ${formatMB(received)} / ${formatMB(knownTotal)} (${pct}%)`);
         } else {
-            report(`${label} ${formatMB(received)}`);
+            report(`${label} (${formatMB(received)})`);
         }
     };
 }
