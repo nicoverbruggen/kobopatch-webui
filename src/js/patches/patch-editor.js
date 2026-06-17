@@ -80,20 +80,15 @@ export function validatePatchEdit(textarea, statusEl) {
     // (the `PatchableFunc`/instruction set). Keep in sync when upstream adds ops;
     // an unrecognized key only produces a soft warning, never blocks saving.
     const knownOps = ['Enabled', 'Description', 'PatchGroup', 'FindZlib', 'ReplaceZlib', 'ReplaceZlibGroup', 'FindZlibHash', 'FindReplaceString', 'ReplaceBytes', 'ReplaceFloat', 'BaseAddress', 'MustMatchLength'];
+    let unknownOp = null;
     for (const item of body) {
         if (typeof item !== 'object' || item === null) continue;
-        for (const key of Object.keys(item)) {
-            if (!knownOps.includes(key)) {
-                statusEl.textContent = `Warning: Unknown operation "${key}" in patch "${patchName}". Check for typos.`;
-                statusEl.className = 'patch-editor-status patch-editor-status--warning';
-                break;
-            }
-        }
-        // Only check first unknown key
-        break;
+        unknownOp = Object.keys(item).find(key => !knownOps.includes(key));
+        if (unknownOp) break;
     }
 
-    // Validate Enabled value (must be yes/no)
+    // Validate Enabled value (must be yes/no). A hard error takes precedence
+    // over the soft unknown-op warning below.
     const enabledEntry = body.find(item => item && typeof item === 'object' && 'Enabled' in item);
     if (enabledEntry) {
         const val = enabledEntry.Enabled;
@@ -102,6 +97,14 @@ export function validatePatchEdit(textarea, statusEl) {
             statusEl.className = 'patch-editor-status patch-editor-status--error';
             return false;
         }
+    }
+
+    // An unrecognized op is a non-blocking warning: it still saves, but the
+    // warning must survive (rather than be overwritten by the "valid" message).
+    if (unknownOp) {
+        statusEl.textContent = `Warning: Unknown operation "${unknownOp}" in patch "${patchName}". Check for typos.`;
+        statusEl.className = 'patch-editor-status patch-editor-status--warning';
+        return true;
     }
 
     statusEl.textContent = `Valid — patch "${patchName}" ready.`;

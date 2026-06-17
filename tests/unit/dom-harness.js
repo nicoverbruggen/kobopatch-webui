@@ -23,10 +23,38 @@ export const STEP_IDS = [
 ];
 
 const stepDivs = STEP_IDS.map(id => `<div id="${id}" hidden></div>`).join('');
+
+// The patch editor dialog skeleton, matching the selectors patch-editor.js queries.
+const editorDialog = `
+<dialog id="patch-editor-dialog">
+  <h2 class="patch-editor-title"></h2>
+  <textarea class="patch-editor-textarea"></textarea>
+  <p class="patch-editor-status"></p>
+  <div class="modal-footer">
+    <button type="button" class="patch-editor-validate">Validate</button>
+    <button type="button" class="patch-editor-save">Save</button>
+    <button type="button" class="patch-editor-cancel">Cancel</button>
+  </div>
+</dialog>`;
+
 const dom = new JSDOM(
-    `<!doctype html><html><body><nav id="step-nav" hidden><ol></ol></nav>${stepDivs}</body></html>`,
+    `<!doctype html><html><body><nav id="step-nav" hidden><ol></ol></nav>${stepDivs}${editorDialog}</body></html>`,
     { pretendToBeVisual: true },
 );
+
+// jsdom's <dialog> showModal/close are unreliable across versions; provide a
+// minimal deterministic implementation so open state and the `close` event
+// (which the editor relies on to reset its state) behave predictably.
+const Dialog = dom.window.HTMLDialogElement;
+if (Dialog) {
+    Dialog.prototype.show = function show() { this.open = true; };
+    Dialog.prototype.showModal = function showModal() { this.open = true; };
+    Dialog.prototype.close = function close(returnValue) {
+        if (returnValue !== undefined) this.returnValue = returnValue;
+        this.open = false;
+        this.dispatchEvent(new dom.window.Event('close'));
+    };
+}
 
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
