@@ -163,6 +163,17 @@ export function renderIconPreview(container, icon) {
     container.appendChild(img);
 }
 
+function getGridColumns(grid) {
+    if (grid.children.length < 2) return 1;
+    const firstRect = grid.children[0].getBoundingClientRect();
+    const secondRect = grid.children[1].getBoundingClientRect();
+    return secondRect.top > firstRect.top ? 1 : grid.children.length;
+}
+
+function getGridIndex(grid, el) {
+    return Array.prototype.indexOf.call(grid.children, el);
+}
+
 export function renderNmCustomizationPresets(container, onSelect) {
     if (container.children.length) return;
 
@@ -195,6 +206,41 @@ export function renderNmCustomizationPresets(container, onSelect) {
         });
         container.appendChild(button);
     }
+
+    const total = container.children.length;
+
+    container.addEventListener('keydown', (e) => {
+        const cols = getGridColumns(container);
+        const idx = getGridIndex(container, document.activeElement);
+        if (idx === -1) return;
+
+        let target;
+        switch (e.key) {
+            case 'ArrowRight':
+                target = Math.min(idx + 1, total - 1);
+                break;
+            case 'ArrowLeft':
+                target = Math.max(idx - 1, 0);
+                break;
+            case 'ArrowDown':
+                target = Math.min(idx + cols, total - 1);
+                break;
+            case 'ArrowUp':
+                target = Math.max(idx - cols, 0);
+                break;
+            case 'Home':
+                target = 0;
+                break;
+            case 'End':
+                target = total - 1;
+                break;
+            default:
+                return;
+        }
+
+        e.preventDefault();
+        container.children[target].focus();
+    });
 }
 
 export function cloneMenuCustomization(customization) {
