@@ -362,6 +362,60 @@ test.describe('NickelMenu — install', () => {
   });
 
 
+  test('no device — customize label is sanitized live and Save is gated on a valid label', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+    await goToManualMode(page);
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+
+    await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
+    await expect(page.locator('#nm-customize-dialog')).toBeVisible();
+
+    const labelInput = page.locator('#nm-customize-label');
+    const counter = page.locator('#nm-customize-counter');
+    const status = page.locator('#nm-customize-status');
+    const saveBtn = page.locator('#btn-nm-customize-save');
+
+    // Spaces and punctuation are stripped as the user types.
+    await labelInput.fill('My Menu!!');
+    await expect(labelInput).toHaveValue('MyMenu');
+    await expect(counter).toHaveText('6/10');
+    await expect(saveBtn).toBeEnabled();
+
+    // Input longer than the max is truncated to 10 alphanumeric characters.
+    await labelInput.fill('ABCDEFGHIJKLMNOP');
+    await expect(labelInput).toHaveValue('ABCDEFGHIJ');
+    await expect(counter).toHaveText('10/10');
+
+    // A label that sanitizes to empty is invalid: Save is disabled with guidance.
+    await labelInput.fill('!!!');
+    await expect(labelInput).toHaveValue('');
+    await expect(counter).toHaveText('0/10');
+    await expect(saveBtn).toBeDisabled();
+    await expect(status).toHaveText('Use 1-10 letters or numbers.');
+
+    // Clearing the field is likewise invalid.
+    await labelInput.fill('');
+    await expect(saveBtn).toBeDisabled();
+    await expect(status).toHaveText('Use 1-10 letters or numbers.');
+
+    // A valid label re-enables Save and persists once saved.
+    await labelInput.fill('Reader');
+    await expect(saveBtn).toBeEnabled();
+    await expect(status).toHaveText('');
+    await page.click('#btn-nm-customize-save');
+    await expect(page.locator('#nm-customize-dialog')).toBeHidden();
+
+    await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
+    await expect(page.locator('#nm-customize-dialog')).toBeVisible();
+    await expect(labelInput).toHaveValue('Reader');
+  });
+
+
   test('no device — uploaded PNG tab icon is resized to 64x64 PNG', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

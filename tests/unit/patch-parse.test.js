@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { PatchUI } from '../../src/js/patches/ui.js';
-import { parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/patch-yaml.js';
+import { parsePatchYAML, replacePatchLines, yamlScalar, parsePatchConfig } from '../../src/js/patches/patch-yaml.js';
+import { buildPatchesManifest } from '../../src/js/flows/patches-execute.js';
 
 /**
  * Build a PatchUI seeded with one file's worth of patches and their pristine
@@ -244,4 +245,97 @@ test('yamlScalar leaves plain names bare and quotes significant characters', () 
     assert.equal(yamlScalar('- leading dash'), '"- leading dash"');
     assert.equal(yamlScalar('yes'), '"yes"');
     assert.equal(yamlScalar('say "hi"'), '"say \\"hi\\""');
+});
+
+test('parsePatchConfig extracts the version and the patches file→target map', () => {
+    const config = [
+        'version: "4.45.23646"',
+        'in: firmware.zip',
+        'out: out/KoboRoot.tgz',
+        'patches:',
+        '  src/nickel.yaml: usr/local/Kobo/nickel',
+        '  src/libnickel.so.1.0.0.yaml: usr/local/Kobo/libnickel.so.1.0.0',
+        'overrides:',
+        '  src/nickel.yaml:',
+        '    Some patch: yes',
+    ].join('\n');
+    const { version, patches } = parsePatchConfig(config);
+    assert.equal(version, '4.45.23646');
+    assert.deepEqual(patches, {
+        'src/nickel.yaml': 'usr/local/Kobo/nickel',
+        'src/libnickel.so.1.0.0.yaml': 'usr/local/Kobo/libnickel.so.1.0.0',
+    });
+});
+
+test('parsePatchConfig reads an unquoted version and ignores comments in the patches block', () => {
+    const config = [
+        'version: 4.44.19619',
+        'patches:',
+        '  # core UI patches',
+        '  src/nickel.yaml: usr/local/Kobo/nickel',
+    ].join('\n');
+    const { version, patches } = parsePatchConfig(config);
+    assert.equal(version, '4.44.19619');
+    assert.deepEqual(patches, { 'src/nickel.yaml': 'usr/local/Kobo/nickel' });
+});
+
+test('generateConfig emits the version, patch targets, and quoted overrides', () => {
+    const ui = new PatchUI();
+    ui.firmwareVersion = '4.45.23646';
+    ui.patchConfig = { 'src/nickel.yaml': 'usr/local/Kobo/nickel' };
+    ui.patchFiles = {
+        'src/nickel.yaml': {
+            raw: '',
+            patches: [
+                { name: 'Plain name', enabled: true },
+                { name: 'Has: colon', enabled: false },
+            ],
+        },
+    };
+    const cfg = ui.generateConfig();
+    assert.match(cfg, /^version: "4\.45\.23646"$/m);
+    assert.match(cfg, /^patchFormat: kobopatch$/m);
+    assert.match(cfg, /^ {2}src\/nickel\.yaml: usr\/local\/Kobo\/nickel$/m);
+    assert.match(cfg, /^ {4}Plain name: yes$/m);
+    assert.match(cfg, /^ {4}"Has: colon": no$/m);
+});
+
+test('isBlacklisted matches on the short firmware version and exact file + name', () => {
+    const ui = new PatchUI();
+    ui.firmwareVersion = '4.45.23646';
+    ui.blacklist = { '4.45': { 'src/nickel.yaml': ['Allow rotation'] } };
+
+    assert.equal(ui.isBlacklisted('src/nickel.yaml', 'Allow rotation'), true);
+    assert.equal(ui.isBlacklisted('src/nickel.yaml', 'Other patch'), false);
+    assert.equal(ui.isBlacklisted('src/other.yaml', 'Allow rotation'), false);
+});
+
+test('isBlacklisted returns false without a blacklist, firmware, or version match', () => {
+    const noVersion = new PatchUI();
+    noVersion.blacklist = { '4.45': { 'src/nickel.yaml': ['Allow rotation'] } };
+    assert.equal(noVersion.isBlacklisted('src/nickel.yaml', 'Allow rotation'), false);
+
+    const otherVersion = new PatchUI();
+    otherVersion.blacklist = { '4.45': { 'src/nickel.yaml': ['Allow rotation'] } };
+    otherVersion.firmwareVersion = '4.44.19619';
+    assert.equal(otherVersion.isBlacklisted('src/nickel.yaml', 'Allow rotation'), false);
+
+    const noBlacklist = new PatchUI();
+    noBlacklist.firmwareVersion = '4.45.23646';
+    assert.equal(noBlacklist.isBlacklisted('src/nickel.yaml', 'Allow rotation'), false);
+});
+
+test('buildPatchesManifest captures overrides, customizations, and install metadata', () => {
+    const raw = 'First:\n  - Enabled: yes\nSecond:\n  - Enabled: no\n';
+    const ui = seedUI('src/nickel.yaml', raw);
+    editPatch(ui, 'src/nickel.yaml', 'Second', 'Second:\n  - Enabled: yes\n  - FindReplaceString: x\n');
+
+    const manifest = buildPatchesManifest(ui, '4.45.23646', 'N418');
+    assert.deepEqual(manifest.overrides, ui.getOverrides());
+    assert.deepEqual(manifest.customized, ui.getCustomizations());
+    assert.equal(manifest.files[0].path, '.kobo/KoboRoot.tgz');
+    assert.equal(manifest.meta.writer.name, 'kobopatch-webui');
+    assert.equal(manifest.meta.installed.firmware, '4.45.23646');
+    assert.equal(manifest.meta.installed.model, 'N418');
+    assert.equal(typeof manifest.meta.installed.timestamp, 'string');
 });
