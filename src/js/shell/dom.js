@@ -257,23 +257,29 @@ export async function fetchOrThrow(url, errorPrefix = 'Fetch failed') {
 /**
  * Fetch a URL as bytes while reporting download progress.
  *
- * When the server reports a Content-Length and streaming is available, the body
- * is read chunk by chunk and `onProgress(received, total)` is called after each
- * chunk so callers can render a percentage. When neither is available (no
- * Content-Length or no `resp.body`), it falls back to a single-shot read with no
- * progress callbacks. Returns a `Uint8Array` of the full payload.
+ * Whenever the body is streamable, it is read chunk by chunk and
+ * `onProgress(received, total)` fires after each chunk. `total` is the parsed
+ * Content-Length when present, or `null` when it isn't — which is the common case
+ * in production: a proxy/CDN serving these archives with `Content-Encoding: gzip`
+ * drops Content-Length (the header would describe the compressed size, while the
+ * stream we read is the decompressed body), so the browser reports no length even
+ * though `curl -I` (which sends no Accept-Encoding) sees one. We must keep
+ * streaming in that case and let callers show byte counts without a percentage;
+ * bailing to a single read here is what left the progress label frozen. Only when
+ * `resp.body` is entirely unavailable do we fall back to a single-shot read with
+ * no progress callbacks. Returns a `Uint8Array` of the full payload.
  */
 export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download failed') {
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`${errorPrefix}: HTTP ${resp.status}`);
 
-    const contentLength = resp.headers?.get?.('Content-Length');
-    if (!contentLength || !resp.body) {
-        // No progress info available — download in one shot.
+    if (!resp.body) {
+        // No streaming available — download in one shot.
         return new Uint8Array(await resp.arrayBuffer());
     }
 
-    const total = parseInt(contentLength, 10);
+    const contentLength = resp.headers?.get?.('Content-Length');
+    const total = contentLength ? parseInt(contentLength, 10) : null;
     const reader = resp.body.getReader();
     const chunks = [];
     let received = 0;
@@ -297,13 +303,19 @@ export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download
 
 /**
  * Build an `onProgress(received, total)` handler for `fetchWithProgress` that
- * renders byte counts as a "<label> X.X / Y.Y MB (Z%)" status string through
- * `report` (e.g. a feature's `ctx.progress`).
+ * renders byte counts as a status string through `report` (e.g. a feature's
+ * `ctx.progress`). With a known `total` it shows "<label> X.X / Y.Y MB (Z%)";
+ * when `total` is null (server sent no usable Content-Length, e.g. a gzip-encoded
+ * response) it shows the indeterminate "<label> X.X MB" so progress still moves.
  */
 export function downloadProgress(report, label) {
     return (received, total) => {
-        const pct = ((received / total) * 100).toFixed(0);
-        report(`${label} ${formatMB(received)} / ${formatMB(total)} (${pct}%)`);
+        if (total) {
+            const pct = ((received / total) * 100).toFixed(0);
+            report(`${label} ${formatMB(received)} / ${formatMB(total)} (${pct}%)`);
+        } else {
+            report(`${label} ${formatMB(received)}`);
+        }
     };
 }
 

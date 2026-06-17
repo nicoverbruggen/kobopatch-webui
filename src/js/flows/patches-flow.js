@@ -222,6 +222,12 @@ export function initPatchesFlow(state) {
     async function downloadFirmware(url) {
         buildProgress.textContent = TL.STATUS.DOWNLOADING;
         return fetchWithProgress(url, (received, total) => {
+            if (!total) {
+                // No usable Content-Length (e.g. a gzip-encoded response) — show
+                // received bytes without a percentage rather than "NaN%".
+                buildProgress.textContent = `${TL.STATUS.DOWNLOADING} ${formatMB(received)}`;
+                return;
+            }
             const pct = ((received / total) * 100).toFixed(0);
             buildProgress.textContent = TL.STATUS.DOWNLOADING_PROGRESS(formatMB(received), formatMB(total), pct);
         }, 'Download failed');
