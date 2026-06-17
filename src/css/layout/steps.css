@@ -1,6 +1,10 @@
 .step {
     margin-bottom: 1rem;
 
+    &:focus {
+        outline: none;
+    }
+
     & p {
         color: var(--text-secondary);
         margin-bottom: 1rem;
