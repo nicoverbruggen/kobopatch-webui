@@ -1,3 +1,10 @@
+/*
+ * CSS browser target: modern browsers that support native CSS nesting,
+ * :has(), @layer, and other CSS 2023+ features (Chrome 120+, Firefox 121+,
+ * Safari 17.2+). No PostCSS transforms are used — the stylesheets are
+ * served as-authored.
+ */
+
 .skip-link {
     position: absolute;
     top: -100%;
