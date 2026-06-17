@@ -6,12 +6,9 @@ import {
 } from '../nickelmenu/installer.js';
 import {
     createDefaultMenuCustomization,
-    findPresetIcon,
     isDefaultMenuCustomization,
     isValidMenuLabel,
     NM_MENU_DEFAULT_LABEL,
-    NM_MENU_LABEL_MAX_LENGTH,
-    normalizeMenuLabel,
     sanitizeMenuLabel,
 } from '../nickelmenu/customization.js';
 import {
@@ -23,11 +20,12 @@ import {
     nmReviewModel,
 } from '../nickelmenu/selection.js';
 import {
-    renderNmCustomizationPresets,
-    renderIconPreview,
+    cloneMenuCustomization,
+    getMenuCustomizationSummaryItem,
+    updateMenuCustomizationSummary,
+    openMenuCustomizeDialog,
+    updateMenuCustomizationDialog,
     handleNmIconUpload,
-    renderPresetSvgToPng,
-    NM_DEFAULT_ICON_ASSET,
 } from '../nickelmenu/customization-dialog.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
@@ -331,8 +329,8 @@ export function initNickelMenu(state) {
                     : `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`,
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
-                onAction: f.customization ? openNmCustomizeDialog : undefined,
-                ...(f.customization ? getNmCustomizationSummaryItem() : {}),
+                onAction: f.customization ? (triggerEl) => { nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl); } : undefined,
+                ...(f.customization ? getMenuCustomizationSummaryItem(state) : {}),
             };
         });
         renderNmCheckboxList(nmConfigOptions, items);
@@ -352,133 +350,20 @@ export function initNickelMenu(state) {
         }
     }
 
-    function getNmCustomizationSummaryItem() {
-        const summary = getNmCustomizationSummary(state.nickelMenuCustomization);
-        return {
-            summaryId: 'nm-custom-menu-summary',
-            summaryLabel: summary.label,
-            summaryIconHtml: summary.iconHtml,
-            summaryIconSrc: summary.iconSrc,
-        };
-    }
-
-    function getNmCustomizationSummary(customization) {
-        const icon = customization?.icon;
-        const summary = {
-            label: normalizeMenuLabel(customization?.label),
-            iconHtml: '',
-            iconSrc: '',
-        };
-
-        if (icon?.type === 'preset') {
-            const preset = findPresetIcon(icon.id);
-            if (preset) summary.iconHtml = preset.svg;
-            return summary;
-        }
-
-        if (icon?.type === 'upload' && icon.previewUrl) {
-            summary.iconSrc = icon.previewUrl;
-            return summary;
-        }
-
-        summary.iconSrc = NM_DEFAULT_ICON_ASSET;
-        return summary;
-    }
-
-    function updateNmFeatureSummary() {
-        const container = $('nm-custom-menu-summary');
-        if (!container) return;
-        const summary = getNmCustomizationSummary(state.nickelMenuCustomization);
-        const icon = $q('.nm-config-summary-icon', container);
-        const label = $q('.nm-config-summary-label', container);
-
-        if (icon) {
-            icon.innerHTML = '';
-            if (summary.iconHtml) {
-                icon.innerHTML = summary.iconHtml;
-            } else if (summary.iconSrc) {
-                const img = document.createElement('img');
-                img.alt = '';
-                img.src = summary.iconSrc;
-                icon.appendChild(img);
-            }
-        }
-
-        if (label) label.textContent = summary.label;
-    }
-
-    function cloneMenuCustomization(customization) {
-        const fallback = createDefaultMenuCustomization();
-        const source = customization || fallback;
-        return {
-            label: source.label || fallback.label,
-            icon: { ...(source.icon || fallback.icon) },
-        };
-    }
-
-    function updateNmCustomizationDialog(message = '') {
-        const label = sanitizeMenuLabel(nmCustomizeLabel.value);
-        if (label !== nmCustomizeLabel.value) {
-            nmCustomizeLabel.value = label;
-        }
-
-        nmCustomizationDraft.label = label;
-        nmCustomizeCounter.textContent = `${label.length}/${NM_MENU_LABEL_MAX_LENGTH}`;
-
-        for (const button of $qa('.nm-icon-choice', nmCustomizePresets)) {
-            button.classList.toggle(
-                'nm-icon-choice--selected',
-                (nmCustomizationDraft.icon?.type === 'preset' && button.dataset.iconId === nmCustomizationDraft.icon.id)
-                    || (nmCustomizationDraft.icon?.type === 'default' && button.dataset.iconId === 'cog')
-            );
-        }
-
-        const hasUpload = nmCustomizationDraft.icon?.type === 'upload';
-        nmCustomizeUploadPreview.classList.toggle('nm-upload-preview--selected', hasUpload);
-        if (hasUpload) {
-            renderIconPreview(nmCustomizeUploadPreview, nmCustomizationDraft.icon);
-            nmCustomizeUploadName.textContent = nmCustomizationDraft.icon.name || 'Uploaded image';
-        } else {
-            nmCustomizeUploadPreview.innerHTML = '';
-            nmCustomizeUploadName.textContent = 'No uploaded image selected';
-        }
-
-        const valid = isValidMenuLabel(label);
-        btnNmCustomizeSave.disabled = !valid;
-        nmCustomizeStatus.textContent = valid
-            ? message
-            : `Use 1-${NM_MENU_LABEL_MAX_LENGTH} letters or numbers.`;
-    }
-
-    function openNmCustomizeDialog() {
-        renderNmCustomizationPresets(nmCustomizePresets, async (icon) => {
-            if (icon.id === 'cog') {
-                nmCustomizationDraft.icon = { type: 'default' };
-                updateNmCustomizationDialog();
-                return;
-            }
-
-            try {
-                nmCustomizeStatus.textContent = 'Preparing preset icon...';
-                const data = await renderPresetSvgToPng(icon.svg);
-                nmCustomizationDraft.icon = {
-                    type: 'preset',
-                    id: icon.id,
-                    mimeType: 'image/png',
-                    data,
-                };
-                updateNmCustomizationDialog('Preset icon prepared as 48x48 PNG.');
-            } catch (err) {
-                nmCustomizeStatus.textContent = err.message;
-            }
-        });
-        nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
-        nmCustomizeLabel.value = sanitizeMenuLabel(nmCustomizationDraft.label);
-        updateNmCustomizationDialog();
-        nmCustomizeDialog.showModal();
-        nmCustomizeLabel.focus();
-        nmCustomizeLabel.select();
-    }
+    const customizationDialogDom = {
+        dialog: nmCustomizeDialog,
+        labelInput: nmCustomizeLabel,
+        counter: nmCustomizeCounter,
+        presets: nmCustomizePresets,
+        upload: nmCustomizeUpload,
+        uploadPreview: nmCustomizeUploadPreview,
+        uploadName: nmCustomizeUploadName,
+        close: btnNmCustomizeClose,
+        cancel: btnNmCustomizeCancel,
+        reset: btnNmCustomizeReset,
+        save: btnNmCustomizeSave,
+        status: nmCustomizeStatus,
+    };
 
     function renderCleanupCheckboxes() {
         if (detectedOptionalCleanupFeatures.length === 0) {
@@ -531,7 +416,7 @@ export function initNickelMenu(state) {
         state.nmBackupChoice = null;
         state.nickelMenuCustomization = createDefaultMenuCustomization();
         nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
-        updateNmFeatureSummary();
+        updateMenuCustomizationSummary(state);
         btnNmBackupNext.disabled = true;
         btnNmBackupNext.textContent = 'Continue \u203A';
         btnNmBackupBack.disabled = false;
@@ -541,8 +426,6 @@ export function initNickelMenu(state) {
             radio.disabled = false;
         }
     }
-
-
 
     async function checkNmInstalledState() {
         const removeOption = $('nm-option-remove');
@@ -660,10 +543,10 @@ export function initNickelMenu(state) {
         await flow.go('backup', state);
     });
 
-    nmCustomizeLabel.addEventListener('input', () => updateNmCustomizationDialog());
+    nmCustomizeLabel.addEventListener('input', () => updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom));
     nmCustomizeUpload.addEventListener('change', () => {
         handleNmIconUpload(nmCustomizeUpload.files?.[0], nmCustomizationDraft, (msg) => {
-            updateNmCustomizationDialog(msg);
+            updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, msg);
         });
         nmCustomizeUpload.value = '';
     });
@@ -672,12 +555,12 @@ export function initNickelMenu(state) {
     btnNmCustomizeReset.addEventListener('click', () => {
         nmCustomizationDraft = createDefaultMenuCustomization();
         nmCustomizeLabel.value = NM_MENU_DEFAULT_LABEL;
-        updateNmCustomizationDialog(isDefaultMenuCustomization(state.nickelMenuCustomization) ? '' : 'Defaults restored.');
+        updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, isDefaultMenuCustomization(state.nickelMenuCustomization) ? '' : 'Defaults restored.');
     });
     btnNmCustomizeSave.addEventListener('click', () => {
         const label = sanitizeMenuLabel(nmCustomizeLabel.value).trim();
         if (!isValidMenuLabel(label)) {
-            updateNmCustomizationDialog();
+            updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom);
             return;
         }
 
@@ -685,7 +568,7 @@ export function initNickelMenu(state) {
             ...nmCustomizationDraft,
             label,
         };
-        updateNmFeatureSummary();
+        updateMenuCustomizationSummary(state);
         nmCustomizeDialog.close();
     });
 

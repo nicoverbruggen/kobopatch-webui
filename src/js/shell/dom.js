@@ -135,9 +135,12 @@ export function renderNmCheckboxList(container, items) {
             titleSpan.append(version);
         }
 
+        const descId = item.name + '-desc';
         const descSpan = document.createElement('span');
+        descSpan.id = descId;
         descSpan.className = 'nm-config-desc';
         descSpan.textContent = item.description;
+        input.setAttribute('aria-describedby', descId);
 
         textDiv.appendChild(titleSpan);
         textDiv.appendChild(descSpan);
@@ -189,7 +192,7 @@ export function renderNmCheckboxList(container, items) {
                 summary.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    item.onAction();
+                    item.onAction(event.currentTarget);
                 });
                 side.appendChild(summary);
             } else {
@@ -201,7 +204,7 @@ export function renderNmCheckboxList(container, items) {
                 action.addEventListener('click', event => {
                     event.preventDefault();
                     event.stopPropagation();
-                    item.onAction();
+                    item.onAction(event.currentTarget);
                 });
                 side.appendChild(action);
             }

@@ -1,6 +1,11 @@
 import {
     findPresetIcon,
     NM_MENU_PRESET_ICONS,
+    createDefaultMenuCustomization,
+    isValidMenuLabel,
+    normalizeMenuLabel,
+    sanitizeMenuLabel,
+    NM_MENU_LABEL_MAX_LENGTH,
 } from './customization.js';
 
 const NM_DEFAULT_ICON_ASSET = 'js/nickelmenu/features/custom-menu/.cog.png';
@@ -189,6 +194,161 @@ export function renderNmCustomizationPresets(container, onSelect) {
         });
         container.appendChild(button);
     }
+}
+
+export function cloneMenuCustomization(customization) {
+    const fallback = createDefaultMenuCustomization();
+    const source = customization || fallback;
+    return {
+        label: source.label || fallback.label,
+        icon: { ...(source.icon || fallback.icon) },
+    };
+}
+
+export function getMenuCustomizationSummary(customization) {
+    const icon = customization?.icon;
+    const summary = {
+        label: normalizeMenuLabel(customization?.label),
+        iconHtml: '',
+        iconSrc: '',
+    };
+
+    if (icon?.type === 'preset') {
+        const preset = findPresetIcon(icon.id);
+        if (preset) summary.iconHtml = preset.svg;
+        return summary;
+    }
+
+    if (icon?.type === 'upload' && icon.previewUrl) {
+        summary.iconSrc = icon.previewUrl;
+        return summary;
+    }
+
+    summary.iconSrc = NM_DEFAULT_ICON_ASSET;
+    return summary;
+}
+
+export function getMenuCustomizationSummaryItem(state) {
+    const summary = getMenuCustomizationSummary(state.nickelMenuCustomization);
+    return {
+        summaryId: 'nm-custom-menu-summary',
+        summaryLabel: summary.label,
+        summaryIconHtml: summary.iconHtml,
+        summaryIconSrc: summary.iconSrc,
+    };
+}
+
+export function updateMenuCustomizationSummary(state) {
+    const container = document.getElementById('nm-custom-menu-summary');
+    if (!container) return;
+    const summary = getMenuCustomizationSummary(state.nickelMenuCustomization);
+    const icon = container.querySelector('.nm-config-summary-icon');
+    const label = container.querySelector('.nm-config-summary-label');
+
+    if (icon) {
+        icon.innerHTML = '';
+        if (summary.iconHtml) {
+            icon.innerHTML = summary.iconHtml;
+        } else if (summary.iconSrc) {
+            const img = document.createElement('img');
+            img.alt = '';
+            img.src = summary.iconSrc;
+            icon.appendChild(img);
+        }
+    }
+
+    if (label) label.textContent = summary.label;
+}
+
+export function updateMenuCustomizationDialog(draft, dialogDom, message = '') {
+    const label = sanitizeMenuLabel(dialogDom.labelInput.value);
+    if (label !== dialogDom.labelInput.value) {
+        dialogDom.labelInput.value = label;
+    }
+
+    draft.label = label;
+    dialogDom.counter.textContent = `${label.length}/${NM_MENU_LABEL_MAX_LENGTH}`;
+
+    for (const button of dialogDom.presets.querySelectorAll('.nm-icon-choice')) {
+        button.classList.toggle(
+            'nm-icon-choice--selected',
+            (draft.icon?.type === 'preset' && button.dataset.iconId === draft.icon.id)
+                || (draft.icon?.type === 'default' && button.dataset.iconId === 'cog')
+        );
+    }
+
+    const hasUpload = draft.icon?.type === 'upload';
+    dialogDom.uploadPreview.classList.toggle('nm-upload-preview--selected', hasUpload);
+    if (hasUpload) {
+        renderIconPreview(dialogDom.uploadPreview, draft.icon);
+        dialogDom.uploadName.textContent = draft.icon.name || 'Uploaded image';
+    } else {
+        dialogDom.uploadPreview.innerHTML = '';
+        dialogDom.uploadName.textContent = 'No uploaded image selected';
+    }
+
+    const valid = isValidMenuLabel(label);
+    dialogDom.save.disabled = !valid;
+    dialogDom.status.textContent = valid
+        ? message
+        : `Use 1-${NM_MENU_LABEL_MAX_LENGTH} letters or numbers.`;
+}
+
+export function openMenuCustomizeDialog(state, dialogDom, triggerEl) {
+    const draft = cloneMenuCustomization(state.nickelMenuCustomization);
+
+    renderNmCustomizationPresets(dialogDom.presets, async (icon) => {
+        if (icon.id === 'cog') {
+            draft.icon = { type: 'default' };
+            updateMenuCustomizationDialog(draft, dialogDom);
+            return;
+        }
+
+        try {
+            dialogDom.status.textContent = 'Preparing preset icon...';
+            const data = await renderPresetSvgToPng(icon.svg);
+            draft.icon = {
+                type: 'preset',
+                id: icon.id,
+                mimeType: 'image/png',
+                data,
+            };
+            updateMenuCustomizationDialog(draft, dialogDom, 'Preset icon prepared as 48x48 PNG.');
+        } catch (err) {
+            dialogDom.status.textContent = err.message;
+        }
+    });
+
+    dialogDom.labelInput.value = sanitizeMenuLabel(draft.label);
+    updateMenuCustomizationDialog(draft, dialogDom);
+    dialogDom._triggerEl = triggerEl;
+    dialogDom.dialog.showModal();
+    dialogDom.labelInput.focus();
+    dialogDom.labelInput.select();
+    return draft;
+}
+
+const _focusReturnWiredDialogs = new Set();
+function wireFocusReturn(dlg) {
+    if (_focusReturnWiredDialogs.has(dlg)) return;
+    _focusReturnWiredDialogs.add(dlg);
+    dlg.addEventListener('close', () => {
+        const trigger = dlg._triggerEl;
+        if (trigger && typeof trigger.focus === 'function') {
+            trigger.focus({ preventScroll: true });
+        }
+    });
+}
+
+// Lazy-wire focus return when the import first runs.
+document.addEventListener('DOMContentLoaded', () => {
+    const dlg = document.getElementById('nm-customize-dialog');
+    if (dlg) wireFocusReturn(dlg);
+}, { once: true });
+// Also wire if DOM is already ready.
+if (document.readyState !== 'loading') {
+    const dlg = document.getElementById('nm-customize-dialog');
+    if (dlg) wireFocusReturn(dlg);
 }
 
 export { NM_DEFAULT_ICON_ASSET, NM_PRESET_ICON_PNG_SIZE, NM_UPLOAD_ICON_SIZE };
