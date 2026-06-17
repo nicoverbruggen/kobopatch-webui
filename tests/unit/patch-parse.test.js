@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PatchUI, parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/ui.js';
+import { PatchUI } from '../../src/js/patches/ui.js';
+import { parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/patch-yaml.js';
 
 /**
  * Build a PatchUI seeded with one file's worth of patches and their pristine

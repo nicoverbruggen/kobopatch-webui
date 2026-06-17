@@ -1,5 +1,6 @@
-import { $, $q, $qa, collect, renderNmCheckboxList, populateList } from '../shell/dom.js';
+import { $, $q, $qa, collect, populateList } from '../shell/dom.js';
 import { setupCardRadios } from '../shell/navigation.js';
+import { renderNmCheckboxList } from '../nickelmenu/checkbox-list.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import {
