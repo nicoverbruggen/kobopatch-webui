@@ -499,6 +499,28 @@ test('connected nickelmenu installing (busy indicator)', async ({ page }, testIn
   await shot(page, dir, '09a-nickelmenu-installing', testInfo);
 });
 
+// Individual asset download (e.g. KOReader): the file being downloaded stays on
+// the status line, with the byte/percent progress and its bar on the line below.
+test('connected nickelmenu downloading asset (progress detail)', async ({ page }, testInfo) => {
+  const dir = 'connected-nickelmenu';
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+
+  await page.evaluate(() => {
+    for (const step of document.querySelectorAll('.step')) step.hidden = true;
+    document.getElementById('step-nm-installing').hidden = false;
+    document.getElementById('nm-progress').textContent = 'Downloading KOReader 2024.04...';
+    const detail = document.getElementById('nm-progress-detail');
+    detail.hidden = false;
+    detail.querySelector('.busy-progress-text').textContent = '6.4 MB / 18.2 MB (35%)';
+    detail.querySelector('.busy-progress-fill').style.width = '35%';
+  });
+
+  await expect(page.locator('#step-nm-installing #nm-progress-detail')).toBeVisible();
+  await shot(page, dir, '09b-nickelmenu-downloading-asset', testInfo);
+});
+
 test('connected nickelmenu failed write error', async ({ page }, testInfo) => {
   const dir = 'edge-cases';
 

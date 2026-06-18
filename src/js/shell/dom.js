@@ -170,27 +170,51 @@ export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download
 
 /**
  * Build an `onProgress(received, total)` handler for `fetchWithProgress` that
- * renders byte counts as a status string through `report` (e.g. a feature's
- * `ctx.progress`).
+ * reports download progress through `report(label, detail, fraction)`.
  *
- * It shows "<label> X.X / Y.Y MB (Z%)" against the best total available: the
- * server's Content-Length when present, else `expectedTotal` — the size baked into
+ * `label` stays put (e.g. "Downloading KOReader..."); the moving byte count rides
+ * the separate `detail` line, with `fraction` (0–1) driving a progress bar.
+ *
+ * The percentage is measured against the best total available: the server's
+ * Content-Length when present, else `expectedTotal` — the size baked into
  * /assets/index.json. That fallback is what keeps the percentage working in
  * production, where the proxy serves these archives gzip-encoded and strips
- * Content-Length. Only with neither does it show the indeterminate "<label>
- * (X.X MB)". The percentage is capped at 100% so a slightly-off estimate can't
- * read over.
+ * Content-Length. Only with neither does it show the indeterminate "X.X MB" with
+ * no bar (`fraction` null). The fraction is capped at 1 so a slightly-off estimate
+ * can't read over.
  */
 export function downloadProgress(report, label, expectedTotal = null) {
     return (received, total) => {
         const knownTotal = total || expectedTotal;
         if (knownTotal) {
-            const pct = Math.min(100, (received / knownTotal) * 100).toFixed(0);
-            report(`${label} ${formatMB(received)} / ${formatMB(knownTotal)} (${pct}%)`);
+            const fraction = Math.min(1, received / knownTotal);
+            const pct = (fraction * 100).toFixed(0);
+            report(label, `${formatMB(received)} / ${formatMB(knownTotal)} (${pct}%)`, fraction);
         } else {
-            report(`${label} (${formatMB(received)})`);
+            report(label, formatMB(received), null);
         }
     };
+}
+
+/**
+ * Render the secondary progress line of a `.busy-progress` container: the byte
+ * count text and, when a 0–1 `fraction` is given, a filled progress bar. A null
+ * `detail` hides the whole line (non-download steps that only set a status); a
+ * null `fraction` keeps the line but drops the bar (indeterminate downloads).
+ */
+export function setProgressDetail(container, detail, fraction = null) {
+    if (!container) return;
+    container.hidden = !detail;
+    if (!detail) return;
+
+    const text = container.querySelector('.busy-progress-text');
+    if (text) text.textContent = detail;
+
+    const track = container.querySelector('.busy-progress-track');
+    const fill = container.querySelector('.busy-progress-fill');
+    const determinate = fraction !== null && fraction !== undefined;
+    if (track) track.hidden = !determinate;
+    if (fill && determinate) fill.style.width = `${(fraction * 100).toFixed(1)}%`;
 }
 
 /**

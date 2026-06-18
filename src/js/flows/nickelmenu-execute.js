@@ -1,4 +1,4 @@
-import { triggerDownload } from '../shell/dom.js';
+import { triggerDownload, setProgressDetail } from '../shell/dom.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
@@ -21,7 +21,10 @@ function trackFeatures(features) {
 }
 
 export async function executeNmInstall({ state, flow, _terminal, dom, showError }) {
-    const progressFn = (msg) => { dom.progress.textContent = msg; };
+    const progressFn = (msg, detail = null, fraction = null) => {
+        dom.progress.textContent = msg;
+        setProgressDetail(dom.progressDetail, detail, fraction);
+    };
     let audit = null;
     await flow.go('installing', state);
 

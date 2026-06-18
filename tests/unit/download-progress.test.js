@@ -29,42 +29,44 @@ function withFetch(impl, run) {
     });
 }
 
-test('downloadProgress renders a percentage against the server-reported total', () => {
-    const messages = [];
-    const onProgress = downloadProgress((m) => messages.push(m), 'Downloading...');
+// The label, byte/percent detail, and 0–1 fraction are reported as separate
+// arguments so the UI can render the label, detail line, and bar independently.
+test('downloadProgress reports label, detail, and fraction against the server total', () => {
+    const calls = [];
+    const onProgress = downloadProgress((...args) => calls.push(args), 'Downloading...');
 
     onProgress(5 * MB, 10 * MB);
 
-    assert.deepEqual(messages, ['Downloading... 5.0 MB / 10.0 MB (50%)']);
+    assert.deepEqual(calls, [['Downloading...', '5.0 MB / 10.0 MB (50%)', 0.5]]);
 });
 
 test('downloadProgress falls back to the expected size when there is no server total', () => {
     // The index.json size stands in for Content-Length so the percentage still
     // works where the proxy gzips the archive and drops the header.
-    const messages = [];
-    const onProgress = downloadProgress((m) => messages.push(m), 'Downloading...', 10 * MB);
+    const calls = [];
+    const onProgress = downloadProgress((...args) => calls.push(args), 'Downloading...', 10 * MB);
 
     onProgress(5 * MB, null);
 
-    assert.deepEqual(messages, ['Downloading... 5.0 MB / 10.0 MB (50%)']);
+    assert.deepEqual(calls, [['Downloading...', '5.0 MB / 10.0 MB (50%)', 0.5]]);
 });
 
-test('downloadProgress caps the percentage at 100% when the estimate is slightly low', () => {
-    const messages = [];
-    const onProgress = downloadProgress((m) => messages.push(m), 'Downloading...', 10 * MB);
+test('downloadProgress caps the fraction at 1 when the estimate is slightly low', () => {
+    const calls = [];
+    const onProgress = downloadProgress((...args) => calls.push(args), 'Downloading...', 10 * MB);
 
     onProgress(11 * MB, null);
 
-    assert.deepEqual(messages, ['Downloading... 11.0 MB / 10.0 MB (100%)']);
+    assert.deepEqual(calls, [['Downloading...', '11.0 MB / 10.0 MB (100%)', 1]]);
 });
 
-test('downloadProgress shows an indeterminate byte count when no total is known', () => {
-    const messages = [];
-    const onProgress = downloadProgress((m) => messages.push(m), 'Downloading...');
+test('downloadProgress shows an indeterminate byte count with no fraction when no total is known', () => {
+    const calls = [];
+    const onProgress = downloadProgress((...args) => calls.push(args), 'Downloading...');
 
     onProgress(5 * MB, null);
 
-    assert.deepEqual(messages, ['Downloading... (5.0 MB)']);
+    assert.deepEqual(calls, [['Downloading...', '5.0 MB', null]]);
 });
 
 test('fetchWithProgress streams chunks and reports received/total per chunk', async () => {

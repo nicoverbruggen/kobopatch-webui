@@ -654,14 +654,14 @@ export function initNickelMenu(state) {
     btnNmWrite.addEventListener('click', () => {
         executeNmInstallFn({
             state, flow, terminal,
-            dom: { progress: $('nm-progress'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: true },
+            dom: { progress: $('nm-progress'), progressDetail: $('nm-progress-detail'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: true },
             showError: (...args) => state.showError(...args),
         });
     });
     btnNmDownload.addEventListener('click', () => {
         executeNmInstallFn({
             state, flow, terminal,
-            dom: { progress: $('nm-progress'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: false },
+            dom: { progress: $('nm-progress'), progressDetail: $('nm-progress-detail'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: false },
             showError: (...args) => state.showError(...args),
         });
     });

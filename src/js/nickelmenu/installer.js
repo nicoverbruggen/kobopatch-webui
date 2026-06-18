@@ -114,8 +114,8 @@ function createContext(feature, progressFn, deviceInfo = null, features = [], me
         sharedAsset(url) {
             return loadAssetCached(assetCache, url);
         },
-        progress(msg) {
-            progressFn(msg);
+        progress(msg, detail, fraction) {
+            progressFn(msg, detail, fraction);
         },
         deviceInfo,
         features,
