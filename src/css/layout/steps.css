@@ -56,6 +56,11 @@
     margin-left: auto;
 }
 
+#step-error .step-actions > .primary:first-child,
+#step-error .step-actions > [hidden] + .primary {
+    margin-left: 0;
+}
+
 @media (max-width: 500px) {
     .step-actions:has(.step-actions-right) {
         flex-wrap: wrap;

@@ -44,6 +44,7 @@ const defaultConfig = {
   rootFolders: [],
   failReadPaths: [],
   failWritePaths: [],
+  failRemovePaths: [],
   // null = leave the placeholder KoboReader.sqlite (sign-in unknown); true/false
   // swaps in a real fixture so detection reads a signed-in or factory-reset db.
   signedIn: null,
@@ -178,6 +179,7 @@ async function injectMockDevice(page, opts = {}) {
     window.__mockRemovedEntries = [];
     window.__mockFailReadPaths = new Set(config.failReadPaths || []);
     window.__mockFailWritePaths = new Set(config.failWritePaths || []);
+    window.__mockFailRemovePaths = new Set(config.failRemovePaths || []);
 
     function makeFileHandle(dirNode, fileName, pathPrefix) {
       const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
@@ -255,6 +257,11 @@ async function injectMockDevice(page, opts = {}) {
           throw new DOMException('Not found: ' + childName, 'NotFoundError');
         },
         removeEntry: async (childName, opts2 = {}) => {
+          const fullPath = currentPath ? currentPath + '/' + childName : childName;
+          const deviceRelativePath = fullPath.replace(/^KOBOeReader\//, '');
+          if (window.__mockFailRemovePaths.has(fullPath) || window.__mockFailRemovePaths.has(deviceRelativePath)) {
+            throw new DOMException('Remove blocked: ' + fullPath, 'NoModificationAllowedError');
+          }
           const child = node[childName];
           if (child) {
             if (child._type === 'dir' && !opts2.recursive) {
@@ -263,7 +270,6 @@ async function injectMockDevice(page, opts = {}) {
                 throw new DOMException('Directory not empty: ' + childName, 'InvalidModificationError');
               }
             }
-            const fullPath = currentPath ? currentPath + '/' + childName : childName;
             window.__mockRemovedEntries.push({ path: fullPath, recursive: !!opts2.recursive });
             delete node[childName];
             return;

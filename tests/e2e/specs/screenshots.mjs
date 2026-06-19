@@ -623,7 +623,7 @@ test('connected nickelmenu installing (busy indicator)', async ({ page }, testIn
 // Individual asset download (e.g. KOReader): the file being downloaded stays on
 // the status line, with the byte/percent progress and its bar on the line below.
 test('connected nickelmenu downloading asset (progress detail)', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenu;
 
   await page.goto('/');
   await dismissMobileModal(page);
@@ -678,10 +678,49 @@ test('connected nickelmenu failed write error', async ({ page }, testInfo) => {
 
   await expect(page.locator('#step-error')).not.toBeHidden();
   await expect(page.locator('#error-title')).toContainText('Writing to your device didn’t work');
-  await expect(page.locator('#error-message')).toContainText('the installation could not be completed');
-  await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+  await expect(page.locator('#error-message')).toContainText('partly applied');
+  // Connection tips are shown inline, no longer behind a disclosure panel.
+  await expect(page.locator('#error-device-write-help')).toBeVisible();
+  await expect(page.locator('#error-device-write-help ol li')).toHaveCount(3);
   await expect(page.locator('#btn-error-download-log')).toBeVisible();
-  await shot(page, dir, 'failed-write-download-logs', testInfo);
+  await shot(page, dir, 'failed-write', testInfo);
+});
+
+test('connected nickelmenu preflight read error', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.edgeDeviceWrite;
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page, {
+    failReadPaths: ['.kobo/Kobo/Kobo eReader.conf'],
+  });
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+
+  await page.click('#btn-device-next');
+  await page.click('input[name="mode"][value="nickelmenu"]');
+  await page.click('#btn-mode-next');
+  await page.click('input[value="preset"]');
+  await page.click('#btn-nm-next');
+  await expect(page.locator('#step-nm-features')).not.toBeHidden();
+  await page.click('#btn-nm-features-next');
+
+  await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+  if (await page.locator('#nm-backup-options').isVisible()) {
+    await page.click('input[name="nm-backup-option"][value="skip"]');
+  }
+  await page.click('#btn-nm-backup-next');
+
+  await expect(page.locator('#step-nm-review')).not.toBeHidden();
+  await page.click('#btn-nm-write');
+
+  await expect(page.locator('#step-error')).not.toBeHidden();
+  await expect(page.locator('#error-message')).toContainText('An important configuration file could not be read');
+  await expect(page.locator('#error-device-write-help')).toBeVisible();
+  await expect(page.locator('#error-device-write-help ol li')).toHaveCount(3);
+  await shot(page, dir, 'preflight-read-failed-no-changes', testInfo);
 });
 
 test('connected device failed write probe', async ({ page }, testInfo) => {

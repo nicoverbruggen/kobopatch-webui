@@ -26,7 +26,8 @@ export function initErrorScreen(state) {
     } = collect([
         'step-error', 'step-patches',
         'btn-retry', 'btn-error-back', 'btn-error-download-log',
-        'error-message', 'error-log', 'error-title', 'error-hint', 'error-device-write-help',
+        'error-message', 'error-log', 'error-title', 'error-hint',
+        'error-device-write-help',
     ]);
 
     let errorAuditLog = null;
@@ -34,8 +35,10 @@ export function initErrorScreen(state) {
     function showError(message, log, options = {}) {
         errorAuditLog = options.auditLog || null;
         errorMessage.textContent = message;
-        errorDeviceWriteHelp.hidden = !options.deviceWrite;
         btnErrorDownloadLog.hidden = !errorAuditLog;
+        // A device-write failure (or a connection-related read failure) gets the
+        // connection tips shown inline. The app no longer rolls anything back.
+        const showConnectionTips = !!options.deviceWrite || !!options.connectionTips;
         if (log) {
             errorLog.textContent = log;
             errorLog.hidden = false;
@@ -58,26 +61,34 @@ export function initErrorScreen(state) {
                 errorTitle.textContent = TL.ERROR.DEVICE_WRITE_FAILED_TITLE;
                 errorMessage.textContent = TL.ERROR.DEVICE_WRITE_FAILED_MESSAGE;
             }
+            errorDeviceWriteHelp.hidden = !showConnectionTips;
             errorHint.hidden = true;
             btnErrorBack.hidden = true;
             btnRetry.classList.remove('danger');
         } else if (options.title) {
             errorTitle.textContent = options.title;
+            if (options.configReadFailed) {
+                errorMessage.textContent = TL.ERROR.DEVICE_CONFIG_READ_FAILED_MESSAGE;
+            }
+            errorDeviceWriteHelp.hidden = !showConnectionTips;
             errorHint.hidden = true;
             btnErrorBack.hidden = true;
             btnRetry.classList.remove('danger');
         } else if (hasRecovery) {
             errorTitle.textContent = TL.ERROR.PATCH_FAILED;
+            errorDeviceWriteHelp.hidden = true;
             errorHint.hidden = false;
             btnErrorBack.hidden = false;
             btnRetry.classList.add('danger');
         } else if (hasBackStep) {
             errorTitle.textContent = TL.ERROR.PATCH_FAILED;
+            errorDeviceWriteHelp.hidden = true;
             errorHint.hidden = false;
             btnErrorBack.hidden = false;
             btnRetry.classList.add('danger');
         } else {
             errorTitle.textContent = TL.ERROR.SOMETHING_WENT_WRONG;
+            errorDeviceWriteHelp.hidden = true;
             errorHint.hidden = true;
             btnErrorBack.hidden = true;
             btnRetry.classList.remove('danger');

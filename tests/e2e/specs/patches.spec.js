@@ -264,7 +264,8 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#step-error')).not.toBeHidden();
     await expect(page.locator('#error-title')).toContainText('Connection to device failed');
     await expect(page.locator('#error-message')).toContainText('A small test file to verify your device can be written to');
-    await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+    await expect(page.locator('#error-device-write-help')).toBeVisible();
+    // Connection tips are shown inline now, not behind a disclosure panel.
     await expect(page.locator('#error-device-write-help')).toContainText('Copy the files yourself');
   });
 

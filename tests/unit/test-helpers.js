@@ -142,6 +142,14 @@ class RecordingDevice {
         return this.textFiles.get(path) ?? null;
     }
 
+    async readFileBytes(pathParts) {
+        const path = pathParts.join('/');
+        const value = await this.readFile(pathParts);
+        if (value === null) return null;
+        const write = this.writeFor(path);
+        return write ? write.data : bytes(value);
+    }
+
     async writeFile(pathParts, data) {
         const path = pathParts.join('/');
         if (path === this.failWritePath) {

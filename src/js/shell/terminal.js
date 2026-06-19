@@ -1,6 +1,7 @@
 import { $, triggerDownload, setupFeedback } from './dom.js';
 import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
+import { DeviceWriter, markDeviceWriteError } from '../kobo/device-writer.js';
 
 /**
  * The shared "terminal" of a flow — the build/result tail that both the patches
@@ -74,23 +75,27 @@ export function createTerminal({ doneStep, showError }) {
      */
     async function writeToDevice({ device, auditName, writes, failMessage }) {
         const audit = new AuditLog(auditName, new Date(), device);
+        const writer = new DeviceWriter(device);
         try {
             for (const write of writes) {
                 if (write.optional) {
                     try {
-                        await device.writeFile(write.path, write.data);
+                        await writer.writeFile(write.path, write.data);
                         if (write.label) audit.record(write.label);
                     } catch (err) {
                         console.warn(`Could not write ${write.path.join('/')}:`, err);
                     }
                     continue;
                 }
-                await device.writeFile(write.path, write.data);
+                await writer.writeFile(write.path, write.data);
                 if (write.label) audit.record(write.label);
             }
             await audit.write();
             return { ok: true, audit };
         } catch (err) {
+            // Stop on the first write failure without trying to undo anything:
+            // the connection or filesystem may be unreliable.
+            markDeviceWriteError(err);
             audit.record(`Failed: ${err.message}`);
             showError(failMessage ? failMessage(err) : err.message, null, {
                 deviceWrite: !!err.deviceWrite,

@@ -5,6 +5,9 @@ on:
     branches: [main, develop]
     tags: ['v*']
 
+env:
+  GOCACHE: ${{ github.workspace }}/tmp/go/cache
+
 jobs:
   unit-and-lint:
     name: Unit tests and lint
@@ -49,6 +52,7 @@ jobs:
 
       - name: Run native tests
         run: |
+          mkdir -p "$GOCACHE"
           cd tools/kobopatch-wasm/kobopatch-src
           go test ./...
 
@@ -59,6 +63,7 @@ jobs:
 
       - name: Run WASM tests
         run: |
+          mkdir -p "$GOCACHE"
           cd tools/kobopatch-wasm/kobopatch-src
           GOROOT="$(go env GOROOT)"
           if [ -f "$GOROOT/lib/wasm/go_js_wasm_exec" ]; then

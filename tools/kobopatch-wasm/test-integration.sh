@@ -15,6 +15,8 @@ if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
 fi
 
 APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export GOCACHE="${GOCACHE:-$APP_DIR/tmp/go/cache}"
+mkdir -p "$GOCACHE"
 E2E_DIR="$APP_DIR/tests/e2e"
 FIRMWARE_CONFIG="$E2E_DIR/config/firmware-config.js"
 PRIMARY=$(node -e "console.log(JSON.stringify(require('$FIRMWARE_CONFIG').primary))")

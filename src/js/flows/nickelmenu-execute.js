@@ -2,6 +2,7 @@ import { triggerDownload, setProgressDetail } from '../shell/dom.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
+import { DeviceWriter } from '../kobo/device-writer.js';
 import { executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
 import { featuresToInstall, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
@@ -31,8 +32,9 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
     try {
         if (state.nickelMenuOption === 'remove') {
             audit = new AuditLog('remove-nickelmenu', new Date(), state.device);
+            const writer = new DeviceWriter(state.device);
             await executeNickelMenuRemoval({
-                device: state.device,
+                device: writer,
                 installer: state.nmInstaller,
                 cleanupFeatures: [
                     ...alwaysCleanupFeatures(),
@@ -56,23 +58,24 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
         trackFeatures(features);
 
         if (dom.writeToDevice && state.device.directoryHandle) {
+            const writer = new DeviceWriter(state.device);
             if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
                 if (!state.nmKeepLegacyConfig) {
                     try {
-                        await state.device.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
+                        await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
                     } catch {
                     }
                 }
             }
             try {
                 const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
-                if (await state.device.pathExists(legacyScriptPath)) {
-                    await state.device.removeEntry(legacyScriptPath);
+                if (await writer.pathExists(legacyScriptPath)) {
+                    await writer.removeEntry(legacyScriptPath);
                 }
             } catch {
             }
             audit = new AuditLog('install-nickelmenu', new Date(), state.device);
-            await state.nmInstaller.installToDevice(state.device, features, progressFn, {
+            await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
                 menuCustomization: state.nickelMenuCustomization,
             });
@@ -87,10 +90,20 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
             await flow.go('done', state);
         }
     } catch (err) {
+        // A failure during a device write means the connection or filesystem may
+        // be unreliable, so we stop here without trying to undo anything. A read
+        // failure on the config file (not a write) is treated as a connection
+        // issue too, but didn't change anything on the device.
+        const configReadFailed = !err.deviceWrite && /Kobo eReader\.conf/.test(err.message || '');
         audit?.record(`Failed: ${err.message}`);
         showError(TL.STATUS.NM_INSTALL_FAILED(err.message), null, {
             deviceWrite: !!err.deviceWrite,
+            connectionTips: configReadFailed,
+            configReadFailed,
             auditLog: audit,
+            title: state.nickelMenuOption === 'remove'
+                ? TL.ERROR.NM_REMOVE_FAILED_TITLE
+                : TL.ERROR.NM_INSTALL_FAILED_TITLE,
         });
     }
 }

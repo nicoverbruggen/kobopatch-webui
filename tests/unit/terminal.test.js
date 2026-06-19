@@ -90,6 +90,34 @@ test('writeToDevice routes a failed required write to the error screen with the 
     assert.ok(options.auditLog, 'error carries the audit log for download');
 });
 
+test('writeToDevice aborts on a failed write and leaves earlier changes in place (no rollback)', async () => {
+    const device = new RecordingDevice({ failWritePath: '.kobo/KoboRoot.tgz' });
+    const errors = [];
+    const terminal = createTerminal({ doneStep: {}, showError: (...args) => errors.push(args) });
+
+    const result = await terminal.writeToDevice({
+        device,
+        auditName: 'custom-patches',
+        writes: [
+            { path: ['.kobopatch-webui', 'custom-patches.json'], data: bytes('{}'), label: 'manifest' },
+            { path: ['.kobo', 'KoboRoot.tgz'], data: bytes('x'), label: 'tgz' },
+        ],
+    });
+
+    assert.equal(result.ok, false);
+    assert.ok(result.error);
+    // The app stops on the first write failure and does NOT try to undo earlier
+    // writes — the connection or filesystem may be unreliable. The manifest that
+    // was written before the failure is left exactly as it is.
+    assert.equal(await device.pathExists(['.kobopatch-webui', 'custom-patches.json']), true);
+    assert.equal(result.rollback, undefined);
+
+    const [, , options] = errors[0];
+    assert.equal(options.deviceWrite, true);
+    assert.ok(options.auditLog, 'error carries the audit log for download');
+    assert.equal(options.rollbackInstructions, undefined);
+});
+
 test('writeToDevice skips a failing optional write without failing the operation', async () => {
     const device = new RecordingDevice({ failWritePath: '.kobopatch-webui/custom-patches.json' });
     const errors = [];

@@ -76,75 +76,39 @@
 #step-connect > .banner { margin-bottom: 1.5rem; }
 #device-unknown-warning { margin-bottom: 1.5rem; }
 #existing-tgz-warning { margin-bottom: 1.5rem; }
+/* Connection tips shown inline on the error screen: a separating rule, an intro
+   line, and the numbered tips — plain dialog-coloured text, not a filled box. */
 .device-write-help {
     width: 100%;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    display: grid;
-    gap: 0.6rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border-light);
     text-align: left;
-    border-top: 1px solid var(--border-light);
-}
-
-.device-write-help-heading {
-    & .banner-heading {
-        color: var(--warning-text);
-        margin-bottom: 0.2rem;
-    }
-
-    & p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 0.84rem;
-        line-height: 1.5;
-    }
-}
-
-.device-write-steps {
-    margin: 0;
-    padding: 0;
     display: grid;
-    gap: 0;
-    list-style: none;
-    counter-reset: write-step;
-    border-top: 1px solid var(--border-light);
+    gap: 0.7rem;
+    font-size: 0.80rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
 
-    & li {
-        counter-increment: write-step;
-        position: relative;
-        padding: 0.6rem 0 0.6rem 2.05rem;
-        color: var(--text-secondary);
-        font-size: 0.84rem;
-        line-height: 1.5;
-    }
+.device-write-help ol {
+    margin: 0;
+    padding-left: 1.5rem;
+    display: grid;
+    gap: 0.35rem;
+    color: inherit;
+}
 
-    & li::before {
-        content: counter(write-step);
-        position: absolute;
-        left: 0;
-        top: 0.55rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 1.45rem;
-        height: 1.45rem;
-        border-radius: 50%;
-        background: var(--warning-bg);
-        border: 1px solid var(--warning-border);
-        color: var(--warning-text);
-        font-size: 0.75rem;
-        font-weight: 600;
-        line-height: 1;
-    }
+.device-write-help li {
+    color: inherit;
+}
 
-    & li + li {
-        border-top: 1px solid var(--border-light);
-    }
-
-    & strong {
-        color: var(--text);
-        font-weight: 600;
-    }
+.step .device-write-help-heading,
+.step .device-write-help-note {
+    margin: 0;
+    color: inherit;
+    font-size: 0.84rem;
+    line-height: 1.5;
 }
 
 .install-instructions .banner--warning { margin-bottom: 0.75rem; }

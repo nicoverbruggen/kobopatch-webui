@@ -985,7 +985,7 @@ test.describe('NickelMenu — install', () => {
     expect(manifest.meta.installed.model).toBe('N428');
   });
 
-  test('with device — failed write offers audit log download', async ({ page }) => {
+  test('with device — failed write aborts and offers the audit log, leaving partial changes in place', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
     await connectMockDevice(page, {
@@ -1009,9 +1009,15 @@ test.describe('NickelMenu — install', () => {
 
     await expect(page.locator('#step-error')).not.toBeHidden();
     await expect(page.locator('#error-title')).toContainText('Writing to your device didn’t work');
-    await expect(page.locator('#error-message')).toContainText('the installation could not be completed');
-    await expect(page.locator('#error-device-write-help')).not.toBeHidden();
+    await expect(page.locator('#error-message')).toContainText('partly applied');
+    // Connection tips are shown inline (no longer behind a disclosure panel).
+    await expect(page.locator('#error-device-write-help')).toBeVisible();
+    await expect(page.locator('#error-device-write-help ol li')).toHaveCount(3);
     await expect(page.locator('#btn-error-download-log')).toBeVisible();
+
+    // The app aborts on the failed write without rolling anything back: files
+    // written before the failure are left in place.
+    expect(await mockPathExists(page, '.adds', 'nm', 'webui-preset')).toBe(true);
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
@@ -1021,6 +1027,7 @@ test.describe('NickelMenu — install', () => {
     const log = fs.readFileSync(await download.path(), 'utf8');
     expect(log).toContain('kobopatch-webui audit log');
     expect(log).toContain('Failed: Could not write .kobo/KoboRoot.tgz');
+    expect(log).not.toContain('Rollback:');
     expect(await getWrittenFiles(page)).not.toContainEqual(expect.stringContaining('.kobopatch-webui/logs/'));
   });
 
@@ -1149,7 +1156,11 @@ test.describe('NickelMenu — install', () => {
 
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-error')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('#error-message')).toContainText('Could not read .kobo/Kobo/Kobo eReader.conf');
+    await expect(page.locator('#error-title')).toContainText('NickelMenu could not be installed');
+    await expect(page.locator('#error-message')).toContainText('An important configuration file could not be read');
+    await expect(page.locator('#error-rollback-help')).toBeHidden();
+    await expect(page.locator('#error-device-write-help')).toBeVisible();
+    await expect(page.locator('#error-device-write-help')).not.toHaveAttribute('open', '');
 
     const writtenFiles = await getWrittenFiles(page);
     expect(writtenFiles).not.toContain('KOBOeReader/.kobo/KoboRoot.tgz');
