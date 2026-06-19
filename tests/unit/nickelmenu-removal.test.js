@@ -75,8 +75,8 @@ test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files
     });
 
     assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
         pathString(nickelMenuUninstallMarkerPath),
+        koboRootTgzPath,
     ]);
     // Optional cleanup runs after the uninstall marker: the screensaver image is removed.
     assert.deepEqual(device.removePaths(), [
@@ -86,10 +86,10 @@ test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files
     assert.deepEqual(device.removalFor('.adds/nm').options, { recursive: true });
     assert.equal(device.writeFor(pathString(nickelMenuUninstallMarkerPath)).data.length, 0);
     assert.deepEqual(progress.messages, [
-        'Writing KoboRoot.tgz...',
         'Removing NickelMenu assets...',
         'Creating uninstall marker...',
         'Removing Screensaver...',
+        'Writing KoboRoot.tgz...',
     ]);
 });
 
@@ -153,7 +153,6 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
             '.kobo/screensaver',
             { path: '.kobo/screensaver/moon.png', kind: 'file' },
         ],
-        failRemovePaths: ['.adds/nm'],
     });
     const logger = createWarnRecorder();
 
@@ -166,12 +165,36 @@ test('executeNickelMenuRemoval ignores optional missing removal paths and contin
     });
 
     assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
         pathString(nickelMenuUninstallMarkerPath),
+        koboRootTgzPath,
     ]);
     assert.deepEqual(device.removePaths(), [
         '.kobo/screensaver/moon.png',
     ]);
+    assert.equal(logger.messages.length, 0);
+});
+
+test('executeNickelMenuRemoval aborts on non-missing removal failures', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({
+        existingEntries: ['.adds/nm'],
+        failRemovePaths: ['.adds/nm'],
+    });
+    const logger = createWarnRecorder();
+
+    await assert.rejects(
+        () => executeNickelMenuRemoval({
+            device,
+            installer,
+            cleanupFeatures: [screensaver],
+            shouldRemoveSyncExclusions: async () => false,
+            logger,
+        }),
+        /Refusing remove of \.adds\/nm/
+    );
+
+    assert.deepEqual(device.writePaths(), []);
+    assert.deepEqual(device.removePaths(), []);
     assert.equal(logger.messages.length, 1);
     assert.match(logger.messages[0][0], /Could not remove \.adds\/nm/);
 });
@@ -284,7 +307,7 @@ test('executeNickelMenuRemoval repairs persisted legacy malformed sync exclusion
     ].join('\n'));
 });
 
-test('executeNickelMenuRemoval stops before removals if KoboRoot.tgz write fails', async () => {
+test('executeNickelMenuRemoval writes KoboRoot.tgz last', async () => {
     const installer = createInstaller();
     const device = new RecordingDevice({ failWritePath: koboRootTgzPath });
 
@@ -298,7 +321,9 @@ test('executeNickelMenuRemoval stops before removals if KoboRoot.tgz write fails
         /Refusing write to \.kobo\/KoboRoot\.tgz/
     );
 
-    assert.deepEqual(device.writePaths(), []);
+    assert.deepEqual(device.writePaths(), [
+        pathString(nickelMenuUninstallMarkerPath),
+    ]);
     assert.deepEqual(device.removePaths(), []);
 });
 

@@ -27,6 +27,12 @@ function createProgressRecorder() {
     return record;
 }
 
+function namedError(name, message) {
+    const err = new Error(message);
+    err.name = name;
+    return err;
+}
+
 function arrayBufferFor(value) {
     const data = value instanceof Uint8Array ? value : bytes(value);
     return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
@@ -172,7 +178,7 @@ class RecordingDevice {
 
         const kind = this.entryKinds.get(path);
         if (!kind) {
-            throw new Error(`Refusing remove of missing ${path}`);
+            throw namedError('NotFoundError', `Refusing remove of missing ${path}`);
         }
 
         if (kind === 'directory' && !options.recursive && this.listChildPaths(path).length > 0) {

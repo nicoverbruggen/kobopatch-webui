@@ -15,12 +15,18 @@ function hasAddsDirectoriesRequiringSyncExclusions(entries = []) {
     );
 }
 
+function isNotFoundError(err) {
+    return err?.name === 'NotFoundError';
+}
+
 async function removeOptionalEntry(device, path, options, logger, audit = null) {
     try {
         await device.removeEntry(path, options);
         audit?.record(`Removed ${path.join('/')}`);
     } catch (err) {
+        if (isNotFoundError(err)) return;
         logger.warn(`Could not remove ${path.join('/')}:`, err);
+        throw err;
     }
 }
 
@@ -90,11 +96,7 @@ async function executeNickelMenuRemoval({
     audit = null,
 }) {
     await installer.loadNickelMenu(onProgress);
-
-    onProgress('Writing KoboRoot.tgz...');
     const tgz = await installer.getKoboRootTgz();
-    await device.writeFile(nickelMenuTgzPath, tgz);
-    audit?.record(`Removing NickelMenu: wrote ${nickelMenuTgzPath.join('/')} (${tgz.length} bytes)`);
 
     onProgress('Removing NickelMenu assets...');
     for (const path of nickelMenuRecursiveAssetPaths) {
@@ -124,6 +126,10 @@ async function executeNickelMenuRemoval({
     } else {
         await installer.repairLegacyExcludeSyncFolders(device);
     }
+
+    onProgress('Writing KoboRoot.tgz...');
+    await device.writeFile(nickelMenuTgzPath, tgz);
+    audit?.record(`Removing NickelMenu: wrote ${nickelMenuTgzPath.join('/')} (${tgz.length} bytes)`);
 
     await writeAuditLog(audit, device);
 }
