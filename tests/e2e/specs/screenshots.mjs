@@ -2,6 +2,7 @@
  * Capture screenshots of every step in the wizard.
  * Uses the same Playwright test infrastructure and dev server as the E2E tests.
  * Runs once per project (mobile + desktop) defined in screenshots.config.js.
+ * Writes into screenshots/<project>/{manual,connected,edge-cases}/...
  *
  * Run: ./run-screenshots.sh
  */
@@ -13,6 +14,21 @@ const shot = async (page, folder, name, testInfo) => {
   const project = testInfo.project.name;
   await page.waitForTimeout(200);
   await page.screenshot({ path: `screenshots/${project}/${folder}/${name}.png`, fullPage: true });
+};
+
+const SCREENSHOT_DIRS = {
+  manualNickelMenu: 'manual/nickelmenu',
+  manualPatches: 'manual/patches',
+  connectedNickelMenu: 'connected/nickelmenu/install',
+  connectedNickelMenuRemoval: 'connected/nickelmenu/removal',
+  connectedNickelMenuFactory: 'connected/nickelmenu/factory-reset',
+  connectedPatches: 'connected/patches',
+  edgeConnection: 'edge-cases/connection',
+  edgeDeviceWrite: 'edge-cases/device-write',
+  edgeDownload: 'edge-cases/download',
+  edgeCompatibility: 'edge-cases/compatibility',
+  edgeDialogs: 'edge-cases/dialogs',
+  edgeNickelMenu: 'edge-cases/nickelmenu',
 };
 
 /** Dismiss the mobile warning modal if it's open. */
@@ -40,12 +56,75 @@ const shotNickelMenuCustomizeModal = async (page, folder, name, testInfo) => {
   await expect(dialog).not.toBeVisible();
 };
 
+const selectManualPatchesModel = async (page) => {
+  await page.selectOption('#manual-version', { index: 1 });
+  await expect(page.locator('#manual-model')).not.toBeHidden();
+  await page.selectOption('#manual-model', { index: 1 });
+  await page.click('#btn-manual-confirm');
+};
+
+const capturePatchesBuildingScreen = async (page, folder, name, testInfo, hint) => {
+  await page.evaluate((waitHint) => {
+    for (const step of document.querySelectorAll('.step')) step.hidden = true;
+    document.getElementById('step-building').hidden = false;
+    document.getElementById('build-progress').textContent = 'Downloading firmware...';
+    document.getElementById('build-wait-hint').textContent = waitHint;
+    document.getElementById('build-log').textContent = 'Download started...\n';
+  }, hint);
+  await expect(page.locator('#step-building')).not.toBeHidden();
+  await shot(page, folder, name, testInfo);
+};
+
+const poseRestoreDoneScreen = async (page, { manual = false, written = false, downloaded = false } = {}) => {
+  await page.evaluate(({ isManual, isWritten, isDownloaded }) => {
+    for (const step of document.querySelectorAll('.step')) step.hidden = true;
+    document.getElementById('step-done').hidden = false;
+    const nav = document.getElementById('step-nav');
+    nav.hidden = false;
+    nav.querySelectorAll('li').forEach((li, index) => {
+      const stepNum = index + 1;
+      li.classList.toggle('done', stepNum < 5);
+      li.classList.toggle('active', stepNum === 5);
+      if (stepNum === 5) {
+        li.setAttribute('aria-current', 'step');
+      } else {
+        li.removeAttribute('aria-current');
+      }
+    });
+    document.getElementById('build-status').innerHTML =
+      'Software extracted. <strong>KoboRoot.tgz</strong> (1.2 MB) is ready. ' +
+      'This will restore the original unpatched software. ' +
+      (isManual
+        ? 'Download the file and copy it to your Kobo.'
+        : 'Write it directly to your connected Kobo, or download for manual installation.');
+    document.getElementById('done-log').textContent = [
+      'Download complete: 150.0 MB',
+      'Extracting original KoboRoot.tgz from firmware...',
+      'Extracted KoboRoot.tgz: 1.2 MB',
+    ].join('\n');
+
+    const writeButton = document.getElementById('btn-write');
+    writeButton.hidden = isManual;
+    writeButton.disabled = false;
+    writeButton.className = isWritten ? 'btn-success' : 'primary';
+    writeButton.textContent = isWritten ? 'Written' : 'Write to Kobo';
+
+    const downloadButton = document.getElementById('btn-download');
+    downloadButton.disabled = false;
+    document.getElementById('write-instructions').hidden = !isWritten;
+    document.getElementById('download-instructions').hidden = !isDownloaded;
+    document.getElementById('download-device-name').textContent = 'Kobo Libra Colour';
+    document.getElementById('existing-tgz-warning').hidden = true;
+  }, { isManual: manual, isWritten: written, isDownloaded: downloaded });
+  await expect(page.locator('#step-done')).not.toBeHidden();
+};
+
 // ============================================================
 // 1. Manual NickelMenu flow
 // ============================================================
 
 test('manual nickelmenu', async ({ page }, testInfo) => {
-  const dir = 'manual-nickelmenu';
+  const dir = SCREENSHOT_DIRS.manualNickelMenu;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -92,7 +171,7 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
 // ============================================================
 
 test('manual nickelmenu remove', async ({ page }, testInfo) => {
-  const dir = 'manual-nickelmenu';
+  const dir = SCREENSHOT_DIRS.manualNickelMenu;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -113,7 +192,7 @@ test('manual nickelmenu remove', async ({ page }, testInfo) => {
 });
 
 test('manual nickelmenu review notices', async ({ page }, testInfo) => {
-  const dir = 'manual-nickelmenu';
+  const dir = SCREENSHOT_DIRS.manualNickelMenu;
 
   await makeKOReaderAvailable(page);
   await page.goto('/');
@@ -146,7 +225,7 @@ test('manual nickelmenu review notices', async ({ page }, testInfo) => {
 test('manual patches', async ({ page }, testInfo) => {
   test.skip(!hasFirmwareZip(), 'Firmware zip not available');
 
-  const dir = 'manual-patches';
+  const dir = SCREENSHOT_DIRS.manualPatches;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -174,6 +253,7 @@ test('manual patches', async ({ page }, testInfo) => {
   await page.selectOption('#manual-version', { index: 1 });
   await expect(page.locator('#manual-model')).not.toBeHidden();
   await page.selectOption('#manual-model', { index: 1 });
+  await shot(page, dir, '02a-version-model-selected', testInfo);
   await page.click('#btn-manual-confirm');
 
   // Patches config
@@ -226,18 +306,59 @@ test('manual patches', async ({ page }, testInfo) => {
   await shot(page, dir, '07-patches-done-download', testInfo);
 });
 
+test('manual patches restore original', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.manualPatches;
+  const isMobile = testInfo.project.name === 'mobile';
+
+  await page.goto('/');
+  if (isMobile) {
+    await page.click('#btn-mobile-continue');
+    await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+  }
+
+  await page.click('#btn-manual');
+  await expect(page.locator('#step-mode')).not.toBeHidden();
+  await page.click('input[name="mode"][value="patches"]');
+  await page.click('#btn-mode-next');
+
+  await expect(page.locator('#step-manual-version')).not.toBeHidden();
+  await selectManualPatchesModel(page);
+
+  await expect(page.locator('#step-patches')).not.toBeHidden();
+  await expect(page.locator('#patch-count-hint')).toContainText('restore the original');
+  await page.click('#btn-patches-next');
+
+  await expect(page.locator('#step-firmware')).not.toBeHidden();
+  await expect(page.locator('#firmware-description')).toContainText('without modifications');
+  await shot(page, dir, '08-restore-build', testInfo);
+
+  await capturePatchesBuildingScreen(
+    page,
+    dir,
+    '08a-restore-building',
+    testInfo,
+    'Please wait while the original software is being downloaded and extracted...'
+  );
+
+  await poseRestoreDoneScreen(page, { manual: true });
+  await shot(page, dir, '09-restore-done', testInfo);
+
+  await poseRestoreDoneScreen(page, { manual: true, downloaded: true });
+  await shot(page, dir, '10-restore-done-download', testInfo);
+});
+
 // ============================================================
 // 4. Connected NickelMenu flow
 // ============================================================
 
 test('connected nickelmenu', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenu;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
   if (isMobile) {
     await expect(page.locator('#mobile-dialog')).toBeVisible();
-    await page.screenshot({ path: `screenshots/mobile/${dir}/00-mobile-warning.png` });
+    await shot(page, dir, '00-mobile-warning', testInfo);
     await page.click('#btn-mobile-continue');
   }
   await expect(page.locator('#step-connect')).not.toBeHidden();
@@ -290,7 +411,7 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
 // ============================================================
 
 test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenu;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -326,7 +447,7 @@ test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
 // ============================================================
 
 test('connected nickelmenu review notices — older device + KOReader', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenu;
 
   await makeKOReaderAvailable(page);
   await page.goto('/');
@@ -379,7 +500,7 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 // ============================================================
 
 test('connected nickelmenu removal', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu-removal';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenuRemoval;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -436,7 +557,7 @@ test('connected nickelmenu removal', async ({ page }, testInfo) => {
 
 // Variant: every cleanup checkbox left checked, so the review has no "kept" card.
 test('connected nickelmenu removal (no kept features)', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu-removal';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenuRemoval;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -482,7 +603,7 @@ test('connected nickelmenu removal (no kept features)', async ({ page }, testInf
 // ============================================================
 
 test('connected nickelmenu installing (busy indicator)', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenu;
 
   await page.goto('/');
   await dismissMobileModal(page);
@@ -522,7 +643,7 @@ test('connected nickelmenu downloading asset (progress detail)', async ({ page }
 });
 
 test('connected nickelmenu failed write error', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeDeviceWrite;
 
   await page.goto('/');
   await dismissMobileModal(page);
@@ -564,7 +685,7 @@ test('connected nickelmenu failed write error', async ({ page }, testInfo) => {
 });
 
 test('connected device failed write probe', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeDeviceWrite;
 
   await page.goto('/');
   await dismissMobileModal(page);
@@ -587,7 +708,7 @@ test('connected device failed write probe', async ({ page }, testInfo) => {
 });
 
 test('connect blocked permission', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeConnection;
 
   // Simulate the browser denying read/write access to the picked folder.
   await page.addInitScript(() => {
@@ -610,7 +731,7 @@ test('connect blocked permission', async ({ page }, testInfo) => {
 });
 
 test('unexpected error safety net', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeConnection;
 
   await page.goto('/');
   await dismissMobileModal(page);
@@ -629,7 +750,7 @@ test('unexpected error safety net', async ({ page }, testInfo) => {
 
 test('download archive failure', async ({ page }, testInfo) => {
   test.skip(!hasFirmwareZip(), 'Firmware zip not available');
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeDownload;
 
   await page.goto('/');
   await injectMockDevice(page);
@@ -673,10 +794,24 @@ test('download archive failure', async ({ page }, testInfo) => {
 // 6. Connected Patches flow
 // ============================================================
 
+test('patches building (busy indicator)', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.connectedPatches;
+
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await capturePatchesBuildingScreen(
+    page,
+    dir,
+    '07a-patches-building',
+    testInfo,
+    'Please wait while the patch is being applied...'
+  );
+});
+
 test('connected patches', async ({ page }, testInfo) => {
   test.skip(!hasFirmwareZip(), 'Firmware zip not available');
 
-  const dir = 'connected-patches';
+  const dir = SCREENSHOT_DIRS.connectedPatches;
   const isMobile = testInfo.project.name === 'mobile';
 
   await page.goto('/');
@@ -729,16 +864,21 @@ test('connected patches', async ({ page }, testInfo) => {
   await expect(stepDone).not.toBeHidden({ timeout: 60_000 });
   await shot(page, dir, '08-patches-done', testInfo);
 
+  // Write to connected device.
+  await page.click('#btn-write');
+  await expect(stepDone.locator('#write-instructions')).toBeVisible();
+  await shot(page, dir, '09-patches-done-written', testInfo);
+
   // Download
   await page.click('#btn-download');
   await expect(stepDone.locator('#download-instructions')).toBeVisible();
-  await shot(page, dir, '09-patches-done-download', testInfo);
+  await shot(page, dir, '10-patches-done-download', testInfo);
 });
 
 // Reload-from-device offer: a connected device carrying a custom-patches
 // manifest. No firmware build is involved, so this runs without the zip.
 test('connected patches reload', async ({ page }, testInfo) => {
-  const dir = 'connected-patches';
+  const dir = SCREENSHOT_DIRS.connectedPatches;
 
   const manifest = {
     overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
@@ -767,12 +907,47 @@ test('connected patches reload', async ({ page }, testInfo) => {
 
   // The offer banner with the "Restore previous patches" button.
   await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
-  await shot(page, dir, '10-patches-reload-offer', testInfo);
+  await shot(page, dir, '11-patches-reload-offer', testInfo);
 
   // After restoring, the banner confirms success.
   await page.click('#btn-patch-reload');
   await expect(page.locator('#patch-reload-banner')).toContainText('reloaded');
-  await shot(page, dir, '11-patches-reload-applied', testInfo);
+  await shot(page, dir, '12-patches-reload-applied', testInfo);
+});
+
+test('connected patches restore original shortcut', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.connectedPatches;
+
+  await page.goto('/');
+  await injectMockDevice(page);
+  await dismissMobileModal(page);
+
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+  await expect(page.locator('#btn-device-restore')).toBeVisible();
+
+  await page.click('#btn-device-restore');
+  await expect(page.locator('#step-firmware')).not.toBeHidden();
+  await expect(page.locator('#firmware-description')).toContainText('without modifications');
+  await shot(page, dir, '13-restore-build-shortcut', testInfo);
+
+  await capturePatchesBuildingScreen(
+    page,
+    dir,
+    '13a-restore-building',
+    testInfo,
+    'Please wait while the original software is being downloaded and extracted...'
+  );
+
+  await poseRestoreDoneScreen(page);
+  await shot(page, dir, '14-restore-done', testInfo);
+
+  await poseRestoreDoneScreen(page, { written: true });
+  await shot(page, dir, '15-restore-done-written', testInfo);
+
+  await poseRestoreDoneScreen(page, { downloaded: true });
+  await shot(page, dir, '16-restore-done-download', testInfo);
 });
 
 // ============================================================
@@ -780,7 +955,7 @@ test('connected patches reload', async ({ page }, testInfo) => {
 // ============================================================
 
 test('unsupported browser', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeConnection;
   await page.addInitScript(() => { delete window.showDirectoryPicker; });
   await page.goto('/');
   await dismissMobileModal(page);
@@ -789,7 +964,7 @@ test('unsupported browser', async ({ page }, testInfo) => {
 });
 
 test('incompatible firmware', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeCompatibility;
   await page.goto('/');
   await dismissMobileModal(page);
   await injectMockDevice(page, { firmware: '5.0.0' });
@@ -800,7 +975,7 @@ test('incompatible firmware', async ({ page }, testInfo) => {
 });
 
 test('unknown model', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeCompatibility;
   await page.goto('/');
   await dismissMobileModal(page);
   await injectMockDevice(page, { serial: 'X9990A0000000' });
@@ -811,13 +986,12 @@ test('unknown model', async ({ page }, testInfo) => {
 });
 
 test('disclaimer dialog', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeDialogs;
   await page.goto('/');
   await dismissMobileModal(page);
   await page.click('#btn-how-it-works');
   await expect(page.locator('#how-it-works-dialog')).toBeVisible();
-  await page.waitForTimeout(200);
-  await page.screenshot({ path: `screenshots/${testInfo.project.name}/${dir}/disclaimer-dialog.png` });
+  await shot(page, dir, 'disclaimer-dialog', testInfo);
 });
 
 // Walk a connected device to the preset feature-selection step.
@@ -839,7 +1013,7 @@ const goToNmFeaturesForShot = async (page) => {
 // ============================================================
 
 test('connected nickelmenu legacy config detected as ours', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeNickelMenu;
   await page.goto('/');
   await dismissMobileModal(page);
   await injectMockDevice(page, { hasNickelMenu: true });
@@ -873,7 +1047,7 @@ test('connected nickelmenu legacy config detected as ours', async ({ page }, tes
 // ============================================================
 
 test('connected nickelmenu legacy config detected as manual', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeNickelMenu;
   await page.goto('/');
   await dismissMobileModal(page);
   // Default items content ("menu_item:main:test:skip:") does not contain
@@ -893,7 +1067,7 @@ test('connected nickelmenu legacy config detected as manual', async ({ page }, t
 // recommendation, choosing Sideload Mode, the review summary with its warning,
 // and the done screen.
 test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) => {
-  const dir = 'connected-nickelmenu-factory';
+  const dir = SCREENSHOT_DIRS.connectedNickelMenuFactory;
   await page.goto('/');
   await dismissMobileModal(page);
   await injectMockDevice(page, { signedIn: false });
@@ -925,7 +1099,7 @@ test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) =
 // Edge case: Kobo software older than Sideload Mode's 4.31 minimum. The option
 // is shown disabled with a red explanation; no recommendation banner.
 test('Sideload Mode too old os', async ({ page }, testInfo) => {
-  const dir = 'edge-cases';
+  const dir = SCREENSHOT_DIRS.edgeNickelMenu;
   await page.goto('/');
   await dismissMobileModal(page);
   await injectMockDevice(page, { firmware: '4.28.17820', signedIn: false });

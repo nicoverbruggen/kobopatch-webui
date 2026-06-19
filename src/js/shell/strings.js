@@ -21,7 +21,7 @@ export const TL = {
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
         NM_INSTALLED: 'NickelMenu has been installed on your Kobo. To complete the installation, follow the instructions below.',
         NM_DOWNLOAD_READY: 'Your NickelMenu package is ready to download. After downloading, a list of installation steps will be displayed.',
-        NM_WILL_BE_REMOVED: 'NickelMenu will be updated and marked for removal. Your Kobo will restart automatically. Make sure you safely eject your Kobo first, then let the device restart — NickelMenu will remove itself during startup.',
+        NM_WILL_BE_REMOVED: 'Nothing has been changed yet. When you press Remove from Kobo, KoboPatch Web UI will update NickelMenu and mark it for removal. After the files are written, you will be asked to safely eject your Kobo so it can restart and remove NickelMenu during startup.',
         NM_SELECTED_REMOVALS: 'Selected removals:',
         NM_KEPT_FEATURES: 'These items and their files will be kept:',
         NM_WILL_BE_INSTALLED: 'The following will be installed on your Kobo:',

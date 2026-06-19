@@ -6,6 +6,10 @@ module.exports = defineConfig({
   testMatch: 'screenshots.mjs',
   projects: [
     {
+      name: 'desktop',
+      use: { ...base.use, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 },
+    },
+    {
       name: 'mobile',
       use: {
         ...base.use,
@@ -14,10 +18,6 @@ module.exports = defineConfig({
         isMobile: true,
         hasTouch: true,
       },
-    },
-    {
-      name: 'desktop',
-      use: { ...base.use, viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 },
     },
   ],
 });
