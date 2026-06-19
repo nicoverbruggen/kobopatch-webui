@@ -288,21 +288,28 @@ export class NickelMenuInstaller {
     async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null } = {}) {
         await this.loadNickelMenu(progressFn);
 
-        progressFn('Writing KoboRoot.tgz...');
         const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
-        await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
-        audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
 
         let collectedFiles = [];
         let featureFiles = {};
+        let eReaderConfData = null;
 
         if (features.length > 0) {
-            progressFn('Updating Kobo eReader.conf...');
-            await this.updateEReaderConf(device, features, audit);
+            progressFn('Preparing Kobo eReader.conf...');
+            eReaderConfData = await this.buildEReaderConfData(device, features);
 
             const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
+
+            for (const file of collectedFiles) {
+                if (!file.ifAbsent) continue;
+                file.skipWrite = await device.pathExists(file.path.split('/'));
+            }
+
+            progressFn('Updating Kobo eReader.conf...');
+            await device.writeFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], eReaderConfData);
+            this.recordEReaderConfUpdates(features, device.deviceInfo, audit);
 
             progressFn('Writing files to Kobo...');
             const totalFiles = collectedFiles.length;
@@ -313,7 +320,7 @@ export class NickelMenuInstaller {
                 // A feature can mark a user-owned file (e.g. NickelClock's
                 // settings.ini) `ifAbsent`: ship it on a fresh install but never
                 // overwrite one the user has since edited.
-                if (ifAbsent && await device.pathExists(pathArray)) {
+                if (ifAbsent && collectedFiles[i].skipWrite) {
                     audit?.record(`Kept existing ${path}`);
                     continue;
                 }
@@ -328,6 +335,10 @@ export class NickelMenuInstaller {
         if (manifest) {
             await this.writeManifest(device, manifest);
         }
+
+        progressFn('Writing KoboRoot.tgz...');
+        await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
+        audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
 
         await writeAuditLog(audit, device);
         progressFn('Done.');
@@ -402,12 +413,22 @@ export class NickelMenuInstaller {
      */
     async updateEReaderConf(device, features = [], audit = null) {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
+        const data = await this.buildEReaderConfData(device, features);
+        await device.writeFile(confPath, data);
+        this.recordEReaderConfUpdates(features, device.deviceInfo, audit);
+    }
+
+    async buildEReaderConfData(device, features = []) {
+        return new TextEncoder().encode(await this.buildEReaderConfContent(device, features));
+    }
+
+    async buildEReaderConfContent(device, features = []) {
+        const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
         const settingLine = getExcludeSyncFoldersLine(features);
         let content = setExcludeSyncFoldersLine(
             await device.readFile(confPath) || '',
             settingLine
         );
-        audit?.record(`Set Kobo eReader.conf ExcludeSyncFolders=${settingLine}`);
 
         // Apply any Kobo eReader.conf settings declared by selected features
         // (e.g. better-typography's reading/rendering preferences). Features pass
@@ -418,11 +439,24 @@ export class NickelMenuInstaller {
             if (!feature.confSettings) continue;
             for (const { section, key, value } of feature.confSettings(settingsCtx)) {
                 content = setConfSetting(content, section, key, value);
-                audit?.record(`Set Kobo eReader.conf [${section}] ${key}=${value}`);
             }
         }
 
-        await device.writeFile(confPath, new TextEncoder().encode(content));
+        return content;
+    }
+
+    recordEReaderConfUpdates(features = [], deviceInfo = null, audit = null) {
+        if (!audit) return;
+        const settingLine = getExcludeSyncFoldersLine(features);
+        audit.record(`Set Kobo eReader.conf ExcludeSyncFolders=${settingLine}`);
+
+        const settingsCtx = { deviceInfo, features };
+        for (const feature of features) {
+            if (!feature.confSettings) continue;
+            for (const { section, key, value } of feature.confSettings(settingsCtx)) {
+                audit.record(`Set Kobo eReader.conf [${section}] ${key}=${value}`);
+            }
+        }
     }
 
     /**

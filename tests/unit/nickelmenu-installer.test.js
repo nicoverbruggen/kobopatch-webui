@@ -33,8 +33,8 @@ test('installToDevice with no features writes NickelMenu KoboRoot.tgz and manife
     await installer.installToDevice(device, [], progress);
 
     assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
         '.kobopatch-webui/nickelmenu.json',
+        koboRootTgzPath,
     ]);
     assert.deepEqual(device.writeFor(koboRootTgzPath).data, tgz);
     // Manifest should record no selected features
@@ -66,11 +66,11 @@ test('installToDevice with features updates eReader config and writes feature fi
     }
 
     assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
         koboEReaderConfPath,
         '.adds/nm/.cog.png',
         NM_ITEMS_FILE,
         '.kobopatch-webui/nickelmenu.json',
+        koboRootTgzPath,
     ]);
     assert.match(text(device.writeFor(koboEReaderConfPath).data), /^\[ApplicationPreferences\]\nCurrentLocale=en_US\n\n\[FeatureSettings\]\nExcludeSyncFolders=/);
     // The items file is generated from the feature menuItems hooks.
@@ -118,9 +118,9 @@ test('installToDevice uses the calibre sync exclusion when exclude-calibre is se
     await installer.installToDevice(device, [excludeCalibre], createProgressRecorder());
 
     assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
         koboEReaderConfPath,
         '.kobopatch-webui/nickelmenu.json',
+        koboRootTgzPath,
     ]);
     assert.match(
         text(device.writeFor(koboEReaderConfPath).data),
@@ -249,7 +249,21 @@ test('installToDevice writes manifest but no audit log when none is passed', asy
     assert.ok(!device.writePaths().some(path => path.startsWith('.kobopatch-webui/logs/')));
 });
 
-test('installToDevice stops before config or feature writes if KoboRoot.tgz write fails', async () => {
+test('installToDevice writes KoboRoot.tgz last', async () => {
+    const restoreFetch = useCustomMenuAssetFetch();
+    const installer = createInstaller();
+    const device = new RecordingDevice();
+
+    try {
+        await installer.installToDevice(device, [customMenu], createProgressRecorder());
+    } finally {
+        restoreFetch();
+    }
+
+    assert.equal(device.writePaths().at(-1), koboRootTgzPath);
+});
+
+test('installToDevice stops after preceding writes if final KoboRoot.tgz write fails', async () => {
     const installer = createInstaller();
     const device = new RecordingDevice({ failWritePath: koboRootTgzPath });
 
@@ -257,7 +271,10 @@ test('installToDevice stops before config or feature writes if KoboRoot.tgz writ
         () => installer.installToDevice(device, [excludeCalibre], createProgressRecorder()),
         /Refusing write to \.kobo\/KoboRoot\.tgz/
     );
-    assert.deepEqual(device.writePaths(), []);
+    assert.deepEqual(device.writePaths(), [
+        koboEReaderConfPath,
+        '.kobopatch-webui/nickelmenu.json',
+    ]);
 });
 
 test('installToDevice stops before config overwrite when Kobo eReader.conf cannot be read', async () => {
@@ -273,10 +290,7 @@ test('installToDevice stops before config overwrite when Kobo eReader.conf canno
         () => installer.installToDevice(device, [excludeCalibre], createProgressRecorder()),
         /Refusing read of \.kobo\/Kobo\/Kobo eReader\.conf/
     );
-    assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
-    ]);
-    assert.equal(text(device.writeFor(koboRootTgzPath).data), 'nickelmenu tgz');
+    assert.deepEqual(device.writePaths(), []);
     assert.equal(device.writeFor(koboEReaderConfPath), undefined);
 });
 
@@ -294,7 +308,6 @@ test('installToDevice stops writing remaining feature files after a feature writ
         restoreFetch();
     }
     assert.deepEqual(device.writePaths(), [
-        koboRootTgzPath,
         koboEReaderConfPath,
     ]);
 });

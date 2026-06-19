@@ -1152,7 +1152,7 @@ test.describe('NickelMenu — install', () => {
     await expect(page.locator('#error-message')).toContainText('Could not read .kobo/Kobo/Kobo eReader.conf');
 
     const writtenFiles = await getWrittenFiles(page);
-    expect(writtenFiles).toContain('KOBOeReader/.kobo/KoboRoot.tgz');
+    expect(writtenFiles).not.toContain('KOBOeReader/.kobo/KoboRoot.tgz');
     expect(writtenFiles).not.toContain('KOBOeReader/.kobo/Kobo/Kobo eReader.conf');
     expect(await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf')).toBe(confBefore);
   });
