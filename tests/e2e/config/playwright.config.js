@@ -5,10 +5,12 @@ const serial = parseInt(process.env.SLOW_MO || '0', 10) > 0 || process.argv.incl
 const configDir = __dirname;
 const e2eDir = path.resolve(configDir, '..');
 const appDir = path.resolve(e2eDir, '../..');
+const testResultsDir = path.join(appDir, 'tmp', 'test-results', 'e2e');
 
 module.exports = defineConfig({
   testDir: path.join(e2eDir, 'specs'),
   testMatch: '*.spec.js',
+  outputDir: testResultsDir,
   timeout: 300_000,
   retries: 0,
   workers: serial ? 1 : 4,
