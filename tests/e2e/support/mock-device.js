@@ -42,6 +42,7 @@ const defaultConfig = {
   // { path: ['.kobopatch-webui', 'custom-patches.json'], content: '...' }.
   extraRootFiles: [],
   rootFolders: [],
+  failReadPaths: [],
   failWritePaths: [],
   // null = leave the placeholder KoboReader.sqlite (sign-in unknown); true/false
   // swaps in a real fixture so detection reads a signed-in or factory-reset db.
@@ -175,12 +176,17 @@ async function injectMockDevice(page, opts = {}) {
     window.__mockFS = filesystem;
     window.__mockWrittenFiles = {};
     window.__mockRemovedEntries = [];
+    window.__mockFailReadPaths = new Set(config.failReadPaths || []);
     window.__mockFailWritePaths = new Set(config.failWritePaths || []);
 
     function makeFileHandle(dirNode, fileName, pathPrefix) {
       const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
       return {
         getFile: async () => {
+          const deviceRelativePath = fullPath.replace(/^KOBOeReader\//, '');
+          if (window.__mockFailReadPaths.has(fullPath) || window.__mockFailReadPaths.has(deviceRelativePath)) {
+            throw new DOMException('Read blocked: ' + fullPath, 'NotAllowedError');
+          }
           const fileNode = dirNode[fileName];
           // Binary nodes (e.g. the KoboReader.sqlite fixture) carry raw bytes;
           // everything else stores text content. Normalise to bytes so the
@@ -226,6 +232,9 @@ async function injectMockDevice(page, opts = {}) {
           if (node[childName] && node[childName]._type === 'dir') {
             return makeDirHandle(node[childName], childName, currentPath);
           }
+          if (node[childName] && node[childName]._type === 'file') {
+            throw new DOMException('Not a directory: ' + childName, 'TypeMismatchError');
+          }
           if (opts2 && opts2.create) {
             node[childName] = { _type: 'dir' };
             return makeDirHandle(node[childName], childName, currentPath);
@@ -235,6 +244,9 @@ async function injectMockDevice(page, opts = {}) {
         getFileHandle: async (childName, opts2) => {
           if (node[childName] && node[childName]._type === 'file') {
             return makeFileHandle(node, childName, currentPath);
+          }
+          if (node[childName] && node[childName]._type === 'dir') {
+            throw new DOMException('Not a file: ' + childName, 'TypeMismatchError');
           }
           if (opts2 && opts2.create) {
             node[childName] = { _type: 'file', content: '' };

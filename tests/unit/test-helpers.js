@@ -74,8 +74,15 @@ function useCustomMenuAssetFetch() {
 }
 
 class RecordingDevice {
-    constructor({ textFiles = {}, existingEntries = [], failWritePath = null, failRemovePaths = [] } = {}) {
+    constructor({
+        textFiles = {},
+        existingEntries = [],
+        failReadPaths = [],
+        failWritePath = null,
+        failRemovePaths = [],
+    } = {}) {
         this.textFiles = new Map(Object.entries(textFiles));
+        this.failReadPaths = new Set(failReadPaths);
         this.failWritePath = failWritePath;
         this.failRemovePaths = new Set(failRemovePaths);
         this.writes = [];
@@ -122,7 +129,11 @@ class RecordingDevice {
     }
 
     async readFile(pathParts) {
-        return this.textFiles.get(pathParts.join('/')) ?? null;
+        const path = pathParts.join('/');
+        if (this.failReadPaths.has(path)) {
+            throw new Error(`Refusing read of ${path}`);
+        }
+        return this.textFiles.get(path) ?? null;
     }
 
     async writeFile(pathParts, data) {

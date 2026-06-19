@@ -52,6 +52,14 @@ function deviceWriteError(pathParts, phase, err) {
     return wrapped;
 }
 
+function isNotFoundError(err) {
+    return err?.name === 'NotFoundError';
+}
+
+function isTypeMismatchError(err) {
+    return err?.name === 'TypeMismatchError';
+}
+
 const WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
 const WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
 
@@ -269,43 +277,9 @@ class KoboDevice {
             const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             return await file.text();
-        } catch {
-            return null;
-        }
-    }
-
-    /**
-     * List direct children for a directory path. Returns [] if the directory is missing.
-     */
-    async listDirectory(pathParts) {
-        try {
-            const dir = await this.resolveDirectory(pathParts);
-            const entries = [];
-            for await (const entry of dir.values()) {
-                entries.push({ name: entry.name, kind: entry.kind });
-            }
-            return entries;
-        } catch {
-            return [];
-        }
-    }
-
-    /**
-     * Check if a file or directory exists at the given path.
-     */
-    async pathExists(pathParts) {
-        try {
-            const dir = await this.resolveDirectory(pathParts.slice(0, -1));
-            const lastPart = pathParts[pathParts.length - 1];
-            try {
-                await dir.getDirectoryHandle(lastPart);
-                return true;
-            } catch {
-                await dir.getFileHandle(lastPart);
-                return true;
-            }
-        } catch {
-            return false;
+        } catch (err) {
+            if (isNotFoundError(err)) return null;
+            throw devicePathError('read', filePath, err);
         }
     }
 
@@ -314,8 +288,9 @@ class KoboDevice {
             const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             return new Uint8Array(await file.arrayBuffer());
-        } catch {
-            return null;
+        } catch (err) {
+            if (isNotFoundError(err)) return null;
+            throw devicePathError('read', filePath, err);
         }
     }
 
@@ -332,8 +307,56 @@ class KoboDevice {
             const file = await fileHandle.getFile();
             const slice = file.slice(offset, offset + length);
             return new Uint8Array(await slice.arrayBuffer());
-        } catch {
-            return null;
+        } catch (err) {
+            if (isNotFoundError(err)) return null;
+            throw devicePathError('read', filePath, err);
+        }
+    }
+
+    /**
+     * List direct children for a directory path. Returns [] if the directory is missing.
+     */
+    async listDirectory(pathParts) {
+        try {
+            const dir = await this.resolveDirectory(pathParts);
+            const entries = [];
+            for await (const entry of dir.values()) {
+                entries.push({ name: entry.name, kind: entry.kind });
+            }
+            return entries;
+        } catch (err) {
+            if (isNotFoundError(err)) return [];
+            throw devicePathError('list', pathParts, err);
+        }
+    }
+
+    /**
+     * Check if a file or directory exists at the given path.
+     */
+    async pathExists(pathParts) {
+        try {
+            const dir = await this.resolveDirectory(pathParts.slice(0, -1));
+            const lastPart = pathParts[pathParts.length - 1];
+            try {
+                await dir.getDirectoryHandle(lastPart);
+                return true;
+            } catch (dirErr) {
+                if (!isNotFoundError(dirErr) && !isTypeMismatchError(dirErr)) {
+                    throw dirErr;
+                }
+            }
+
+            try {
+                await dir.getFileHandle(lastPart);
+                return true;
+            } catch (fileErr) {
+                if (isNotFoundError(fileErr)) return false;
+                if (isTypeMismatchError(fileErr)) return true;
+                throw fileErr;
+            }
+        } catch (err) {
+            if (isNotFoundError(err)) return false;
+            throw devicePathError('check existence of', pathParts, err);
         }
     }
 
@@ -349,8 +372,9 @@ class KoboDevice {
         let dir;
         try {
             dir = await this.resolveDirectory(pathParts.slice(0, -1));
-        } catch {
-            return;
+        } catch (err) {
+            if (isNotFoundError(err)) return;
+            throw devicePathError('open directory', pathParts.slice(0, -1), err);
         }
         const entryName = pathParts[pathParts.length - 1];
 
@@ -358,7 +382,12 @@ class KoboDevice {
             const childDir = await dir.getDirectoryHandle(entryName);
             await this.collectDirectoryFilePaths(childDir, pathParts, filePaths);
             return;
-        } catch {}
+        } catch (err) {
+            if (isNotFoundError(err)) return;
+            if (!isTypeMismatchError(err)) {
+                throw devicePathError('check directory', pathParts, err);
+            }
+        }
 
         const data = await this.readFileBytes(pathParts);
         if (data) {
@@ -444,8 +473,8 @@ class KoboDevice {
         } catch (err) {
             // NotFoundError → already gone. TypeMismatchError → it's a file, so
             // drop through to the plain removeEntry below. Anything else is real.
-            if (err?.name === 'NotFoundError') return;
-            if (err?.name !== 'TypeMismatchError') throw err;
+            if (isNotFoundError(err)) return;
+            if (!isTypeMismatchError(err)) throw err;
         }
 
         if (dirHandle) {
@@ -455,7 +484,7 @@ class KoboDevice {
         try {
             await parentHandle.removeEntry(entryName);
         } catch (err) {
-            if (err?.name === 'NotFoundError') return;
+            if (isNotFoundError(err)) return;
             throw err;
         }
     }
@@ -480,7 +509,7 @@ class KoboDevice {
                 }
                 await dirHandle.removeEntry(name);
             } catch (err) {
-                if (err?.name === 'NotFoundError') continue;
+                if (isNotFoundError(err)) continue;
                 throw err;
             }
         }

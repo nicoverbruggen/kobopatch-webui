@@ -405,3 +405,77 @@ test('readFile and pathExists return null or false for missing paths without cre
     assert.equal(await device.pathExists(['.kobo', 'missing.conf']), false);
     assert.equal(root.children.has('.kobo'), false);
 });
+
+test('readFile throws non-missing filesystem errors with path context', async () => {
+    const { device, root } = createDevice();
+    const file = await root.addFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], 'conf');
+    file.getFile = async () => {
+        throw domError('NotAllowedError', 'Permission denied');
+    };
+
+    await assert.rejects(
+        () => device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']),
+        (err) => {
+            assert.match(err.message, /Could not read \.kobo\/Kobo\/Kobo eReader\.conf: Permission denied/);
+            assert.equal(err.cause.name, 'NotAllowedError');
+            assert.equal(err.devicePath, '.kobo/Kobo/Kobo eReader.conf');
+            assert.equal(err.deviceOperation, 'read');
+            assert.equal(err.deviceWrite, false);
+            return true;
+        }
+    );
+});
+
+test('listDirectory throws non-missing filesystem errors with path context', async () => {
+    const { device, root } = createDevice();
+    const native = root.getDirectoryHandle.bind(root);
+    root.getDirectoryHandle = async (name, options = {}) => {
+        if (name === '.adds' && !options.create) {
+            throw domError('NotAllowedError', 'Permission denied');
+        }
+        return native(name, options);
+    };
+
+    await assert.rejects(
+        () => device.listDirectory(['.adds']),
+        (err) => {
+            assert.match(err.message, /Could not list \.adds: Permission denied/);
+            assert.equal(err.cause.name, 'NotAllowedError');
+            assert.equal(err.devicePath, '.adds');
+            assert.equal(err.deviceOperation, 'list');
+            return true;
+        }
+    );
+});
+
+test('pathExists throws non-missing filesystem errors with path context', async () => {
+    const { device, root } = createDevice();
+    const addsDir = await root.addDirectory(['.adds']);
+    addsDir.getDirectoryHandle = async () => {
+        throw domError('AbortError', 'Drive was disconnected');
+    };
+
+    await assert.rejects(
+        () => device.pathExists(['.adds', 'nm']),
+        (err) => {
+            assert.match(err.message, /Could not check existence of \.adds\/nm: Drive was disconnected/);
+            assert.equal(err.cause.name, 'AbortError');
+            assert.equal(err.devicePath, '.adds/nm');
+            assert.equal(err.deviceOperation, 'check existence of');
+            return true;
+        }
+    );
+});
+
+test('collectExistingEntries throws when an existing backup file cannot be read', async () => {
+    const { device, root } = createDevice();
+    const file = await root.addFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], 'conf');
+    file.getFile = async () => {
+        throw domError('NotReadableError', 'Could not read file');
+    };
+
+    await assert.rejects(
+        () => device.collectExistingEntries([['.kobo', 'Kobo', 'Kobo eReader.conf']]),
+        /Could not read \.kobo\/Kobo\/Kobo eReader\.conf: Could not read file/
+    );
+});

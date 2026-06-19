@@ -260,6 +260,26 @@ test('installToDevice stops before config or feature writes if KoboRoot.tgz writ
     assert.deepEqual(device.writePaths(), []);
 });
 
+test('installToDevice stops before config overwrite when Kobo eReader.conf cannot be read', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({
+        textFiles: {
+            [koboEReaderConfPath]: '[General]\nsome=setting\n',
+        },
+        failReadPaths: [koboEReaderConfPath],
+    });
+
+    await assert.rejects(
+        () => installer.installToDevice(device, [excludeCalibre], createProgressRecorder()),
+        /Refusing read of \.kobo\/Kobo\/Kobo eReader\.conf/
+    );
+    assert.deepEqual(device.writePaths(), [
+        koboRootTgzPath,
+    ]);
+    assert.equal(text(device.writeFor(koboRootTgzPath).data), 'nickelmenu tgz');
+    assert.equal(device.writeFor(koboEReaderConfPath), undefined);
+});
+
 test('installToDevice stops writing remaining feature files after a feature write fails', async () => {
     const restoreFetch = useCustomMenuAssetFetch();
     const installer = createInstaller();

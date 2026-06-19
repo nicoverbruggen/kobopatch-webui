@@ -1124,6 +1124,40 @@ test.describe('NickelMenu — install', () => {
   });
 
 
+  test('with device — unreadable Kobo eReader.conf fails instead of overwriting config', async ({ page }) => {
+    test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+    test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
+
+    await connectMockDevice(page, {
+      hasNickelMenu: false,
+      failReadPaths: ['.kobo/Kobo/Kobo eReader.conf'],
+    });
+
+    const confBefore = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+    expect(confBefore).toContain('[General]');
+    expect(confBefore).toContain('some=setting');
+
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[name="nm-option"][value="preset"]');
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-error')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('#error-message')).toContainText('Could not read .kobo/Kobo/Kobo eReader.conf');
+
+    const writtenFiles = await getWrittenFiles(page);
+    expect(writtenFiles).toContain('KOBOeReader/.kobo/KoboRoot.tgz');
+    expect(writtenFiles).not.toContain('KOBOeReader/.kobo/Kobo/Kobo eReader.conf');
+    expect(await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf')).toBe(confBefore);
+  });
+
+
   test('with device — backup step can download important files before review', async ({ page }) => {
     test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
     test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
