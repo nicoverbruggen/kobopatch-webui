@@ -11,8 +11,8 @@ function versionLine(serial, firmware, hardwareId = HARDWARE_ID) {
 }
 
 test('parseKoboVersion reads known 4-character device prefixes', () => {
-    assert.deepEqual(parseKoboVersion(versionLine('N4284B5215352', '4.45.23646')), {
-        serial: 'N4284B5215352',
+    assert.deepEqual(parseKoboVersion(versionLine('N428000000000', '4.45.23646')), {
+        serial: 'N428000000000',
         serialPrefix: 'N428',
         rawSerialPrefix: 'N428',
         firmware: '4.45.23646',
@@ -193,22 +193,22 @@ test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
 
 test('parseKoboVersion rejects malformed version files', () => {
     assert.throws(
-        () => parseKoboVersion('N4284B5215352,4.9.77,4.45.23646'),
+        () => parseKoboVersion('N428000000000,4.9.77,4.45.23646'),
         /Expected 6 comma-separated fields/
     );
 });
 
 test('parseKoboVersion marks firmware before 4.6 as incompatible', () => {
-    assert.equal(parseKoboVersion(versionLine('N4284B5215352', '4.5.99999')).isIncompatible, true);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.5.99999')).isIncompatible, true);
 });
 
 test('parseKoboVersion marks firmware 4.6 and later 4.x versions as compatible', () => {
-    assert.equal(parseKoboVersion(versionLine('N4284B5215352', '4.6.99999')).isIncompatible, false);
-    assert.equal(parseKoboVersion(versionLine('N4284B5215352', '4.45.23646')).isIncompatible, false);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.6.99999')).isIncompatible, false);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.45.23646')).isIncompatible, false);
 });
 
 test('parseKoboVersion marks firmware 5.x as incompatible', () => {
-    assert.equal(parseKoboVersion(versionLine('N4284B5215352', '5.0.0')).isIncompatible, true);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '5.0.0')).isIncompatible, true);
 });
 
 test('compareFirmware orders versions segment-by-segment, ignoring trailing zeros', () => {

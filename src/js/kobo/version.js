@@ -81,7 +81,7 @@ function deviceVerificationFor(hardwareInfo, rawSerialPrefix) {
  * Parse the .kobo/version file content.
  *
  * Format: serial,version1,firmware,version3,version4,hardware_uuid
- * Example: N4284B5215352,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390
+ * Example: N428000000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390
  */
 function parseKoboVersion(content) {
     const parts = content.split(',');

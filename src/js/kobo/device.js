@@ -1,82 +1,17 @@
+import { assertValidDevicePath, formatDevicePath } from './device-paths.js';
+import {
+    devicePathError,
+    deviceWriteError,
+    deviceWriteProbeError,
+    isNotFoundError,
+    isTypeMismatchError,
+} from './device-errors.js';
 import { parseKoboVersion } from './version.js';
 
-function formatDevicePath(pathParts) {
-    return pathParts.join('/');
-}
-
-function invalidPathPartReason(part) {
-    if (typeof part !== 'string') return 'path segments must be strings';
-    if (part === '') return 'path segments cannot be empty';
-    if (part === '.' || part === '..') return 'path segments cannot be "." or ".."';
-    if (part.includes('/') || part.includes('\\')) return 'path segments cannot contain path separators';
-    return null;
-}
-
-function assertValidDevicePath(pathParts, operation) {
-    if (!Array.isArray(pathParts) || pathParts.length === 0) {
-        throw new Error(`Invalid device path for ${operation}: expected at least one path segment`);
-    }
-
-    for (const part of pathParts) {
-        const reason = invalidPathPartReason(part);
-        if (reason) {
-            throw new Error(`Invalid device path for ${operation}: ${formatDevicePath(pathParts)} (${reason})`);
-        }
-    }
-}
-
-function describeError(err) {
-    return err?.message || String(err);
-}
-
-function devicePathError(operation, pathParts, err) {
-    const wrapped = new Error(
-        `Could not ${operation} ${formatDevicePath(pathParts)}: ${describeError(err)}`,
-        { cause: err }
-    );
-    wrapped.devicePath = formatDevicePath(pathParts);
-    wrapped.deviceOperation = operation;
-    wrapped.deviceWrite = operation === 'write';
-    return wrapped;
-}
-
-function deviceWriteError(pathParts, phase, err) {
-    const wrapped = new Error(
-        `Could not write ${formatDevicePath(pathParts)} while ${phase}: ${describeError(err)}`,
-        { cause: err }
-    );
-    wrapped.devicePath = formatDevicePath(pathParts);
-    wrapped.deviceOperation = 'write';
-    wrapped.deviceWrite = true;
-    wrapped.devicePhase = phase;
-    return wrapped;
-}
-
-function isNotFoundError(err) {
-    return err?.name === 'NotFoundError';
-}
-
-function isTypeMismatchError(err) {
-    return err?.name === 'TypeMismatchError';
-}
-
-const WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
-const WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
-
-function deviceWriteProbeError(err) {
-    const wrapped = new Error(
-        'Could not verify write access to the Kobo drive. The app could read ' +
-        '.kobo/version, but a small test write failed. Direct install is not safe ' +
-        `for this connection. Details: ${describeError(err)}`,
-        { cause: err }
-    );
-    wrapped.devicePath = formatDevicePath(WRITE_PROBE_PATH);
-    wrapped.deviceOperation = 'write probe';
-    wrapped.deviceWrite = true;
-    return wrapped;
-}
-
 class KoboDevice {
+    static WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
+    static WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
+
     constructor() {
         this.directoryHandle = null;
         this.deviceInfo = null;
@@ -144,7 +79,7 @@ class KoboDevice {
      * Parse the .kobo/version file content.
      *
      * Format: serial,version1,firmware,version3,version4,hardware_uuid
-     * Example: N4284B5215352,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390
+     * Example: N428000000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390
      */
     static parseVersion(content) {
         return parseKoboVersion(content);
@@ -223,14 +158,15 @@ class KoboDevice {
      * create/write/commit/remove operations the install flows need.
      */
     async verifyWriteAccess() {
+        const probePath = KoboDevice.WRITE_PROBE_PATH;
         let probeWritten = false;
         let probeError = null;
         try {
-            await this.writeFile(WRITE_PROBE_PATH, new TextEncoder().encode(WRITE_PROBE_CONTENT));
+            await this.writeFile(probePath, new TextEncoder().encode(KoboDevice.WRITE_PROBE_CONTENT));
             probeWritten = true;
 
-            const written = await this.readFile(WRITE_PROBE_PATH);
-            if (written !== WRITE_PROBE_CONTENT) {
+            const written = await this.readFile(probePath);
+            if (written !== KoboDevice.WRITE_PROBE_CONTENT) {
                 throw new Error('The write probe could not be read back from the Kobo drive.');
             }
         } catch (err) {
@@ -239,14 +175,14 @@ class KoboDevice {
 
         if (probeWritten) {
             try {
-                await this.removeEntry(WRITE_PROBE_PATH);
+                await this.removeEntry(probePath);
             } catch (err) {
                 probeError = probeError || err;
             }
         }
 
         if (probeError) {
-            throw deviceWriteProbeError(probeError);
+            throw deviceWriteProbeError(probeError, probePath);
         }
     }
 
@@ -523,8 +459,5 @@ class KoboDevice {
         this.deviceInfo = null;
     }
 }
-
-// Expose on window for E2E test compatibility (tests access these via page.evaluate)
-window.KoboDevice = KoboDevice;
 
 export { KoboDevice };

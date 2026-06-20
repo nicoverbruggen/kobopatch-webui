@@ -80,6 +80,7 @@ The wizard's mutable state is a `Session` (`shell/session.js`) with a declared s
 1. Add the patch sources to `patches/<version>/` and update `patches/index.json`.
 2. Add download URLs to `patches/downloads.json` keyed by version and serial prefix.
 3. The Kobo CDN prefix per device family, such as `kobo12` or `kobo13`, is stable; the date path segment changes per release.
+4. Update `tests/e2e/config/firmware-config.js` to use the latest builds.
 
 ## Build And Assets
 
