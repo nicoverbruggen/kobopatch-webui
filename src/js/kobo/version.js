@@ -64,6 +64,7 @@ const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000390': { serialPrefix: 'N428', model: 'Kobo Libra Colour' },
     '00000000-0000-0000-0000-000000000391': { serialPrefix: 'N365', model: 'Kobo Clara BW' },
     '00000000-0000-0000-0000-000000000393': { serialPrefix: 'N367', model: 'Kobo Clara Colour' },
+    '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', model: 'Kobo Clara BW (v2)' },
 };
 
 function canonicalSerialPrefix(rawPrefix) {

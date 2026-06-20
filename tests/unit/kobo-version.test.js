@@ -123,6 +123,10 @@ test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
         serialPrefix: 'N367',
         model: 'Kobo Clara Colour',
     });
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000395'], {
+        serialPrefix: 'P365',
+        model: 'Kobo Clara BW (v2)',
+    });
 });
 
 test('parseKoboVersion rejects malformed version files', () => {
