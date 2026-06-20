@@ -17,6 +17,7 @@
     "hardware:resolve-ids": "node scripts/resolve-hardware-ids.mjs",
     "setup:installables": "node tools/installables/installables.mjs --src",
     "update:installables": "node tools/installables/installables.mjs --update --src --dist",
+    "check:installables": "node tools/installables/installables.mjs --check --force",
     "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
     "start": "node scripts/serve-dist.mjs",
     "verify": "node scripts/verify.mjs",

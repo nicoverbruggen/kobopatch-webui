@@ -8,6 +8,12 @@ import { fileURLToPath } from 'node:url';
 const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK_PATH = join(APP_DIR, 'installables.lock');
 
+// `--check` hits the GitHub API once per tracked installable, so throttle it: the
+// timestamp of the last completed check is recorded here, and a check within the
+// window is skipped (unless `--force`). Lives under the gitignored tmp/ dir.
+const CHECK_STAMP_PATH = join(APP_DIR, 'tmp', 'last-installable-check');
+const CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000;
+
 const TARGET_ROOTS = {
     src: 'src/assets',
     dist: 'dist/assets',
@@ -233,24 +239,59 @@ async function updateInstallable(item, targets, lock) {
     console.log(`[${item.name}] ${note} -> ${formatSize(buf.length)}`);
 }
 
+// check: compare an item's locked version against the latest upstream release.
+// Read-only and best-effort — it never rewrites the lock, and a failed lookup is
+// reported as a warning rather than throwing. Pinned items are not tracked.
+async function checkInstallable(item, lock) {
+    const entry = lock.installables[item.name];
+    if (item.pinned) return { name: item.name, status: 'pinned', version: entry?.version };
+    try {
+        const { version } = await resolveLatest(item);
+        const current = entry?.version ?? null;
+        return current === version ? { name: item.name, status: 'current', version } : { name: item.name, status: 'outdated', current, latest: version };
+    } catch (err) {
+        return { name: item.name, status: 'error', message: err.message };
+    }
+}
+
+// Age (ms) of the last completed check, or null if never checked / unreadable.
+async function lastCheckAgeMs() {
+    try {
+        const when = Date.parse((await readFile(CHECK_STAMP_PATH, 'utf8')).trim());
+        return Number.isNaN(when) ? null : Date.now() - when;
+    } catch {
+        return null;
+    }
+}
+
+async function writeCheckStamp() {
+    await mkdir(dirname(CHECK_STAMP_PATH), { recursive: true });
+    await writeFile(CHECK_STAMP_PATH, `${new Date().toISOString()}\n`);
+}
+
 function parseArgs(argv) {
-    const opts = { update: false, targets: [], only: null, cachePaths: false };
+    const opts = { update: false, check: false, force: false, targets: [], only: null, cachePaths: false };
     for (const arg of argv) {
         if (arg === '--update') opts.update = true;
+        else if (arg === '--check') opts.check = true;
+        // For --check, bypass the 12h throttle. A no-op for setup (the lock-based
+        // setup already skips assets whose hash matches).
+        else if (arg === '--force') opts.force = true;
         else if (arg === '--dist') opts.targets.push('dist');
         else if (arg === '--src') opts.targets.push('src');
         else if (arg === '--cache-paths') opts.cachePaths = true;
-        // Accepted for backward compatibility (CI/shell scripts); the lock-based
-        // setup already skips assets whose hash matches, so these are no-ops.
-        else if (arg === '--skip-if-present' || arg === '--force') continue;
+        // Accepted for backward compatibility (CI/shell scripts); a no-op since the
+        // lock-based setup already skips assets whose hash matches.
+        else if (arg === '--skip-if-present') continue;
         else if (arg.startsWith('--only=')) opts.only = arg.slice('--only='.length);
         else {
             console.error(`Unknown argument: ${arg}`);
-            console.error('Usage: installables.mjs (--src|--dist)... [--update] [--cache-paths] [--only=<name>]');
+            console.error('Usage: installables.mjs (--src|--dist)... [--update] [--check] [--cache-paths] [--only=<name>]');
             process.exit(2);
         }
     }
-    if (opts.targets.length === 0) {
+    // --check is target-independent (it only compares the lock against upstream).
+    if (!opts.check && opts.targets.length === 0) {
         console.error('Error: at least one of --src or --dist is required.');
         process.exit(2);
     }
@@ -282,6 +323,42 @@ if (opts.cachePaths) {
 }
 
 const lock = await readLock();
+
+if (opts.check) {
+    const ageMs = await lastCheckAgeMs();
+    if (!opts.force && ageMs !== null && ageMs < CHECK_INTERVAL_MS) {
+        console.log(`Installables checked ${(ageMs / 3_600_000).toFixed(1)}h ago; skipping (at most once per 12h — pass --force to override).`);
+        process.exit(0);
+    }
+
+    const reports = [];
+    for (const item of items) reports.push(await checkInstallable(item, lock));
+
+    const trackable = reports.filter((r) => r.status !== 'pinned');
+    const outdated = reports.filter((r) => r.status === 'outdated');
+    const errors = reports.filter((r) => r.status === 'error');
+
+    for (const r of reports) {
+        if (r.status === 'current') console.log(`[${r.name}] up to date (${r.version})`);
+        else if (r.status === 'pinned') console.log(`[${r.name}] pinned (${r.version ?? 'unknown'}), not tracked for updates`);
+    }
+    for (const r of errors) console.warn(`[${r.name}] could not check for updates: ${r.message}`);
+
+    if (outdated.length) {
+        console.warn('\n⚠ Updates available for installables:');
+        for (const r of outdated) console.warn(`  - ${r.name}: ${r.current ?? 'none'} → ${r.latest}`);
+        console.warn('\nRun `npm run update:installables` to refresh installables.lock (maintainer task).');
+    } else if (errors.length < trackable.length) {
+        console.log('\nAll tracked installables are up to date.');
+    }
+
+    // Only stamp when at least one lookup succeeded, so a network outage retries
+    // on the next run instead of being throttled for 12h.
+    if (errors.length < trackable.length) await writeCheckStamp();
+
+    // Soft check: informational only, never fails the caller (e.g. `npm run verify`).
+    process.exit(0);
+}
 
 if (opts.update) {
     for (const item of items) await updateInstallable(item, opts.targets, lock);

@@ -88,6 +88,8 @@ More relevant notes on architecture, file structure, build internals, and detail
 
 This project stands on the work of many others. Each remains the property of its respective authors and is used under its own license — my sincere thanks to everyone who maintains them.
 
+Some dependencies (see `installables.lock`) are bundled as part of the webapp, as otherwise there'd be issues with CORS and downloading assets from GitHub releases.
+
 **Patching & menu**
 
 - [kobopatch](https://github.com/pgaskin/kobopatch) — the patching engine, compiled to WebAssembly to patch firmware in the browser. _(MIT)_

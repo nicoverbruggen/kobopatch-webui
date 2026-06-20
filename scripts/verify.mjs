@@ -114,6 +114,15 @@ function printSummary() {
     console.log(`  ${bold('Total'.padEnd(totalWidth))}   ${' '.repeat(8)}   ${bold(formatDuration(total).padStart(8))}`);
 }
 
+// Installables come first: ensure the locked assets are present, then run a soft
+// (non-failing, 12h-throttled) check for newer upstream releases. Both are
+// dependency-free node scripts, so they run before everything else — the firmware
+// prompt, the WASM setup, and `npm install`. The update check is full-suite only.
+await run('node', [join(toolsDir, 'installables/installables.mjs'), '--src', '--skip-if-present']);
+if (!quick) {
+    await run('node', [join(toolsDir, 'installables/installables.mjs'), '--check']);
+}
+
 const missing = [firmwareConfig.primary, firmwareConfig.secondary]
     .map(({ version, url }) => ({ version, url, file: join(cachedAssets, `kobo-update-${version}.zip`) }))
     .filter(({ file }) => !existsSync(file));
@@ -140,8 +149,6 @@ if (missing.length > 0) {
 if (!quick && !existsSync(join(toolsDir, 'kobopatch-wasm/kobopatch-src'))) {
     await run(join(toolsDir, 'kobopatch-wasm/setup.sh'), []);
 }
-
-await run('node', [join(toolsDir, 'installables/installables.mjs'), '--src', '--skip-if-present']);
 
 // Dependency install is initial setup, so it precedes the phases (keeping Prettier
 // the first phase) and is full-suite only — `npm run test` assumes an installed tree.
