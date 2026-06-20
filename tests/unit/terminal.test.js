@@ -12,6 +12,7 @@ async function withDom(run) {
             <div class="banner banner--info feedback" hidden>
                 <span class="feedback-text">Prompt</span>
                 <span class="feedback-thanks" hidden>Thanks</span>
+                <span class="feedback-donate" hidden>Donate</span>
                 <span class="feedback-buttons">
                     <button class="feedback-btn" data-vote="up" type="button">Up</button>
                     <button class="feedback-btn" data-vote="down" type="button">Down</button>
@@ -151,18 +152,53 @@ test('wireFeedback resets the widget state when the done step is revisited', asy
         const widget = document.querySelector('.feedback');
         const textEl = widget.querySelector('.feedback-text');
         const thanksEl = widget.querySelector('.feedback-thanks');
+        const donateEl = widget.querySelector('.feedback-donate');
         const upButton = widget.querySelector('[data-vote="up"]');
 
         terminal.wireFeedback();
         upButton.click();
         assert.equal(textEl.hidden, true);
-        assert.equal(thanksEl.hidden, false);
+        assert.equal(thanksEl.hidden, true);
+        assert.equal(donateEl.hidden, false);
 
         terminal.wireFeedback();
         assert.equal(widget.hidden, false);
         assert.equal(textEl.hidden, false);
         assert.equal(thanksEl.hidden, true);
+        assert.equal(donateEl.hidden, true);
         assert.equal(upButton.hidden, false);
         assert.equal(upButton.disabled, false);
+    });
+});
+
+test('wireFeedback only shows the donate follow-up for thumbs up', async () => {
+    await withDom(async (document) => {
+        const votes = [];
+        document.defaultView.umami = {
+            track: (event, props) => votes.push([event, props]),
+        };
+        const terminal = createTerminal({
+            doneStep: document.getElementById('done-step'),
+            showError: () => {},
+        });
+        const widget = document.querySelector('.feedback');
+        const thanksEl = widget.querySelector('.feedback-thanks');
+        const donateEl = widget.querySelector('.feedback-donate');
+        const upButton = widget.querySelector('[data-vote="up"]');
+        const downButton = widget.querySelector('[data-vote="down"]');
+
+        terminal.wireFeedback();
+        upButton.click();
+        assert.equal(donateEl.hidden, false);
+        assert.equal(thanksEl.hidden, true);
+
+        terminal.wireFeedback();
+        downButton.click();
+        assert.equal(donateEl.hidden, true);
+        assert.equal(thanksEl.hidden, false);
+        assert.deepEqual(votes, [
+            ['feedback', { vote: 'up' }],
+            ['feedback', { vote: 'down' }],
+        ]);
     });
 });

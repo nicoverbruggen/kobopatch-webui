@@ -1,6 +1,7 @@
 .feedback {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.75rem;
 }
 
@@ -54,7 +55,8 @@
     background: var(--error-bg);
 }
 
-.feedback-thanks {
+.feedback-thanks,
+.feedback-donate {
     font-size: 0.85rem;
     font-weight: 600;
 }

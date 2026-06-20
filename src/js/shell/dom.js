@@ -219,7 +219,7 @@ export function setProgressDetail(container, detail, fraction = null) {
 
 /**
  * Wire up a .feedback banner inside a container element.
- * Shows text + vote buttons; clicking one replaces all with a thank-you message.
+ * Shows text + vote buttons; clicking one replaces all with a vote-specific follow-up message.
  * @param {HTMLElement} container - element containing the .feedback widget
  * @param {function} onVote - callback receiving 'up' or 'down'
  */
@@ -229,10 +229,12 @@ export function setupFeedback(container, onVote) {
     const text = widget.querySelector('.feedback-text');
     const buttons = widget.querySelectorAll('.feedback-btn');
     const thanks = widget.querySelector('.feedback-thanks');
+    const donate = widget.querySelector('.feedback-donate');
 
     widget.hidden = false;
     text.hidden = false;
     thanks.hidden = true;
+    if (donate) donate.hidden = true;
     buttons.forEach((btn) => {
         btn.hidden = false;
         btn.disabled = false;
@@ -249,8 +251,10 @@ export function setupFeedback(container, onVote) {
             b.hidden = true;
             b.disabled = true;
         });
-        thanks.hidden = false;
-        onVote(btn.dataset.vote);
+        const vote = btn.dataset.vote;
+        if (donate) donate.hidden = vote !== 'up';
+        thanks.hidden = vote === 'up';
+        onVote(vote);
     });
 }
 
