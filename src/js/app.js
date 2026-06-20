@@ -8,7 +8,8 @@
 
 import { KoboDevice } from './kobo/device.js';
 import { loadSoftwareUrls, getSoftwareUrl } from './kobo/software-urls.js';
-import { PatchUI, scanAvailablePatches } from './patches/ui.js';
+import { PatchUI } from './patches/ui.js';
+import { scanAvailablePatches } from './patches/catalog.js';
 import { KoboPatchRunner } from './patches/runner.js';
 import { NickelMenuInstaller } from './nickelmenu/installer.js';
 import { Session } from './shell/session.js';

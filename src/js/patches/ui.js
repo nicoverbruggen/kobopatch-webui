@@ -13,30 +13,7 @@ import JSZip from 'jszip';
 import { fetchOrThrow } from '../shell/dom.js';
 import { parsePatchYAML, replacePatchLines, yamlScalar, parsePatchConfig } from './patch-yaml.js';
 import { renderPatchList, updatePatchCounts } from './patch-list-view.js';
-
-/**
- * Scan the patches/ directory for available patch zips.
- * Returns an array of { filename, version } objects.
- * Each entry in index.json may list multiple versions; these are flattened
- * so that each version gets its own entry pointing to the same filename.
- */
-async function scanAvailablePatches() {
-    try {
-        const resp = await fetch('patches/index.json');
-        if (!resp.ok) return [];
-        const list = await resp.json();
-        const result = [];
-        for (const entry of list) {
-            for (const version of entry.versions) {
-                result.push({ filename: entry.filename, version });
-            }
-        }
-        return result;
-    } catch (err) {
-        console.error('Failed to load patch index:', err);
-        return [];
-    }
-}
+import { fetchPatchBlacklist } from './catalog.js';
 
 class PatchUI {
     constructor() {
@@ -59,12 +36,7 @@ class PatchUI {
 
     /** Load the blacklist of incompatible patches. */
     async loadBlacklist() {
-        try {
-            const resp = await fetch('patches/blacklist.json');
-            if (resp.ok) this.blacklist = await resp.json();
-        } catch {
-            // No blacklist available — all patches are allowed.
-        }
+        this.blacklist = await fetchPatchBlacklist();
     }
 
     /** Check if a patch is blacklisted for the current firmware version. */
@@ -351,4 +323,4 @@ class PatchUI {
 
 }
 
-export { PatchUI, scanAvailablePatches };
+export { PatchUI };
