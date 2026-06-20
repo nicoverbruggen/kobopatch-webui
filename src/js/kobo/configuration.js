@@ -225,6 +225,22 @@ function removeExcludeSyncFoldersLine(content) {
     return removeConfSetting(content, featureSettingsSection, excludeSyncFoldersKey);
 }
 
+/**
+ * The Kobo eReader.conf settings a feature both applies AND owns for removal:
+ * the entries its `confSettings` declares with `revertable: true`. The installer
+ * applies every `confSettings` entry; this subset is also what the flow detects
+ * the feature by and what the uninstaller reverts (to `revertTo`, or removes the
+ * line when `revertTo` is null/absent). Declaring `revertable`/`revertTo` on the
+ * setting itself keeps each reverted key defined once, in `confSettings`, instead
+ * of being repeated in `cleanup.detectConf`/`cleanup.revertConf`. A setting left
+ * without `revertable` is applied but never clawed back (e.g. a general reading
+ * preference).
+ */
+function revertableConfSettings(feature, ctx = {}) {
+    if (!feature.confSettings) return [];
+    return feature.confSettings(ctx).filter((setting) => setting.revertable);
+}
+
 export {
     createExcludeSyncFoldersMatcher,
     getConfSetting,
@@ -232,6 +248,7 @@ export {
     parseExcludeSyncFoldersLine,
     removeConfSetting,
     removeExcludeSyncFoldersLine,
+    revertableConfSettings,
     setConfSetting,
     setExcludeSyncFoldersLine,
     validateExcludeSyncFoldersLine,

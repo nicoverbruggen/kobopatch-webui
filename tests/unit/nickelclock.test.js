@@ -7,7 +7,7 @@ import nickelclock from '../../src/js/nickelmenu/features/nickelclock/index.js';
 import { menuItemPosition } from '../../src/js/nickelmenu/features/menu-order.js';
 import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
 import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
-import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/installer.js';
+import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 import { RecordingDevice, createInstaller, createProgressRecorder } from './test-helpers.js';
 
 function bytes(value) {

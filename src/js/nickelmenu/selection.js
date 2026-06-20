@@ -1,4 +1,4 @@
-import { NICKELMENU_FEATURES } from './installer.js';
+import { NICKELMENU_FEATURES } from './features/index.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 
 // Pure derivations of the NickelMenu flow's decisions from the session. None of

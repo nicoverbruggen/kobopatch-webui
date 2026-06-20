@@ -15,7 +15,7 @@ import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.j
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
 import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
-import { revertableConfSettings } from '../../src/js/nickelmenu/installer.js';
+import { revertableConfSettings } from '../../src/js/kobo/configuration.js';
 import { createResponse, text } from './test-helpers.js';
 
 const hideNotices = homeHiders.find((f) => f.id === 'hide-notices');

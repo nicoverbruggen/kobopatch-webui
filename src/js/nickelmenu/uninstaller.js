@@ -1,5 +1,5 @@
-import { getConfSetting, removeConfSetting, setConfSetting } from '../kobo/configuration.js';
-import { revertableConfSettings, writeAuditLog } from './installer.js';
+import { getConfSetting, removeConfSetting, revertableConfSettings, setConfSetting } from '../kobo/configuration.js';
+import { writeAuditLog } from '../kobo/audit-log.js';
 
 const eReaderConfPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
 const nickelMenuTgzPath = ['.kobo', 'KoboRoot.tgz'];

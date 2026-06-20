@@ -65,3 +65,13 @@ export class AuditLog {
         await device.writeFile(this.path, new TextEncoder().encode(this.render()));
     }
 }
+
+/**
+ * Write the on-device audit log as the final signal that all preceding device
+ * writes completed. A no-op when there is no log; if the write fails, the caller
+ * reports the operation as failed.
+ */
+export async function writeAuditLog(audit, device) {
+    if (!audit) return;
+    await audit.write(device);
+}

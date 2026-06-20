@@ -55,4 +55,15 @@ function deviceWriteProbeError(err, probePathParts) {
     return wrapped;
 }
 
-export { describeError, isNotFoundError, isTypeMismatchError, devicePathError, deviceWriteError, deviceWriteProbeError };
+/**
+ * Tag an arbitrary error as a device-write failure so the error screen routes it
+ * to the manual-recovery guidance. Idempotent; returns the same error for `throw`.
+ */
+function markDeviceWriteError(err) {
+    if (err && !err.deviceWrite) {
+        err.deviceWrite = true;
+    }
+    return err;
+}
+
+export { describeError, isNotFoundError, isTypeMismatchError, devicePathError, deviceWriteError, deviceWriteProbeError, markDeviceWriteError };

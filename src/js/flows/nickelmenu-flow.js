@@ -3,7 +3,7 @@ import { setupCardRadios } from '../shell/navigation.js';
 import { renderNmCheckboxList } from '../nickelmenu/checkbox-list.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
-import { NICKELMENU_FEATURES } from '../nickelmenu/installer.js';
+import { NICKELMENU_FEATURES } from '../nickelmenu/features/index.js';
 import { installablesManifest } from '../nickelmenu/installables.js';
 import {
     createDefaultMenuCustomization,

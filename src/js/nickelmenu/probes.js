@@ -1,5 +1,5 @@
-import { NICKELMENU_FEATURES, revertableConfSettings } from './installer.js';
-import { getConfSetting } from '../kobo/configuration.js';
+import { NICKELMENU_FEATURES } from './features/index.js';
+import { getConfSetting, revertableConfSettings } from '../kobo/configuration.js';
 import { countKoboUsers } from '../kobo/signin.js';
 
 export const NM_PRESET_CONFLICTS = [

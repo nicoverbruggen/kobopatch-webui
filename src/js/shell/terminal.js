@@ -1,7 +1,8 @@
 import { $, triggerDownload, setupFeedback } from './dom.js';
 import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
-import { DeviceWriter, markDeviceWriteError } from '../kobo/device-writer.js';
+import { DeviceWriter } from '../kobo/device-writer.js';
+import { markDeviceWriteError } from '../kobo/device-errors.js';
 
 /**
  * The shared "terminal" of a flow — the build/result tail that both the patches

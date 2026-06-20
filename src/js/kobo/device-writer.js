@@ -8,12 +8,7 @@
  * stops touching the device and tells the user how to recover by hand instead.
  */
 
-function markDeviceWriteError(err) {
-    if (err && !err.deviceWrite) {
-        err.deviceWrite = true;
-    }
-    return err;
-}
+import { markDeviceWriteError } from './device-errors.js';
 
 class DeviceWriter {
     constructor(device) {
@@ -63,4 +58,4 @@ class DeviceWriter {
     }
 }
 
-export { DeviceWriter, markDeviceWriteError };
+export { DeviceWriter };
