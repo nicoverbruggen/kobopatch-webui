@@ -375,6 +375,22 @@ test.describe('Custom patches', () => {
     await expect(toggle).toHaveText('Reveal');
   });
 
+  test('with device — refurbished serial shows refurbished model label', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, { serial: 'R4180A0000000', firmware: '4.38.23648' });
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra 2 (refurbished)');
+    await expect(page.locator('#device-firmware')).toHaveText('4.38.23648');
+    await expect(page.locator('#device-serial')).toContainText('R418');
+    await expect(page.locator('#device-status')).toContainText('recognized');
+    await expect(page.locator('#device-unknown-warning')).toBeHidden();
+    await expect(page.locator('#btn-device-restore')).toBeVisible();
+  });
+
 
   test('with device — unknown model shows warning and requires checkbox', async ({ page }) => {
     await page.goto('/');

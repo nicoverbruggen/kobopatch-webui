@@ -20,6 +20,14 @@ test('getSoftwareUrl returns the URL for a known prefix + version, else null', (
     assert.equal(getSoftwareUrl(knownPrefix, '9.9.9'), null); // unknown version
 });
 
+test('getSoftwareUrl treats known R-prefixed serials as refurbished variants', () => {
+    window.FIRMWARE_DOWNLOADS = {
+        '4.38.23648': { N418: 'https://dl/libra2.zip' },
+    };
+
+    assert.equal(getSoftwareUrl('R418', '4.38.23648'), 'https://dl/libra2.zip');
+});
+
 test('getSoftwareUrl returns null when no manifest is loaded', () => {
     window.FIRMWARE_DOWNLOADS = undefined;
     assert.equal(getSoftwareUrl('N306', '4.45.23646'), null);

@@ -1,5 +1,5 @@
 import { fetchOrThrow } from '../shell/dom.js';
-import { koboModels } from './version.js';
+import { canonicalSerialPrefix, koboModels } from './version.js';
 
 let _data = null;
 
@@ -24,7 +24,7 @@ function getSoftwareUrl(serialPrefix, version) {
     if (!data) return null;
     const versionMap = data[version];
     if (!versionMap) return null;
-    return versionMap[serialPrefix] || null;
+    return versionMap[canonicalSerialPrefix(serialPrefix)] || null;
 }
 
 /**

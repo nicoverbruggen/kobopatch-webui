@@ -36,6 +36,26 @@ const koboModels = {
     'N204': 'Kobo Aura HD',
 };
 
+function canonicalSerialPrefix(rawPrefix) {
+    const prefix = String(rawPrefix || '').substring(0, 4);
+    if (koboModels[prefix]) return prefix;
+
+    if (prefix.startsWith('R')) {
+        const nonRefurbishedPrefix = 'N' + prefix.substring(1);
+        if (koboModels[nonRefurbishedPrefix]) return nonRefurbishedPrefix;
+    }
+
+    return prefix;
+}
+
+function modelNameForSerialPrefix(serialPrefix, rawPrefix = serialPrefix) {
+    const model = koboModels[serialPrefix];
+    if (!model) return 'Unknown Kobo (' + rawPrefix + ')';
+    return rawPrefix.startsWith('R') && rawPrefix !== serialPrefix
+        ? model + ' (refurbished)'
+        : model;
+}
+
 /**
  * Parse the .kobo/version file content.
  *
@@ -54,8 +74,9 @@ function parseKoboVersion(content) {
     const firmware = parts[2];
     const hardwareId = parts[5];
 
-    const serialPrefix = serial.substring(0, 4);
-    const model = koboModels[serialPrefix] || 'Unknown Kobo (' + serialPrefix + ')';
+    const rawSerialPrefix = serial.substring(0, 4);
+    const serialPrefix = canonicalSerialPrefix(rawSerialPrefix);
+    const model = modelNameForSerialPrefix(serialPrefix, rawSerialPrefix);
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
     const fwMinor = parseInt(fwParts[1], 10) || 0;
@@ -101,4 +122,4 @@ function meetsMinimumVersion(firmware, minimum) {
     return compareFirmware(firmware, minimum) >= 0;
 }
 
-export { koboModels, parseKoboVersion, compareFirmware, meetsMinimumVersion };
+export { koboModels, canonicalSerialPrefix, modelNameForSerialPrefix, parseKoboVersion, compareFirmware, meetsMinimumVersion };

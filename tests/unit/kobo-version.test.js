@@ -27,11 +27,25 @@ test('parseKoboVersion reads known older 4-character prefixes', () => {
     assert.equal(info.model, 'Kobo Touch');
 });
 
+test('parseKoboVersion treats known R-prefixed serials as refurbished variants', () => {
+    const info = parseKoboVersion(versionLine('R418ABC123456', '4.38.21908'));
+
+    assert.equal(info.serialPrefix, 'N418');
+    assert.equal(info.model, 'Kobo Libra 2 (refurbished)');
+});
+
 test('parseKoboVersion reports unknown models with the first 4 serial characters', () => {
     const info = parseKoboVersion(versionLine('Z999ABC123456', '4.38.21908'));
 
     assert.equal(info.serialPrefix, 'Z999');
     assert.equal(info.model, 'Unknown Kobo (Z999)');
+});
+
+test('parseKoboVersion reports unknown R-prefixed models without guessing a base model', () => {
+    const info = parseKoboVersion(versionLine('R999ABC123456', '4.38.21908'));
+
+    assert.equal(info.serialPrefix, 'R999');
+    assert.equal(info.model, 'Unknown Kobo (R999)');
 });
 
 test('parseKoboVersion does not fall back to a 3-character prefix', () => {
