@@ -14,24 +14,31 @@ test('parseKoboVersion reads known 4-character device prefixes', () => {
     assert.deepEqual(parseKoboVersion(versionLine('N4284B5215352', '4.45.23646')), {
         serial: 'N4284B5215352',
         serialPrefix: 'N428',
+        rawSerialPrefix: 'N428',
         firmware: '4.45.23646',
         hardwareId: HARDWARE_ID,
         model: 'Kobo Libra Colour',
         channel: 'kobo13',
         identifiedBy: 'uuid',
+        deviceVerification: 'verified',
+        serialPrefixStatus: 'verified',
+        serialPrefixMatches: true,
+        isRefurbished: false,
         isIncompatible: false,
     });
 });
 
-test('parseKoboVersion reads known older 4-character prefixes', () => {
+test('parseKoboVersion does not identify devices by serial prefix alone', () => {
     const info = parseKoboVersion(versionLine('N905ABC123456', '4.38.21908', UNKNOWN_HARDWARE_ID));
 
     assert.equal(info.serialPrefix, 'N905');
-    assert.equal(info.model, 'Kobo Touch');
-    assert.equal(info.identifiedBy, 'serial');
+    assert.equal(info.model, 'Unknown Kobo (N905)');
+    assert.equal(info.channel, null);
+    assert.equal(info.identifiedBy, null);
+    assert.equal(info.deviceVerification, 'unknown');
 });
 
-test('parseKoboVersion treats known R-prefixed serials as refurbished variants', () => {
+test('parseKoboVersion accepts known R-prefixed serials as refurbished variants', () => {
     const info = parseKoboVersion(versionLine(
         'R418ABC123456',
         '4.38.21908',
@@ -39,11 +46,15 @@ test('parseKoboVersion treats known R-prefixed serials as refurbished variants',
     ));
 
     assert.equal(info.serialPrefix, 'N418');
-    assert.equal(info.model, 'Kobo Libra 2 (refurbished)');
+    assert.equal(info.rawSerialPrefix, 'R418');
+    assert.equal(info.model, 'Kobo Libra 2');
     assert.equal(info.identifiedBy, 'uuid');
+    assert.equal(info.serialPrefixStatus, 'refurbished');
+    assert.equal(info.serialPrefixMatches, true);
+    assert.equal(info.isRefurbished, true);
 });
 
-test('parseKoboVersion uses known hardware UUIDs before serial prefixes', () => {
+test('parseKoboVersion flags known UUIDs with mismatched serial prefixes', () => {
     const info = parseKoboVersion(versionLine(
         'N418ABC123456',
         '4.38.21908',
@@ -53,9 +64,12 @@ test('parseKoboVersion uses known hardware UUIDs before serial prefixes', () => 
     assert.equal(info.serialPrefix, 'N428');
     assert.equal(info.model, 'Kobo Libra Colour');
     assert.equal(info.identifiedBy, 'uuid');
+    assert.equal(info.deviceVerification, 'mismatch');
+    assert.equal(info.serialPrefixStatus, 'mismatch');
+    assert.equal(info.serialPrefixMatches, false);
 });
 
-test('parseKoboVersion falls back to known serial prefixes when the hardware UUID is unknown', () => {
+test('parseKoboVersion reports unknown hardware UUIDs even with a known-looking serial prefix', () => {
     const info = parseKoboVersion(versionLine(
         'N418ABC123456',
         '4.38.21908',
@@ -63,11 +77,12 @@ test('parseKoboVersion falls back to known serial prefixes when the hardware UUI
     ));
 
     assert.equal(info.serialPrefix, 'N418');
-    assert.equal(info.model, 'Kobo Libra 2');
-    assert.equal(info.identifiedBy, 'serial');
+    assert.equal(info.model, 'Unknown Kobo (N418)');
+    assert.equal(info.identifiedBy, null);
+    assert.equal(info.deviceVerification, 'unknown');
 });
 
-test('parseKoboVersion identifies unknown serial prefixes by known hardware UUIDs', () => {
+test('parseKoboVersion flags unknown serial prefixes against known hardware UUIDs', () => {
     const info = parseKoboVersion(versionLine(
         'X999ABC123456',
         '4.38.21908',
@@ -77,9 +92,23 @@ test('parseKoboVersion identifies unknown serial prefixes by known hardware UUID
     assert.equal(info.serialPrefix, 'N418');
     assert.equal(info.model, 'Kobo Libra 2');
     assert.equal(info.identifiedBy, 'uuid');
+    assert.equal(info.deviceVerification, 'mismatch');
 });
 
-test('parseKoboVersion marks hardware-identified R-prefixed devices as refurbished', () => {
+test('parseKoboVersion prefers revision-specific hardware UUID model names', () => {
+    const info = parseKoboVersion(versionLine(
+        'N709ABC123456',
+        '4.38.21908',
+        '00000000-0000-0000-0000-000000000381'
+    ));
+
+    assert.equal(info.serialPrefix, 'N709');
+    assert.equal(info.model, 'Kobo Aura ONE Limited Edition');
+    assert.equal(info.identifiedBy, 'uuid');
+    assert.equal(info.deviceVerification, 'verified');
+});
+
+test('parseKoboVersion requires refurbished serial numbers to match the expected digits', () => {
     const info = parseKoboVersion(versionLine(
         'R999ABC123456',
         '4.38.21908',
@@ -87,8 +116,11 @@ test('parseKoboVersion marks hardware-identified R-prefixed devices as refurbish
     ));
 
     assert.equal(info.serialPrefix, 'N418');
-    assert.equal(info.model, 'Kobo Libra 2 (refurbished)');
+    assert.equal(info.model, 'Kobo Libra 2');
     assert.equal(info.identifiedBy, 'uuid');
+    assert.equal(info.deviceVerification, 'mismatch');
+    assert.equal(info.serialPrefixStatus, 'mismatch');
+    assert.equal(info.isRefurbished, false);
 });
 
 test('parseKoboVersion reports unknown models with the first 4 serial characters', () => {
@@ -116,6 +148,26 @@ test('parseKoboVersion does not fall back to a 3-character prefix', () => {
 });
 
 test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000320'], {
+        serialPrefix: 'N905',
+        channel: 'kobo4',
+        model: 'Kobo Touch C',
+    });
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000378'], {
+        serialPrefix: 'N867',
+        channel: 'kobo7',
+        model: 'Kobo Aura H2O Edition 2 v2',
+    });
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000379'], {
+        serialPrefix: 'N236',
+        channel: 'kobo7',
+        model: 'Kobo Aura Edition 2 v2',
+    });
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000381'], {
+        serialPrefix: 'N709',
+        channel: 'kobo6',
+        model: 'Kobo Aura ONE Limited Edition',
+    });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000390'], {
         serialPrefix: 'N428',
         channel: 'kobo13',
@@ -129,7 +181,7 @@ test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000395'], {
         serialPrefix: 'P365',
         channel: 'kobo14',
-        model: 'Kobo Clara BW (v2)',
+        model: 'Kobo Clara BW',
     });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000380'], {
         serialPrefix: 'N782',

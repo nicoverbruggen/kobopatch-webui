@@ -1,47 +1,12 @@
 /**
- * Known Kobo device serial prefixes mapped to model names.
- * Source: https://help.kobo.com/hc/en-us/articles/360019676973
- * The serial number prefix (first 4 characters) identifies the model.
- */
-const koboModels = {
-    // Current eReaders
-    'N428': 'Kobo Libra Colour',
-    'N367': 'Kobo Clara Colour',
-    'N365': 'Kobo Clara BW',
-    'P365': 'Kobo Clara BW',
-    'N605': 'Kobo Elipsa 2E',
-    'N506': 'Kobo Clara 2E',
-    'N778': 'Kobo Sage',
-    'N418': 'Kobo Libra 2',
-    'N604': 'Kobo Elipsa',
-    'N306': 'Kobo Nia',
-    'N873': 'Kobo Libra H2O',
-    'N782': 'Kobo Forma',
-    'N249': 'Kobo Clara HD',
-    'N867': 'Kobo Aura H2O Edition 2',
-    'N709': 'Kobo Aura ONE',
-    'N236': 'Kobo Aura Edition 2',
-    'N587': 'Kobo Touch 2.0',
-    'N437': 'Kobo Glo HD',
-    'N250': 'Kobo Aura H2O',
-    'N514': 'Kobo Aura',
-    'N613': 'Kobo Glo',
-    'N705': 'Kobo Mini',
-    'N416': 'Kobo Original',
-    // Older models with multiple revisions
-    'N905': 'Kobo Touch',
-    'N647': 'Kobo Wireless',
-    'N47B': 'Kobo Wireless',
-    // Aura HD uses 5-char prefix
-    'N204': 'Kobo Aura HD',
-};
-
-/**
- * Known Kobo hardware UUIDs mapped to the same model/prefix vocabulary used by
- * serial-number detection.
+ * Known Kobo hardware UUIDs mapped to the device metadata needed by the app.
+ * UUIDs are authoritative for connected devices. The serial prefix is a
+ * secondary consistency check and a compatibility bridge for the current
+ * prefix-keyed firmware download manifest.
  */
 const koboHardwareIds = {
-    '00000000-0000-0000-0000-000000000310': { serialPrefix: 'N905', channel: 'kobo3', model: 'Kobo Touch' },
+    '00000000-0000-0000-0000-000000000310': { serialPrefix: 'N905', channel: 'kobo3', model: 'Kobo Touch A/B' },
+    '00000000-0000-0000-0000-000000000320': { serialPrefix: 'N905', channel: 'kobo4', model: 'Kobo Touch C' },
     '00000000-0000-0000-0000-000000000330': { serialPrefix: 'N613', channel: 'kobo4', model: 'Kobo Glo' },
     '00000000-0000-0000-0000-000000000340': { serialPrefix: 'N705', channel: 'kobo4', model: 'Kobo Mini' },
     '00000000-0000-0000-0000-000000000350': { serialPrefix: 'N204', channel: 'kobo4', model: 'Kobo Aura HD' },
@@ -50,11 +15,14 @@ const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000371': { serialPrefix: 'N437', channel: 'kobo6', model: 'Kobo Glo HD' },
     '00000000-0000-0000-0000-000000000372': { serialPrefix: 'N587', channel: 'kobo6', model: 'Kobo Touch 2.0' },
     '00000000-0000-0000-0000-000000000373': { serialPrefix: 'N709', channel: 'kobo6', model: 'Kobo Aura ONE' },
-    '00000000-0000-0000-0000-000000000374': { serialPrefix: 'N867', channel: 'kobo6', model: 'Kobo Aura H2O Edition 2' },
-    '00000000-0000-0000-0000-000000000375': { serialPrefix: 'N236', channel: 'kobo6', model: 'Kobo Aura Edition 2' },
+    '00000000-0000-0000-0000-000000000374': { serialPrefix: 'N867', channel: 'kobo6', model: 'Kobo Aura H2O Edition 2 v1' },
+    '00000000-0000-0000-0000-000000000375': { serialPrefix: 'N236', channel: 'kobo6', model: 'Kobo Aura Edition 2 v1' },
     '00000000-0000-0000-0000-000000000376': { serialPrefix: 'N249', channel: 'kobo7', model: 'Kobo Clara HD' },
     '00000000-0000-0000-0000-000000000377': { serialPrefix: 'N782', channel: 'kobo7', model: 'Kobo Forma' },
+    '00000000-0000-0000-0000-000000000378': { serialPrefix: 'N867', channel: 'kobo7', model: 'Kobo Aura H2O Edition 2 v2' },
+    '00000000-0000-0000-0000-000000000379': { serialPrefix: 'N236', channel: 'kobo7', model: 'Kobo Aura Edition 2 v2' },
     '00000000-0000-0000-0000-000000000380': { serialPrefix: 'N782', channel: 'kobo7', model: 'Kobo Forma' },
+    '00000000-0000-0000-0000-000000000381': { serialPrefix: 'N709', channel: 'kobo6', model: 'Kobo Aura ONE Limited Edition' },
     '00000000-0000-0000-0000-000000000382': { serialPrefix: 'N306', channel: 'kobo7', model: 'Kobo Nia' },
     '00000000-0000-0000-0000-000000000383': { serialPrefix: 'N778', channel: 'kobo8', model: 'Kobo Sage' },
     '00000000-0000-0000-0000-000000000384': { serialPrefix: 'N873', channel: 'kobo7', model: 'Kobo Libra H2O' },
@@ -65,27 +33,48 @@ const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000390': { serialPrefix: 'N428', channel: 'kobo13', model: 'Kobo Libra Colour' },
     '00000000-0000-0000-0000-000000000391': { serialPrefix: 'N365', channel: 'kobo12', model: 'Kobo Clara BW' },
     '00000000-0000-0000-0000-000000000393': { serialPrefix: 'N367', channel: 'kobo12', model: 'Kobo Clara Colour' },
-    '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', channel: 'kobo14', model: 'Kobo Clara BW (v2)' },
+    '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', channel: 'kobo14', model: 'Kobo Clara BW' },
 };
 
-function canonicalSerialPrefix(rawPrefix) {
-    const prefix = String(rawPrefix || '').substring(0, 4);
-    if (koboModels[prefix]) return prefix;
+function serialPrefixMatch(expectedPrefix, rawPrefix) {
+    const expected = String(expectedPrefix || '').substring(0, 4);
+    const actual = String(rawPrefix || '').substring(0, 4);
+    if (!expected || !actual) return { matches: false, refurbished: false };
 
-    if (prefix.startsWith('R')) {
-        const nonRefurbishedPrefix = 'N' + prefix.substring(1);
-        if (koboModels[nonRefurbishedPrefix]) return nonRefurbishedPrefix;
+    if (actual === expected) return { matches: true, refurbished: false };
+    if (actual.startsWith('R') && actual.substring(1) === expected.substring(1)) {
+        return { matches: true, refurbished: true };
     }
 
-    return prefix;
+    return { matches: false, refurbished: false };
 }
 
-function modelNameForSerialPrefix(serialPrefix, rawPrefix = serialPrefix, hardwareInfo = null) {
-    const model = koboModels[serialPrefix] || hardwareInfo?.model;
-    if (!model) return 'Unknown Kobo (' + rawPrefix + ')';
-    return rawPrefix.startsWith('R') && rawPrefix !== serialPrefix
-        ? model + ' (refurbished)'
-        : model;
+function deviceVerificationFor(hardwareInfo, rawSerialPrefix) {
+    if (!hardwareInfo) {
+        return {
+            deviceVerification: 'unknown',
+            serialPrefixStatus: 'unknown',
+            serialPrefixMatches: false,
+            isRefurbished: false,
+        };
+    }
+
+    const match = serialPrefixMatch(hardwareInfo.serialPrefix, rawSerialPrefix);
+    if (!match.matches) {
+        return {
+            deviceVerification: 'mismatch',
+            serialPrefixStatus: 'mismatch',
+            serialPrefixMatches: false,
+            isRefurbished: false,
+        };
+    }
+
+    return {
+        deviceVerification: 'verified',
+        serialPrefixStatus: match.refurbished ? 'refurbished' : 'verified',
+        serialPrefixMatches: true,
+        isRefurbished: match.refurbished,
+    };
 }
 
 /**
@@ -107,14 +96,12 @@ function parseKoboVersion(content) {
     const hardwareId = parts[5];
 
     const rawSerialPrefix = serial.substring(0, 4);
-    const serialPrefixFromSerial = canonicalSerialPrefix(rawSerialPrefix);
     const hardwareInfo = koboHardwareIds[hardwareId] || null;
-    const serialPrefix = hardwareInfo?.serialPrefix || serialPrefixFromSerial;
-    const model = modelNameForSerialPrefix(serialPrefix, rawSerialPrefix, hardwareInfo);
+    const verification = deviceVerificationFor(hardwareInfo, rawSerialPrefix);
+    const serialPrefix = hardwareInfo?.serialPrefix || rawSerialPrefix;
+    const model = hardwareInfo?.model || 'Unknown Kobo (' + rawSerialPrefix + ')';
     const channel = hardwareInfo?.channel || null;
-    const identifiedBy = hardwareInfo
-        ? 'uuid'
-        : (koboModels[serialPrefixFromSerial] ? 'serial' : null);
+    const identifiedBy = hardwareInfo ? 'uuid' : null;
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
     const fwMinor = parseInt(fwParts[1], 10) || 0;
@@ -123,11 +110,13 @@ function parseKoboVersion(content) {
     return {
         serial,
         serialPrefix,
+        rawSerialPrefix,
         firmware,
         hardwareId,
         model,
         channel,
         identifiedBy,
+        ...verification,
         isIncompatible,
     };
 }
@@ -162,4 +151,4 @@ function meetsMinimumVersion(firmware, minimum) {
     return compareFirmware(firmware, minimum) >= 0;
 }
 
-export { koboModels, koboHardwareIds, canonicalSerialPrefix, modelNameForSerialPrefix, parseKoboVersion, compareFirmware, meetsMinimumVersion };
+export { koboHardwareIds, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };

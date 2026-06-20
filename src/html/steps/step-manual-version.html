@@ -1,5 +1,5 @@
         <section id="step-manual-version" class="step" hidden>
-            <p>Since you have chosen not to connect your device, you will need to look up some information related to the device you want to patch.</p>
+            <p>Since you have chosen not to connect your device, you will need to look up the software version and firmware channel for the device you want to patch.</p>
             <p class="fallback-hint">
                 <strong>Select the version number currently installed on your device.</strong> If it does not appear in this list, your software version is not supported for custom patching. You can go back and choose NickelMenu instead, which works with all versions.
             </p>
@@ -9,11 +9,11 @@
             <p id="manual-version-hint" class="fallback-hint">
                 You can find the version number on your Kobo under <strong>More &gt; Settings &gt; Device information</strong> &gt; <strong>Software version</strong>. Make sure it's a complete match, or you may encounter issues!
             </p>
-            <select id="manual-model" aria-label="Kobo model" hidden>
-                <option value="">-- Select your Kobo model --</option>
+            <select id="manual-model" aria-label="Firmware channel" hidden>
+                <option value="">-- Select firmware channel --</option>
             </select>
             <p id="manual-model-hint" class="fallback-hint" hidden>
-                Match the first characters of your serial number (e.g. N428) to the list above. You can find it under <strong>More &gt; Settings &gt; Device information</strong>. Keep in mind that older devices (released prior to Kobo Libra 2) are not supported by this website at this time, but you may be able to patch them manually.
+                Select the firmware channel that matches your device family and first few digits of your serial number. If you are not sure, connect your Kobo directly using a compatible browser so the hardware UUID can be checked automatically.
             </p>
             <div class="step-actions" style="margin-top: 25px">
                 <button id="btn-manual-version-back" class="secondary">&#x2039; Back</button>

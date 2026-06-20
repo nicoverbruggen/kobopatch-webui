@@ -68,35 +68,40 @@ export function initConnectFlow(state, { patches }) {
         else fileManagerEl.textContent = 'your file manager';
     }
 
-    const identificationHints = {
-        uuid: 'Your device was identified based on the UUID. This is the most reliable method.',
-        serial: 'Your device was identified based on the serial number. ' +
-            'This happens when the UUID could not be matched to an existing device, which is uncommon. ' +
-            'You may want to verify that the device model matches before continuing.',
+    const verificationHints = {
+        verified: 'The hardware UUID and serial prefix match this device.',
+        refurbished: 'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.',
+        mismatch: 'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
     };
 
     function displayDeviceInfo(info) {
-        renderModel(info.model, info.identifiedBy);
-        renderSerial(info.serial, info.serialPrefix);
+        renderModel(info);
+        renderSerial(info.serial, info.rawSerialPrefix || info.serialPrefix);
         $('device-firmware').textContent = info.firmware;
         $('device-hardware-id').textContent = info.hardwareId || '--';
     }
 
-    function renderModel(model, identifiedBy) {
+    function renderModel(info) {
         const modelEl = $('device-model');
         modelEl.textContent = '';
-        modelEl.appendChild(document.createTextNode(model));
+        modelEl.appendChild(document.createTextNode(info.model));
 
-        const hint = identificationHints[identifiedBy];
+        const hint = verificationHints[info.serialPrefixStatus];
         if (!hint) return;
 
         const badge = document.createElement('span');
-        badge.className = 'device-identification-badge device-identification-badge--' + identifiedBy;
+        badge.className = 'device-identification-badge device-identification-badge--' + info.serialPrefixStatus;
         badge.tabIndex = 0;
         badge.setAttribute('role', 'img');
         badge.setAttribute('aria-label', hint);
         badge.setAttribute('data-tooltip', hint);
-        badge.innerHTML = `
+        badge.innerHTML = info.serialPrefixStatus === 'mismatch' ? `
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M12 2.5l9 17H3l9-17z"/>
+                <path d="M12 8v5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="12" cy="16.5" r="1.2" fill="#fff"/>
+            </svg>
+        ` : `
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d="M12 1.75l2.11 1.56 2.62-.25 1.08 2.4 2.39 1.1-.25 2.62L21.5 12l-1.55 2.11.25 2.62-2.39 1.1-1.08 2.4-2.62-.25L12 21.5l-2.11-1.56-2.62.25-1.08-2.4-2.39-1.1.25-2.62L2.5 12l1.55-2.11-.25-2.62 2.39-1.1 1.08-2.4 2.62.25L12 1.75z"/>
                 <path d="M8 12.25l2.45 2.45L16.5 8.65" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -149,6 +154,21 @@ export function initConnectFlow(state, { patches }) {
         serialEl.appendChild(toggle);
     }
 
+    function renderMismatchStatus() {
+        deviceStatus.textContent = '';
+        deviceStatus.appendChild(document.createTextNode(
+            'Custom patches are disabled because the hardware UUID and serial prefix do not match. '
+        ));
+
+        const link = document.createElement('a');
+        link.href = 'https://github.com/nicoverbruggen/kobopatch-webui/issues/new';
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'Please file an issue';
+        deviceStatus.appendChild(link);
+        deviceStatus.appendChild(document.createTextNode(' so the developer can add or correct this device.'));
+    }
+
     state.goBackToDeviceStep = () => {
         setNavLabels(TL.NAV_DEFAULT);
         setNavStep(1);
@@ -183,14 +203,25 @@ export function initConnectFlow(state, { patches }) {
                 return;
             }
 
-            state.selectedPrefix = info.serialPrefix;
+            state.selectedChannel = info.channel;
+            state.patchesUnavailableReason = null;
 
             await Promise.all([state.softwareUrlsReady, state.availablePatchesReady]);
             const match = state.availablePatches.find(p => p.version === info.firmware);
+            const canPatchDevice = info.deviceVerification === 'verified';
 
-            patches.configureFirmwareStep(info.firmware, info.serialPrefix);
+            if (canPatchDevice) {
+                patches.configureFirmwareStep(info.firmware, info.channel, info.model);
+            } else {
+                state.firmwareVersion = info.firmware;
+                state.firmwareURL = null;
+                state.deviceModelLabel = info.model;
+                state.patchesUnavailableReason = info.deviceVerification === 'mismatch'
+                    ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
+                    : 'Custom patches are disabled because this hardware UUID is not recognized.';
+            }
 
-            if (match) {
+            if (canPatchDevice && match) {
                 await state.patchUI.loadFromURL('patches/' + match.filename);
                 state.patchUI.render(patchContainer);
                 patches.updatePatchCount();
@@ -199,14 +230,22 @@ export function initConnectFlow(state, { patches }) {
 
             btnDeviceRestore.hidden = !state.patchesLoaded || !state.firmwareURL;
 
-            deviceStatus.classList.remove('banner', 'banner--error');
-            const isUnknownModel = info.model.startsWith('Unknown');
-            if (isUnknownModel) {
+            deviceStatus.classList.remove('banner', 'banner--error', 'banner--warning');
+            const isUnknownHardware = info.deviceVerification === 'unknown';
+            const isMismatchedHardware = info.deviceVerification === 'mismatch';
+            if (isUnknownHardware) {
                 deviceStatus.textContent = '';
                 deviceUnknownWarning.hidden = false;
                 deviceUnknownAck.hidden = false;
                 deviceUnknownCheckbox.checked = false;
                 btnDeviceNext.disabled = true;
+            } else if (isMismatchedHardware) {
+                renderMismatchStatus();
+                deviceStatus.classList.add('banner', 'banner--warning');
+                deviceUnknownWarning.hidden = true;
+                deviceUnknownAck.hidden = true;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = false;
             } else {
                 deviceStatus.textContent = TL.STATUS.DEVICE_RECOGNIZED;
                 deviceUnknownWarning.hidden = true;

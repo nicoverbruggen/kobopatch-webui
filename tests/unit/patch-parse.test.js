@@ -330,12 +330,12 @@ test('buildPatchesManifest captures overrides, customizations, and install metad
     const ui = seedUI('src/nickel.yaml', raw);
     editPatch(ui, 'src/nickel.yaml', 'Second', 'Second:\n  - Enabled: yes\n  - FindReplaceString: x\n');
 
-    const manifest = buildPatchesManifest(ui, '4.45.23646', 'N418');
+    const manifest = buildPatchesManifest(ui, '4.45.23646', 'kobo9');
     assert.deepEqual(manifest.overrides, ui.getOverrides());
     assert.deepEqual(manifest.customized, ui.getCustomizations());
     assert.equal(manifest.files[0].path, '.kobo/KoboRoot.tgz');
     assert.equal(manifest.meta.writer.name, 'kobopatch-webui');
     assert.equal(manifest.meta.installed.firmware, '4.45.23646');
-    assert.equal(manifest.meta.installed.model, 'N418');
+    assert.equal(manifest.meta.installed.channel, 'kobo9');
     assert.equal(typeof manifest.meta.installed.timestamp, 'string');
 });

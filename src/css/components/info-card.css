@@ -19,15 +19,55 @@
     }
 
     & .label {
+        position: relative;
         font-weight: 500;
         color: var(--text-secondary);
         font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.03em;
+
+        &[data-tooltip] {
+            cursor: help;
+            outline-offset: 3px;
+        }
+
+        &[data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 0;
+            bottom: calc(100% + 0.55rem);
+            z-index: 20;
+            width: max-content;
+            max-width: min(360px, 82vw);
+            padding: 0.55rem 0.65rem;
+            border-radius: 6px;
+            background: #111827;
+            color: #fff;
+            box-shadow: var(--shadow-md);
+            font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            font-size: 0.75rem;
+            font-weight: 500;
+            line-height: 1.35;
+            letter-spacing: 0;
+            text-align: left;
+            text-transform: none;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(4px);
+            transition: opacity 0.12s ease, transform 0.12s ease;
+        }
+
+        &[data-tooltip]:hover::after,
+        &[data-tooltip]:focus-visible::after {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     & .value {
-        font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+        font-family: var(--font-mono);
         font-size: 0.88rem;
         min-width: 0;
         text-align: right;
@@ -90,11 +130,12 @@
     }
 }
 
-.device-identification-badge--uuid {
+.device-identification-badge--verified,
+.device-identification-badge--refurbished {
     color: var(--success-text);
 }
 
-.device-identification-badge--serial {
+.device-identification-badge--mismatch {
     color: var(--warning-text);
 }
 

@@ -3,7 +3,6 @@ import { collect, formatMB, populateList } from '../shell/dom.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
-import { koboModels } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import {
     appendLog,
@@ -97,7 +96,7 @@ export function initPatchesFlow(state) {
             onEnter: async () => {
                 const action = state.isRestore ? 'Software extracted' : 'Patching complete';
                 const description = state.isRestore ? 'This will restore the original unpatched software.' : '';
-                const deviceName = koboModels[state.selectedPrefix] || 'Kobo';
+                const deviceName = state.deviceModelLabel || 'Kobo';
                 const installHint = state.manualMode
                     ? 'Download the file and copy it to your ' + deviceName + '.'
                     : 'Write it directly to your connected Kobo, or download for manual installation.';
@@ -149,10 +148,11 @@ export function initPatchesFlow(state) {
 
     state.patchUI.onChange = updatePatchCount;
 
-    function configureFirmwareStep(version, prefix) {
-        state.firmwareURL = prefix ? state.getSoftwareUrl(prefix, version) : null;
+    function configureFirmwareStep(version, channel, deviceLabel = channel) {
+        state.selectedChannel = channel;
+        state.firmwareURL = channel ? state.getSoftwareUrl(channel, version) : null;
         state.firmwareVersion = version;
-        state.deviceModelLabel = koboModels[prefix] || prefix;
+        state.deviceModelLabel = deviceLabel;
         firmwareVersionLabel.textContent = version;
         firmwareDeviceLabel.textContent = state.deviceModelLabel;
         _firmwareDownloadUrl.textContent = state.firmwareURL || '';
@@ -290,7 +290,7 @@ export function initPatchesFlow(state) {
             label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
         }];
         if (!state.isRestore) {
-            const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedPrefix);
+            const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
             const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
             writes.push({
                 path: [AUDIT_LOG_DIRECTORY, 'custom-patches.json'],
@@ -326,7 +326,7 @@ export function initPatchesFlow(state) {
         try {
             const entries = [{ path: '.kobo/KoboRoot.tgz', data: state.resultTgz }];
             if (!state.isRestore) {
-                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedPrefix);
+                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
                 const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
                 entries.push({ path: `${AUDIT_LOG_DIRECTORY}/custom-patches.json`, data: manifestData });
             }
@@ -335,7 +335,7 @@ export function initPatchesFlow(state) {
                 entries,
                 instructions: buildPatchesInstructions({
                     version,
-                    deviceName: koboModels[state.selectedPrefix] || 'Kobo',
+                    deviceName: state.deviceModelLabel || 'Kobo',
                 }),
                 filename: 'custom-patches.zip',
             });
@@ -350,7 +350,7 @@ export function initPatchesFlow(state) {
 
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
-        _downloadDeviceName.textContent = koboModels[state.selectedPrefix] || 'Kobo';
+        _downloadDeviceName.textContent = state.deviceModelLabel || 'Kobo';
         terminal.end(state.isRestore ? 'restore-download' : 'patches-download');
     });
 

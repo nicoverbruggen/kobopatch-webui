@@ -1,56 +1,55 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getSoftwareUrl, getDevicesForVersion } from '../../src/js/kobo/software-urls.js';
-import { koboModels } from '../../src/js/kobo/version.js';
+import { getSoftwareUrl, getChannelsForVersion } from '../../src/js/kobo/software-urls.js';
 
 // The getters read the manifest from window.FIRMWARE_DOWNLOADS (set by
 // loadSoftwareUrls in the app). Seed that global directly here so the lookups
 // can be tested without a network fetch.
 globalThis.window = globalThis.window || {};
 
-const knownPrefix = Object.keys(koboModels)[0];
-
-test('getSoftwareUrl returns the URL for a known prefix + version, else null', () => {
+test('getSoftwareUrl returns the URL for a known channel + version, else null', () => {
     window.FIRMWARE_DOWNLOADS = {
-        '4.45.23646': { [knownPrefix]: 'https://dl/known.zip', N306: 'https://dl/n306.zip' },
+        '4.45.23646': { N428: 'https://dl/libra-colour.zip', N306: 'https://dl/nia.zip' },
     };
-    assert.equal(getSoftwareUrl(knownPrefix, '4.45.23646'), 'https://dl/known.zip');
-    assert.equal(getSoftwareUrl('NOPE', '4.45.23646'), null); // unknown prefix
-    assert.equal(getSoftwareUrl(knownPrefix, '9.9.9'), null); // unknown version
+    assert.equal(getSoftwareUrl('kobo13', '4.45.23646'), 'https://dl/libra-colour.zip');
+    assert.equal(getSoftwareUrl('NOPE', '4.45.23646'), null); // unknown channel
+    assert.equal(getSoftwareUrl('kobo13', '9.9.9'), null); // unknown version
 });
 
-test('getSoftwareUrl treats known R-prefixed serials as refurbished variants', () => {
+test('getSoftwareUrl accepts future channel-keyed manifests directly', () => {
     window.FIRMWARE_DOWNLOADS = {
-        '4.38.23648': { N418: 'https://dl/libra2.zip' },
+        '4.45.23646': { kobo13: 'https://dl/libra-colour.zip' },
     };
 
-    assert.equal(getSoftwareUrl('R418', '4.38.23648'), 'https://dl/libra2.zip');
+    assert.equal(getSoftwareUrl('kobo13', '4.45.23646'), 'https://dl/libra-colour.zip');
 });
 
 test('getSoftwareUrl returns null when no manifest is loaded', () => {
     window.FIRMWARE_DOWNLOADS = undefined;
-    assert.equal(getSoftwareUrl('N306', '4.45.23646'), null);
+    assert.equal(getSoftwareUrl('kobo7', '4.45.23646'), null);
 });
 
-test('getDevicesForVersion maps prefixes to model labels, falling back to Unknown', () => {
+test('getChannelsForVersion maps prefix manifests to channel labels', () => {
     window.FIRMWARE_DOWNLOADS = {
-        '4.45.23646': { [knownPrefix]: 'u1', ZZZZ: 'u2' },
+        '4.45.23646': { N365: 'u1', N367: 'u2', P365: 'u3' },
     };
-    const devices = getDevicesForVersion('4.45.23646');
-    assert.equal(devices.length, 2);
+    const channels = getChannelsForVersion('4.45.23646');
+    assert.equal(channels.length, 2);
 
-    const known = devices.find(d => d.prefix === knownPrefix);
-    assert.equal(known.model, `${koboModels[knownPrefix]} (${knownPrefix})`);
+    assert.deepEqual(channels.map(c => c.channel), ['kobo12', 'kobo14']);
 
-    const unknown = devices.find(d => d.prefix === 'ZZZZ');
-    assert.equal(unknown.model, 'Unknown (ZZZZ)');
+    const kobo12 = channels.find(d => d.channel === 'kobo12');
+    assert.equal(kobo12.label, 'kobo12: Kobo Clara BW (N365), Kobo Clara Colour (N367)');
+
+    const kobo14 = channels.find(d => d.channel === 'kobo14');
+    assert.equal(kobo14.label, 'kobo14: Kobo Clara BW (P365)');
 });
 
-test('getDevicesForVersion returns [] for an unknown version or missing manifest', () => {
+test('getChannelsForVersion returns [] for an unknown version or missing manifest', () => {
     window.FIRMWARE_DOWNLOADS = { '4.45.23646': { N306: 'u' } };
-    assert.deepEqual(getDevicesForVersion('1.2.3'), []);
+    assert.deepEqual(getChannelsForVersion('1.2.3'), []);
 
     window.FIRMWARE_DOWNLOADS = undefined;
-    assert.deepEqual(getDevicesForVersion('4.45.23646'), []);
+    assert.deepEqual(getChannelsForVersion('4.45.23646'), []);
 });

@@ -1,25 +1,25 @@
         <section id="step-device" class="step" hidden>
             <div id="device-info" class="info-card">
                 <div class="info-row">
-                    <span class="label">Model</span>
+                    <span class="label" tabindex="0" data-tooltip="This is the name of the device. It's the marketing name that Kobo uses.">Model</span>
                     <span id="device-model" class="value">--</span>
                 </div>
                 <div class="info-row">
-                    <span class="label">Hardware UUID</span>
+                    <span class="label" tabindex="0" data-tooltip="Unique hardware revision. Sometimes a unique model has multiple hardware revisions, and this is how they are distinguished.">Hardware UUID</span>
                     <span id="device-hardware-id" class="value">--</span>
                 </div>
                 <div class="info-row">
-                    <span class="label">Serial Number</span>
+                    <span class="label" tabindex="0" data-tooltip="In addition to having a hardware UUID which is unique to each revision, each individual customer has a private, unique number and that's your serial number. Each serial number begins with a few characters that also can help identify the device model.">Serial Number</span>
                     <span id="device-serial" class="value">--</span>
                 </div>
                 <div class="info-row">
-                    <span class="label">Software</span>
+                    <span class="label" tabindex="0" data-tooltip="The software version. This version is used to determine if your device can be modded. Kobo devices are not restricted or locked down, so you just need a compatible version.">Software</span>
                     <span id="device-firmware" class="value">--</span>
                 </div>
             </div>
             <p id="device-status"></p>
             <p id="device-unknown-warning" class="banner banner--warning" hidden>
-                You seem to have a Kobo device that cannot be identified. While you can continue since a supported software version seems to be installed, please
+                This Kobo hardware UUID is not recognized yet. Custom patches are disabled because the matching firmware channel cannot be verified. Please
                 <a href="https://github.com/nicoverbruggen/kobopatch-webui/issues/new" target="_blank">file an issue on GitHub</a>
                 so the developer can add this device to the list.
             </p>

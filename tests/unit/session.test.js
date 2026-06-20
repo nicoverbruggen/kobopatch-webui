@@ -8,7 +8,7 @@ test('a new Session starts with default wizard data', () => {
     const s = new Session();
     assert.equal(s.manualMode, false);
     assert.equal(s.selectedMode, null);
-    assert.equal(s.selectedPrefix, null);
+    assert.equal(s.selectedChannel, null);
     assert.equal(s.patchesLoaded, false);
     assert.equal(s.isRestore, false);
     assert.deepEqual(s.selectedFeatureIds, []);
@@ -50,7 +50,7 @@ test('resetDeviceContext clears device-derived fields but keeps mode/feature cho
     const s = new Session();
     s.manualMode = true;
     s.selectedFeatureIds = ['x'];
-    s.selectedPrefix = 'N418';
+    s.selectedChannel = 'kobo9';
     s.firmwareURL = 'https://dl/fw.zip';
     s.firmwareVersion = '4.45.23646';
     s.patchesLoaded = true;
@@ -58,7 +58,7 @@ test('resetDeviceContext clears device-derived fields but keeps mode/feature cho
 
     s.resetDeviceContext();
 
-    assert.equal(s.selectedPrefix, null);
+    assert.equal(s.selectedChannel, null);
     assert.equal(s.firmwareURL, null);
     assert.equal(s.firmwareVersion, null);
     assert.equal(s.patchesLoaded, false);

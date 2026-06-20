@@ -42,7 +42,7 @@ export async function runPatcher(runner, configYAML, firmwareBytes, patchFiles, 
     return result.tgz;
 }
 
-export function buildPatchesManifest(patchUI, firmwareVersion, selectedPrefix) {
+export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel) {
     const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
     return {
         overrides: patchUI.getOverrides(),
@@ -55,7 +55,7 @@ export function buildPatchesManifest(patchUI, firmwareVersion, selectedPrefix) {
             installed: {
                 timestamp: new Date().toISOString(),
                 firmware: firmwareVersion,
-                model: selectedPrefix,
+                channel: selectedChannel,
             },
         },
     };

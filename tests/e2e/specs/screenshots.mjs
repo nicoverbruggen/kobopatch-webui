@@ -258,11 +258,11 @@ test('manual patches', async ({ page }, testInfo) => {
   await expect(page.locator('#step-manual-version')).not.toBeHidden();
   await shot(page, dir, '02-version-selection', testInfo);
 
-  // Select firmware version and model
+  // Select firmware version and channel
   await page.selectOption('#manual-version', { index: 1 });
   await expect(page.locator('#manual-model')).not.toBeHidden();
   await page.selectOption('#manual-model', { index: 1 });
-  await shot(page, dir, '02a-version-model-selected', testInfo);
+  await shot(page, dir, '02a-version-channel-selected', testInfo);
   await page.click('#btn-manual-confirm');
 
   // Patches config
@@ -1020,36 +1020,39 @@ test('incompatible firmware', async ({ page }, testInfo) => {
   await shot(page, dir, 'incompatible-firmware', testInfo);
 });
 
-test('device identified by UUID', async ({ page }, testInfo) => {
+test('device verified by UUID and serial prefix', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.edgeCompatibility;
   await connectToDeviceScreen(page);
-  await shot(page, dir, 'identified-by-uuid', testInfo);
+  await shot(page, dir, 'device-verified', testInfo);
 
-  await page.locator('#device-model .device-identification-badge--uuid').hover();
-  await shot(page, dir, 'identified-by-uuid-hint', testInfo);
+  await page.locator('#device-model .device-identification-badge--verified').hover();
+  await shot(page, dir, 'device-verified-hint', testInfo);
 });
 
-test('device identified by serial number fallback', async ({ page }, testInfo) => {
+test('device serial prefix mismatch', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.edgeCompatibility;
   await connectToDeviceScreen(page, {
-    serial: 'N4180A0000000',
+    serial: 'X9990A0000000',
     firmware: '4.38.23648',
-    hardwareId: '00000000-0000-0000-0000-999999999999',
+    hardwareId: '00000000-0000-0000-0000-000000000388',
   });
-  await shot(page, dir, 'identified-by-serial-number', testInfo);
+  await shot(page, dir, 'serial-prefix-mismatch', testInfo);
 
-  await page.locator('#device-model .device-identification-badge--serial').hover();
-  await shot(page, dir, 'identified-by-serial-number-hint', testInfo);
+  await page.locator('#device-model .device-identification-badge--mismatch').hover();
+  await shot(page, dir, 'serial-prefix-mismatch-hint', testInfo);
 });
 
-test('refurbished device identified by UUID', async ({ page }, testInfo) => {
+test('refurbished device verified by UUID', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.edgeCompatibility;
   await connectToDeviceScreen(page, {
     serial: 'R4180A0000000',
     firmware: '4.38.23648',
     hardwareId: '00000000-0000-0000-0000-000000000388',
   });
-  await shot(page, dir, 'refurbished-identified-by-uuid', testInfo);
+  await shot(page, dir, 'refurbished-device-verified', testInfo);
+
+  await page.locator('#device-model .device-identification-badge--refurbished').hover();
+  await shot(page, dir, 'refurbished-device-verified-hint', testInfo);
 });
 
 test('unknown model', async ({ page }, testInfo) => {

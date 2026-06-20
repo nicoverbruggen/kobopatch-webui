@@ -1,13 +1,13 @@
 /**
  * manual-flow.js — Manual (no direct connection) software selection.
  *
- * Owns step-manual-version: picking a software version and Kobo model by hand,
+ * Owns step-manual-version: picking a software version and firmware channel by hand,
  * loading the matching patch set, and routing into the patches flow. Used when
  * the browser can't connect to a Kobo directly, or the user opts for manual
  * download.
  */
 
-import { getDevicesForVersion } from '../kobo/software-urls.js';
+import { getChannelsForVersion } from '../kobo/software-urls.js';
 import { $, collect, populateSelect } from '../shell/dom.js';
 import { setNavStep, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
@@ -41,7 +41,7 @@ export function initManualFlow(state, { patches }) {
 
     manualVersion.addEventListener('change', () => {
         const version = manualVersion.value;
-        state.selectedPrefix = null;
+        state.selectedChannel = null;
 
         const modelHint = $('manual-model-hint');
         if (!version) {
@@ -51,9 +51,9 @@ export function initManualFlow(state, { patches }) {
             return;
         }
 
-        const devices = getDevicesForVersion(version);
-        populateSelect(manualModel, '-- Select your Kobo model --',
-            devices.map(d => ({ value: d.prefix, text: d.model }))
+        const channels = getChannelsForVersion(version);
+        populateSelect(manualModel, '-- Select firmware channel --',
+            channels.map(d => ({ value: d.channel, text: d.label }))
         );
         manualModel.hidden = false;
         modelHint.hidden = false;
@@ -61,13 +61,13 @@ export function initManualFlow(state, { patches }) {
     });
 
     manualModel.addEventListener('change', () => {
-        state.selectedPrefix = manualModel.value || null;
+        state.selectedChannel = manualModel.value || null;
         btnManualConfirm.disabled = !manualVersion.value || !manualModel.value;
     });
 
     btnManualConfirm.addEventListener('click', async () => {
         const version = manualVersion.value;
-        if (!version || !state.selectedPrefix) return;
+        if (!version || !state.selectedChannel) return;
 
         try {
             const loaded = await loadPatchesForVersion(version, state.availablePatches);
@@ -75,7 +75,7 @@ export function initManualFlow(state, { patches }) {
                 state.showError(TL.ERROR.LOAD_PATCHES_FAILED(version));
                 return;
             }
-            patches.configureFirmwareStep(version, state.selectedPrefix);
+            patches.configureFirmwareStep(version, state.selectedChannel, selectedManualChannelLabel());
             patches.goToPatches();
         } catch (err) {
             state.showError(err.message);
@@ -102,11 +102,15 @@ export function initManualFlow(state, { patches }) {
         populateSelect(manualVersion, '-- Select software version --',
             state.availablePatches.map(p => ({ value: p.version, text: p.version, data: { filename: p.filename } }))
         );
-        populateSelect(manualModel, '-- Select your Kobo model --', []);
+        populateSelect(manualModel, '-- Select firmware channel --', []);
         manualModel.hidden = true;
         btnManualConfirm.disabled = true;
         setNavStep(2);
         showStep(stepManualVersion);
+    }
+
+    function selectedManualChannelLabel() {
+        return manualModel.selectedOptions[0]?.textContent || state.selectedChannel;
     }
 
     return { enterManualVersionSelection };

@@ -29,10 +29,11 @@ export class Session {
     reset() {
         this.manualMode = false;
         this.selectedMode = null;
-        this.selectedPrefix = null;
+        this.selectedChannel = null;
         this.firmwareURL = null;
         this.firmwareVersion = null;
         this.deviceModelLabel = null;
+        this.patchesUnavailableReason = null;
         this.patchesLoaded = false;
         this.isRestore = false;
         this.nickelMenuOption = null;
@@ -48,11 +49,12 @@ export class Session {
     }
 
     resetDeviceContext() {
-        this.selectedPrefix = null;
+        this.selectedChannel = null;
         this.patchesLoaded = false;
         this.firmwareURL = null;
         this.firmwareVersion = null;
         this.deviceModelLabel = null;
+        this.patchesUnavailableReason = null;
         this.koboUserCount = undefined;
         this.reloadManifest = null;
         this.resultTgz = null;

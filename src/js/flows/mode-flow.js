@@ -44,6 +44,8 @@ export function initModeFlow(state, { patches, nm, manual }) {
         if (autoModeNoPatchesAvailable) {
             patchesRadio.disabled = true;
             patchesCard.classList.add('selection-card--disabled');
+            patchesHint.textContent = state.patchesUnavailableReason ||
+                'Custom patches are not available for your software version. You can still install NickelMenu and choose what you want to do with your Kobo.';
             patchesHint.hidden = false;
             const nmRadio = $q('input[value="nickelmenu"]', stepMode);
             nmRadio.checked = true;

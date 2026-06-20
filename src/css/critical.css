@@ -36,6 +36,7 @@
     --accent-border: #bfdbfe;
     --accent-text: #1e40af;
     --text-muted: #9ca3af;
+    --font-mono: "Roboto Mono", "SF Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
 body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; margin: 0; }
