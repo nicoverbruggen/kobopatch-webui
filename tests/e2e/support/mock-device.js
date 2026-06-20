@@ -27,6 +27,7 @@ const READING_DEFAULTS = '[Reading]\nreadingAlignment=\nreadingFontFamily=\n';
 const defaultConfig = {
   firmware: '4.45.23646',
   serial: 'N4280A0000000',
+  hardwareId: '00000000-0000-0000-0000-000000000390',
   hasNickelMenu: false,
   hasKOReader: false,
   hasNickelDbus: false,
@@ -69,7 +70,7 @@ async function injectMockDevice(page, opts = {}) {
 
     const filesystem = dir({
       '.kobo': dir({
-        'version': file(config.serial + ',4.9.77,' + config.firmware + ',4.9.77,4.9.77,00000000-0000-0000-0000-000000000390'),
+        'version': file(config.serial + ',4.9.77,' + config.firmware + ',4.9.77,4.9.77,' + config.hardwareId),
         'BookReader.sqlite': file('book-reader-db'),
         'device.salt.conf': file('salt=abc123'),
         'fonts.sqlite': file('fonts-db'),

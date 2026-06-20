@@ -391,10 +391,33 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#btn-device-restore')).toBeVisible();
   });
 
+  test('with device — known hardware UUID identifies unknown serial prefix', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, {
+      serial: 'X9990A0000000',
+      firmware: '4.38.23648',
+      hardwareId: '00000000-0000-0000-0000-000000000388',
+    });
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra 2');
+    await expect(page.locator('#device-firmware')).toHaveText('4.38.23648');
+    await expect(page.locator('#device-serial')).toContainText('X999');
+    await expect(page.locator('#device-status')).toContainText('recognized');
+    await expect(page.locator('#device-unknown-warning')).toBeHidden();
+    await expect(page.locator('#btn-device-restore')).toBeVisible();
+  });
+
 
   test('with device — unknown model shows warning and requires checkbox', async ({ page }) => {
     await page.goto('/');
-    await injectMockDevice(page, { serial: 'X9990A0000000' });
+    await injectMockDevice(page, {
+      serial: 'X9990A0000000',
+      hardwareId: '00000000-0000-0000-0000-999999999999',
+    });
     await page.click('#btn-connect');
     await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
     await page.click('#btn-connect-ready');

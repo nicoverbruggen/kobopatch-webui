@@ -1017,7 +1017,10 @@ test('unknown model', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.edgeCompatibility;
   await page.goto('/');
   await dismissMobileModal(page);
-  await injectMockDevice(page, { serial: 'X9990A0000000' });
+  await injectMockDevice(page, {
+    serial: 'X9990A0000000',
+    hardwareId: '00000000-0000-0000-0000-999999999999',
+  });
   await page.click('#btn-connect');
   await page.click('#btn-connect-ready');
   await expect(page.locator('#step-device')).not.toBeHidden();
