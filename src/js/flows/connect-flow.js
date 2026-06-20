@@ -9,6 +9,7 @@
  */
 
 import { KoboDevice } from '../kobo/device.js';
+import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
@@ -74,6 +75,7 @@ export function initConnectFlow(state, { patches }) {
         mismatch: 'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
     };
     const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
+    const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, 'custom-patches.json'];
 
     function displayDeviceInfo(info) {
         renderModel(info);
@@ -179,6 +181,15 @@ export function initConnectFlow(state, { patches }) {
         deviceStatus.appendChild(document.createTextNode(' so the developer can add or correct this device.'));
     }
 
+    async function hasCustomPatchesManifest() {
+        if (!state.device?.directoryHandle) return false;
+        try {
+            return await state.device.readFile(customPatchesManifestPath) !== null;
+        } catch {
+            return false;
+        }
+    }
+
     state.goBackToDeviceStep = () => {
         setNavLabels(TL.NAV_DEFAULT);
         setNavStep(1);
@@ -238,7 +249,10 @@ export function initConnectFlow(state, { patches }) {
                 state.patchesLoaded = true;
             }
 
-            btnDeviceRestore.hidden = !state.patchesLoaded || !state.firmwareURL;
+            state.hasCustomPatchesManifest = state.patchesLoaded && !!state.firmwareURL
+                ? await hasCustomPatchesManifest()
+                : false;
+            btnDeviceRestore.hidden = !state.hasCustomPatchesManifest;
 
             deviceStatus.classList.remove('banner', 'banner--error', 'banner--warning');
             const isUnknownHardware = info.deviceVerification === 'unknown';
@@ -296,7 +310,7 @@ export function initConnectFlow(state, { patches }) {
     });
 
     btnDeviceRestore.addEventListener('click', () => {
-        if (!state.patchesLoaded) return;
+        if (!state.patchesLoaded || !state.hasCustomPatchesManifest) return;
         state.selectedMode = 'patches';
         state.isRestore = true;
         setNavLabels(TL.NAV_PATCHES);

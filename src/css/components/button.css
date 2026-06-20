@@ -1,4 +1,8 @@
 button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
     font-size: 0.9rem;
     padding: 0.55rem 1.25rem;
     border-radius: 8px;
@@ -56,4 +60,10 @@ button {
         cursor: default;
         opacity: 0.7;
     }
+}
+
+.button-icon {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 auto;
 }

@@ -968,9 +968,16 @@ test('connected patches reload', async ({ page }, testInfo) => {
 
 test('connected patches restore original shortcut', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.connectedPatches;
+  const manifest = {
+    overrides: { 'src/nickel.yaml': { 'Remove footer (row3) on new home screen': true } },
+    customized: {},
+    meta: { writer: { name: 'kobopatch-webui', version: 'screenshot' } },
+  };
 
   await page.goto('/');
-  await injectMockDevice(page);
+  await injectMockDevice(page, {
+    extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }],
+  });
   await dismissMobileModal(page);
 
   await page.click('#btn-connect');

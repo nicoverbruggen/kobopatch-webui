@@ -18,6 +18,17 @@ const REFURBISHED_MODEL_HINT =
 const MISMATCH_IDENTIFICATION_HINT =
   'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.';
 
+const CUSTOM_PATCHES_MANIFEST = JSON.stringify({
+  overrides: { 'src/nickel.yaml': { 'Remove footer (row3) on new home screen': true } },
+  customized: {},
+  meta: { writer: { name: 'kobopatch-webui', version: 'test' } },
+});
+
+const customPatchesManifestFile = () => ({
+  path: ['.kobopatch-webui', 'custom-patches.json'],
+  content: CUSTOM_PATCHES_MANIFEST,
+});
+
 /**
  * Read a downloaded patches ZIP and return the embedded KoboRoot.tgz bytes.
  * The download bundles `.kobo/KoboRoot.tgz` alongside the custom-patches manifest.
@@ -388,6 +399,32 @@ test.describe('Custom patches', () => {
     await expect(toggle).toHaveText('Reveal');
   });
 
+  test('with device — restore shortcut is hidden when no custom-patches manifest exists', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page);
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-status')).toContainText('recognized');
+    await expect(page.locator('#btn-device-restore')).toBeHidden();
+  });
+
+  test('with device — restore shortcut appears when a custom-patches manifest exists', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, {
+      extraRootFiles: [customPatchesManifestFile()],
+    });
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-status')).toContainText('recognized');
+    await expect(page.locator('#btn-device-restore')).toBeVisible();
+    await expect(page.locator('#btn-device-restore svg')).toBeVisible();
+    await expect(page.locator('#btn-device-restore')).toContainText('Restore Software');
+  });
+
   test('with device — refurbished serial is verified and marked next to the model label', async ({ page }) => {
     await page.goto('/');
     await injectMockDevice(page, {
@@ -415,7 +452,7 @@ test.describe('Custom patches', () => {
     await expect(page.locator('#device-serial')).toContainText('R418');
     await expect(page.locator('#device-status')).toContainText('recognized');
     await expect(page.locator('#device-unknown-warning')).toBeHidden();
-    await expect(page.locator('#btn-device-restore')).toBeVisible();
+    await expect(page.locator('#btn-device-restore')).toBeHidden();
   });
 
   test('with device — known hardware UUID identifies unknown serial prefix', async ({ page }) => {
@@ -757,7 +794,13 @@ test.describe('Custom patches', () => {
 
 
     // Override firmware URLs BEFORE connecting so the app captures the local URL
-    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+    await connectMockDevice(page, {
+      hasNickelMenu: false,
+      overrideFirmware: true,
+      extraRootFiles: [customPatchesManifestFile()],
+    });
+    await expect(page.locator('#btn-device-restore')).toBeVisible();
+    await expect(page.locator('#btn-device-restore svg')).toBeVisible();
 
     // Use the "Restore Unpatched Software" shortcut button on device screen
     await page.click('#btn-device-restore');
@@ -800,7 +843,12 @@ test.describe('Custom patches', () => {
   test('with device — restoring stock firmware does not overwrite the patches manifest', async ({ page }) => {
     test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-    await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+    await connectMockDevice(page, {
+      hasNickelMenu: false,
+      overrideFirmware: true,
+      extraRootFiles: [customPatchesManifestFile()],
+    });
+    await expect(page.locator('#btn-device-restore')).toBeVisible();
     await page.click('#btn-device-restore');
     await expect(page.locator('#step-firmware')).not.toBeHidden();
     await page.click('#btn-build');

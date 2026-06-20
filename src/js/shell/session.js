@@ -35,6 +35,7 @@ export class Session {
         this.deviceModelLabel = null;
         this.patchesUnavailableReason = null;
         this.patchesLoaded = false;
+        this.hasCustomPatchesManifest = false;
         this.isRestore = false;
         this.nickelMenuOption = null;
         this.nickelMenuCustomization = createDefaultMenuCustomization();
@@ -51,6 +52,7 @@ export class Session {
     resetDeviceContext() {
         this.selectedChannel = null;
         this.patchesLoaded = false;
+        this.hasCustomPatchesManifest = false;
         this.firmwareURL = null;
         this.firmwareVersion = null;
         this.deviceModelLabel = null;
