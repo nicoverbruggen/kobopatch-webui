@@ -59,6 +59,17 @@
     <link rel="preload" href="/patches/downloads.json" as="fetch" crossorigin>
     <link rel="preload" href="/patches/index.json" as="fetch" crossorigin>
 
+    <!-- The theme follows the OS. Resolve it before first paint (onto data-theme,
+         which the stylesheet keys off) so there's no flash of the wrong theme. -->
+    <script>
+        (function () {
+            try {
+                var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+            } catch (e) { /* matchMedia unavailable — stay on default light theme */ }
+        })();
+    </script>
+
     <!-- Inlined at build time from css/critical.css so the hero + loader render before style.css arrives -->
     <!-- @critical-css -->
     <link rel="stylesheet" href="css/style.css">

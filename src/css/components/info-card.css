@@ -109,8 +109,8 @@
         max-width: min(260px, 80vw);
         padding: 0.55rem 0.65rem;
         border-radius: 6px;
-        background: #111827;
-        color: #fff;
+        background: var(--tooltip-bg);
+        color: var(--tooltip-text);
         box-shadow: var(--shadow-md);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
         font-size: 0.75rem;
@@ -163,8 +163,8 @@
         max-width: min(280px, 80vw);
         padding: 0.55rem 0.65rem;
         border-radius: 6px;
-        background: #111827;
-        color: #fff;
+        background: var(--tooltip-bg);
+        color: var(--tooltip-text);
         box-shadow: var(--shadow-md);
         font-size: 0.75rem;
         font-weight: 500;

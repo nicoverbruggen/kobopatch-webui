@@ -14,7 +14,7 @@
     padding: 0.7rem 0.9rem 0.55rem;
     border: 1px solid var(--border-light);
     border-radius: 12px;
-    background: color-mix(in srgb, white 75%, var(--secondary-light, #f3f4f6) 25%);
+    background: var(--bg-subtle);
 }
 
 /* Collapsible section header (the <summary> of the section's <details>). */
@@ -32,7 +32,7 @@
 
     /* Disclosure chevron that rotates when the section is open. */
     &::before {
-        content: "\203A"; /* › */
+        content: '\203A'; /* › */
         order: 2;
         margin-left: auto;
         color: var(--primary);
@@ -77,7 +77,7 @@
         border-top: 1px solid var(--border-light);
     }
 
-    & input[type="checkbox"] {
+    & input[type='checkbox'] {
         flex-shrink: 0;
         margin-top: 0.2rem;
         accent-color: var(--primary);
@@ -139,7 +139,21 @@
 
 .nm-config-summary-button:hover {
     border-color: var(--primary);
-    background: #f9fafb;
+    background: var(--bg-subtle);
+}
+
+/* The custom-menu summary previews how the entry looks on the Kobo's white
+   e-ink screen, where the icon and label are dark. Keep the whole chip white
+   (with dark text) in every theme so it stays readable and WYSIWYG. */
+#nm-custom-menu-summary {
+    background: #fff;
+    color: #111827;
+    border-color: var(--border-light);
+}
+
+#nm-custom-menu-summary:hover {
+    background: #fff;
+    border-color: var(--primary);
 }
 
 .nm-config-summary-icon {
@@ -271,7 +285,7 @@
     cursor: pointer;
 }
 
-.nm-keep-config-label input[type="checkbox"] {
+.nm-keep-config-label input[type='checkbox'] {
     align-self: start;
     margin-top: 0.2rem;
     accent-color: var(--warning-text);
@@ -309,8 +323,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 3px;
     overflow: hidden;
-    background: transparent;
+    /* Icons are dark by design (they render on the Kobo's white e-ink), so
+       preview them on white in the customizer too — WYSIWYG and readable in
+       both light and dark themes. */
+    background: #fff;
 }
 
 .nm-upload-preview img,
@@ -410,8 +428,8 @@
 }
 
 .nm-upload-button:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
+    background: var(--bg-subtle);
+    border-color: var(--border-strong);
 }
 
 .nm-upload-preview {
@@ -521,7 +539,7 @@
 
         /* Forward arrow marks a pending change (not a completed one). */
         &::before {
-            content: "\2192"; /* → */
+            content: '\2192'; /* → */
             position: absolute;
             left: 0;
             color: var(--primary);
@@ -545,12 +563,12 @@
 }
 
 #step-nm-review.review--removal #btn-nm-write {
-    background: var(--error-text);
-    border-color: var(--error-text);
+    background: var(--danger-solid);
+    border-color: var(--danger-solid);
     color: #fff;
 
     &:hover {
-        background: #7f1717;
-        border-color: #7f1717;
+        background: var(--danger-solid-hover);
+        border-color: var(--danger-solid-hover);
     }
 }

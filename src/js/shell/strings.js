@@ -2,8 +2,8 @@ export const TL = {
     NAV_NICKELMENU: ['Device', 'Mode', 'Configure', 'Backup', 'Review', 'Install'],
     NAV_NICKELMENU_REMOVE: ['Device', 'Mode', 'Configure', 'Backup', 'Review', 'Remove'],
     NAV_NICKELMENU_MANUAL_REMOVE: ['Device', 'Mode', 'Configure', 'Remove'],
-    NAV_PATCHES: ['Device', 'Mode', 'Patches', 'Build', 'Install'],
-    NAV_DEFAULT: ['Device', 'Mode', 'Patches', 'Build', 'Install'],
+    NAV_PATCHES: ['Device', 'Mode', 'Customize', 'Build', 'Install'],
+    NAV_DEFAULT: ['Device', 'Mode', 'Customize', 'Build', 'Install'],
 
     BUTTON: {
         RESTORE_ORIGINAL: 'Restore Original Software',

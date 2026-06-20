@@ -108,7 +108,7 @@
         }
 
         &:hover {
-            background: #f9fafb;
+            background: var(--bg-subtle);
         }
     }
 
@@ -180,7 +180,7 @@
 .patch-incompatible {
     font-size: 0.7rem;
     font-weight: 500;
-    color: var(--error, #c0392b);
+    color: var(--error-text);
     flex-shrink: 0;
 }
 
@@ -216,7 +216,7 @@
 
 /* Visual grouping for mutually exclusive patches */
 .patch-group {
-    background: #f8fafc;
+    background: var(--bg-subtle);
     border-left: 3px solid var(--primary);
     margin: 0.35rem 0.5rem;
     border-radius: 0 6px 6px 0;

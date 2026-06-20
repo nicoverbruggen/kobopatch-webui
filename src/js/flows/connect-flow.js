@@ -11,7 +11,7 @@
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { $, collect } from '../shell/dom.js';
-import { setNavLabels, setNavStep, showStep } from '../shell/navigation.js';
+import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 
@@ -210,6 +210,7 @@ export function initConnectFlow(state, { patches }) {
         state.manualMode = false;
         state.patchesLoaded = false;
         track('flow-start', { method: 'connect' });
+        showNav();
         showStep(stepConnectInstructions);
     });
 

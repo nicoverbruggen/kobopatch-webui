@@ -12,11 +12,12 @@ import { $, $q, $qa } from './dom.js';
 import { TL } from './strings.js';
 
 const stepNav = $('step-nav');
+const stepConnect = $('step-connect');
 
 // Every step <div> in the app, in DOM order.
 // Used by showStep() to hide all steps except the active one.
 const allSteps = [
-    $('step-connect'),
+    stepConnect,
     $('step-connect-instructions'),
     $('step-manual-version'),
     $('step-device'),
@@ -55,6 +56,8 @@ export function showStep(step, push = true) {
     for (const s of allSteps) {
         s.hidden = s !== step;
     }
+    // The landing screen hides the step nav until the user picks how to connect.
+    if (step === stepConnect) hideNav();
     step.setAttribute('tabindex', '-1');
     step.focus({ preventScroll: true });
     if (!push) return;

@@ -30,13 +30,13 @@ button {
         box-shadow: var(--shadow);
 
         &:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
+            background: var(--bg-subtle);
+            border-color: var(--border-strong);
         }
     }
 
     &.danger {
-        background: #fff;
+        background: var(--card-bg);
         color: var(--error-text);
         border-color: var(--error-border);
 
@@ -54,8 +54,8 @@ button {
 
     &.btn-success,
     &.btn-success:hover {
-        background: var(--success-text);
-        border-color: var(--success-text);
+        background: var(--success-solid);
+        border-color: var(--success-solid);
         color: #fff;
         cursor: default;
         opacity: 0.7;

@@ -36,6 +36,19 @@ function setupDialog(dialogId, openBtnId, closeBtnId) {
     });
 }
 
+// The theme follows the OS. The inline <head> script sets data-theme on first
+// load; here we keep it in sync if the system theme changes mid-session. The
+// swap suppresses transitions so colours flip instantly rather than animating.
+function setupTheme() {
+    window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        const root = document.documentElement;
+        root.classList.add('theme-no-transition');
+        root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+        void root.offsetWidth;
+        root.classList.remove('theme-no-transition');
+    });
+}
+
 function showEnvironmentPill() {
     const pill = $('env-pill');
     if (!pill) return;
@@ -104,6 +117,7 @@ export function initGlobalUI() {
     }
     setupDialog('privacy-dialog', 'btn-privacy', 'btn-close-privacy');
 
+    setupTheme();
     showEnvironmentPill();
     injectPreviewBanner();
 }

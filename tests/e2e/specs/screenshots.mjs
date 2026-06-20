@@ -2,7 +2,8 @@
  * Capture screenshots of every step in the wizard.
  * Uses the same Playwright test infrastructure and dev server as the E2E tests.
  * Runs once per project (mobile + desktop) defined in screenshots.config.js.
- * Writes into screenshots/<project>/{manual,connected,edge-cases}/...
+ * Every screen is captured in both light and dark mode.
+ * Writes into screenshots/<project>/<theme>/{manual,connected,edge-cases}/...
  *
  * Run: ./run-screenshots.sh
  */
@@ -10,10 +11,28 @@ import { test, expect } from '@playwright/test';
 import { injectMockDevice, overrideFirmwareURLs } from '../support/mock-device.js';
 import { hasFirmwareZip } from '../support/assets.js';
 
+const THEMES = ['light', 'dark'];
+
+// Force a theme instantly (no transition), mirroring the app's own swap so the
+// screenshot never catches a half-animated colour.
+const setTheme = (page, theme) =>
+    page.evaluate((t) => {
+        const root = document.documentElement;
+        root.classList.add('theme-no-transition');
+        root.setAttribute('data-theme', t);
+        void root.offsetWidth;
+        root.classList.remove('theme-no-transition');
+    }, theme);
+
 const shot = async (page, folder, name, testInfo) => {
     const project = testInfo.project.name;
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `screenshots/${project}/${folder}/${name}.png`, fullPage: true });
+    for (const theme of THEMES) {
+        await setTheme(page, theme);
+        await page.screenshot({ path: `screenshots/${project}/${theme}/${folder}/${name}.png`, fullPage: true });
+    }
+    // Leave the page on the default light theme so later steps start from a known state.
+    await setTheme(page, 'light');
 };
 
 const SCREENSHOT_DIRS = {
