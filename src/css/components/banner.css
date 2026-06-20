@@ -194,12 +194,12 @@ details.banner--accent {
     }
 
     & ol {
-        margin: 0.5rem 0 0 1.25rem;
+        margin: 0.9rem 0 0 1.25rem;
         font-size: 0.80rem;
         color: inherit;
     }
 
-    & li {
-        margin-bottom: 0.25rem;
+    & li:not(:last-of-type) {
+        margin-bottom: 0.6rem;
     }
 }

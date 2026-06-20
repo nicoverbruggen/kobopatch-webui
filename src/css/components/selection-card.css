@@ -1,6 +1,14 @@
 /* Unified selection card component.
    Replaces the old .mode-card and .nm-option classes with a single base + modifiers. */
 
+#step-connect .selection-cards .selection-card-title {
+    margin-bottom: 8px;
+}
+
+#step-connect .selection-cards .selection-card-icon {
+    margin-top: 5px;
+}
+
 .selection-cards {
     display: flex;
     flex-direction: column;

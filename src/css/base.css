@@ -97,6 +97,7 @@ body {
     margin: 0;
     font-size: 0.78rem;
     line-height: 1.2;
+    padding: 8px 0;
 }
 
 .preview-banner a {

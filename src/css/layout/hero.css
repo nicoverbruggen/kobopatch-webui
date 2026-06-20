@@ -20,8 +20,8 @@ h1 {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: var(--primary);
-    color: #fff;
+    background: var(--border-light);
+    color: var(--text-secondary);
     padding: 0.35rem 0.7rem;
     border-radius: 10px;
     vertical-align: middle;
