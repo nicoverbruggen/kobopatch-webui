@@ -524,14 +524,14 @@ export class NickelMenuInstaller {
         const version = (typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : null) || 'unknown';
         const timestamp = audit ? audit.startedAt.toISOString() : new Date().toISOString();
         const firmware = deviceInfo?.firmware || null;
-        const model = deviceInfo?.serialPrefix || deviceInfo?.model || null;
+        const channel = deviceInfo?.channel || null;
 
         return {
             selected,
             features: manifestFeatures,
             meta: {
                 writer: { name: 'kobopatch-webui', version },
-                installed: { timestamp, firmware, model },
+                installed: { timestamp, firmware, channel },
             },
         };
     }

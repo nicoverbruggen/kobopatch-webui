@@ -983,7 +983,7 @@ test.describe('NickelMenu — install', () => {
     expect(manifest.features['exclude-calibre']).toBeDefined();
     expect(manifest.meta.writer.name).toBe('kobopatch-webui');
     expect(manifest.meta.installed.firmware).toBe('4.45.23646');
-    expect(manifest.meta.installed.model).toBe('N428');
+    expect(manifest.meta.installed.channel).toBe('kobo13');
   });
 
   test('with device — failed write aborts and offers the audit log, leaving partial changes in place', async ({ page }) => {
@@ -1257,7 +1257,7 @@ test.describe('NickelMenu — install', () => {
     expect(manifest.features).toEqual({});
     expect(manifest.meta.writer.name).toBe('kobopatch-webui');
     expect(manifest.meta.installed.firmware).toBe('4.45.23646');
-    expect(manifest.meta.installed.model).toBe('N428');
+    expect(manifest.meta.installed.channel).toBe('kobo13');
     // Audit log should be written under .kobopatch-webui/logs/
     expect(writtenFiles.some(f => f.includes('.kobopatch-webui/logs/') && f.includes('install-nickelmenu'))).toBe(true);
   });

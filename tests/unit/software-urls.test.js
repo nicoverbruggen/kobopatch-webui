@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getSoftwareUrl, getChannelsForVersion } from '../../src/js/kobo/software-urls.js';
+import {
+    getSoftwareUrl,
+    getChannelsForVersion,
+    compareFirmwareChannelsDescending,
+} from '../../src/js/kobo/software-urls.js';
 
 // The getters read the manifest from window.FIRMWARE_DOWNLOADS (set by
 // loadSoftwareUrls in the app). Seed that global directly here so the lookups
@@ -10,16 +14,16 @@ globalThis.window = globalThis.window || {};
 
 test('getSoftwareUrl returns the URL for a known channel + version, else null', () => {
     window.FIRMWARE_DOWNLOADS = {
-        '4.45.23646': { N428: 'https://dl/libra-colour.zip', N306: 'https://dl/nia.zip' },
+        '4.45.23646': { kobo13: 'https://dl/libra-colour.zip', kobo7: 'https://dl/nia.zip' },
     };
     assert.equal(getSoftwareUrl('kobo13', '4.45.23646'), 'https://dl/libra-colour.zip');
     assert.equal(getSoftwareUrl('NOPE', '4.45.23646'), null); // unknown channel
     assert.equal(getSoftwareUrl('kobo13', '9.9.9'), null); // unknown version
 });
 
-test('getSoftwareUrl accepts future channel-keyed manifests directly', () => {
+test('getSoftwareUrl accepts legacy prefix-keyed manifests', () => {
     window.FIRMWARE_DOWNLOADS = {
-        '4.45.23646': { kobo13: 'https://dl/libra-colour.zip' },
+        '4.45.23646': { N428: 'https://dl/libra-colour.zip' },
     };
 
     assert.equal(getSoftwareUrl('kobo13', '4.45.23646'), 'https://dl/libra-colour.zip');
@@ -30,20 +34,30 @@ test('getSoftwareUrl returns null when no manifest is loaded', () => {
     assert.equal(getSoftwareUrl('kobo7', '4.45.23646'), null);
 });
 
-test('getChannelsForVersion maps prefix manifests to channel labels', () => {
+test('getChannelsForVersion maps channel manifests to channel labels', () => {
     window.FIRMWARE_DOWNLOADS = {
-        '4.45.23646': { N365: 'u1', N367: 'u2', P365: 'u3' },
+        '4.45.23646': { kobo14: 'u1', kobo12: 'u2' },
     };
     const channels = getChannelsForVersion('4.45.23646');
     assert.equal(channels.length, 2);
 
-    assert.deepEqual(channels.map(c => c.channel), ['kobo12', 'kobo14']);
+    assert.deepEqual(channels.map(c => c.channel), ['kobo14', 'kobo12']);
 
     const kobo12 = channels.find(d => d.channel === 'kobo12');
     assert.equal(kobo12.label, 'kobo12: Kobo Clara BW (N365), Kobo Clara Colour (N367)');
 
     const kobo14 = channels.find(d => d.channel === 'kobo14');
     assert.equal(kobo14.label, 'kobo14: Kobo Clara BW (P365)');
+});
+
+test('compareFirmwareChannelsDescending sorts kobo channels from newest to oldest', () => {
+    const channels = ['kobo12', 'kobo3', 'kobo14', 'kobo13'];
+    assert.deepEqual(channels.sort(compareFirmwareChannelsDescending), [
+        'kobo14',
+        'kobo13',
+        'kobo12',
+        'kobo3',
+    ]);
 });
 
 test('getChannelsForVersion returns [] for an unknown version or missing manifest', () => {

@@ -23,11 +23,19 @@ function hardwareEntriesForChannel(channel) {
     return Object.values(koboHardwareIds).filter(info => info.channel === channel);
 }
 
+function compareFirmwareChannelsDescending(a, b) {
+    const channelA = String(a).match(/^kobo(\d+)$/);
+    const channelB = String(b).match(/^kobo(\d+)$/);
+    if (channelA && channelB) return Number(channelB[1]) - Number(channelA[1]);
+    if (channelA) return -1;
+    if (channelB) return 1;
+    return String(a).localeCompare(String(b));
+}
+
 /**
  * Get the firmware download URL for a given firmware channel and firmware
- * version. The current committed manifest is still serial-prefix keyed, so this
- * also maps channels back to their known prefixes until downloads.json moves to
- * channel keys.
+ * version. Older local/test manifests may still be serial-prefix keyed, so this
+ * also maps channels back to their known prefixes for compatibility.
  */
 function getSoftwareUrl(channel, version) {
     const data = _data || window.FIRMWARE_DOWNLOADS;
@@ -89,7 +97,7 @@ function getChannelsForVersion(version) {
     }
 
     return [...channels.values()]
-        .sort((a, b) => a.channel.localeCompare(b.channel, undefined, { numeric: true }))
+        .sort((a, b) => compareFirmwareChannelsDescending(a.channel, b.channel))
         .map(({ channel, devices }) => {
             const modelList = devices
                 .map(device => `${device.model} (${device.serialPrefix})`)
@@ -101,4 +109,4 @@ function getChannelsForVersion(version) {
         });
 }
 
-export { loadSoftwareUrls, getSoftwareUrl, getChannelsForVersion };
+export { loadSoftwareUrls, getSoftwareUrl, getChannelsForVersion, compareFirmwareChannelsDescending };

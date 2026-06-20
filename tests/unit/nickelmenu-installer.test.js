@@ -44,6 +44,7 @@ test('installToDevice with no features writes NickelMenu KoboRoot.tgz and manife
     assert.equal(manifest.meta.writer.name, 'kobopatch-webui');
     assert.equal(manifest.meta.writer.version, 'unknown');
     assert.equal(manifest.meta.installed.firmware, null);
+    assert.equal(manifest.meta.installed.channel, null);
     assert.deepEqual(progress.messages, [
         'Writing KoboRoot.tgz...',
         'Done.',
