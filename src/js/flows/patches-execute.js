@@ -8,14 +8,18 @@ export function appendLog(logEl, msg) {
 
 export async function downloadFirmware(url, progressEl) {
     progressEl.textContent = 'Downloading...';
-    return fetchWithProgress(url, (received, total) => {
-        if (!total) {
-            progressEl.textContent = `Downloading ${formatMB(received)}`;
-            return;
-        }
-        const pct = ((received / total) * 100).toFixed(0);
-        progressEl.textContent = `Downloading ${formatMB(received)} / ${formatMB(total)} (${pct}%)`;
-    }, 'Download failed');
+    return fetchWithProgress(
+        url,
+        (received, total) => {
+            if (!total) {
+                progressEl.textContent = `Downloading ${formatMB(received)}`;
+                return;
+            }
+            const pct = ((received / total) * 100).toFixed(0);
+            progressEl.textContent = `Downloading ${formatMB(received)} / ${formatMB(total)} (${pct}%)`;
+        },
+        'Download failed',
+    );
 }
 
 export async function extractOriginalTgz(firmwareBytes, progressEl, logFn) {
@@ -34,8 +38,7 @@ export async function runPatcher(runner, configYAML, firmwareBytes, patchFiles, 
     const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
         logFn(msg);
         const trimmed = msg.trimStart();
-        if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
-            trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
+        if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') || trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
             progressEl.textContent = trimmed;
         }
     });
@@ -47,9 +50,7 @@ export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel) 
     return {
         overrides: patchUI.getOverrides(),
         customized: patchUI.getCustomizations(),
-        files: [
-            { path: '.kobo/KoboRoot.tgz', type: 'file' },
-        ],
+        files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
         meta: {
             writer: { name: 'kobopatch-webui', version },
             installed: {

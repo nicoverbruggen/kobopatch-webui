@@ -34,12 +34,15 @@ class KoboPatchRunner {
             };
 
             // Transfer the firmwareZip buffer to avoid copying
-            worker.postMessage({
-                type: 'patch',
-                configYAML,
-                firmwareZip,
-                patchFiles,
-            }, [firmwareZip.buffer]);
+            worker.postMessage(
+                {
+                    type: 'patch',
+                    configYAML,
+                    firmwareZip,
+                    patchFiles,
+                },
+                [firmwareZip.buffer],
+            );
         });
     }
 }

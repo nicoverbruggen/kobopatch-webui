@@ -7,8 +7,12 @@ function installDialogStub(window) {
     const Dialog = window.HTMLDialogElement;
     if (!Dialog) return;
 
-    Dialog.prototype.show = function show() { this.open = true; };
-    Dialog.prototype.showModal = function showModal() { this.open = true; };
+    Dialog.prototype.show = function show() {
+        this.open = true;
+    };
+    Dialog.prototype.showModal = function showModal() {
+        this.open = true;
+    };
     Dialog.prototype.close = function close(returnValue) {
         if (returnValue !== undefined) this.returnValue = returnValue;
         this.open = false;
@@ -17,7 +21,8 @@ function installDialogStub(window) {
 }
 
 function createChromeDom(hostname) {
-    const dom = new JSDOM(`<!doctype html><html><body>
+    const dom = new JSDOM(
+        `<!doctype html><html><body>
         <span id="env-pill" hidden></span>
         <a href="#main-content" class="skip-link">Skip to content</a>
         <main id="main-content" tabindex="-1"></main>
@@ -30,10 +35,12 @@ function createChromeDom(hostname) {
         <span id="privacy-link-separator" hidden></span>
         <dialog id="privacy-dialog"><button id="btn-close-privacy" type="button"></button></dialog>
         <dialog id="mobile-dialog"><button id="btn-mobile-continue" type="button"></button></dialog>
-    </body></html>`, {
-        url: `https://${hostname}/`,
-        pretendToBeVisual: true,
-    });
+    </body></html>`,
+        {
+            url: `https://${hostname}/`,
+            pretendToBeVisual: true,
+        },
+    );
     installDialogStub(dom.window);
     return dom;
 }

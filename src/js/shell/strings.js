@@ -21,7 +21,8 @@ export const TL = {
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
         NM_INSTALLED: 'NickelMenu has been installed on your Kobo. To complete the installation, follow the instructions below.',
         NM_DOWNLOAD_READY: 'Your NickelMenu package is ready to download. After downloading, a list of installation steps will be displayed.',
-        NM_WILL_BE_REMOVED: 'Nothing has been changed yet. When you press Remove from Kobo, KoboPatch Web UI will update NickelMenu and mark it for removal. After the files are written, you will be asked to safely eject your Kobo so it can restart and remove NickelMenu during startup.',
+        NM_WILL_BE_REMOVED:
+            'Nothing has been changed yet. When you press Remove from Kobo, KoboPatch Web UI will update NickelMenu and mark it for removal. After the files are written, you will be asked to safely eject your Kobo so it can restart and remove NickelMenu during startup.',
         NM_SELECTED_REMOVALS: 'Selected removals:',
         NM_KEPT_FEATURES: 'These items and their files will be kept:',
         NM_WILL_BE_INSTALLED: 'The following will be installed on your Kobo:',
@@ -52,18 +53,23 @@ export const TL = {
         SOMETHING_WENT_WRONG: 'Something went wrong',
         LOAD_PATCHES_FAILED: (v) => `Could not load patches for software version ${v}`,
         DEVICE_WRITE_FAILED_TITLE: 'Writing to your device didn’t work',
-        DEVICE_WRITE_FAILED_MESSAGE: 'Something went wrong while writing to your Kobo, so the changes may only be partly applied. Follow the tips below and try again.',
-        DEVICE_CONFIG_READ_FAILED_MESSAGE: 'An important configuration file could not be read, so nothing was changed on your device. Follow the tips below and try again.',
+        DEVICE_WRITE_FAILED_MESSAGE:
+            'Something went wrong while writing to your Kobo, so the changes may only be partly applied. Follow the tips below and try again.',
+        DEVICE_CONFIG_READ_FAILED_MESSAGE:
+            'An important configuration file could not be read, so nothing was changed on your device. Follow the tips below and try again.',
         DEVICE_PROBE_FAILED_TITLE: 'Connection to device failed',
-        DEVICE_PROBE_FAILED_MESSAGE: 'A small test file to verify your device can be written to was not written correctly. This is usually an indicator of a potential connection issue. Follow the tips below and try again.',
+        DEVICE_PROBE_FAILED_MESSAGE:
+            'A small test file to verify your device can be written to was not written correctly. This is usually an indicator of a potential connection issue. Follow the tips below and try again.',
         NM_INSTALL_FAILED_TITLE: 'NickelMenu could not be installed',
         NM_REMOVE_FAILED_TITLE: 'NickelMenu could not be removed',
         DOWNLOAD_FAILED_TITLE: 'Preparing the download didn’t work',
         DOWNLOAD_FAILED_MESSAGE: 'Something went wrong while creating the archive to download. Please start over and try again.',
         PERMISSION_DENIED_TITLE: 'Access to your device was blocked',
-        PERMISSION_DENIED_MESSAGE: 'Your browser did not get permission to read and write to your Kobo. When the permission prompt appears, choose “Allow” (or “Edit files”) so the app can access your device, then connect again.',
+        PERMISSION_DENIED_MESSAGE:
+            'Your browser did not get permission to read and write to your Kobo. When the permission prompt appears, choose “Allow” (or “Edit files”) so the app can access your device, then connect again.',
         UNEXPECTED_TITLE: 'Something went wrong',
-        UNEXPECTED_MESSAGE: 'An unexpected error occurred and the app couldn’t continue. Please start over and try again. The technical details below may help if you report this.',
+        UNEXPECTED_MESSAGE:
+            'An unexpected error occurred and the app couldn’t continue. Please start over and try again. The technical details below may help if you report this.',
     },
 
     PATCH: {
@@ -71,9 +77,9 @@ export const TL = {
         MODIFIED: 'modified',
         MODIFIED_TITLE: 'You edited this patch’s definition.',
         DISCARD_EDITS_CONFIRM: 'You have unsaved edits to one or more patches. Going back will discard them. Continue?',
-        RELOAD_OFFER: 'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
+        RELOAD_OFFER:
+            'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
         RELOAD_APPLIED: 'Previously applied patches have been reloaded, including any manual edits.',
         RELOAD_NONE_MATCHED: 'None of the previously applied patches could be matched to the patches for this software version.',
     },
-
 };

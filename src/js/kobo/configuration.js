@@ -218,20 +218,11 @@ function validateExcludeSyncFoldersLine(line) {
 
 function setExcludeSyncFoldersLine(content, settingLine) {
     const value = parseExcludeSyncFoldersLine(settingLine);
-    return setConfSetting(
-        content,
-        featureSettingsSection,
-        excludeSyncFoldersKey,
-        value
-    );
+    return setConfSetting(content, featureSettingsSection, excludeSyncFoldersKey, value);
 }
 
 function removeExcludeSyncFoldersLine(content) {
-    return removeConfSetting(
-        content,
-        featureSettingsSection,
-        excludeSyncFoldersKey
-    );
+    return removeConfSetting(content, featureSettingsSection, excludeSyncFoldersKey);
 }
 
 export {

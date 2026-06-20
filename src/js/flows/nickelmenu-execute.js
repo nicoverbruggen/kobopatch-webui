@@ -11,14 +11,14 @@ import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructi
 const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
 
 function trackFeatures(features) {
-    if (features.some(f => f.id === 'koreader')) track('add-koreader');
-    if (features.some(f => f.id === 'nickelclock')) track('add-nickelclock');
-    if (features.some(f => f.id === 'cadmus')) track('add-cadmus');
-    if (features.some(f => f.id === 'additional-fonts')) track('add-fonts');
-    if (features.some(f => f.id === 'screensaver')) track('add-screensaver');
-    if (features.some(f => ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id))) track('add-minimal-home');
-    if (features.some(f => f.id === 'simplify-tabs')) track('add-basic-tabs');
-    if (features.some(f => f.id === 'sideloaded-mode')) track('add-sideloaded-mode');
+    if (features.some((f) => f.id === 'koreader')) track('add-koreader');
+    if (features.some((f) => f.id === 'nickelclock')) track('add-nickelclock');
+    if (features.some((f) => f.id === 'cadmus')) track('add-cadmus');
+    if (features.some((f) => f.id === 'additional-fonts')) track('add-fonts');
+    if (features.some((f) => f.id === 'screensaver')) track('add-screensaver');
+    if (features.some((f) => ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id))) track('add-minimal-home');
+    if (features.some((f) => f.id === 'simplify-tabs')) track('add-basic-tabs');
+    if (features.some((f) => f.id === 'sideloaded-mode')) track('add-sideloaded-mode');
 }
 
 export async function executeNmInstall({ state, flow, _terminal, dom, showError }) {
@@ -36,15 +36,10 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
             await executeNickelMenuRemoval({
                 device: writer,
                 installer: state.nmInstaller,
-                cleanupFeatures: [
-                    ...alwaysCleanupFeatures(),
-                    ...optionalCleanupToRemove(state, dom.detectedOptionalCleanupFeatures),
-                ],
+                cleanupFeatures: [...alwaysCleanupFeatures(), ...optionalCleanupToRemove(state, dom.detectedOptionalCleanupFeatures)],
                 shouldRemoveSyncExclusions: async () => {
                     const entries = await state.device.listDirectory(['.adds']);
-                    return !entries.some(entry =>
-                        entry.kind === 'directory' && entry.name !== 'nm'
-                    );
+                    return !entries.some((entry) => entry.kind === 'directory' && entry.name !== 'nm');
                 },
                 onProgress: progressFn,
                 audit,
@@ -63,8 +58,7 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
                 if (!state.nmKeepLegacyConfig) {
                     try {
                         await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
-                    } catch {
-                    }
+                    } catch {}
                 }
             }
             try {
@@ -72,8 +66,7 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
                 if (await writer.pathExists(legacyScriptPath)) {
                     await writer.removeEntry(legacyScriptPath);
                 }
-            } catch {
-            }
+            } catch {}
             audit = new AuditLog('install-nickelmenu', new Date(), state.device);
             await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
@@ -101,18 +94,14 @@ export async function executeNmInstall({ state, flow, _terminal, dom, showError 
             connectionTips: configReadFailed,
             configReadFailed,
             auditLog: audit,
-            title: state.nickelMenuOption === 'remove'
-                ? TL.ERROR.NM_REMOVE_FAILED_TITLE
-                : TL.ERROR.NM_INSTALL_FAILED_TITLE,
+            title: state.nickelMenuOption === 'remove' ? TL.ERROR.NM_REMOVE_FAILED_TITLE : TL.ERROR.NM_INSTALL_FAILED_TITLE,
         });
     }
 }
 
 function getFeatureConfSettings(features, deviceInfo) {
     const ctx = { deviceInfo: deviceInfo ?? null, features };
-    return features.flatMap(feature =>
-        feature.confSettings ? feature.confSettings(ctx) : []
-    );
+    return features.flatMap((feature) => (feature.confSettings ? feature.confSettings(ctx) : []));
 }
 
 export function renderNmDoneStatus(state, terminal, dom) {
@@ -134,13 +123,11 @@ export function renderNmDoneStatus(state, terminal, dom) {
         triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
         dom.downloadInstructions.hidden = false;
         const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
-        const hasExcludeCalibre = features.some(f => f.id === 'exclude-calibre');
+        const hasExcludeCalibre = features.some((f) => f.id === 'exclude-calibre');
         dom.downloadConfStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadRebootStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadConfLine.textContent = getExcludeSyncFoldersLine(features);
-        dom.downloadConfDesc.textContent = hasExcludeCalibre
-            ? CONF_DESC_EXCLUDE_CALIBRE
-            : CONF_DESC_DEFAULT;
+        dom.downloadConfDesc.textContent = hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT;
         const confSettings = getFeatureConfSettings(features, state.device.deviceInfo);
         renderDownloadConfSettings(dom.downloadConfSettings, confSettings);
         dom.downloadConfSettingsStep.hidden = confSettings.length === 0;

@@ -14,7 +14,7 @@ import { meetsMinimumVersion } from '../kobo/version.js';
  */
 export function featuresToInstall(session, deviceInfo) {
     const firmware = deviceInfo?.firmware;
-    return NICKELMENU_FEATURES.filter(f => {
+    return NICKELMENU_FEATURES.filter((f) => {
         if (f.available === false) return false;
         if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
         if (f.required) return true;
@@ -24,25 +24,23 @@ export function featuresToInstall(session, deviceInfo) {
 
 /** Features whose cleanup always runs on removal, regardless of selection. */
 export function alwaysCleanupFeatures() {
-    return NICKELMENU_FEATURES.filter(f => f.cleanup?.mode === 'always');
+    return NICKELMENU_FEATURES.filter((f) => f.cleanup?.mode === 'always');
 }
 
 /** Of the detected optional cleanups, the ones the user checked for removal. */
 export function optionalCleanupToRemove(session, detected) {
-    return detected.filter(f => session.nmOptionalCleanupIds.includes(f.id));
+    return detected.filter((f) => session.nmOptionalCleanupIds.includes(f.id));
 }
 
 /** Of the detected optional cleanups, the ones the user left unchecked (kept). */
 export function optionalCleanupKept(session, detected) {
-    return detected.filter(f => !session.nmOptionalCleanupIds.includes(f.id));
+    return detected.filter((f) => !session.nmOptionalCleanupIds.includes(f.id));
 }
 
 /** Review notices contributed by a set of features, for the connected device. */
 export function featureReviewNotices(features, deviceInfo) {
     const ctx = { deviceInfo };
-    return features.flatMap(feature =>
-        feature.reviewNotices ? feature.reviewNotices(ctx) : []
-    );
+    return features.flatMap((feature) => (feature.reviewNotices ? feature.reviewNotices(ctx) : []));
 }
 
 /**
@@ -58,9 +56,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
         };
     }
 
-    const installFeatures = session.nickelMenuOption === 'preset'
-        ? featuresToInstall(session, deviceInfo)
-        : [];
+    const installFeatures = session.nickelMenuOption === 'preset' ? featuresToInstall(session, deviceInfo) : [];
     return {
         mode: session.nickelMenuOption,
         installFeatures,

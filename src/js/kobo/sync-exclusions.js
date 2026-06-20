@@ -8,14 +8,9 @@ const legacyBrokenExcludeSyncFoldersLines = Object.freeze({
 });
 
 function buildExcludeSyncFoldersLine({ excludeCalibre = false } = {}) {
-    const patterns = excludeCalibre
-        ? ['calibre', calibreDotfolderPattern, nestedDotfilePattern]
-        : [defaultDotfolderPattern, nestedDotfilePattern];
+    const patterns = excludeCalibre ? ['calibre', calibreDotfolderPattern, nestedDotfilePattern] : [defaultDotfolderPattern, nestedDotfilePattern];
 
     return `ExcludeSyncFolders=(${patterns.join('|')})`;
 }
 
-export {
-    buildExcludeSyncFoldersLine,
-    legacyBrokenExcludeSyncFoldersLines,
-};
+export { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines };

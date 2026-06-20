@@ -1,11 +1,5 @@
 import { assertValidDevicePath, formatDevicePath } from './device-paths.js';
-import {
-    devicePathError,
-    deviceWriteError,
-    deviceWriteProbeError,
-    isNotFoundError,
-    isTypeMismatchError,
-} from './device-errors.js';
+import { devicePathError, deviceWriteError, deviceWriteProbeError, isNotFoundError, isTypeMismatchError } from './device-errors.js';
 import { parseKoboVersion } from './version.js';
 
 class KoboDevice {
@@ -43,20 +37,16 @@ class KoboDevice {
         try {
             koboDir = await this.directoryHandle.getDirectoryHandle('.kobo');
         } catch (err) {
-            throw new Error(
-                'This does not appear to be a Kobo device. Could not find the .kobo directory.',
-                { cause: err }
-            );
+            throw new Error('This does not appear to be a Kobo device. Could not find the .kobo directory.', {
+                cause: err,
+            });
         }
 
         let versionFile;
         try {
             versionFile = await koboDir.getFileHandle('version');
         } catch (err) {
-            throw new Error(
-                'Could not find .kobo/version. Is this the root of your Kobo drive?',
-                { cause: err }
-            );
+            throw new Error('Could not find .kobo/version. Is this the root of your Kobo drive?', { cause: err });
         }
 
         const file = await versionFile.getFile();
@@ -118,11 +108,7 @@ class KoboDevice {
             try {
                 dir = await dir.getDirectoryHandle(part, { create: true });
             } catch (err) {
-                throw deviceWriteError(
-                    filePath,
-                    `opening or creating directory ${formatDevicePath(directoryPath)}`,
-                    err
-                );
+                throw deviceWriteError(filePath, `opening or creating directory ${formatDevicePath(directoryPath)}`, err);
             }
         }
 
@@ -337,9 +323,7 @@ class KoboDevice {
         for await (const entry of dirHandle.values()) {
             const nextPathParts = [...currentPathParts, entry.name];
             if (entry.kind === 'directory') {
-                const childDir = typeof entry.values === 'function'
-                    ? entry
-                    : await dirHandle.getDirectoryHandle(entry.name);
+                const childDir = typeof entry.values === 'function' ? entry : await dirHandle.getDirectoryHandle(entry.name);
                 await this.collectDirectoryFilePaths(childDir, nextPathParts, filePaths);
             } else if (entry.kind === 'file') {
                 filePaths.push(nextPathParts);

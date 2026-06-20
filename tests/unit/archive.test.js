@@ -16,7 +16,10 @@ test('buildTar round-trips paths, data, and modes through parseTar', () => {
     const parsed = parseTar(buildTar(entries));
 
     assert.equal(parsed.length, 2);
-    assert.deepEqual(parsed.map(e => e.path), entries.map(e => e.path));
+    assert.deepEqual(
+        parsed.map((e) => e.path),
+        entries.map((e) => e.path),
+    );
     assert.deepEqual(parsed[0].data, entries[0].data);
     assert.deepEqual(parsed[1].data, entries[1].data);
     // The executable bit on the plugin must survive the rebuild.
@@ -28,7 +31,7 @@ test('buildTar pads entries to 512-byte boundaries and ends with two zero blocks
     const tar = buildTar([{ path: 'a', data: bytes('x'), mode: 0o644 }]);
     // header (512) + one padded data block (512) + two zero end blocks (1024).
     assert.equal(tar.length, 512 * 4);
-    assert.ok(tar.slice(512 * 2).every(b => b === 0));
+    assert.ok(tar.slice(512 * 2).every((b) => b === 0));
 });
 
 test('buildTar defaults the file mode when none is given', () => {
@@ -44,8 +47,14 @@ test('buildTarGz produces a gzip stream parseTarGz can read back', async () => {
 
     const parsed = await parseTarGz(await buildTarGz(entries));
 
-    assert.deepEqual(parsed.map(e => e.path), ['dir/one', 'dir/two']);
-    assert.deepEqual(parsed.map(e => e.mode), [0o644, 0o600]);
+    assert.deepEqual(
+        parsed.map((e) => e.path),
+        ['dir/one', 'dir/two'],
+    );
+    assert.deepEqual(
+        parsed.map((e) => e.mode),
+        [0o644, 0o600],
+    );
     assert.deepEqual(parsed[1].data, bytes('second'));
 });
 

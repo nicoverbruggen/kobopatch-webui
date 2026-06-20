@@ -36,9 +36,7 @@ export function validatePatchEdit(textarea, statusEl) {
     try {
         doc = yaml.load(value);
     } catch (err) {
-        const msg = err.mark
-            ? `Line ${err.mark.line + 1}, col ${err.mark.column + 1}: ${err.message}`
-            : err.message;
+        const msg = err.mark ? `Line ${err.mark.line + 1}, col ${err.mark.column + 1}: ${err.message}` : err.message;
         statusEl.textContent = `YAML error: ${msg}`;
         statusEl.className = 'patch-editor-status patch-editor-status--error';
         return false;
@@ -79,17 +77,30 @@ export function validatePatchEdit(textarea, statusEl) {
     // https://github.com/pgaskin/kobopatch/blob/master/patchfile/kobopatch/kobopatch.go
     // (the `PatchableFunc`/instruction set). Keep in sync when upstream adds ops;
     // an unrecognized key only produces a soft warning, never blocks saving.
-    const knownOps = ['Enabled', 'Description', 'PatchGroup', 'FindZlib', 'ReplaceZlib', 'ReplaceZlibGroup', 'FindZlibHash', 'FindReplaceString', 'ReplaceBytes', 'ReplaceFloat', 'BaseAddress', 'MustMatchLength'];
+    const knownOps = [
+        'Enabled',
+        'Description',
+        'PatchGroup',
+        'FindZlib',
+        'ReplaceZlib',
+        'ReplaceZlibGroup',
+        'FindZlibHash',
+        'FindReplaceString',
+        'ReplaceBytes',
+        'ReplaceFloat',
+        'BaseAddress',
+        'MustMatchLength',
+    ];
     let unknownOp = null;
     for (const item of body) {
         if (typeof item !== 'object' || item === null) continue;
-        unknownOp = Object.keys(item).find(key => !knownOps.includes(key));
+        unknownOp = Object.keys(item).find((key) => !knownOps.includes(key));
         if (unknownOp) break;
     }
 
     // Validate Enabled value (must be yes/no). A hard error takes precedence
     // over the soft unknown-op warning below.
-    const enabledEntry = body.find(item => item && typeof item === 'object' && 'Enabled' in item);
+    const enabledEntry = body.find((item) => item && typeof item === 'object' && 'Enabled' in item);
     if (enabledEntry) {
         const val = enabledEntry.Enabled;
         if (val !== 'yes' && val !== 'no') {
@@ -149,7 +160,9 @@ function ensureEditorBound(ui, dialog) {
         if (e.target === dialog) dialog.close();
     });
 
-    dialog.addEventListener('close', () => { editing = null; });
+    dialog.addEventListener('close', () => {
+        editing = null;
+    });
 }
 
 export function openPatchEditor(ui, patch, filename, container) {

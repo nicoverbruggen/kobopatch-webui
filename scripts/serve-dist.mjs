@@ -99,9 +99,7 @@ const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '
  * is the standard signal to forbid that; honoured by nginx's gzip module and others.
  */
 function cacheControl(search, compressible) {
-    const base = noCache ? 'no-cache'
-        : /[?&][hv]=/.test(search) ? 'public, max-age=31536000, immutable'
-        : 'no-cache';
+    const base = noCache ? 'no-cache' : /[?&][hv]=/.test(search) ? 'public, max-age=31536000, immutable' : 'no-cache';
     return compressible ? base : `${base}, no-transform`;
 }
 
@@ -160,7 +158,7 @@ function pickEncoding(filePath, srcStat, accept) {
 // response branch — 200s, redirects to index.html, and 404s alike.
 const logRequests = !!process.env.LOG_REQUESTS;
 const useColor = logRequests && process.stdout.isTTY;
-const paint = (code, text) => useColor ? `\u001b[${code}m${text}\u001b[0m` : `${text}`;
+const paint = (code, text) => (useColor ? `\u001b[${code}m${text}\u001b[0m` : `${text}`);
 function logServed(req, res, url) {
     res.on('finish', () => {
         const status = res.statusCode;
@@ -188,15 +186,25 @@ createServer((req, res) => {
     if (filePath.endsWith('index.html')) {
         const v = getIndexVariants();
         if (v) {
-            const headers = { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache', 'Vary': 'Accept-Encoding', 'ETag': v.etag };
+            const headers = {
+                'Content-Type': 'text/html',
+                'Cache-Control': 'no-cache',
+                Vary: 'Accept-Encoding',
+                ETag: v.etag,
+            };
             if (notModified(req, v.etag)) {
                 res.writeHead(304, headers);
                 res.end();
                 return;
             }
             let body = v.identity;
-            if (/\bbr\b/.test(accept)) { body = v.br; headers['Content-Encoding'] = 'br'; }
-            else if (/\bgzip\b/.test(accept)) { body = v.gz; headers['Content-Encoding'] = 'gzip'; }
+            if (/\bbr\b/.test(accept)) {
+                body = v.br;
+                headers['Content-Encoding'] = 'br';
+            } else if (/\bgzip\b/.test(accept)) {
+                body = v.gz;
+                headers['Content-Encoding'] = 'gzip';
+            }
             headers['Content-Length'] = body.length;
             res.writeHead(200, headers);
             res.end(body);
@@ -218,7 +226,7 @@ createServer((req, res) => {
         const headers = {
             'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
             'Cache-Control': cacheControl(url.search, compressible),
-            'ETag': etag,
+            ETag: etag,
         };
         if (compressible) headers['Vary'] = 'Accept-Encoding';
 

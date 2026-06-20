@@ -80,13 +80,7 @@ function useCustomMenuAssetFetch() {
 }
 
 class RecordingDevice {
-    constructor({
-        textFiles = {},
-        existingEntries = [],
-        failReadPaths = [],
-        failWritePath = null,
-        failRemovePaths = [],
-    } = {}) {
+    constructor({ textFiles = {}, existingEntries = [], failReadPaths = [], failWritePath = null, failRemovePaths = [] } = {}) {
         this.textFiles = new Map(Object.entries(textFiles));
         this.failReadPaths = new Set(failReadPaths);
         this.failWritePath = failWritePath;
@@ -168,7 +162,7 @@ class RecordingDevice {
         const path = pathParts.join('/');
         if (!this.entryKinds.has(path)) return [];
 
-        return this.listChildPaths(path).map(childPath => ({
+        return this.listChildPaths(path).map((childPath) => ({
             name: childPath.slice(path.length + 1),
             kind: this.entryKinds.get(childPath),
         }));
@@ -210,30 +204,20 @@ class RecordingDevice {
     }
 
     writePaths() {
-        return this.writes.map(write => write.path);
+        return this.writes.map((write) => write.path);
     }
 
     removePaths() {
-        return this.removals.map(remove => remove.path);
+        return this.removals.map((remove) => remove.path);
     }
 
     writeFor(path) {
-        return this.writes.find(write => write.path === path);
+        return this.writes.find((write) => write.path === path);
     }
 
     removalFor(path) {
-        return this.removals.find(remove => remove.path === path);
+        return this.removals.find((remove) => remove.path === path);
     }
 }
 
-export {
-    RecordingDevice,
-    bytes,
-    createResponse,
-    createInstaller,
-    createProgressRecorder,
-    koboEReaderConfPath,
-    koboRootTgzPath,
-    text,
-    useCustomMenuAssetFetch,
-};
+export { RecordingDevice, bytes, createResponse, createInstaller, createProgressRecorder, koboEReaderConfPath, koboRootTgzPath, text, useCustomMenuAssetFetch };

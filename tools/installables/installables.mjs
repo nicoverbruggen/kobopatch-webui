@@ -9,12 +9,12 @@ const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK_PATH = join(APP_DIR, 'installables.lock');
 
 const TARGET_ROOTS = {
-    src:  'src/assets',
+    src: 'src/assets',
     dist: 'dist/assets',
 };
 
 const TARGETS = {
-    src:  join(APP_DIR, TARGET_ROOTS.src),
+    src: join(APP_DIR, TARGET_ROOTS.src),
     dist: join(APP_DIR, TARGET_ROOTS.dist),
 };
 
@@ -31,12 +31,32 @@ const INSTALLABLES = [
             url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.1/NickelMenu.zip',
         },
     },
-    { name: 'nickelclock', asset: 'NickelClock.zip', repo: 'shermp/NickelClock', match: (n) => /^NickelClock-.*\.zip$/.test(n) },
-    { name: 'koreader', asset: 'koreader-kobo.zip', repo: 'koreader/koreader', match: (n) => /^koreader-kobo-.*\.zip$/.test(n) },
+    {
+        name: 'nickelclock',
+        asset: 'NickelClock.zip',
+        repo: 'shermp/NickelClock',
+        match: (n) => /^NickelClock-.*\.zip$/.test(n),
+    },
+    {
+        name: 'koreader',
+        asset: 'koreader-kobo.zip',
+        repo: 'koreader/koreader',
+        match: (n) => /^koreader-kobo-.*\.zip$/.test(n),
+    },
     { name: 'cadmus', asset: 'cadmus-kobo.tar.gz', repo: 'OGKevin/cadmus', match: (n) => n === 'cadmus-kobo.tar.gz' },
-    { name: 'readerly', asset: 'KF_Readerly.zip', repo: 'nicoverbruggen/readerly', match: (n) => n === 'KF_Readerly.zip' },
+    {
+        name: 'readerly',
+        asset: 'KF_Readerly.zip',
+        repo: 'nicoverbruggen/readerly',
+        match: (n) => n === 'KF_Readerly.zip',
+    },
     { name: 'libron', asset: 'KF_Libron.zip', repo: 'nicoverbruggen/libron', match: (n) => n === 'KF_Libron.zip' },
-    { name: 'cartisse', asset: 'KF_Cartisse.zip', repo: 'nicoverbruggen/cartisse', match: (n) => n === 'KF_Cartisse.zip' },
+    {
+        name: 'cartisse',
+        asset: 'KF_Cartisse.zip',
+        repo: 'nicoverbruggen/cartisse',
+        match: (n) => n === 'KF_Cartisse.zip',
+    },
 ];
 
 // A stalled GitHub download otherwise hangs the whole setup forever (no body
@@ -48,7 +68,7 @@ const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000;
 const DOWNLOAD_ATTEMPTS = 3;
 
 function githubHeaders() {
-    const headers = { 'Accept': 'application/vnd.github+json', 'User-Agent': 'kobopatch-webui-installables' };
+    const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'kobopatch-webui-installables' };
     if (process.env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
     return headers;
 }
@@ -72,7 +92,9 @@ async function resolveLatest(item) {
 }
 
 async function sha256File(path) {
-    return createHash('sha256').update(await readFile(path)).digest('hex');
+    return createHash('sha256')
+        .update(await readFile(path))
+        .digest('hex');
 }
 
 async function downloadOnce(url, dest) {

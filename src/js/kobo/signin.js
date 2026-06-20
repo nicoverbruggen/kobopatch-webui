@@ -19,10 +19,5 @@ const KOBO_READER_DB = ['.kobo', 'KoboReader.sqlite'];
  * @returns {Promise<number|null>}
  */
 export async function countKoboUsers(device) {
-    return countTableRows(
-        (offset, length) => device.readFileRange(KOBO_READER_DB, offset, length),
-        'user'
-    );
+    return countTableRows((offset, length) => device.readFileRange(KOBO_READER_DB, offset, length), 'user');
 }
-
-

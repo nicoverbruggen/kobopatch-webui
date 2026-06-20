@@ -10,7 +10,8 @@ export default {
     id: 'additional-fonts',
     section: 'Text and typography',
     title: 'Install additional fonts',
-    description: 'Adds a few custom fonts, including Readerly, Libron and Cartisse. When reading a book, these new entries will be visible in the font dropdown menu.',
+    description:
+        'Adds a few custom fonts, including Readerly, Libron and Cartisse. When reading a book, these new entries will be visible in the font dropdown menu.',
     default: true,
 
     cleanup: {

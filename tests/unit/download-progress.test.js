@@ -79,7 +79,10 @@ test('fetchWithProgress streams chunks and reports received/total per chunk', as
     );
 
     assert.deepEqual([...bytes], [1, 2, 3, 4, 5]);
-    assert.deepEqual(calls, [[3, 5], [5, 5]]);
+    assert.deepEqual(calls, [
+        [3, 5],
+        [5, 5],
+    ]);
 });
 
 test('fetchWithProgress keeps streaming with a null total when Content-Length is absent', async () => {
@@ -92,7 +95,10 @@ test('fetchWithProgress keeps streaming with a null total when Content-Length is
     );
 
     assert.deepEqual([...bytes], [1, 2, 3, 4, 5]);
-    assert.deepEqual(calls, [[3, null], [5, null]]);
+    assert.deepEqual(calls, [
+        [3, null],
+        [5, null],
+    ]);
 });
 
 test('fetchWithProgress falls back to a single read when the body is not streamable', async () => {
@@ -100,7 +106,15 @@ test('fetchWithProgress falls back to a single read when the body is not streama
     const payload = new Uint8Array([9, 8, 7]);
 
     const bytes = await withFetch(
-        async () => ({ ok: true, status: 200, headers: new Headers(), body: null, async arrayBuffer() { return payload.buffer; } }),
+        async () => ({
+            ok: true,
+            status: 200,
+            headers: new Headers(),
+            body: null,
+            async arrayBuffer() {
+                return payload.buffer;
+            },
+        }),
         () => fetchWithProgress('/assets/thing.zip', (received, total) => calls.push([received, total])),
     );
 
@@ -112,10 +126,7 @@ test('fetchWithProgress throws with the prefix on a non-OK response', async () =
     await withFetch(
         async () => ({ ok: false, status: 503, headers: new Headers() }),
         async () => {
-            await assert.rejects(
-                () => fetchWithProgress('/assets/thing.zip', () => {}, 'Failed to download thing'),
-                /Failed to download thing: HTTP 503/,
-            );
+            await assert.rejects(() => fetchWithProgress('/assets/thing.zip', () => {}, 'Failed to download thing'), /Failed to download thing: HTTP 503/);
         },
     );
 });

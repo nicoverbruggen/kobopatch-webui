@@ -32,15 +32,23 @@ export function initConnectFlow(state, { patches }) {
         'device-unknown-checkbox': deviceUnknownCheckbox,
         'patch-container': patchContainer,
     } = collect([
-        'step-connect', 'step-connect-instructions', 'step-device',
-        'btn-connect', 'btn-connect-ready', 'btn-connect-instructions-back',
-        'btn-device-back', 'btn-device-next', 'btn-device-restore',
-        'device-status', 'device-unknown-warning', 'device-unknown-ack', 'device-unknown-checkbox',
+        'step-connect',
+        'step-connect-instructions',
+        'step-device',
+        'btn-connect',
+        'btn-connect-ready',
+        'btn-connect-instructions-back',
+        'btn-device-back',
+        'btn-device-next',
+        'btn-device-restore',
+        'device-status',
+        'device-unknown-warning',
+        'device-unknown-ack',
+        'device-unknown-checkbox',
         'patch-container',
     ]);
 
-    const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAppleMobileDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isAndroidDevice = /Android/i.test(navigator.userAgent);
 
     const hasFileSystemAccess = KoboDevice.isSupported();
@@ -72,7 +80,8 @@ export function initConnectFlow(state, { patches }) {
     const verificationHints = {
         verified: 'The hardware UUID and serial prefix match this device.',
         refurbished: 'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.',
-        mismatch: 'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
+        mismatch:
+            'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
     };
     const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
     const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, 'custom-patches.json'];
@@ -107,13 +116,16 @@ export function initConnectFlow(state, { patches }) {
         badge.setAttribute('role', 'img');
         badge.setAttribute('aria-label', hint);
         badge.setAttribute('data-tooltip', hint);
-        badge.innerHTML = info.serialPrefixStatus === 'mismatch' ? `
+        badge.innerHTML =
+            info.serialPrefixStatus === 'mismatch'
+                ? `
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d="M12 2.5l9 17H3l9-17z"/>
                 <path d="M12 8v5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
                 <circle cx="12" cy="16.5" r="1.2" fill="#fff"/>
             </svg>
-        ` : `
+        `
+                : `
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d="M12 1.75l2.11 1.56 2.62-.25 1.08 2.4 2.39 1.1-.25 2.62L21.5 12l-1.55 2.11.25 2.62-2.39 1.1-1.08 2.4-2.62-.25L12 21.5l-2.11-1.56-2.62.25-1.08-2.4-2.39-1.1.25-2.62L2.5 12l1.55-2.11-.25-2.62 2.39-1.1 1.08-2.4 2.62.25L12 1.75z"/>
                 <path d="M8 12.25l2.45 2.45L16.5 8.65" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -168,9 +180,7 @@ export function initConnectFlow(state, { patches }) {
 
     function renderMismatchStatus() {
         deviceStatus.textContent = '';
-        deviceStatus.appendChild(document.createTextNode(
-            'Custom patches are disabled because the hardware UUID and serial prefix do not match. '
-        ));
+        deviceStatus.appendChild(document.createTextNode('Custom patches are disabled because the hardware UUID and serial prefix do not match. '));
 
         const link = document.createElement('a');
         link.href = 'https://github.com/nicoverbruggen/kobopatch-webui/issues/new';
@@ -184,7 +194,7 @@ export function initConnectFlow(state, { patches }) {
     async function hasCustomPatchesManifest() {
         if (!state.device?.directoryHandle) return false;
         try {
-            return await state.device.readFile(customPatchesManifestPath) !== null;
+            return (await state.device.readFile(customPatchesManifestPath)) !== null;
         } catch {
             return false;
         }
@@ -228,7 +238,7 @@ export function initConnectFlow(state, { patches }) {
             state.patchesUnavailableReason = null;
 
             await Promise.all([state.softwareUrlsReady, state.availablePatchesReady]);
-            const match = state.availablePatches.find(p => p.version === info.firmware);
+            const match = state.availablePatches.find((p) => p.version === info.firmware);
             const canPatchDevice = info.deviceVerification === 'verified';
 
             if (canPatchDevice) {
@@ -237,9 +247,10 @@ export function initConnectFlow(state, { patches }) {
                 state.firmwareVersion = info.firmware;
                 state.firmwareURL = null;
                 state.deviceModelLabel = info.model;
-                state.patchesUnavailableReason = info.deviceVerification === 'mismatch'
-                    ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
-                    : 'Custom patches are disabled because this hardware UUID is not recognized.';
+                state.patchesUnavailableReason =
+                    info.deviceVerification === 'mismatch'
+                        ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
+                        : 'Custom patches are disabled because this hardware UUID is not recognized.';
             }
 
             if (canPatchDevice && match) {
@@ -249,9 +260,7 @@ export function initConnectFlow(state, { patches }) {
                 state.patchesLoaded = true;
             }
 
-            state.hasCustomPatchesManifest = state.patchesLoaded && !!state.firmwareURL
-                ? await hasCustomPatchesManifest()
-                : false;
+            state.hasCustomPatchesManifest = state.patchesLoaded && !!state.firmwareURL ? await hasCustomPatchesManifest() : false;
             btnDeviceRestore.hidden = !state.hasCustomPatchesManifest;
 
             deviceStatus.classList.remove('banner', 'banner--error', 'banner--warning');

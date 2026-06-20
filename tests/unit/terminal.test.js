@@ -7,7 +7,8 @@ import { AUDIT_LOG_DIRECTORY } from '../../src/js/kobo/audit-log.js';
 import { RecordingDevice, bytes, text } from './test-helpers.js';
 
 async function withDom(run) {
-    const dom = new JSDOM(`<!doctype html><html><body>
+    const dom = new JSDOM(
+        `<!doctype html><html><body>
         <div id="done-step">
             <div class="banner banner--info feedback" hidden>
                 <span class="feedback-text">Prompt</span>
@@ -19,7 +20,9 @@ async function withDom(run) {
                 </span>
             </div>
         </div>
-    </body></html>`, { url: 'https://example.test/' });
+    </body></html>`,
+        { url: 'https://example.test/' },
+    );
 
     const previousWindowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
     const previousDocumentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
@@ -55,16 +58,14 @@ test('writeToDevice writes every entry and persists an audit log on success', as
     const result = await terminal.writeToDevice({
         device,
         auditName: 'custom-patches',
-        writes: [
-            { path: ['.kobo', 'KoboRoot.tgz'], data: bytes('tgz-bytes'), label: 'Wrote KoboRoot.tgz' },
-        ],
+        writes: [{ path: ['.kobo', 'KoboRoot.tgz'], data: bytes('tgz-bytes'), label: 'Wrote KoboRoot.tgz' }],
     });
 
     assert.equal(result.ok, true);
     assert.equal(text(device.writeFor('.kobo/KoboRoot.tgz').data), 'tgz-bytes');
 
     // The run's audit log is persisted under .kobopatch-webui/logs/ and records the step.
-    const auditWrite = device.writes.find(w => w.path.startsWith(`${AUDIT_LOG_DIRECTORY}/logs/`));
+    const auditWrite = device.writes.find((w) => w.path.startsWith(`${AUDIT_LOG_DIRECTORY}/logs/`));
     assert.ok(auditWrite, 'expected an audit log file to be written');
     assert.match(text(auditWrite.data), /Wrote KoboRoot\.tgz/);
     assert.equal(errors.length, 0);
@@ -133,7 +134,12 @@ test('writeToDevice skips a failing optional write without failing the operation
             auditName: 'custom-patches',
             writes: [
                 { path: ['.kobo', 'KoboRoot.tgz'], data: bytes('tgz'), label: 'wrote tgz' },
-                { path: ['.kobopatch-webui', 'custom-patches.json'], data: bytes('{}'), label: 'wrote manifest', optional: true },
+                {
+                    path: ['.kobopatch-webui', 'custom-patches.json'],
+                    data: bytes('{}'),
+                    label: 'wrote manifest',
+                    optional: true,
+                },
             ],
         });
     } finally {

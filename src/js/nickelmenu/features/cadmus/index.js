@@ -9,7 +9,8 @@ export default {
     id: 'cadmus',
     section: 'Reading Apps',
     title: 'Install Cadmus',
-    description: 'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean reading experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
+    description:
+        'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean reading experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
     default: false,
     available: false, // set to true at runtime if Cadmus assets exist
     directories: ['.adds/cadmus'],
@@ -21,9 +22,7 @@ export default {
         removeLabel: 'Remove the Cadmus app (.adds/cadmus)',
         description: 'Removes the Cadmus app directory (.adds/cadmus/).',
         detect: [['.adds', 'cadmus']],
-        paths: [
-            { path: ['.adds', 'cadmus'], recursive: true },
-        ],
+        paths: [{ path: ['.adds', 'cadmus'], recursive: true }],
     },
 
     async install(ctx) {
@@ -39,17 +38,18 @@ export default {
         );
 
         ctx.progress('Extracting Cadmus...');
-        return (await parseTarGz(tarBytes))
-            .map(file => ({
-                path: '.adds/cadmus/' + file.path,
-                data: file.data,
-            }));
+        return (await parseTarGz(tarBytes)).map((file) => ({
+            path: '.adds/cadmus/' + file.path,
+            data: file.data,
+        }));
     },
 
     menuItems() {
-        return [{
-            id: 'cadmus',
-            lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
-        }];
+        return [
+            {
+                id: 'cadmus',
+                lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+            },
+        ];
     },
 };

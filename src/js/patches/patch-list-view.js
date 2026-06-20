@@ -27,15 +27,11 @@ export function renderPatchList(ui, container) {
     }
 
     // Preserve which sections are expanded across re-renders (e.g. after a save).
-    const openFiles = new Set(
-        [...container.querySelectorAll('.patch-file-section[open]')].map(s => s.dataset.filename)
-    );
+    const openFiles = new Set([...container.querySelectorAll('.patch-file-section[open]')].map((s) => s.dataset.filename));
     // Preserve an active search query so an edit/save (which re-renders) keeps
     // the search box and its filtered view instead of resetting to show all.
     const previousSearch = container.querySelector('.patch-search');
-    const searchQuery = samePatchSet
-        ? (previousSearch ? previousSearch.value : (container.dataset.patchSearch || ''))
-        : '';
+    const searchQuery = samePatchSet ? (previousSearch ? previousSearch.value : container.dataset.patchSearch || '') : '';
     container.innerHTML = '';
     container.dataset.patchSetKey = currentPatchSetKey;
 
@@ -79,7 +75,7 @@ export function renderPatchList(ui, container) {
 
         const summary = document.createElement('summary');
         const label = PATCH_FILE_LABELS[filename] || filename;
-        const enabledCount = patches.filter(p => p.enabled).length;
+        const enabledCount = patches.filter((p) => p.enabled).length;
         summary.innerHTML = `<span class="patch-file-name">${label}</span> <span class="patch-count">${enabledCount} / ${patches.length} enabled</span>`;
         section.appendChild(summary);
 
@@ -134,7 +130,7 @@ export function renderPatchList(ui, container) {
                 const noneInput = document.createElement('input');
                 noneInput.type = 'radio';
                 noneInput.name = `pg_${filename}_${patch.patchGroup}`;
-                noneInput.checked = !patchGroups[patch.patchGroup].some(p => p.enabled);
+                noneInput.checked = !patchGroups[patch.patchGroup].some((p) => p.enabled);
                 noneInput.addEventListener('change', () => {
                     for (const other of patchGroups[patch.patchGroup]) {
                         other.enabled = false;
@@ -167,7 +163,7 @@ export function renderPatchList(ui, container) {
                 input.checked = patch.enabled;
                 input.addEventListener('change', () => {
                     for (const other of patchGroups[patch.patchGroup]) {
-                        other.enabled = (other === patch);
+                        other.enabled = other === patch;
                     }
                     updatePatchCounts(ui, container);
                 });
@@ -179,7 +175,6 @@ export function renderPatchList(ui, container) {
                     updatePatchCounts(ui, container);
                 });
             }
-
 
             const nameSpan = document.createElement('span');
             nameSpan.className = 'patch-name';
@@ -273,7 +268,7 @@ export function updatePatchCounts(ui, container) {
     let idx = 0;
     for (const [, { patches }] of Object.entries(ui.patchFiles)) {
         if (patches.length === 0) continue;
-        const count = patches.filter(p => p.enabled).length;
+        const count = patches.filter((p) => p.enabled).length;
         const countEl = sections[idx]?.querySelector('.patch-count');
         if (countEl) countEl.textContent = `${count} / ${patches.length} enabled`;
         idx++;
@@ -328,10 +323,8 @@ function filterPatches(container, wrapper, nullEl, query) {
 
         if (q) {
             const standaloneItems = section.querySelectorAll(':scope > .patch-list > .patch-item');
-            const hasStandalone = Array.from(standaloneItems).some(
-                item => !item.classList.contains('patch-item-hidden')
-            );
-            const hasGroup = Array.from(groups).some(g => matchedGroups.has(g));
+            const hasStandalone = Array.from(standaloneItems).some((item) => !item.classList.contains('patch-item-hidden'));
+            const hasGroup = Array.from(groups).some((g) => matchedGroups.has(g));
             const sectionVisible = hasStandalone || hasGroup;
             section.classList.toggle('patch-section-hidden', !sectionVisible);
             // Auto-expand sections with matches; collapse those without.

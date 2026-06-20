@@ -11,7 +11,8 @@ export default {
     id: 'simplify-tabs',
     section: 'Interface tweaks',
     title: 'Simplify navigation tabs',
-    description: 'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar, and this also makes your reading stats available as a separate "Stats" tab.',
+    description:
+        'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar, and this also makes your reading stats available as a separate "Stats" tab.',
     default: false,
 
     // Ship the on-device toggle script.
@@ -22,23 +23,27 @@ export default {
     // Contribute the "Simple Tabs" Toggle-menu item. Its position (just after
     // the home-content toggle) is set by 'toggle-tabs' in ../menu-order.js.
     menuItems() {
-        return [{
-            id: 'toggle-tabs',
-            lines: ['menu_item :main :Simple Tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
-        }];
+        return [
+            {
+                id: 'toggle-tabs',
+                lines: ['menu_item :main :Simple Tabs :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_tabs.sh'],
+            },
+        ];
     },
 
     // Prepend the navigation-tab override to the assembled items file.
-    postProcess: prependToNmConfig([
-        'experimental :menu_main_15505_0_enabled: 1',
-        'experimental :menu_main_15505_1_label: Books',
-        'experimental :menu_main_15505_2_enabled: 1',
-        'experimental :menu_main_15505_2_label: Stats',
-        'experimental :menu_main_15505_3_enabled: 0',
-        'experimental :menu_main_15505_3_label: Notes',
-        'experimental :menu_main_15505_4_enabled: 0',
-        'experimental :menu_main_15505_5_enabled: 1',
-        'experimental :menu_main_15505_default: 1',
-        'experimental :menu_main_15505_enabled: 1',
-    ].join('\n')),
+    postProcess: prependToNmConfig(
+        [
+            'experimental :menu_main_15505_0_enabled: 1',
+            'experimental :menu_main_15505_1_label: Books',
+            'experimental :menu_main_15505_2_enabled: 1',
+            'experimental :menu_main_15505_2_label: Stats',
+            'experimental :menu_main_15505_3_enabled: 0',
+            'experimental :menu_main_15505_3_label: Notes',
+            'experimental :menu_main_15505_4_enabled: 0',
+            'experimental :menu_main_15505_5_enabled: 1',
+            'experimental :menu_main_15505_default: 1',
+            'experimental :menu_main_15505_enabled: 1',
+        ].join('\n'),
+    ),
 };

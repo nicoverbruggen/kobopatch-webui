@@ -56,7 +56,7 @@ tools/
 scripts/
   build.mjs                     # esbuild build (+ installables manifest, precompression .br/.gz)
   serve-dist.mjs                # Production static server: Content-Length, cache tiers, ETag revalidation, br/gzip negotiation (see "Production Serving")
-  test.mjs                      # Runs all tests
+  verify.mjs                    # Phase runner for `npm run verify` (full) and `npm run test` (--quick subset)
   serve-local.mjs               # Sets up, builds, and serves locally (dev mode uses a throwaway dist-dev/)
   validate-dist.mjs             # Validates all required dist resources exist
 ```
@@ -138,17 +138,27 @@ fetch** — the per-asset `*-release.json` files no longer exist. Asset download
 
 ## Testing
 
-Run all tests:
+Run the full pipeline:
+
+```bash
+npm run verify
+```
+
+This installs dependencies, sets up installable assets, then runs each phase in order: Prettier format check, lint, unit tests, WASM build, web build, `dist` validation, patch blacklist check, the WASM integration test (when cached firmware is present), Playwright E2E tests, and the screenshot set. On first run it may prompt to download firmware test assets to `tests/e2e/cached_assets/`.
+
+For ordinary frontend work, use the faster subset:
 
 ```bash
 npm run test
 ```
 
-This installs dependencies, sets up installable assets, builds WASM, builds the app, validates `dist`, checks the patch blacklist, runs unit tests, runs the WASM integration test when cached firmware is present, runs Playwright E2E tests, and captures the screenshot set. On first run it may prompt to download firmware test assets to `tests/e2e/cached_assets/`.
+`npm run test` is `verify --quick`: it runs Prettier, lint, unit tests, web build, `dist` validation, E2E, and screenshots, skipping the initial dependency install and the three WASM phases (build, blacklist, integration). It reuses the already-built `kobopatch.wasm`, so build/test WASM only when you have changed the patcher (`npm run verify`). Both suites share `scripts/verify.mjs`; phases are declared once and tagged for the quick subset.
 
 Useful commands:
 
 ```bash
+npm run format          # rewrite JS/MJS with Prettier
+npm run format:check    # verify formatting only (first phase of verify/test)
 npm run test:unit
 npm run test:e2e
 npm run test:e2e:fresh
@@ -171,7 +181,7 @@ bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 
 ### Screenshots
 
-`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
+`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run verify` and `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
 
 Each test in `screenshots.mjs` walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus grouped edge cases. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read). Add-on availability comes from the baked installables manifest, and firmware-dependent flows skip when the firmware zip is absent.
 

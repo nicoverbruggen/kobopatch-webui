@@ -34,10 +34,12 @@ function makeHider({ id, title, description, flag }) {
         // entry and the installer collapses the duplicates (by id); its position
         // (after the power items) is set by 'toggle-hidden-home' in ../menu-order.js.
         menuItems() {
-            return [{
-                id: 'toggle-hidden-home',
-                lines: ['menu_item :main :Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
-            }];
+            return [
+                {
+                    id: 'toggle-hidden-home',
+                    lines: ['menu_item :main :Minimal Home :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_hidden_home.sh'],
+                },
+            ];
         },
 
         // Append this hider's experimental flag to the assembled items file.
@@ -61,7 +63,8 @@ const HIDERS = [
     {
         id: 'hide-notices',
         title: 'Hide home screen notices',
-        description: 'Hides the third row on the home screen that shows notices below your books, such as reading time, release notes for updates, and Kobo Plus or Store promotions.',
+        description:
+            'Hides the third row on the home screen that shows notices below your books, such as reading time, release notes for updates, and Kobo Plus or Store promotions.',
         flag: 'hide_home_row3_enabled',
     },
 ];

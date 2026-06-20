@@ -19,12 +19,11 @@ export function initModeFlow(state, { patches, nm, manual }) {
         'step-device': stepDevice,
         'btn-mode-back': btnModeBack,
         'btn-mode-next': btnModeNext,
-    } = collect([
-        'step-mode', 'step-connect', 'step-device',
-        'btn-mode-back', 'btn-mode-next',
-    ]);
+    } = collect(['step-mode', 'step-connect', 'step-device', 'btn-mode-back', 'btn-mode-next']);
 
-    setupCardRadios(stepMode, 'selection-card--selected', () => { btnModeNext.disabled = false; });
+    setupCardRadios(stepMode, 'selection-card--selected', () => {
+        btnModeNext.disabled = false;
+    });
 
     function goToModeSelection() {
         deactivateFlow();
@@ -44,7 +43,8 @@ export function initModeFlow(state, { patches, nm, manual }) {
         if (autoModeNoPatchesAvailable) {
             patchesRadio.disabled = true;
             patchesCard.classList.add('selection-card--disabled');
-            patchesHint.textContent = state.patchesUnavailableReason ||
+            patchesHint.textContent =
+                state.patchesUnavailableReason ||
                 'Custom patches are not available for your software version. You can still install NickelMenu and choose what you want to do with your Kobo.';
             patchesHint.hidden = false;
             const nmRadio = $q('input[value="nickelmenu"]', stepMode);

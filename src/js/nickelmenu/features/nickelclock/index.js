@@ -52,7 +52,8 @@ export default {
     id: 'nickelclock',
     section: 'Advanced',
     title: 'Install NickelClock',
-    description: 'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',
+    description:
+        'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',
     default: false,
     available: false, // set to true at runtime if NickelClock assets exist
     directories: ['.adds/nickelclock'],
@@ -80,9 +81,7 @@ export default {
         removeLabel: 'Remove NickelClock (.adds/nickelclock)',
         description: 'Removes NickelClock. Deleting its folder triggers NickelClock to finish removing its own plugin on the next reboot.',
         detect: [['.adds', 'nickelclock']],
-        paths: [
-            { path: ['.adds', 'nickelclock'], recursive: true },
-        ],
+        paths: [{ path: ['.adds', 'nickelclock'], recursive: true }],
     },
 
     // Ship the on-device toggle script under .adds/nm/scripts (so NickelMenu
@@ -107,10 +106,12 @@ export default {
     // Contribute the "NickelClock" Toggle-menu item that turns the reading-screen
     // clock on or off. Its position is set by 'nickelclock' in ../menu-order.js.
     menuItems() {
-        return [{
-            id: 'nickelclock',
-            lines: ['menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh'],
-        }];
+        return [
+            {
+                id: 'nickelclock',
+                lines: ['menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh'],
+            },
+        ];
     },
 
     /**

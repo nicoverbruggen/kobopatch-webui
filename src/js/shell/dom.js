@@ -69,7 +69,8 @@ export function trapFocus(dialog) {
     if (_trappedDialogs.has(dialog)) return;
     _trappedDialogs.add(dialog);
 
-    const focusable = 'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+    const focusable =
+        'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
 
     dialog.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;

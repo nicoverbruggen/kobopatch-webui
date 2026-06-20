@@ -71,7 +71,12 @@ test('handleNmIconUpload ignores stale async completions', async () => {
         window.URL.revokeObjectURL = () => {};
 
         try {
-            await mod.handleNmIconUpload(file, draft, (msg) => messages.push(msg), () => false);
+            await mod.handleNmIconUpload(
+                file,
+                draft,
+                (msg) => messages.push(msg),
+                () => false,
+            );
             assert.deepEqual(draft, { icon: { type: 'default' } });
             assert.deepEqual(messages, []);
         } finally {

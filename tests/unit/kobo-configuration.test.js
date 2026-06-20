@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-    buildExcludeSyncFoldersLine,
-    legacyBrokenExcludeSyncFoldersLines,
-} from '../../src/js/kobo/sync-exclusions.js';
+import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../../src/js/kobo/sync-exclusions.js';
 import {
     createExcludeSyncFoldersMatcher,
     getConfSetting,
@@ -17,28 +14,20 @@ import {
 } from '../../src/js/kobo/configuration.js';
 
 test('buildExcludeSyncFoldersLine returns the expected default regex line', () => {
-    assert.equal(
-        buildExcludeSyncFoldersLine(),
-        String.raw`ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)`
-    );
+    assert.equal(buildExcludeSyncFoldersLine(), String.raw`ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)`);
 });
 
 test('buildExcludeSyncFoldersLine returns the expected calibre regex line', () => {
     assert.equal(
         buildExcludeSyncFoldersLine({ excludeCalibre: true }),
-        String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`
+        String.raw`ExcludeSyncFolders=(calibre|\\.(?!kobo|adobe|calibre).+|([^.][^/]*/)+\\..+)`,
     );
 });
 
 test('parseKoboConfiguration reads settings inside sections', () => {
-    const parsed = parseKoboConfiguration([
-        '[ApplicationPreferences]',
-        'CurrentLocale=en_US',
-        '',
-        '[FeatureSettings]',
-        'ExcludeSyncFolders=(foo)',
-        '',
-    ].join('\n'));
+    const parsed = parseKoboConfiguration(
+        ['[ApplicationPreferences]', 'CurrentLocale=en_US', '', '[FeatureSettings]', 'ExcludeSyncFolders=(foo)', ''].join('\n'),
+    );
 
     assert.equal(parsed.sections.length, 2);
     assert.equal(parsed.sections[1].name, 'FeatureSettings');
@@ -46,10 +35,7 @@ test('parseKoboConfiguration reads settings inside sections', () => {
 });
 
 test('parseKoboConfiguration trims setting whitespace and keeps equals signs in values', () => {
-    const parsed = parseKoboConfiguration([
-        '[FeatureSettings]',
-        '  ExcludeSyncFolders = (foo=bar)  ',
-    ].join('\n'));
+    const parsed = parseKoboConfiguration(['[FeatureSettings]', '  ExcludeSyncFolders = (foo=bar)  '].join('\n'));
 
     assert.equal(parsed.sections[0].settings.ExcludeSyncFolders.value, '(foo=bar)');
 });
@@ -82,14 +68,7 @@ test('setExcludeSyncFoldersLine inserts FeatureSettings when it is missing', () 
     const line = buildExcludeSyncFoldersLine();
     const updated = setExcludeSyncFoldersLine('[ApplicationPreferences]\nCurrentLocale=en_US\n', line);
 
-    assert.equal(updated, [
-        '[ApplicationPreferences]',
-        'CurrentLocale=en_US',
-        '',
-        '[FeatureSettings]',
-        line,
-        '',
-    ].join('\n'));
+    assert.equal(updated, ['[ApplicationPreferences]', 'CurrentLocale=en_US', '', '[FeatureSettings]', line, ''].join('\n'));
 });
 
 test('setExcludeSyncFoldersLine inserts the setting into an existing FeatureSettings section', () => {
@@ -101,45 +80,24 @@ test('setExcludeSyncFoldersLine inserts the setting into an existing FeatureSett
 
 test('setExcludeSyncFoldersLine replaces an existing setting without touching other sections', () => {
     const line = buildExcludeSyncFoldersLine({ excludeCalibre: true });
-    const updated = setExcludeSyncFoldersLine([
-        '[FeatureSettings]',
-        'Foo=bar',
-        'ExcludeSyncFolders=(old)',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'), line);
-
-    assert.equal(updated, [
-        '[FeatureSettings]',
-        'Foo=bar',
+    const updated = setExcludeSyncFoldersLine(
+        ['[FeatureSettings]', 'Foo=bar', 'ExcludeSyncFolders=(old)', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join('\n'),
         line,
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'));
+    );
+
+    assert.equal(updated, ['[FeatureSettings]', 'Foo=bar', line, '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join('\n'));
 });
 
 test('setExcludeSyncFoldersLine collapses duplicate settings in FeatureSettings only', () => {
     const line = buildExcludeSyncFoldersLine();
-    const updated = setExcludeSyncFoldersLine([
-        '[FeatureSettings]',
-        'ExcludeSyncFolders=(old)',
-        'Foo=bar',
-        'ExcludeSyncFolders=(older)',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'), line);
-
-    assert.equal(updated, [
-        '[FeatureSettings]',
+    const updated = setExcludeSyncFoldersLine(
+        ['[FeatureSettings]', 'ExcludeSyncFolders=(old)', 'Foo=bar', 'ExcludeSyncFolders=(older)', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join(
+            '\n',
+        ),
         line,
-        'Foo=bar',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'));
+    );
+
+    assert.equal(updated, ['[FeatureSettings]', line, 'Foo=bar', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join('\n'));
 });
 
 test('setExcludeSyncFoldersLine preserves CRLF line endings', () => {
@@ -157,42 +115,21 @@ test('setExcludeSyncFoldersLine preserves lack of trailing newline when replacin
 });
 
 test('removeExcludeSyncFoldersLine removes the setting from FeatureSettings only', () => {
-    const updated = removeExcludeSyncFoldersLine([
-        '[FeatureSettings]',
-        'Foo=bar',
-        'ExcludeSyncFolders=(old)',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'));
+    const updated = removeExcludeSyncFoldersLine(
+        ['[FeatureSettings]', 'Foo=bar', 'ExcludeSyncFolders=(old)', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join('\n'),
+    );
 
-    assert.equal(updated, [
-        '[FeatureSettings]',
-        'Foo=bar',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'));
+    assert.equal(updated, ['[FeatureSettings]', 'Foo=bar', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join('\n'));
 });
 
 test('removeExcludeSyncFoldersLine removes duplicate settings in FeatureSettings only', () => {
-    const updated = removeExcludeSyncFoldersLine([
-        '[FeatureSettings]',
-        'ExcludeSyncFolders=(old)',
-        'Foo=bar',
-        'ExcludeSyncFolders=(older)',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'));
+    const updated = removeExcludeSyncFoldersLine(
+        ['[FeatureSettings]', 'ExcludeSyncFolders=(old)', 'Foo=bar', 'ExcludeSyncFolders=(older)', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join(
+            '\n',
+        ),
+    );
 
-    assert.equal(updated, [
-        '[FeatureSettings]',
-        'Foo=bar',
-        '[Other]',
-        'ExcludeSyncFolders=(leave-alone)',
-        '',
-    ].join('\n'));
+    assert.equal(updated, ['[FeatureSettings]', 'Foo=bar', '[Other]', 'ExcludeSyncFolders=(leave-alone)', ''].join('\n'));
 });
 
 test('removeExcludeSyncFoldersLine preserves CRLF line endings', () => {

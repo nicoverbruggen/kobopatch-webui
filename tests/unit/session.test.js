@@ -18,9 +18,19 @@ test('a new Session starts with default wizard data', () => {
 test('Session declares its services and nav callbacks (honest shape, null until wired)', () => {
     const s = new Session();
     const declared = [
-        'device', 'patchUI', 'runner', 'nmInstaller', 'getSoftwareUrl',
-        'softwareUrlsReady', 'availablePatchesReady', 'availablePatches', 'blacklistReady',
-        'showError', 'goToModeSelection', 'goBackToDeviceStep', 'goToManualVersionStep',
+        'device',
+        'patchUI',
+        'runner',
+        'nmInstaller',
+        'getSoftwareUrl',
+        'softwareUrlsReady',
+        'availablePatchesReady',
+        'availablePatches',
+        'blacklistReady',
+        'showError',
+        'goToModeSelection',
+        'goBackToDeviceStep',
+        'goToManualVersionStep',
     ];
     for (const key of declared) {
         assert.ok(key in s, `expected Session to declare ${key}`);

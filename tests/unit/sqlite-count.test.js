@@ -8,7 +8,7 @@ import { countTableRows, bytesRange } from '../../src/js/kobo/sqlite-count.js';
 import { countKoboUsers } from '../../src/js/kobo/signin.js';
 
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'e2e', 'support', 'fixtures');
-const fixture = name => new Uint8Array(readFileSync(join(fixturesDir, name)));
+const fixture = (name) => new Uint8Array(readFileSync(join(fixturesDir, name)));
 
 test('countTableRows reads the user-table row count from real SQLite fixtures', async () => {
     assert.equal(await countTableRows(bytesRange(fixture('kobo-reader-factory-reset.sqlite')), 'user'), 0);
@@ -44,7 +44,7 @@ test('countKoboUsers reads the user count from the device, null when missing', a
     const factory = fixture('kobo-reader-factory-reset.sqlite');
 
     // Mirrors KoboDevice.readFileRange: slices the file, null when it's missing.
-    const deviceWith = bytes => ({
+    const deviceWith = (bytes) => ({
         async readFileRange(_path, offset, length) {
             return bytes ? bytes.subarray(offset, offset + length) : null;
         },

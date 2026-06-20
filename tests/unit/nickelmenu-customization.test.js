@@ -55,11 +55,15 @@ test('resolveMenuCustomization ignores an unknown preset and uses the default ic
 });
 
 test('resolveMenuCustomization routes uploads by mime type', () => {
-    const png = resolveMenuCustomization({ icon: { type: 'upload', data: new Uint8Array([9]), mimeType: 'image/png' } });
+    const png = resolveMenuCustomization({
+        icon: { type: 'upload', data: new Uint8Array([9]), mimeType: 'image/png' },
+    });
     assert.equal(png.iconPath, NM_MENU_ICON_CUSTOM_PNG_PATH);
     assert.equal(png.iconFile.path, NM_MENU_ICON_CUSTOM_PNG_PATH);
 
-    const svg = resolveMenuCustomization({ icon: { type: 'upload', data: new Uint8Array([9]), mimeType: 'image/svg+xml' } });
+    const svg = resolveMenuCustomization({
+        icon: { type: 'upload', data: new Uint8Array([9]), mimeType: 'image/svg+xml' },
+    });
     assert.equal(svg.iconPath, NM_MENU_ICON_CUSTOM_SVG_PATH);
     assert.equal(svg.iconFile.path, NM_MENU_ICON_CUSTOM_SVG_PATH);
 });

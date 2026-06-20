@@ -9,10 +9,7 @@ async function loadWasm() {
     if (wasmReady) return;
 
     const go = new Go();
-    const result = await WebAssembly.instantiateStreaming(
-        fetch('../../wasm/kobopatch.wasm'),
-        go.importObject
-    );
+    const result = await WebAssembly.instantiateStreaming(fetch('../../wasm/kobopatch.wasm'), go.importObject);
     go.run(result.instance);
 
     if (typeof globalThis.patchFirmware !== 'function') {
@@ -21,7 +18,7 @@ async function loadWasm() {
     wasmReady = true;
 }
 
-self.onmessage = async function(e) {
+self.onmessage = async function (e) {
     const { type, configYAML, firmwareZip, patchFiles } = e.data;
 
     if (type !== 'patch') return;
@@ -39,11 +36,14 @@ self.onmessage = async function(e) {
 
         // Transfer the tgz buffer to avoid copying
         const tgzBuffer = result.tgz.buffer;
-        self.postMessage({
-            type: 'done',
-            tgz: result.tgz,
-            log: result.log,
-        }, [tgzBuffer]);
+        self.postMessage(
+            {
+                type: 'done',
+                tgz: result.tgz,
+                log: result.log,
+            },
+            [tgzBuffer],
+        );
     } catch (err) {
         self.postMessage({ type: 'error', message: err.message });
     }

@@ -4,17 +4,9 @@ import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
 import { TL } from '../shell/strings.js';
-import {
-    appendLog,
-    downloadFirmware,
-    extractOriginalTgz,
-    runPatcher,
-    buildPatchesManifest,
-    checkExistingTgz,
-} from './patches-execute.js';
+import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatchesManifest, checkExistingTgz } from './patches-execute.js';
 
 export function initPatchesFlow(state) {
-
     const {
         'step-done': stepDone,
         'patch-container': patchContainer,
@@ -44,13 +36,33 @@ export function initPatchesFlow(state) {
         'firmware-download-url': _firmwareDownloadUrl,
         'download-device-name': _downloadDeviceName,
     } = collect([
-        'step-done', 'patch-container', 'patch-reload-banner', 'patch-reload-text',
-        'btn-patch-reload', 'btn-patches-back', 'btn-patches-next', 'btn-build-back',
-        'btn-build', 'btn-write', 'btn-download', 'build-progress', 'build-log',
-        'build-status', 'existing-tgz-warning', 'write-instructions', 'download-instructions',
-        'firmware-version-label', 'firmware-device-label', 'firmware-description',
-        'patch-count-hint', 'done-log', 'selected-patches-list', 'selected-patches-heading',
-        'build-wait-hint', 'firmware-download-url', 'download-device-name',
+        'step-done',
+        'patch-container',
+        'patch-reload-banner',
+        'patch-reload-text',
+        'btn-patch-reload',
+        'btn-patches-back',
+        'btn-patches-next',
+        'btn-build-back',
+        'btn-build',
+        'btn-write',
+        'btn-download',
+        'build-progress',
+        'build-log',
+        'build-status',
+        'existing-tgz-warning',
+        'write-instructions',
+        'download-instructions',
+        'firmware-version-label',
+        'firmware-device-label',
+        'firmware-description',
+        'patch-count-hint',
+        'done-log',
+        'selected-patches-list',
+        'selected-patches-heading',
+        'build-wait-hint',
+        'firmware-download-url',
+        'download-device-name',
     ]);
 
     const steps = [
@@ -70,7 +82,7 @@ export function initPatchesFlow(state) {
             navLabels: TL.NAV_PATCHES,
             navIndex: 4,
             recoveryStep: 'patches',
-            back: (ctx) => ctx.isRestore ? null : 'patches',
+            back: (ctx) => (ctx.isRestore ? null : 'patches'),
             onEnter: async () => {
                 if (state.isRestore) {
                     firmwareDescription.textContent = TL.STATUS.RESTORE_ORIGINAL;
@@ -102,8 +114,12 @@ export function initPatchesFlow(state) {
                     : 'Write it directly to your connected Kobo, or download for manual installation.';
 
                 buildStatus.innerHTML =
-                    action + '. <strong>KoboRoot.tgz</strong> (' + formatMB(state.resultTgz.length) + ') is ready. ' +
-                    (description ? description + ' ' : '') + installHint;
+                    action +
+                    '. <strong>KoboRoot.tgz</strong> (' +
+                    formatMB(state.resultTgz.length) +
+                    ') is ready. ' +
+                    (description ? description + ' ' : '') +
+                    installHint;
 
                 const doneLog = _doneLog;
                 doneLog.textContent = buildLog.textContent;
@@ -177,15 +193,13 @@ export function initPatchesFlow(state) {
             const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json']);
             if (!text) return;
             const manifest = JSON.parse(text);
-            const hasEnabled = manifest?.overrides && Object.values(manifest.overrides).some(
-                file => file && typeof file === 'object' && Object.values(file).some(Boolean)
-            );
+            const hasEnabled =
+                manifest?.overrides && Object.values(manifest.overrides).some((file) => file && typeof file === 'object' && Object.values(file).some(Boolean));
             const hasCustomized = manifest?.customized && Object.keys(manifest.customized).length > 0;
             if (!hasEnabled && !hasCustomized) return;
             state.reloadManifest = manifest;
             patchReloadBanner.hidden = false;
-        } catch {
-        }
+        } catch {}
     }
 
     btnPatchReload.addEventListener('click', () => {
@@ -246,8 +260,6 @@ export function initPatchesFlow(state) {
         }
     });
 
-
-
     btnBuild.addEventListener('click', async () => {
         await flow.go('building', state, { skipHistory: true });
         buildLog.textContent = '';
@@ -284,11 +296,13 @@ export function initPatchesFlow(state) {
         btnWrite.textContent = TL.BUTTON.WRITING;
         downloadInstructions.hidden = true;
 
-        const writes = [{
-            path: ['.kobo', 'KoboRoot.tgz'],
-            data: state.resultTgz,
-            label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
-        }];
+        const writes = [
+            {
+                path: ['.kobo', 'KoboRoot.tgz'],
+                data: state.resultTgz,
+                label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
+            },
+        ];
         if (!state.isRestore) {
             const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
             const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');

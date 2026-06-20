@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 function patchNamed(name) {
-    return ui.patchFiles[FILE].patches.find(p => p.name === name);
+    return ui.patchFiles[FILE].patches.find((p) => p.name === name);
 }
 
 function makeStatusEls() {

@@ -8,11 +8,7 @@ import { menuItemPosition } from '../../src/js/nickelmenu/features/menu-order.js
 import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
 import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/installer.js';
-import {
-    RecordingDevice,
-    createInstaller,
-    createProgressRecorder,
-} from './test-helpers.js';
+import { RecordingDevice, createInstaller, createProgressRecorder } from './test-helpers.js';
 
 function bytes(value) {
     return new TextEncoder().encode(value);
@@ -67,9 +63,7 @@ function useNickelClockAssetFetch() {
 // A real gzipped tar to stand in for NickelMenu's base KoboRoot.tgz, so the
 // installer can parse it and merge NickelClock's entries.
 async function baseNickelMenuTgz() {
-    return buildTarGz([
-        { path: 'usr/local/Kobo/imageformats/libnm.so', data: bytes('nm plugin'), mode: 0o755 },
-    ]);
+    return buildTarGz([{ path: 'usr/local/Kobo/imageformats/libnm.so', data: bytes('nm plugin'), mode: 0o755 }]);
 }
 
 test('nickelclock is an Advanced feature registered in the NickelMenu feature list', () => {
@@ -89,18 +83,15 @@ test('contributes a "NickelClock" Toggle item and ships its toggle script', asyn
 
     const files = await nickelclock.install(ctx);
     assert.deepEqual(requested, ['scripts/toggle_nickelclock.sh']);
-    assert.deepEqual(files.map(f => f.path), [
-        '.adds/nm/scripts/toggle_nickelclock.sh',
-        '.adds/nickelclock/settings.ini',
-    ]);
+    assert.deepEqual(
+        files.map((f) => f.path),
+        ['.adds/nm/scripts/toggle_nickelclock.sh', '.adds/nickelclock/settings.ini'],
+    );
 
     const items = nickelclock.menuItems();
     assert.equal(items.length, 1);
     assert.equal(items[0].id, 'nickelclock');
-    assert.match(
-        items[0].lines[0],
-        /^menu_item :main :NickelClock :cmd_output :7000 :\/mnt\/onboard\/\.adds\/nm\/scripts\/toggle_nickelclock\.sh$/
-    );
+    assert.match(items[0].lines[0], /^menu_item :main :NickelClock :cmd_output :7000 :\/mnt\/onboard\/\.adds\/nm\/scripts\/toggle_nickelclock\.sh$/);
 });
 
 test('its Toggle item id is registered in MENU_ITEM_ORDER', () => {
@@ -109,10 +100,14 @@ test('its Toggle item id is registered in MENU_ITEM_ORDER', () => {
 });
 
 test('ships a prefilled settings.ini (Margin=40, clock on) marked ifAbsent', async () => {
-    const ctx = { async asset() { return new TextEncoder().encode('#!/bin/sh\n'); } };
+    const ctx = {
+        async asset() {
+            return new TextEncoder().encode('#!/bin/sh\n');
+        },
+    };
     const files = await nickelclock.install(ctx);
 
-    const settings = files.find(f => f.path === '.adds/nickelclock/settings.ini');
+    const settings = files.find((f) => f.path === '.adds/nickelclock/settings.ini');
     assert.ok(settings, 'expected a settings.ini file');
     // ifAbsent so a user-edited settings.ini is never overwritten on reinstall.
     assert.equal(settings.ifAbsent, true);
@@ -156,8 +151,11 @@ test('koboRootEntries downloads NickelClock and returns its KoboRoot.tgz entries
     const restore = useNickelClockAssetFetch();
     try {
         const entries = await nickelclock.koboRootEntries({ progress() {} });
-        assert.deepEqual(entries.map(e => e.path), nickelclockEntries.map(e => e.path));
-        assert.equal(entries.find(e => e.path.endsWith('.so')).mode, 0o755);
+        assert.deepEqual(
+            entries.map((e) => e.path),
+            nickelclockEntries.map((e) => e.path),
+        );
+        assert.equal(entries.find((e) => e.path.endsWith('.so')).mode, 0o755);
     } finally {
         restore();
     }
@@ -167,10 +165,7 @@ test('koboRootEntries throws a helpful error when the release asset is missing',
     const originalFetch = globalThis.fetch;
     globalThis.fetch = async () => ({ ok: false, status: 404 });
     try {
-        await assert.rejects(
-            () => nickelclock.koboRootEntries({ progress() {} }),
-            /NickelClock assets not available/
-        );
+        await assert.rejects(() => nickelclock.koboRootEntries({ progress() {} }), /NickelClock assets not available/);
     } finally {
         globalThis.fetch = originalFetch;
     }

@@ -12,13 +12,27 @@ const FILE = 'src/nickel.yaml';
 function makeUI() {
     const ui = new PatchUI();
     ui.firmwareVersion = '4.45.23646';
-    ui.blacklist = { '4.45': { [FILE]: ['Risky patch'] } };
+    ui.blacklist = { 4.45: { [FILE]: ['Risky patch'] } };
     ui.patchFiles = {
         [FILE]: {
             raw: '',
             patches: [
-                { name: 'Enabled standalone', enabled: true, description: '', patchGroup: null, lineStart: 0, lineEnd: 1 },
-                { name: 'Disabled standalone', enabled: false, description: 'Some description here', patchGroup: null, lineStart: 1, lineEnd: 2 },
+                {
+                    name: 'Enabled standalone',
+                    enabled: true,
+                    description: '',
+                    patchGroup: null,
+                    lineStart: 0,
+                    lineEnd: 1,
+                },
+                {
+                    name: 'Disabled standalone',
+                    enabled: false,
+                    description: 'Some description here',
+                    patchGroup: null,
+                    lineStart: 1,
+                    lineEnd: 2,
+                },
                 { name: 'Risky patch', enabled: false, description: '', patchGroup: null, lineStart: 2, lineEnd: 3 },
                 { name: 'Font A', enabled: true, description: '', patchGroup: 'Fonts', lineStart: 3, lineEnd: 4 },
                 { name: 'Font B', enabled: false, description: '', patchGroup: 'Fonts', lineStart: 4, lineEnd: 5 },
@@ -33,9 +47,7 @@ function container() {
 }
 
 function itemByName(root, name) {
-    return [...root.querySelectorAll('.patch-item')].find(
-        el => el.querySelector('.patch-name')?.textContent === name,
-    );
+    return [...root.querySelectorAll('.patch-item')].find((el) => el.querySelector('.patch-name')?.textContent === name);
 }
 
 function fireChange(el) {
@@ -118,14 +130,16 @@ test('toggling a checkbox updates the model, the count, and fires onChange', () 
     const ui = makeUI();
     const el = container();
     let changes = 0;
-    ui.onChange = () => { changes++; };
+    ui.onChange = () => {
+        changes++;
+    };
     ui.render(el);
 
     const input = itemByName(el, 'Disabled standalone').querySelector('input');
     input.checked = true;
     fireChange(input);
 
-    assert.equal(ui.patchFiles[FILE].patches.find(p => p.name === 'Disabled standalone').enabled, true);
+    assert.equal(ui.patchFiles[FILE].patches.find((p) => p.name === 'Disabled standalone').enabled, true);
     assert.equal(el.querySelector('.patch-count').textContent, '3 / 5 enabled');
     assert.equal(changes, 1);
 });
@@ -140,8 +154,8 @@ test('selecting "None" in a group disables every member of that group', () => {
     none.checked = true;
     fireChange(none);
 
-    assert.equal(ui.patchFiles[FILE].patches.find(p => p.name === 'Font A').enabled, false);
-    assert.equal(ui.patchFiles[FILE].patches.find(p => p.name === 'Font B').enabled, false);
+    assert.equal(ui.patchFiles[FILE].patches.find((p) => p.name === 'Font A').enabled, false);
+    assert.equal(ui.patchFiles[FILE].patches.find((p) => p.name === 'Font B').enabled, false);
     // Only "Enabled standalone" remains enabled.
     assert.equal(el.querySelector('.patch-count').textContent, '1 / 5 enabled');
 });
@@ -190,9 +204,7 @@ test('search query and saved open state reset when rendering a different patch s
     nextUi.patchFiles = {
         'src/other.yaml': {
             raw: '',
-            patches: [
-                { name: 'Other patch', enabled: false, description: '', patchGroup: null, lineStart: 0, lineEnd: 1 },
-            ],
+            patches: [{ name: 'Other patch', enabled: false, description: '', patchGroup: null, lineStart: 0, lineEnd: 1 }],
         },
     };
 

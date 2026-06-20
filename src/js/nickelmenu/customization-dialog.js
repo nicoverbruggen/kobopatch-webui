@@ -23,7 +23,9 @@ export function loadImage(src) {
 }
 
 export function parseSvgDimension(value) {
-    const match = String(value || '').trim().match(/^(\d+(?:\.\d+)?)/);
+    const match = String(value || '')
+        .trim()
+        .match(/^(\d+(?:\.\d+)?)/);
     return match ? Number(match[1]) : null;
 }
 
@@ -49,7 +51,7 @@ export async function resizeRasterUpload(file) {
         const y = Math.floor((NM_UPLOAD_ICON_SIZE - height) / 2);
         ctx.drawImage(img, x, y, width, height);
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
         if (!blob) throw new Error('Could not resize that image.');
         return {
             data: new Uint8Array(await blob.arrayBuffer()),
@@ -96,7 +98,7 @@ export async function renderPresetSvgToPng(svg, size = NM_PRESET_ICON_PNG_SIZE) 
         ctx.clearRect(0, 0, size, size);
         ctx.drawImage(img, 0, 0, size, size);
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
         if (!blob) throw new Error('Could not prepare that preset icon.');
         return new Uint8Array(await blob.arrayBuffer());
     } finally {
@@ -323,8 +325,7 @@ export function updateMenuCustomizationDialog(draft, dialogDom, message = '') {
     for (const button of dialogDom.presets.querySelectorAll('.nm-icon-choice')) {
         button.classList.toggle(
             'nm-icon-choice--selected',
-            (draft.icon?.type === 'preset' && button.dataset.iconId === draft.icon.id)
-                || (draft.icon?.type === 'default' && button.dataset.iconId === 'cog')
+            (draft.icon?.type === 'preset' && button.dataset.iconId === draft.icon.id) || (draft.icon?.type === 'default' && button.dataset.iconId === 'cog'),
         );
     }
 
@@ -340,9 +341,7 @@ export function updateMenuCustomizationDialog(draft, dialogDom, message = '') {
 
     const valid = isValidMenuLabel(label);
     dialogDom.save.disabled = !valid;
-    dialogDom.status.textContent = valid
-        ? message
-        : `Use 1-${NM_MENU_LABEL_MAX_LENGTH} letters or numbers.`;
+    dialogDom.status.textContent = valid ? message : `Use 1-${NM_MENU_LABEL_MAX_LENGTH} letters or numbers.`;
 }
 
 export function openMenuCustomizeDialog(state, dialogDom, triggerEl) {
@@ -392,14 +391,24 @@ function wireFocusReturn(dlg) {
 }
 
 // Lazy-wire focus management when the import first runs.
-document.addEventListener('DOMContentLoaded', () => {
-    const dlg = document.getElementById('nm-customize-dialog');
-    if (dlg) { wireFocusReturn(dlg); trapFocus(dlg); }
-}, { once: true });
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+        const dlg = document.getElementById('nm-customize-dialog');
+        if (dlg) {
+            wireFocusReturn(dlg);
+            trapFocus(dlg);
+        }
+    },
+    { once: true },
+);
 // Also wire if DOM is already ready.
 if (document.readyState !== 'loading') {
     const dlg = document.getElementById('nm-customize-dialog');
-    if (dlg) { wireFocusReturn(dlg); trapFocus(dlg); }
+    if (dlg) {
+        wireFocusReturn(dlg);
+        trapFocus(dlg);
+    }
 }
 
 export { NM_DEFAULT_ICON_ASSET, NM_PRESET_ICON_PNG_SIZE, NM_UPLOAD_ICON_SIZE };

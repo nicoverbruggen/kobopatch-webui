@@ -6,7 +6,8 @@ export const NM_MENU_ICON_CUSTOM_SVG_PATH = '.adds/nm/.custom-icon.svg';
 
 // Preset SVG paths are sourced from Lucide (https://lucide.dev/icons/),
 // released under the ISC License.
-const SVG_PREFIX = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-hidden="true" fill="none" stroke="#111827" stroke-width="1.0" stroke-linecap="round" stroke-linejoin="round">';
+const SVG_PREFIX =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" role="img" aria-hidden="true" fill="none" stroke="#111827" stroke-width="1.0" stroke-linecap="round" stroke-linejoin="round">';
 const SVG_SUFFIX = '</svg>';
 
 export const NM_MENU_PRESET_ICONS = [
@@ -96,15 +97,13 @@ export function isValidMenuLabel(value) {
 }
 
 export function findPresetIcon(id) {
-    return NM_MENU_PRESET_ICONS.find(icon => icon.id === id) || null;
+    return NM_MENU_PRESET_ICONS.find((icon) => icon.id === id) || null;
 }
 
 export function isDefaultMenuCustomization(customization = null) {
-    return !customization
-        || (
-            normalizeMenuLabel(customization.label) === NM_MENU_DEFAULT_LABEL
-            && (!customization.icon || customization.icon.type === 'default')
-        );
+    return (
+        !customization || (normalizeMenuLabel(customization.label) === NM_MENU_DEFAULT_LABEL && (!customization.icon || customization.icon.type === 'default'))
+    );
 }
 
 export function resolveMenuCustomization(customization = null) {
@@ -140,9 +139,7 @@ export function resolveMenuCustomization(customization = null) {
     }
 
     if (icon?.type === 'upload' && icon.data) {
-        const path = icon.mimeType === 'image/svg+xml'
-            ? NM_MENU_ICON_CUSTOM_SVG_PATH
-            : NM_MENU_ICON_CUSTOM_PNG_PATH;
+        const path = icon.mimeType === 'image/svg+xml' ? NM_MENU_ICON_CUSTOM_SVG_PATH : NM_MENU_ICON_CUSTOM_PNG_PATH;
         const data = icon.data instanceof Uint8Array ? icon.data : new Uint8Array(icon.data);
         return {
             label,

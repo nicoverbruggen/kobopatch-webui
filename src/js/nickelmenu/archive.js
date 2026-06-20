@@ -50,7 +50,7 @@ function normalizeTarPath(path) {
 export function parseTar(bytes) {
     const files = [];
 
-    for (let offset = 0; offset + TAR_BLOCK_SIZE <= bytes.length;) {
+    for (let offset = 0; offset + TAR_BLOCK_SIZE <= bytes.length; ) {
         if (isZeroBlock(bytes, offset)) break;
 
         const name = readString(bytes, offset, 100);
@@ -162,7 +162,10 @@ function buildTarHeader(entry) {
 export function buildTar(entries) {
     const blocks = [];
     let total = 0;
-    const push = (block) => { blocks.push(block); total += block.length; };
+    const push = (block) => {
+        blocks.push(block);
+        total += block.length;
+    };
 
     for (const entry of entries) {
         push(buildTarHeader(entry));

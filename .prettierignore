@@ -1,0 +1,15 @@
+# Build output and dependencies
+dist/
+dist-dev/
+node_modules/
+
+# Vendored / generated JavaScript
+src/js/wasm_exec.js
+
+# Go sources for the WASM patcher
+tools/kobopatch-wasm/go/
+tools/kobopatch-wasm/kobopatch-src/
+
+# Cached test fixtures
+tests/e2e/cached_assets/
+tests/e2e/screenshots/

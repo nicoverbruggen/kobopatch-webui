@@ -37,7 +37,7 @@ function readVarint(view, offset) {
 // Byte length of a value stored with the given record serial type.
 function serialTypeSize(type) {
     if (type >= 12) return Math.floor((type - 12) / 2); // text/blob
-    return [0, 1, 2, 3, 4, 6, 8, 8, 0, 0][type] ?? 0;   // null/ints/float/0/1
+    return [0, 1, 2, 3, 4, 6, 8, 8, 0, 0][type] ?? 0; // null/ints/float/0/1
 }
 
 function readText(view, offset, serialType) {
@@ -200,9 +200,7 @@ export async function countTableRows(readRange, tableName) {
             // Must hold at least the b-tree header (and, for interior pages, the
             // right-most pointer) we index into.
             const minLength = btreeHeaderOffset(pageNum) + 12;
-            const view = (bytes && bytes.length >= minLength)
-                ? new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-                : null;
+            const view = bytes && bytes.length >= minLength ? new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength) : null;
             pageCache.set(pageNum, view);
             return view;
         }

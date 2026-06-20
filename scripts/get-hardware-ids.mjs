@@ -40,7 +40,7 @@ function parseArgs(argv) {
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
-        const readValue = name => {
+        const readValue = (name) => {
             const value = argv[++i];
             if (!value) throw new Error(`${name} requires a value`);
             return value;
@@ -61,7 +61,7 @@ function parseArgs(argv) {
 }
 
 function configuredFirmwarePaths() {
-    return [firmwareConfig.primary, firmwareConfig.secondary].map(entry => ({
+    return [firmwareConfig.primary, firmwareConfig.secondary].map((entry) => ({
         version: entry.version,
         path: join(repoRoot, 'tests/e2e/cached_assets', `kobo-update-${entry.version}.zip`),
     }));
@@ -77,7 +77,7 @@ async function readKoboRootTgz(firmwarePath) {
 async function readLibnickel(firmwarePath) {
     const koboRootTgz = await readKoboRootTgz(firmwarePath);
     const entries = parseTar(gunzipSync(koboRootTgz));
-    const libnickel = entries.find(entry => entry.path === 'usr/local/Kobo/libnickel.so.1.0.0');
+    const libnickel = entries.find((entry) => entry.path === 'usr/local/Kobo/libnickel.so.1.0.0');
     if (!libnickel) throw new Error(`usr/local/Kobo/libnickel.so.1.0.0 not found in ${firmwarePath}`);
     return libnickel.data;
 }
@@ -173,19 +173,21 @@ function mergeRows(rows) {
         });
     }
 
-    return [...byUuid.values()].map(row => ({
-        uuid: row.uuid,
-        model: firstSorted(row.models),
-        models: [...row.models].sort(),
-        product: firstSorted(row.products),
-        products: [...row.products].sort(),
-        platform: firstSorted(row.platforms),
-        platforms: [...row.platforms].sort(),
-        occurrences: row.occurrences.sort((a, b) => {
-            const versionCompare = String(a.source.firmwareVersion || '').localeCompare(String(b.source.firmwareVersion || ''));
-            return versionCompare || a.tableOffset - b.tableOffset;
-        }),
-    })).sort((a, b) => a.uuid.localeCompare(b.uuid));
+    return [...byUuid.values()]
+        .map((row) => ({
+            uuid: row.uuid,
+            model: firstSorted(row.models),
+            models: [...row.models].sort(),
+            product: firstSorted(row.products),
+            products: [...row.products].sort(),
+            platform: firstSorted(row.platforms),
+            platforms: [...row.platforms].sort(),
+            occurrences: row.occurrences.sort((a, b) => {
+                const versionCompare = String(a.source.firmwareVersion || '').localeCompare(String(b.source.firmwareVersion || ''));
+                return versionCompare || a.tableOffset - b.tableOffset;
+            }),
+        }))
+        .sort((a, b) => a.uuid.localeCompare(b.uuid));
 }
 
 function firstSorted(values) {
@@ -201,10 +203,10 @@ function printTable(rows, sources, outputPath) {
 
     const widths = {
         uuid: 36,
-        model: Math.max('Firmware model'.length, ...rows.map(row => row.models.join(', ').length)),
-        product: Math.max('Product'.length, ...rows.map(row => row.products.join(', ').length)),
-        platform: Math.max('Platform'.length, ...rows.map(row => row.platforms.join(', ').length)),
-        versions: Math.max('Firmware'.length, ...rows.map(row => firmwareVersions(row).join(', ').length)),
+        model: Math.max('Firmware model'.length, ...rows.map((row) => row.models.join(', ').length)),
+        product: Math.max('Product'.length, ...rows.map((row) => row.products.join(', ').length)),
+        platform: Math.max('Platform'.length, ...rows.map((row) => row.platforms.join(', ').length)),
+        versions: Math.max('Firmware'.length, ...rows.map((row) => firmwareVersions(row).join(', ').length)),
     };
 
     const line = [
@@ -218,13 +220,15 @@ function printTable(rows, sources, outputPath) {
     console.log('-'.repeat(line.length));
 
     for (const row of rows) {
-        console.log([
-            row.uuid.padEnd(widths.uuid),
-            row.models.join(', ').padEnd(widths.model),
-            row.products.join(', ').padEnd(widths.product),
-            row.platforms.join(', ').padEnd(widths.platform),
-            firmwareVersions(row).join(', ').padEnd(widths.versions),
-        ].join('  '));
+        console.log(
+            [
+                row.uuid.padEnd(widths.uuid),
+                row.models.join(', ').padEnd(widths.model),
+                row.products.join(', ').padEnd(widths.product),
+                row.platforms.join(', ').padEnd(widths.platform),
+                firmwareVersions(row).join(', ').padEnd(widths.versions),
+            ].join('  '),
+        );
     }
 
     console.log('');
@@ -232,7 +236,7 @@ function printTable(rows, sources, outputPath) {
 }
 
 function firmwareVersions(row) {
-    return [...new Set(row.occurrences.map(occurrence => occurrence.source.firmwareVersion || 'manual'))].sort();
+    return [...new Set(row.occurrences.map((occurrence) => occurrence.source.firmwareVersion || 'manual'))].sort();
 }
 
 async function main() {
@@ -247,18 +251,18 @@ async function main() {
         sources.push({ version: null, path: firmwarePath });
     }
 
-    const missingSources = sources.filter(source => !existsSync(source.path));
+    const missingSources = sources.filter((source) => !existsSync(source.path));
     if (missingSources.length) {
         throw new Error(
             'Missing firmware cache files:\n' +
-            missingSources.map(source => `  - ${source.path}`).join('\n') +
-            '\nRun npm test and accept the firmware download prompt, or pass --firmware <zip>.'
+                missingSources.map((source) => `  - ${source.path}`).join('\n') +
+                '\nRun npm test and accept the firmware download prompt, or pass --firmware <zip>.',
         );
     }
 
     const extracted = [];
     for (const source of sources) {
-        extracted.push(...await extractHardwareIds(source));
+        extracted.push(...(await extractHardwareIds(source)));
     }
 
     const hardwareIds = mergeRows(extracted);
@@ -276,7 +280,7 @@ async function main() {
     printTable(hardwareIds, sources, opts.output);
 }
 
-main().catch(error => {
+main().catch((error) => {
     console.error(error.stack || error.message);
     process.exitCode = 1;
 });

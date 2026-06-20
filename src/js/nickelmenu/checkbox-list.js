@@ -140,7 +140,7 @@ export function renderNmCheckboxList(container, items) {
                 text.textContent = item.summaryLabel || '';
 
                 summary.append(icon, text);
-                summary.addEventListener('click', event => {
+                summary.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     item.onAction(event.currentTarget);
@@ -152,7 +152,7 @@ export function renderNmCheckboxList(container, items) {
                 action.className = 'nm-config-action secondary';
                 action.textContent = item.actionLabel;
                 action.setAttribute('aria-label', item.actionAriaLabel || item.actionLabel);
-                action.addEventListener('click', event => {
+                action.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     item.onAction(event.currentTarget);
@@ -178,11 +178,11 @@ export function renderNmCheckboxList(container, items) {
                 help.target = '_blank';
                 help.rel = 'noopener';
                 help.title = 'Learn more';
-                help.addEventListener('click', event => event.stopPropagation());
+                help.addEventListener('click', (event) => event.stopPropagation());
             } else {
                 help.type = 'button';
                 help.title = 'Show details';
-                help.addEventListener('click', event => {
+                help.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     showHint(item.title, item.hint);

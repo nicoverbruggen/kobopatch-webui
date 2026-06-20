@@ -40,7 +40,7 @@ function showEnvironmentPill() {
     const pill = $('env-pill');
     if (!pill) return;
 
-    const label = isDevBuild() ? 'Under Development' : (isPreviewDeploy() ? 'Preview' : null);
+    const label = isDevBuild() ? 'Under Development' : isPreviewDeploy() ? 'Preview' : null;
     if (!label) return;
 
     pill.textContent = label;

@@ -39,11 +39,7 @@ test('parseKoboVersion does not identify devices by serial prefix alone', () => 
 });
 
 test('parseKoboVersion accepts known R-prefixed serials as refurbished variants', () => {
-    const info = parseKoboVersion(versionLine(
-        'R418ABC123456',
-        '4.38.21908',
-        '00000000-0000-0000-0000-000000000388'
-    ));
+    const info = parseKoboVersion(versionLine('R418ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000388'));
 
     assert.equal(info.serialPrefix, 'N418');
     assert.equal(info.rawSerialPrefix, 'R418');
@@ -55,11 +51,7 @@ test('parseKoboVersion accepts known R-prefixed serials as refurbished variants'
 });
 
 test('parseKoboVersion flags known UUIDs with mismatched serial prefixes', () => {
-    const info = parseKoboVersion(versionLine(
-        'N418ABC123456',
-        '4.38.21908',
-        '00000000-0000-0000-0000-000000000390'
-    ));
+    const info = parseKoboVersion(versionLine('N418ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000390'));
 
     assert.equal(info.serialPrefix, 'N428');
     assert.equal(info.model, 'Kobo Libra Colour');
@@ -70,11 +62,7 @@ test('parseKoboVersion flags known UUIDs with mismatched serial prefixes', () =>
 });
 
 test('parseKoboVersion reports unknown hardware UUIDs even with a known-looking serial prefix', () => {
-    const info = parseKoboVersion(versionLine(
-        'N418ABC123456',
-        '4.38.21908',
-        UNKNOWN_HARDWARE_ID
-    ));
+    const info = parseKoboVersion(versionLine('N418ABC123456', '4.38.21908', UNKNOWN_HARDWARE_ID));
 
     assert.equal(info.serialPrefix, 'N418');
     assert.equal(info.model, 'Unknown Kobo (N418)');
@@ -83,11 +71,7 @@ test('parseKoboVersion reports unknown hardware UUIDs even with a known-looking 
 });
 
 test('parseKoboVersion flags unknown serial prefixes against known hardware UUIDs', () => {
-    const info = parseKoboVersion(versionLine(
-        'X999ABC123456',
-        '4.38.21908',
-        '00000000-0000-0000-0000-000000000388'
-    ));
+    const info = parseKoboVersion(versionLine('X999ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000388'));
 
     assert.equal(info.serialPrefix, 'N418');
     assert.equal(info.model, 'Kobo Libra 2');
@@ -96,11 +80,7 @@ test('parseKoboVersion flags unknown serial prefixes against known hardware UUID
 });
 
 test('parseKoboVersion prefers revision-specific hardware UUID model names', () => {
-    const info = parseKoboVersion(versionLine(
-        'N709ABC123456',
-        '4.38.21908',
-        '00000000-0000-0000-0000-000000000381'
-    ));
+    const info = parseKoboVersion(versionLine('N709ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000381'));
 
     assert.equal(info.serialPrefix, 'N709');
     assert.equal(info.model, 'Kobo Aura ONE Limited Edition');
@@ -109,11 +89,7 @@ test('parseKoboVersion prefers revision-specific hardware UUID model names', () 
 });
 
 test('parseKoboVersion requires refurbished serial numbers to match the expected digits', () => {
-    const info = parseKoboVersion(versionLine(
-        'R999ABC123456',
-        '4.38.21908',
-        '00000000-0000-0000-0000-000000000388'
-    ));
+    const info = parseKoboVersion(versionLine('R999ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000388'));
 
     assert.equal(info.serialPrefix, 'N418');
     assert.equal(info.model, 'Kobo Libra 2');
@@ -188,14 +164,14 @@ test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
         channel: 'kobo7',
         model: 'Kobo Forma',
     });
-    assert.equal(Object.values(koboHardwareIds).every(info => info.channel), true);
+    assert.equal(
+        Object.values(koboHardwareIds).every((info) => info.channel),
+        true,
+    );
 });
 
 test('parseKoboVersion rejects malformed version files', () => {
-    assert.throws(
-        () => parseKoboVersion('N428000000000,4.9.77,4.45.23646'),
-        /Expected 6 comma-separated fields/
-    );
+    assert.throws(() => parseKoboVersion('N428000000000,4.9.77,4.45.23646'), /Expected 6 comma-separated fields/);
 });
 
 test('parseKoboVersion marks firmware before 4.6 as incompatible', () => {

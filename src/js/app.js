@@ -32,7 +32,9 @@ const state = Object.assign(new Session(), {
 
 // Async resources shared across flows; awaited where needed.
 state.softwareUrlsReady = loadSoftwareUrls();
-state.availablePatchesReady = scanAvailablePatches().then(p => { state.availablePatches = p; });
+state.availablePatchesReady = scanAvailablePatches().then((p) => {
+    state.availablePatches = p;
+});
 state.blacklistReady = state.patchUI.loadBlacklist();
 
 // Flows and shell screens. Order matters only for the explicit dependency

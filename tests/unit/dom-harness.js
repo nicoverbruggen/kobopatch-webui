@@ -15,14 +15,31 @@ import { JSDOM } from 'jsdom';
 // Every step <div> navigation.js looks up at module load, plus the generic
 // flow-step ids the step-machine specs register their test flows against.
 export const STEP_IDS = [
-    'step-connect', 'step-connect-instructions', 'step-manual-version', 'step-device',
-    'step-mode', 'step-nickelmenu', 'step-nm-manual-remove', 'step-nm-preset-conflict', 'step-nm-features',
-    'step-nm-backup', 'step-nm-review', 'step-nm-installing', 'step-nm-done',
-    'step-patches', 'step-firmware', 'step-building', 'step-done', 'step-error',
-    'step-test-a', 'step-test-b', 'step-test-building', 'step-test-done',
+    'step-connect',
+    'step-connect-instructions',
+    'step-manual-version',
+    'step-device',
+    'step-mode',
+    'step-nickelmenu',
+    'step-nm-manual-remove',
+    'step-nm-preset-conflict',
+    'step-nm-features',
+    'step-nm-backup',
+    'step-nm-review',
+    'step-nm-installing',
+    'step-nm-done',
+    'step-patches',
+    'step-firmware',
+    'step-building',
+    'step-done',
+    'step-error',
+    'step-test-a',
+    'step-test-b',
+    'step-test-building',
+    'step-test-done',
 ];
 
-const stepDivs = STEP_IDS.map(id => `<div id="${id}" hidden></div>`).join('');
+const stepDivs = STEP_IDS.map((id) => `<div id="${id}" hidden></div>`).join('');
 
 // The patch editor dialog skeleton, matching the selectors patch-editor.js queries.
 const editorDialog = `
@@ -37,18 +54,21 @@ const editorDialog = `
   </div>
 </dialog>`;
 
-const dom = new JSDOM(
-    `<!doctype html><html><body><nav id="step-nav" hidden><ol></ol></nav>${stepDivs}${editorDialog}</body></html>`,
-    { pretendToBeVisual: true },
-);
+const dom = new JSDOM(`<!doctype html><html><body><nav id="step-nav" hidden><ol></ol></nav>${stepDivs}${editorDialog}</body></html>`, {
+    pretendToBeVisual: true,
+});
 
 // jsdom's <dialog> showModal/close are unreliable across versions; provide a
 // minimal deterministic implementation so open state and the `close` event
 // (which the editor relies on to reset its state) behave predictably.
 const Dialog = dom.window.HTMLDialogElement;
 if (Dialog) {
-    Dialog.prototype.show = function show() { this.open = true; };
-    Dialog.prototype.showModal = function showModal() { this.open = true; };
+    Dialog.prototype.show = function show() {
+        this.open = true;
+    };
+    Dialog.prototype.showModal = function showModal() {
+        this.open = true;
+    };
     Dialog.prototype.close = function close(returnValue) {
         if (returnValue !== undefined) this.returnValue = returnValue;
         this.open = false;

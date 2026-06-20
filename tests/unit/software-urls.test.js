@@ -1,11 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-    getSoftwareUrl,
-    getChannelsForVersion,
-    compareFirmwareChannelsDescending,
-} from '../../src/js/kobo/software-urls.js';
+import { getSoftwareUrl, getChannelsForVersion, compareFirmwareChannelsDescending } from '../../src/js/kobo/software-urls.js';
 
 // The getters read the manifest from window.FIRMWARE_DOWNLOADS (set by
 // loadSoftwareUrls in the app). Seed that global directly here so the lookups
@@ -41,23 +37,21 @@ test('getChannelsForVersion maps channel manifests to channel labels', () => {
     const channels = getChannelsForVersion('4.45.23646');
     assert.equal(channels.length, 2);
 
-    assert.deepEqual(channels.map(c => c.channel), ['kobo14', 'kobo12']);
+    assert.deepEqual(
+        channels.map((c) => c.channel),
+        ['kobo14', 'kobo12'],
+    );
 
-    const kobo12 = channels.find(d => d.channel === 'kobo12');
+    const kobo12 = channels.find((d) => d.channel === 'kobo12');
     assert.equal(kobo12.label, 'kobo12: Kobo Clara BW (N365), Kobo Clara Colour (N367)');
 
-    const kobo14 = channels.find(d => d.channel === 'kobo14');
+    const kobo14 = channels.find((d) => d.channel === 'kobo14');
     assert.equal(kobo14.label, 'kobo14: Kobo Clara BW (P365)');
 });
 
 test('compareFirmwareChannelsDescending sorts kobo channels from newest to oldest', () => {
     const channels = ['kobo12', 'kobo3', 'kobo14', 'kobo13'];
-    assert.deepEqual(channels.sort(compareFirmwareChannelsDescending), [
-        'kobo14',
-        'kobo13',
-        'kobo12',
-        'kobo3',
-    ]);
+    assert.deepEqual(channels.sort(compareFirmwareChannelsDescending), ['kobo14', 'kobo13', 'kobo12', 'kobo3']);
 });
 
 test('getChannelsForVersion returns [] for an unknown version or missing manifest', () => {

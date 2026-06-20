@@ -31,7 +31,7 @@ export default [
             'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
             'no-undef': 'error',
             'no-constant-condition': 'warn',
-            'eqeqeq': ['error', 'always'],
+            eqeqeq: ['error', 'always'],
             'no-var': 'error',
             'prefer-const': 'warn',
         },
@@ -52,12 +52,6 @@ export default [
         },
     },
     {
-        ignores: [
-            'src/js/wasm_exec.js',
-            'dist/**',
-            'node_modules/**',
-            'tools/kobopatch-wasm/go/**',
-            'tools/kobopatch-wasm/kobopatch-src/**',
-        ],
+        ignores: ['src/js/wasm_exec.js', 'dist/**', 'node_modules/**', 'tools/kobopatch-wasm/go/**', 'tools/kobopatch-wasm/kobopatch-src/**'],
     },
 ];

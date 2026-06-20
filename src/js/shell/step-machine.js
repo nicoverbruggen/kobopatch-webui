@@ -2,17 +2,14 @@ import { $ } from './dom.js';
 import { setNavLabels, setNavStep } from './navigation.js';
 
 // Steps owned by the shell (not a flow): shared parts of the wizard.
-const SHELL_STEP_IDS = [
-    'step-connect', 'step-connect-instructions', 'step-manual-version', 'step-device',
-    'step-mode', 'step-error',
-];
+const SHELL_STEP_IDS = ['step-connect', 'step-connect-instructions', 'step-manual-version', 'step-device', 'step-mode', 'step-error'];
 
 // Accumulated domIds registered by createFlow calls.
 const flowStepIds = new Set();
 
 function buildAllSteps() {
     const ids = [...SHELL_STEP_IDS, ...flowStepIds];
-    return ids.map(id => $(id));
+    return ids.map((id) => $(id));
 }
 
 let activeFlow = null;
@@ -35,7 +32,7 @@ export function createFlow({ id, steps }) {
     }
 
     function findStep(stepId) {
-        return steps.find(s => s.id === stepId);
+        return steps.find((s) => s.id === stepId);
     }
 
     async function go(stepId, ctx, options = {}) {
@@ -65,7 +62,7 @@ export function createFlow({ id, steps }) {
 
         const allSteps = buildAllSteps();
         for (const s of allSteps) {
-            s.hidden = (s !== $(step.domId));
+            s.hidden = s !== $(step.domId);
         }
 
         if (step.onEnter && !options.skipOnEnter) {

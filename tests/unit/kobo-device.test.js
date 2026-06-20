@@ -157,9 +157,7 @@ test('connect verifies write access with a small probe after reading the version
     assert.equal(info.model, 'Kobo Libra Colour');
     assert.equal(await device.pathExists(['.kobopatch-webui-probe']), false);
 
-    assert.deepEqual(root.removals, [
-        { name: '.kobopatch-webui-probe', options: {} },
-    ]);
+    assert.deepEqual(root.removals, [{ name: '.kobopatch-webui-probe', options: {} }]);
 });
 
 test('connect reports write-probe failures as device write errors and disconnects', async () => {
@@ -172,10 +170,7 @@ test('connect reports write-probe failures as device write errors and disconnect
         file.createWritable = async () => ({
             async write() {},
             async close() {
-                throw domError(
-                    'NotFoundError',
-                    'A requested file or directory could not be found at the time an operation was processed'
-                );
+                throw domError('NotFoundError', 'A requested file or directory could not be found at the time an operation was processed');
             },
         });
         root.children.set(name, file);
@@ -195,7 +190,7 @@ test('connect reports write-probe failures as device write errors and disconnect
             assert.equal(err.devicePath, '.kobopatch-webui-probe');
             assert.equal(err.deviceOperation, 'write probe');
             return true;
-        }
+        },
     );
     assert.equal(device.directoryHandle, null);
     assert.equal(device.deviceInfo, null);
@@ -205,23 +200,15 @@ test('verifyWriteAccess removes the probe file even when readback verification f
     const { device, root } = createDevice();
     device.readFile = async () => 'different contents';
 
-    await assert.rejects(
-        () => device.verifyWriteAccess(),
-        /The write probe could not be read back from the Kobo drive/
-    );
+    await assert.rejects(() => device.verifyWriteAccess(), /The write probe could not be read back from the Kobo drive/);
 
     assert.equal(await device.pathExists(['.kobopatch-webui-probe']), false);
-    assert.deepEqual(root.removals, [
-        { name: '.kobopatch-webui-probe', options: {} },
-    ]);
+    assert.deepEqual(root.removals, [{ name: '.kobopatch-webui-probe', options: {} }]);
 });
 
 test('connect skips the write probe for incompatible firmware', async () => {
     const root = new MockDirectoryHandle('root');
-    await root.addFile([
-        '.kobo',
-        'version',
-    ], 'N4280A0000000,4.9.77,5.0.0,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390');
+    await root.addFile(['.kobo', 'version'], 'N4280A0000000,4.9.77,5.0.0,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390');
     window.showDirectoryPicker = async () => root;
 
     const device = new KoboDevice();
@@ -247,7 +234,7 @@ test('writeFile rejects invalid path segments before calling the filesystem API'
 
     await assert.rejects(
         () => device.writeFile(['.adds', 'nm', ''], bytes('bad')),
-        /Invalid device path for write: \.adds\/nm\/ \(path segments cannot be empty\)/
+        /Invalid device path for write: \.adds\/nm\/ \(path segments cannot be empty\)/,
     );
     assert.equal(root.children.has('.adds'), false);
 });
@@ -262,14 +249,11 @@ test('writeFile adds target path context to filesystem API failures', async () =
     await assert.rejects(
         () => device.writeFile(['.adds', 'nm', 'webui-preset'], bytes('items')),
         (err) => {
-            assert.match(
-                err.message,
-                /Could not write \.adds\/nm\/webui-preset while opening or creating the target file: Name is not allowed/
-            );
+            assert.match(err.message, /Could not write \.adds\/nm\/webui-preset while opening or creating the target file: Name is not allowed/);
             assert.equal(err.cause.name, 'TypeError');
             assert.equal(err.devicePhase, 'opening or creating the target file');
             return true;
-        }
+        },
     );
 });
 
@@ -279,27 +263,21 @@ test('writeFile identifies commit failures separately from data writes', async (
     target.createWritable = async () => ({
         async write() {},
         async close() {
-            throw domError(
-                'NotFoundError',
-                'A requested file or directory could not be found at the time an operation was processed'
-            );
+            throw domError('NotFoundError', 'A requested file or directory could not be found at the time an operation was processed');
         },
     });
 
     await assert.rejects(
         () => device.writeFile(['.kobo', 'KoboRoot.tgz'], bytes('tgz')),
         (err) => {
-            assert.match(
-                err.message,
-                /Could not write \.kobo\/KoboRoot\.tgz while committing the write: A requested file or directory/
-            );
+            assert.match(err.message, /Could not write \.kobo\/KoboRoot\.tgz while committing the write: A requested file or directory/);
             assert.equal(err.cause.name, 'NotFoundError');
             assert.equal(err.devicePath, '.kobo/KoboRoot.tgz');
             assert.equal(err.deviceOperation, 'write');
             assert.equal(err.deviceWrite, true);
             assert.equal(err.devicePhase, 'committing the write');
             return true;
-        }
+        },
     );
 });
 
@@ -311,9 +289,7 @@ test('removeEntry removes a non-recursive entry directly', async () => {
     await device.removeEntry(['.adds', 'nm', 'items']);
 
     assert.equal(await device.pathExists(['.adds', 'nm', 'items']), false);
-    assert.deepEqual(nmDir.removals, [
-        { name: 'items', options: {} },
-    ]);
+    assert.deepEqual(nmDir.removals, [{ name: 'items', options: {} }]);
 });
 
 test('removeEntry deletes a directory tree one entry at a time, never using the native recursive flag', async () => {
@@ -324,7 +300,7 @@ test('removeEntry deletes a directory tree one entry at a time, never using the 
 
     // Fail loudly if anything ever asks for a native recursive removal — the
     // whole point is to delete entries one-by-one.
-    const reject = handle => {
+    const reject = (handle) => {
         const native = handle.removeEntry.bind(handle);
         handle.removeEntry = async (name, options = {}) => {
             assert.ok(!options.recursive, `unexpected recursive removeEntry on ${name}`);
@@ -367,9 +343,7 @@ test('removeEntry treats an already-missing directory as a successful removal', 
     const { device, root } = createDevice();
     await root.addDirectory(['.adds']);
 
-    await assert.doesNotReject(
-        device.removeEntry(['.adds', 'koreader'], { recursive: true }),
-    );
+    await assert.doesNotReject(device.removeEntry(['.adds', 'koreader'], { recursive: true }));
 });
 
 test('collectExistingEntries reads files and recursively collects directories', async () => {
@@ -379,23 +353,27 @@ test('collectExistingEntries reads files and recursively collects directories', 
     await root.addFile(['.adds', 'nm', 'icons', 'cog.png'], 'icon');
     const progress = [];
 
-    const entries = await device.collectExistingEntries([
-        ['.kobo', 'Kobo', 'Kobo eReader.conf'],
-        ['.adds', 'nm'],
-        ['missing', 'file.txt'],
-    ], message => progress.push(message));
+    const entries = await device.collectExistingEntries(
+        [
+            ['.kobo', 'Kobo', 'Kobo eReader.conf'],
+            ['.adds', 'nm'],
+            ['missing', 'file.txt'],
+        ],
+        (message) => progress.push(message),
+    );
 
-    assert.deepEqual(entries.map(entry => entry.path), [
-        '.kobo/Kobo/Kobo eReader.conf',
-        '.adds/nm/items',
-        '.adds/nm/icons/cog.png',
-    ]);
-    assert.deepEqual(entries.map(entry => text(entry.data)), ['conf', 'items', 'icon']);
-    assert.deepEqual(progress.map(message => message.path), [
-        '.kobo/Kobo/Kobo eReader.conf',
-        '.adds/nm/items',
-        '.adds/nm/icons/cog.png',
-    ]);
+    assert.deepEqual(
+        entries.map((entry) => entry.path),
+        ['.kobo/Kobo/Kobo eReader.conf', '.adds/nm/items', '.adds/nm/icons/cog.png'],
+    );
+    assert.deepEqual(
+        entries.map((entry) => text(entry.data)),
+        ['conf', 'items', 'icon'],
+    );
+    assert.deepEqual(
+        progress.map((message) => message.path),
+        ['.kobo/Kobo/Kobo eReader.conf', '.adds/nm/items', '.adds/nm/icons/cog.png'],
+    );
 });
 
 test('readFile and pathExists return null or false for missing paths without creating directories', async () => {
@@ -422,7 +400,7 @@ test('readFile throws non-missing filesystem errors with path context', async ()
             assert.equal(err.deviceOperation, 'read');
             assert.equal(err.deviceWrite, false);
             return true;
-        }
+        },
     );
 });
 
@@ -444,7 +422,7 @@ test('listDirectory throws non-missing filesystem errors with path context', asy
             assert.equal(err.devicePath, '.adds');
             assert.equal(err.deviceOperation, 'list');
             return true;
-        }
+        },
     );
 });
 
@@ -463,7 +441,7 @@ test('pathExists throws non-missing filesystem errors with path context', async 
             assert.equal(err.devicePath, '.adds/nm');
             assert.equal(err.deviceOperation, 'check existence of');
             return true;
-        }
+        },
     );
 });
 
@@ -476,6 +454,6 @@ test('collectExistingEntries throws when an existing backup file cannot be read'
 
     await assert.rejects(
         () => device.collectExistingEntries([['.kobo', 'Kobo', 'Kobo eReader.conf']]),
-        /Could not read \.kobo\/Kobo\/Kobo eReader\.conf: Could not read file/
+        /Could not read \.kobo\/Kobo\/Kobo eReader\.conf: Could not read file/,
     );
 });

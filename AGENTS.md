@@ -46,7 +46,9 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 - `npm run test:unit` runs the frontend unit tests.
 - `npm run lint` runs ESLint.
 - `npm run build` builds the frontend.
-- `npm run test` runs lint, unit tests, build, WASM checks, patch blacklist checks, E2E tests, and screenshot capture.
+- `npm run verify` runs the full pipeline: dependency install, Prettier format check, lint, unit tests, WASM build, web build, resource validation, patch blacklist check, WASM integration test, E2E tests, and screenshot capture.
+- `npm run test` is the fast subset of `verify` for ordinary frontend work: Prettier format check, lint, unit tests, web build, resource validation, E2E tests, and screenshots. It skips the initial dependency install and the WASM build/test phases (it reuses the already-built `kobopatch.wasm`). Both share `scripts/verify.mjs` (`--quick` selects the subset).
+- `npm run format` rewrites JS/MJS with Prettier; `npm run format:check` verifies formatting without writing (used as the first phase of `verify`/`test`).
 - `npm run test:e2e` runs only the Playwright E2E suite.
 - `npm run test:e2e:fresh` removes `dist`, rebuilds the app and required WASM artifact, then runs Playwright without the standalone WASM test suites.
 - `npm run screenshots` captures mobile and desktop screenshots for visual review.
@@ -61,5 +63,5 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 - Various `npm` operations will not work correctly inside of a sandbox.
 - Playwright always needs to run outside of the sandbox. Use escalation for `npm run test:e2e`, `npm run test:e2e:fresh`, and any command that invokes Playwright, because it needs access to its browser cache/lock files under the user profile.
 - After completing feature work, run the **entire** E2E suite with `npm run test:e2e:fresh` so `dist` is rebuilt from scratch before Playwright verifies the app. Run *all* tests — never just a `-g` filtered subset — because a change can break seemingly unrelated specs (e.g. a shared device-write path or written-files assumption), and only a full run catches that.
-- Skip the WASM tests (`npm run test:wasm`, the standalone `test:patches*` suites, and the WASM phases of `npm run test`) unless the change touches `tools/kobopatch-wasm/`. The WASM patcher is built from a pinned upstream source and updated very infrequently, so re-running it for unrelated frontend changes only adds minutes. Use `npm run test:e2e:fresh` (which skips the standalone WASM suites) for ordinary verification.
+- Skip the WASM tests (`npm run test:wasm`, the standalone `test:patches*` suites, and the WASM phases of `npm run verify`) unless the change touches `tools/kobopatch-wasm/`. The WASM patcher is built from a pinned upstream source and updated very infrequently, so re-running it for unrelated frontend changes only adds minutes. `npm run test` (the quick suite) already excludes those WASM phases, so it is the right default for frontend work; reserve `npm run verify` for changes that touch the WASM patcher.
 - The worktree may contain unrelated changes. Do not revert user changes while making a focused patch.

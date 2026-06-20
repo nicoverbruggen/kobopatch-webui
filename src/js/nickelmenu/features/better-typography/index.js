@@ -16,7 +16,8 @@ export default {
     id: 'better-typography',
     section: 'Text and typography',
     title: 'Enable better typography',
-    description: 'Turns on Kobo\'s optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later.',
+    description:
+        "Turns on Kobo's optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later.",
     default: true,
 
     // Detection is conf-only (the revertable webkitTextRendering setting). The
@@ -28,18 +29,15 @@ export default {
         mode: 'optional',
         title: 'Better typography',
         removeLabel: 'Turn off better typography',
-        description: 'Removes the setting that enables correct kerning and ligatures in certain books, and the Typography menu script. Your default font and reading settings are not changed.',
-        paths: [
-            { path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] },
-        ],
+        description:
+            'Removes the setting that enables correct kerning and ligatures in certain books, and the Typography menu script. Your default font and reading settings are not changed.',
+        paths: [{ path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] }],
     },
 
     // Ship the on-device toggle script. install() runs only for selected
     // features, so the script lands exactly when the feature is installed.
     async install(ctx) {
-        return [
-            { path: '.adds/nm/scripts/toggle_typography.sh', data: await ctx.asset('scripts/toggle_typography.sh') },
-        ];
+        return [{ path: '.adds/nm/scripts/toggle_typography.sh', data: await ctx.asset('scripts/toggle_typography.sh') }];
     },
 
     // Contribute the Toggle-menu toggle that flips optimized WebKit rendering
@@ -49,10 +47,12 @@ export default {
     // the toggle script is shipped. Its position is set by 'typography' in
     // ../menu-order.js.
     menuItems() {
-        return [{
-            id: 'typography',
-            lines: ['menu_item :main :Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
-        }];
+        return [
+            {
+                id: 'typography',
+                lines: ['menu_item :main :Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
+            },
+        ];
     },
 
     // Declarative Kobo eReader.conf changes, applied by the installer when a
@@ -65,11 +65,17 @@ export default {
     // such marker — they are general preferences we apply once but never claw back.
     confSettings(ctx = {}) {
         const settings = [
-            { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null },
+            {
+                section: 'Reading',
+                key: 'webkitTextRendering',
+                value: 'optimizeLegibility',
+                revertable: true,
+                revertTo: null,
+            },
             { section: 'Reading', key: 'readingAlignment', value: 'Left' },
         ];
 
-        const additionalFontsInstalled = (ctx.features || []).some(f => f.id === 'additional-fonts');
+        const additionalFontsInstalled = (ctx.features || []).some((f) => f.id === 'additional-fonts');
         if (additionalFontsInstalled) {
             settings.push({ section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' });
         }

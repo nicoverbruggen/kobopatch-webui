@@ -211,10 +211,7 @@ async function build() {
         const wasmFile = join(distDir, 'wasm', 'kobopatch.wasm');
         if (existsSync(wasmFile)) {
             const wasmHash = createHash('md5').update(readFileSync(wasmFile)).digest('hex').slice(0, 8);
-            workerContent = workerContent.replace(
-                "kobopatch.wasm'",
-                `kobopatch.wasm?h=${wasmHash}'`
-            );
+            workerContent = workerContent.replace("kobopatch.wasm'", `kobopatch.wasm?h=${wasmHash}'`);
         }
         writeFileSync(join(distDir, 'js', 'workers', 'patch-worker.js'), workerContent);
     }
@@ -232,8 +229,7 @@ async function build() {
     // src/html/<path>. Repeats until no directives remain, supporting nesting.
     const includeRe = /<!--\s*include:\s*([\w./-]+)\s*-->/g;
     while (includeRe.test(html)) {
-        html = html.replace(includeRe,
-            (_, p) => readFileSync(join(srcDir, 'html', p), 'utf-8'));
+        html = html.replace(includeRe, (_, p) => readFileSync(join(srcDir, 'html', p), 'utf-8'));
     }
 
     // Inline critical.css into the <head> so :root tokens and loading styles
@@ -243,30 +239,21 @@ async function build() {
         loader: 'css',
         minify: !isDev && !isWatch,
     });
-    html = html.replace(
-        '<!-- @critical-css -->',
-        `<style>${criticalMinified.trimEnd()}</style>`
-    );
+    html = html.replace('<!-- @critical-css -->', `<style>${criticalMinified.trimEnd()}</style>`);
 
     // Remove all <script src="js/..."> tags
     html = html.replace(/\s*<script src="js\/[^"]*"><\/script>\n/g, '');
     // Add the bundle script before </body>
-    html = html.replace(
-        '</body>',
-        `    <script src="/bundle.js?h=${bundleHash}"></script>\n</body>`
-    );
+    html = html.replace('</body>', `    <script src="/bundle.js?h=${bundleHash}"></script>\n</body>`);
 
     // Update CSS cache bust
-    html = html.replace(
-        /css\/style\.css(?:\?[^"]*)?/,
-        `css/style.css?h=${cssHash}`
-    );
+    html = html.replace(/css\/style\.css(?:\?[^"]*)?/, `css/style.css?h=${cssHash}`);
 
     // Inject version string and link
     html = html.replace('<span id="commit-hash"></span>', `<span id="commit-hash">Version ${versionStr}</span>`);
     html = html.replace(
         'id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui"',
-        `id="commit-link" class="site-footer-link" href="${versionLink}"`
+        `id="commit-link" class="site-footer-link" href="${versionLink}"`,
     );
 
     writeFileSync(join(distDir, 'index.html'), html);

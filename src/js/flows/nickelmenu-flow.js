@@ -3,9 +3,7 @@ import { setupCardRadios } from '../shell/navigation.js';
 import { renderNmCheckboxList } from '../nickelmenu/checkbox-list.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
-import {
-    NICKELMENU_FEATURES,
-} from '../nickelmenu/installer.js';
+import { NICKELMENU_FEATURES } from '../nickelmenu/installer.js';
 import { installablesManifest } from '../nickelmenu/installables.js';
 import {
     createDefaultMenuCustomization,
@@ -19,9 +17,7 @@ import {
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
 } from '../nickelmenu/probes.js';
-import {
-    nmReviewModel,
-} from '../nickelmenu/selection.js';
+import { nmReviewModel } from '../nickelmenu/selection.js';
 import {
     cloneMenuCustomization,
     getMenuCustomizationSummaryItem,
@@ -33,15 +29,8 @@ import {
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
-import {
-    shouldOfferNmBackup,
-    prepareNmBackup,
-} from './nickelmenu-backup.js';
-import {
-    executeNmInstall as executeNmInstallFn,
-    renderNmDoneStatus,
-    renderReviewNotices,
-} from './nickelmenu-execute.js';
+import { shouldOfferNmBackup, prepareNmBackup } from './nickelmenu-backup.js';
+import { executeNmInstall as executeNmInstallFn, renderNmDoneStatus, renderReviewNotices } from './nickelmenu-execute.js';
 
 const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
 
@@ -84,23 +73,48 @@ export function initNickelMenu(state) {
         'btn-nm-customize-save': btnNmCustomizeSave,
         'nm-option-preset-title': nmOptionPresetTitle,
     } = collect([
-        'step-nickelmenu', 'step-nm-backup', 'step-nm-done',
-        'nm-config-options', 'nm-uninstall-options',
-        'btn-nm-back', 'btn-nm-next', 'btn-nm-preset-conflict-back', 'btn-nm-preset-conflict-next',
-        'btn-nm-features-back', 'btn-nm-features-next', 'btn-nm-backup-back', 'btn-nm-backup-next',
-        'btn-nm-review-back', 'btn-nm-write', 'btn-nm-download',
-        'nm-backup-intro', 'nm-backup-options', 'nm-backup-local-note', 'nm-manual-backup-instructions',
-        'nm-preset-conflict-summary', 'nm-preset-conflict-list', 'nm-preset-conflict-ack',
-        'nm-customize-dialog', 'nm-customize-label', 'nm-customize-counter', 'nm-customize-status',
-        'nm-customize-presets', 'nm-customize-upload', 'nm-customize-upload-preview', 'nm-customize-upload-name',
-        'btn-nm-customize-close', 'btn-nm-customize-cancel', 'btn-nm-customize-reset', 'btn-nm-customize-save',
+        'step-nickelmenu',
+        'step-nm-backup',
+        'step-nm-done',
+        'nm-config-options',
+        'nm-uninstall-options',
+        'btn-nm-back',
+        'btn-nm-next',
+        'btn-nm-preset-conflict-back',
+        'btn-nm-preset-conflict-next',
+        'btn-nm-features-back',
+        'btn-nm-features-next',
+        'btn-nm-backup-back',
+        'btn-nm-backup-next',
+        'btn-nm-review-back',
+        'btn-nm-write',
+        'btn-nm-download',
+        'nm-backup-intro',
+        'nm-backup-options',
+        'nm-backup-local-note',
+        'nm-manual-backup-instructions',
+        'nm-preset-conflict-summary',
+        'nm-preset-conflict-list',
+        'nm-preset-conflict-ack',
+        'nm-customize-dialog',
+        'nm-customize-label',
+        'nm-customize-counter',
+        'nm-customize-status',
+        'nm-customize-presets',
+        'nm-customize-upload',
+        'nm-customize-upload-preview',
+        'nm-customize-upload-name',
+        'btn-nm-customize-close',
+        'btn-nm-customize-cancel',
+        'btn-nm-customize-reset',
+        'btn-nm-customize-save',
         'nm-option-preset-title',
     ]);
 
     // Gate runtime-available installables (reading apps, NickelClock, ...) on the
     // baked-in manifest so unavailable add-ons stay hidden from the feature list.
     for (const [id, info] of Object.entries(installablesManifest())) {
-        const feature = NICKELMENU_FEATURES.find(f => f.id === id);
+        const feature = NICKELMENU_FEATURES.find((f) => f.id === id);
         if (feature && info.available) {
             feature.available = true;
             feature.version = info.version;
@@ -153,7 +167,10 @@ export function initNickelMenu(state) {
             back: () => 'config',
             onEnter: async () => {
                 nmPresetConflictSummary.textContent = TL.STATUS.NM_PRESET_CONFLICT;
-                populateList(nmPresetConflictList, detectedPresetConflictsList.map(c => c.label));
+                populateList(
+                    nmPresetConflictList,
+                    detectedPresetConflictsList.map((c) => c.label),
+                );
                 nmPresetConflictAck.checked = false;
                 btnNmPresetConflictNext.disabled = true;
             },
@@ -174,7 +191,7 @@ export function initNickelMenu(state) {
             domId: 'step-nm-backup',
             navLabels: resolveNavLabels,
             navIndex: 4,
-            back: (ctx) => ctx.nickelMenuOption === 'preset' ? 'features' : 'config',
+            back: (ctx) => (ctx.nickelMenuOption === 'preset' ? 'features' : 'config'),
             onEnter: async () => {
                 const canCreateBackup = shouldOfferNmBackup(state);
                 if (canCreateBackup && !state.nmBackupChoice) {
@@ -190,7 +207,7 @@ export function initNickelMenu(state) {
                 btnNmBackupBack.disabled = false;
                 btnNmBackupNext.textContent = 'Continue \u203A';
                 nmBackupIntro.textContent = canCreateBackup
-                    ? 'Before continuing, it\'s highly recommended that you let the Web UI make an automatic backup of important system files. You can do that here.'
+                    ? "Before continuing, it's highly recommended that you let the Web UI make an automatic backup of important system files. You can do that here."
                     : 'Manual mode cannot create a backup for you, but it is worth making a backup of some important device files first.';
                 nmBackupOptions.hidden = !canCreateBackup;
                 nmBackupLocalNote.hidden = !canCreateBackup;
@@ -237,11 +254,11 @@ export function initNickelMenu(state) {
                     summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
                     summary.hidden = false;
                     listLabel.textContent = TL.STATUS.NM_SELECTED_REMOVALS;
-                    populateList(list, [
-                        TL.STATUS.NM_REMOVAL_NICKELMENU,
-                        ...model.removedFeatures.map(f => f.cleanup.title),
-                    ]);
-                    populateList(keptList, model.keptFeatures.map(f => f.cleanup.title));
+                    populateList(list, [TL.STATUS.NM_REMOVAL_NICKELMENU, ...model.removedFeatures.map((f) => f.cleanup.title)]);
+                    populateList(
+                        keptList,
+                        model.keptFeatures.map((f) => f.cleanup.title),
+                    );
                     keptLabel.textContent = TL.STATUS.NM_KEPT_FEATURES;
                     keptCard.hidden = model.keptFeatures.length === 0;
                     btnNmWrite.hidden = state.manualMode;
@@ -253,10 +270,7 @@ export function initNickelMenu(state) {
                     summary.textContent = '';
                     keptCard.hidden = true;
                     listLabel.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
-                    populateList(list, [
-                        TL.STATUS.NM_NICKEL_ROOT_TGZ,
-                        ...model.installFeatures.map(f => f.title),
-                    ]);
+                    populateList(list, [TL.STATUS.NM_NICKEL_ROOT_TGZ, ...model.installFeatures.map((f) => f.title)]);
                     btnNmWrite.hidden = false;
                     btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
                     btnNmDownload.hidden = false;
@@ -316,15 +330,13 @@ export function initNickelMenu(state) {
 
     function renderFeatureCheckboxes() {
         const firmware = state.device?.deviceInfo?.firmware;
-        const features = NICKELMENU_FEATURES.filter(f => f.available !== false);
+        const features = NICKELMENU_FEATURES.filter((f) => f.available !== false);
 
         if (state.selectedFeatureIds.length === 0) {
-            state.selectedFeatureIds = features
-                .filter(f => meetsMinimumVersion(firmware, f.minimumVersion) && (f.required || f.default))
-                .map(f => f.id);
+            state.selectedFeatureIds = features.filter((f) => meetsMinimumVersion(firmware, f.minimumVersion) && (f.required || f.default)).map((f) => f.id);
         }
 
-        const items = features.map(f => {
+        const items = features.map((f) => {
             const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
             return {
                 name: 'nm-cfg-' + f.id,
@@ -336,12 +348,14 @@ export function initNickelMenu(state) {
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
                 checked: state.selectedFeatureIds.includes(f.id),
                 disabled: f.required || !meetsMinimum,
-                disabledReason: meetsMinimum
-                    ? undefined
-                    : `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`,
+                disabledReason: meetsMinimum ? undefined : `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`,
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
-                onAction: f.customization ? (triggerEl) => { nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl); } : undefined,
+                onAction: f.customization
+                    ? (triggerEl) => {
+                          nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl);
+                      }
+                    : undefined,
                 ...(f.customization ? getMenuCustomizationSummaryItem(state) : {}),
             };
         });
@@ -356,7 +370,7 @@ export function initNickelMenu(state) {
                         state.selectedFeatureIds.push(feature.id);
                     }
                 } else {
-                    state.selectedFeatureIds = state.selectedFeatureIds.filter(id => id !== feature.id);
+                    state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== feature.id);
                 }
             });
         }
@@ -382,9 +396,9 @@ export function initNickelMenu(state) {
             nmUninstallOptions.innerHTML = '';
             return;
         }
-        const items = detectedOptionalCleanupFeatures.map(f => ({
+        const items = detectedOptionalCleanupFeatures.map((f) => ({
             name: 'nm-uninstall-' + f.id,
-            title: f.cleanup.removeLabel ?? ('Remove ' + f.cleanup.title),
+            title: f.cleanup.removeLabel ?? 'Remove ' + f.cleanup.title,
             description: f.cleanup.description,
             checked: true,
         }));
@@ -392,7 +406,7 @@ export function initNickelMenu(state) {
 
         // Checkboxes default to checked (remove). Seed the session from that and
         // keep it in sync as the source of truth for what gets removed.
-        state.nmOptionalCleanupIds = detectedOptionalCleanupFeatures.map(f => f.id);
+        state.nmOptionalCleanupIds = detectedOptionalCleanupFeatures.map((f) => f.id);
         for (const f of detectedOptionalCleanupFeatures) {
             const cb = $q(`input[name="nm-uninstall-${f.id}"]`);
             if (!cb) continue;
@@ -402,7 +416,7 @@ export function initNickelMenu(state) {
                         state.nmOptionalCleanupIds.push(f.id);
                     }
                 } else {
-                    state.nmOptionalCleanupIds = state.nmOptionalCleanupIds.filter(id => id !== f.id);
+                    state.nmOptionalCleanupIds = state.nmOptionalCleanupIds.filter((id) => id !== f.id);
                 }
             });
         }
@@ -455,12 +469,13 @@ export function initNickelMenu(state) {
             presetTitleReinstall: NM_PRESET_TITLE_REINSTALL,
             // Detect only on first visit so back-navigation preserves the user's
             // cleanup checkbox selections (re-rendering would wipe them).
-            onOptionalCleanupDetected: detectedOptionalCleanupFeatures.length === 0
-                ? (detected) => {
-                    detectedOptionalCleanupFeatures.push(...detected);
-                    renderCleanupCheckboxes();
-                }
-                : undefined,
+            onOptionalCleanupDetected:
+                detectedOptionalCleanupFeatures.length === 0
+                    ? (detected) => {
+                          detectedOptionalCleanupFeatures.push(...detected);
+                          renderCleanupCheckboxes();
+                      }
+                    : undefined,
             onLegacyItemsDetected: ({ detected, wasOurs }) => {
                 legacyItemsDetected = detected;
                 legacyItemsWasOurs = wasOurs;
@@ -531,7 +546,7 @@ export function initNickelMenu(state) {
     async function updateSideloadedRecommendation() {
         const banner = $('nm-sideloaded-banner');
         const firmware = state.device?.deviceInfo?.firmware;
-        const sideloaded = NICKELMENU_FEATURES.find(f => f.id === 'sideloaded-mode');
+        const sideloaded = NICKELMENU_FEATURES.find((f) => f.id === 'sideloaded-mode');
         if (!meetsMinimumVersion(firmware, sideloaded?.minimumVersion)) {
             banner.hidden = true;
             return;
@@ -561,10 +576,15 @@ export function initNickelMenu(state) {
     nmCustomizeUpload.addEventListener('change', () => {
         const draft = nmCustomizationDraft;
         const session = nmCustomizationSession;
-        handleNmIconUpload(nmCustomizeUpload.files?.[0], draft, (msg) => {
-            if (draft !== nmCustomizationDraft || session !== nmCustomizationSession) return;
-            updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, msg);
-        }, () => draft === nmCustomizationDraft && session === nmCustomizationSession);
+        handleNmIconUpload(
+            nmCustomizeUpload.files?.[0],
+            draft,
+            (msg) => {
+                if (draft !== nmCustomizationDraft || session !== nmCustomizationSession) return;
+                updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, msg);
+            },
+            () => draft === nmCustomizationDraft && session === nmCustomizationSession,
+        );
         nmCustomizeUpload.value = '';
     });
     btnNmCustomizeClose.addEventListener('click', () => nmCustomizeDialog.close());
@@ -573,7 +593,11 @@ export function initNickelMenu(state) {
         nmCustomizationSession++;
         nmCustomizationDraft = createDefaultMenuCustomization();
         nmCustomizeLabel.value = NM_MENU_DEFAULT_LABEL;
-        updateMenuCustomizationDialog(nmCustomizationDraft, customizationDialogDom, isDefaultMenuCustomization(state.nickelMenuCustomization) ? '' : 'Defaults restored.');
+        updateMenuCustomizationDialog(
+            nmCustomizationDraft,
+            customizationDialogDom,
+            isDefaultMenuCustomization(state.nickelMenuCustomization) ? '' : 'Defaults restored.',
+        );
     });
     btnNmCustomizeSave.addEventListener('click', () => {
         const label = sanitizeMenuLabel(nmCustomizeLabel.value).trim();
@@ -653,15 +677,31 @@ export function initNickelMenu(state) {
 
     btnNmWrite.addEventListener('click', () => {
         executeNmInstallFn({
-            state, flow, terminal,
-            dom: { progress: $('nm-progress'), progressDetail: $('nm-progress-detail'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: true },
+            state,
+            flow,
+            terminal,
+            dom: {
+                progress: $('nm-progress'),
+                progressDetail: $('nm-progress-detail'),
+                detectedOptionalCleanupFeatures,
+                legacyItemsDetected,
+                writeToDevice: true,
+            },
             showError: (...args) => state.showError(...args),
         });
     });
     btnNmDownload.addEventListener('click', () => {
         executeNmInstallFn({
-            state, flow, terminal,
-            dom: { progress: $('nm-progress'), progressDetail: $('nm-progress-detail'), detectedOptionalCleanupFeatures, legacyItemsDetected, writeToDevice: false },
+            state,
+            flow,
+            terminal,
+            dom: {
+                progress: $('nm-progress'),
+                progressDetail: $('nm-progress-detail'),
+                detectedOptionalCleanupFeatures,
+                legacyItemsDetected,
+                writeToDevice: false,
+            },
             showError: (...args) => state.showError(...args),
         });
     });

@@ -22,11 +22,7 @@ export function initManualFlow(state, { patches }) {
         'manual-version': manualVersion,
         'manual-model': manualModel,
         'patch-container': patchContainer,
-    } = collect([
-        'step-manual-version',
-        'btn-manual', 'btn-manual-confirm', 'btn-manual-version-back',
-        'manual-version', 'manual-model', 'patch-container',
-    ]);
+    } = collect(['step-manual-version', 'btn-manual', 'btn-manual-confirm', 'btn-manual-version-back', 'manual-version', 'manual-model', 'patch-container']);
 
     state.goToManualVersionStep = () => {
         setNavStep(2);
@@ -52,8 +48,10 @@ export function initManualFlow(state, { patches }) {
         }
 
         const channels = getChannelsForVersion(version);
-        populateSelect(manualModel, '-- Select firmware channel --',
-            channels.map(d => ({ value: d.channel, text: d.label }))
+        populateSelect(
+            manualModel,
+            '-- Select firmware channel --',
+            channels.map((d) => ({ value: d.channel, text: d.label })),
         );
         manualModel.hidden = false;
         modelHint.hidden = false;
@@ -87,7 +85,7 @@ export function initManualFlow(state, { patches }) {
     });
 
     async function loadPatchesForVersion(version, available) {
-        const match = available.find(p => p.version === version);
+        const match = available.find((p) => p.version === version);
         if (!match) return false;
 
         await Promise.all([state.patchUI.loadFromURL('patches/' + match.filename), state.blacklistReady]);
@@ -99,8 +97,10 @@ export function initManualFlow(state, { patches }) {
 
     async function enterManualVersionSelection() {
         await Promise.all([state.softwareUrlsReady, state.availablePatchesReady]);
-        populateSelect(manualVersion, '-- Select software version --',
-            state.availablePatches.map(p => ({ value: p.version, text: p.version, data: { filename: p.filename } }))
+        populateSelect(
+            manualVersion,
+            '-- Select software version --',
+            state.availablePatches.map((p) => ({ value: p.version, text: p.version, data: { filename: p.filename } })),
         );
         populateSelect(manualModel, '-- Select firmware channel --', []);
         manualModel.hidden = true;

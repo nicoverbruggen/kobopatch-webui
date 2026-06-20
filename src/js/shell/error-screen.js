@@ -24,9 +24,15 @@ export function initErrorScreen(state) {
         'error-hint': errorHint,
         'error-device-write-help': errorDeviceWriteHelp,
     } = collect([
-        'step-error', 'step-patches',
-        'btn-retry', 'btn-error-back', 'btn-error-download-log',
-        'error-message', 'error-log', 'error-title', 'error-hint',
+        'step-error',
+        'step-patches',
+        'btn-retry',
+        'btn-error-back',
+        'btn-error-download-log',
+        'error-message',
+        'error-log',
+        'error-title',
+        'error-hint',
         'error-device-write-help',
     ]);
 
@@ -105,7 +111,7 @@ export function initErrorScreen(state) {
         if (err && err.name === 'AbortError') return;
         handlingUnexpectedError = true;
         try {
-            const detail = err ? (err.stack || err.message || String(err)) : 'Unknown error';
+            const detail = err ? err.stack || err.message || String(err) : 'Unknown error';
             showError(TL.ERROR.UNEXPECTED_MESSAGE, detail, { title: TL.ERROR.UNEXPECTED_TITLE });
         } catch (e) {
             console.error('Failed to display the error screen:', e);

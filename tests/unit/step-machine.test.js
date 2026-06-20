@@ -94,12 +94,14 @@ test('recoveryTarget resolves to the recovery step DOM id, or null', async () =>
 test('navLabels and navIndex may be functions of the session, refreshable in place', async () => {
     const flow = createFlow({
         id: 'fn',
-        steps: [{
-            id: 'a',
-            domId: 'step-test-a',
-            navLabels: (c) => (c.removal ? ['X', 'Y'] : ['One', 'Two', 'Three']),
-            navIndex: (c) => (c.removal ? 2 : 1),
-        }],
+        steps: [
+            {
+                id: 'a',
+                domId: 'step-test-a',
+                navLabels: (c) => (c.removal ? ['X', 'Y'] : ['One', 'Two', 'Three']),
+                navIndex: (c) => (c.removal ? 2 : 1),
+            },
+        ],
     });
 
     const session = { removal: false };

@@ -93,10 +93,13 @@ class PatchUI {
     /** Extract and normalize a patch's text block for edit comparison. */
     _patchText(raw, lineStart, lineEnd) {
         return raw
-            .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
-            .split('\n').slice(lineStart, lineEnd)
-            .map(l => l.replace(/\s+$/, ''))
-            .join('\n').replace(/\n+$/, '');
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            .split('\n')
+            .slice(lineStart, lineEnd)
+            .map((l) => l.replace(/\s+$/, ''))
+            .join('\n')
+            .replace(/\n+$/, '');
     }
 
     /** Whether a patch's definition differs from its pristine loaded form. */
@@ -106,7 +109,7 @@ class PatchUI {
 
     /** Whether any patch across any file has been edited by the user. */
     hasEdits() {
-        return Object.values(this.modifiedPatches).some(set => set.size > 0);
+        return Object.values(this.modifiedPatches).some((set) => set.size > 0);
     }
 
     /**
@@ -145,11 +148,10 @@ class PatchUI {
             if (newPatch.name === editedName) {
                 // Keep the edited patch's live toggle unless the user actually
                 // changed the Enabled line in the editor itself.
-                const enabledEditedInPlace = displayedEnabled !== undefined
-                    && newPatch.enabled !== displayedEnabled;
+                const enabledEditedInPlace = displayedEnabled !== undefined && newPatch.enabled !== displayedEnabled;
                 if (!enabledEditedInPlace) newPatch.enabled = patch.enabled;
             } else {
-                const old = oldPatches.find(p => p.name === newPatch.name);
+                const old = oldPatches.find((p) => p.name === newPatch.name);
                 if (old) newPatch.enabled = old.enabled;
             }
         }
@@ -185,7 +187,7 @@ class PatchUI {
     getEnabledCount() {
         let count = 0;
         for (const [, { patches }] of Object.entries(this.patchFiles)) {
-            count += patches.filter(p => p.enabled).length;
+            count += patches.filter((p) => p.enabled).length;
         }
         return count;
     }
@@ -232,7 +234,7 @@ class PatchUI {
             const lines = file.raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
             const out = {};
             for (const name of set) {
-                const p = file.patches.find(pp => pp.name === name);
+                const p = file.patches.find((pp) => pp.name === name);
                 if (!p) continue;
                 out[name] = lines.slice(p.lineStart, p.lineEnd).join('\n').replace(/\n+$/, '');
             }
@@ -261,8 +263,11 @@ class PatchUI {
                 continue;
             }
             for (const [name, text] of Object.entries(patches)) {
-                const p = file.patches.find(pp => pp.name === name);
-                if (!p) { summary.missing++; continue; }
+                const p = file.patches.find((pp) => pp.name === name);
+                if (!p) {
+                    summary.missing++;
+                    continue;
+                }
                 file.raw = replacePatchLines(file.raw, p.lineStart, p.lineEnd, text);
                 file.patches = parsePatchYAML(file.raw);
                 this._trackEdit(filename, name, text);
@@ -320,7 +325,6 @@ class PatchUI {
         }
         return files;
     }
-
 }
 
 export { PatchUI };

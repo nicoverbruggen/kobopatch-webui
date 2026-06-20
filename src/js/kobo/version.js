@@ -86,9 +86,7 @@ function deviceVerificationFor(hardwareInfo, rawSerialPrefix) {
 function parseKoboVersion(content) {
     const parts = content.split(',');
     if (parts.length < 6) {
-        throw new Error(
-            'Unexpected version file format. Expected 6 comma-separated fields, got ' + parts.length
-        );
+        throw new Error('Unexpected version file format. Expected 6 comma-separated fields, got ' + parts.length);
     }
 
     const serial = parts[0];
@@ -127,8 +125,12 @@ function parseKoboVersion(content) {
  * 0, so "4.31" and "4.31.0" are equal. Returns -1, 0, or 1.
  */
 function compareFirmware(a, b) {
-    const partsA = String(a).split('.').map(n => parseInt(n, 10) || 0);
-    const partsB = String(b).split('.').map(n => parseInt(n, 10) || 0);
+    const partsA = String(a)
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    const partsB = String(b)
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
     const length = Math.max(partsA.length, partsB.length);
 
     for (let i = 0; i < length; i++) {

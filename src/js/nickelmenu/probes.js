@@ -26,23 +26,18 @@ export const LEGACY_ITEMS_HEURISTIC_PATTERNS = ['Legibility Status', 'Toggle Typ
  *        Called (once, when provided) with the optional-cleanup features present.
  * @param {(result: {detected: boolean, wasOurs: boolean}) => void} [opts.onLegacyItemsDetected]
  */
-export async function checkNickelMenuInstalled(state, {
-    presetTitleEl,
-    removeOption,
-    removeRadio,
-    removeDesc,
-    presetTitleInstall,
-    presetTitleReinstall,
-    onOptionalCleanupDetected,
-    onLegacyItemsDetected,
-}) {
+export async function checkNickelMenuInstalled(
+    state,
+    { presetTitleEl, removeOption, removeRadio, removeDesc, presetTitleInstall, presetTitleReinstall, onOptionalCleanupDetected, onLegacyItemsDetected },
+) {
     presetTitleEl.textContent = presetTitleInstall;
 
     if (state.manualMode) {
         removeRadio.disabled = false;
         removeOption.classList.remove('selection-card--disabled');
         removeOption.classList.remove('selection-card--danger');
-            removeDesc.textContent = 'Shows instructions for manually removing NickelMenu from a Kobo. After following the removal steps, safely eject your Kobo and let it restart — NickelMenu will remove itself during startup.';
+        removeDesc.textContent =
+            'Shows instructions for manually removing NickelMenu from a Kobo. After following the removal steps, safely eject your Kobo and let it restart — NickelMenu will remove itself during startup.';
         return;
     }
 
@@ -64,10 +59,11 @@ export async function checkNickelMenuInstalled(state, {
             }
             removeRadio.disabled = false;
             removeOption.classList.remove('selection-card--disabled');
-            removeDesc.textContent = 'Removes NickelMenu from your device. After writing, safely eject your Kobo — it will restart and remove NickelMenu automatically.';
+            removeDesc.textContent =
+                'Removes NickelMenu from your device. After writing, safely eject your Kobo — it will restart and remove NickelMenu automatically.';
 
             if (onOptionalCleanupDetected) {
-                const conf = await device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']) || '';
+                const conf = (await device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf'])) || '';
                 const detected = [];
                 for (const feature of NICKELMENU_FEATURES) {
                     if (feature.cleanup?.mode !== 'optional') continue;
@@ -82,8 +78,7 @@ export async function checkNickelMenuInstalled(state, {
                 await detectLegacyItemsFile(nmDir, onLegacyItemsDetected);
             }
             return;
-        } catch {
-        }
+        } catch {}
     }
 
     removeRadio.disabled = true;
@@ -97,7 +92,7 @@ export async function detectLegacyItemsFile(nmDir, onResult) {
         const legacyFile = await nmDir.getFileHandle('items');
         const file = await legacyFile.getFile();
         const text = await file.text();
-        const wasOurs = LEGACY_ITEMS_HEURISTIC_PATTERNS.some(p => text.includes(p));
+        const wasOurs = LEGACY_ITEMS_HEURISTIC_PATTERNS.some((p) => text.includes(p));
         onResult({ detected: true, wasOurs });
     } catch {
         onResult({ detected: false, wasOurs: false });

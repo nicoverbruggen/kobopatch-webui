@@ -23,7 +23,7 @@ function seedUI(filename, raw) {
 /** Mirror _saveEdit's data effects (raw replace + reparse + track) without the DOM render. */
 function editPatch(ui, filename, patchName, newYaml) {
     const file = ui.patchFiles[filename];
-    const p = file.patches.find(pp => pp.name === patchName);
+    const p = file.patches.find((pp) => pp.name === patchName);
     file.raw = replacePatchLines(file.raw, p.lineStart, p.lineEnd, newYaml);
     file.patches = parsePatchYAML(file.raw);
     ui._trackEdit(filename, patchName, newYaml);
@@ -76,19 +76,15 @@ test('parsePatchYAML detects boundaries with trailing space after the name', () 
     // A trailing space means the name no longer endsWith(":"); the key-name
     // detector handles it and still finds two patches.
     const patches = parsePatchYAML('First: \n  - Enabled: yes\nSecond:\n  - Enabled: no\n');
-    assert.deepEqual(patches.map(p => p.name), ['First', 'Second']);
+    assert.deepEqual(
+        patches.map((p) => p.name),
+        ['First', 'Second'],
+    );
     assert.equal(patches[0].enabled, true);
 });
 
 test('parsePatchYAML reads multi-line block-scalar descriptions regardless of indent', () => {
-    const yaml = [
-        'Block patch:',
-        '  - Enabled: no',
-        '  - Description: |',
-        '      line one',
-        '      line two',
-        '  - FindReplaceString: x',
-    ].join('\n');
+    const yaml = ['Block patch:', '  - Enabled: no', '  - Description: |', '      line one', '      line two', '  - FindReplaceString: x'].join('\n');
 
     const [patch] = parsePatchYAML(yaml);
     assert.equal(patch.description, 'line one\nline two');
@@ -114,11 +110,11 @@ test('replacePatchLines trims trailing newlines on the replacement', () => {
 test('replacePatchLines round-trips through parsePatchYAML', () => {
     const raw = 'First:\n  - Enabled: yes\nSecond:\n  - Enabled: no\n';
     const patches = parsePatchYAML(raw);
-    const second = patches.find(p => p.name === 'Second');
+    const second = patches.find((p) => p.name === 'Second');
     const updated = replacePatchLines(raw, second.lineStart, second.lineEnd, 'Second:\n  - Enabled: yes');
     const reparsed = parsePatchYAML(updated);
-    assert.equal(reparsed.find(p => p.name === 'Second').enabled, true);
-    assert.equal(reparsed.find(p => p.name === 'First').enabled, true);
+    assert.equal(reparsed.find((p) => p.name === 'Second').enabled, true);
+    assert.equal(reparsed.find((p) => p.name === 'First').enabled, true);
 });
 
 test('edit tracking flags a modified patch and reports hasEdits', () => {
@@ -188,19 +184,22 @@ test('applyReloadManifest re-applies enabled overrides and manual edits to a fre
     assert.equal(summary.matched, 2);
 
     // P is enabled (from overrides) and its manual edit is applied and flagged.
-    const p = ui.patchFiles['f.yaml'].patches.find(x => x.name === 'P');
+    const p = ui.patchFiles['f.yaml'].patches.find((x) => x.name === 'P');
     assert.equal(p.enabled, true);
     assert.match(ui.patchFiles['f.yaml'].raw, /FindReplaceString: edited/);
     assert.equal(ui.isModified('f.yaml', 'P'), true);
     // Q stays disabled and untouched.
-    assert.equal(ui.patchFiles['f.yaml'].patches.find(x => x.name === 'Q').enabled, false);
+    assert.equal(ui.patchFiles['f.yaml'].patches.find((x) => x.name === 'Q').enabled, false);
 });
 
 test('applyReloadManifest counts entries with no matching file or patch as missing', () => {
     const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n');
     const summary = ui.applyReloadManifest({
         overrides: { 'gone.yaml': { X: true } },
-        customized: { 'gone.yaml': { X: 'X:\n  - Enabled: yes\n' }, 'f.yaml': { Missing: 'Missing:\n  - Enabled: yes\n' } },
+        customized: {
+            'gone.yaml': { X: 'X:\n  - Enabled: yes\n' },
+            'f.yaml': { Missing: 'Missing:\n  - Enabled: yes\n' },
+        },
     });
     assert.equal(summary.edits, 0);
     assert.equal(summary.enabled, 0);
@@ -219,7 +218,7 @@ test('applyReloadManifest reports matches even when the restored selection enabl
     assert.equal(summary.enabled, 0);
     assert.equal(summary.edits, 0);
     // Q, enabled by default, is turned off to match the restored (empty) selection.
-    assert.equal(ui.patchFiles['f.yaml'].patches.find(p => p.name === 'Q').enabled, false);
+    assert.equal(ui.patchFiles['f.yaml'].patches.find((p) => p.name === 'Q').enabled, false);
 });
 
 test('manifest round-trips overrides and edits back onto an identical fresh set', () => {
@@ -228,13 +227,13 @@ test('manifest round-trips overrides and edits back onto an identical fresh set'
     // Session 1: user enables P and edits its value.
     const ui1 = seedUI('f.yaml', fresh);
     editPatch(ui1, 'f.yaml', 'P', 'P:\n  - Enabled: no\n  - FindReplaceString: custom\n');
-    ui1.patchFiles['f.yaml'].patches.find(p => p.name === 'P').enabled = true;
+    ui1.patchFiles['f.yaml'].patches.find((p) => p.name === 'P').enabled = true;
     const manifest = { overrides: ui1.getOverrides(), customized: ui1.getCustomizations() };
 
     // Session 2: reload onto a freshly loaded set reproduces selection + edit.
     const ui2 = seedUI('f.yaml', fresh);
     ui2.applyReloadManifest(manifest);
-    assert.equal(ui2.patchFiles['f.yaml'].patches.find(p => p.name === 'P').enabled, true);
+    assert.equal(ui2.patchFiles['f.yaml'].patches.find((p) => p.name === 'P').enabled, true);
     assert.match(ui2.patchFiles['f.yaml'].raw, /FindReplaceString: custom/);
     assert.equal(ui2.isModified('f.yaml', 'P'), true);
 });
@@ -268,12 +267,7 @@ test('parsePatchConfig extracts the version and the patches file→target map', 
 });
 
 test('parsePatchConfig reads an unquoted version and ignores comments in the patches block', () => {
-    const config = [
-        'version: 4.44.19619',
-        'patches:',
-        '  # core UI patches',
-        '  src/nickel.yaml: usr/local/Kobo/nickel',
-    ].join('\n');
+    const config = ['version: 4.44.19619', 'patches:', '  # core UI patches', '  src/nickel.yaml: usr/local/Kobo/nickel'].join('\n');
     const { version, patches } = parsePatchConfig(config);
     assert.equal(version, '4.44.19619');
     assert.deepEqual(patches, { 'src/nickel.yaml': 'usr/local/Kobo/nickel' });
@@ -303,7 +297,7 @@ test('generateConfig emits the version, patch targets, and quoted overrides', ()
 test('isBlacklisted matches on the short firmware version and exact file + name', () => {
     const ui = new PatchUI();
     ui.firmwareVersion = '4.45.23646';
-    ui.blacklist = { '4.45': { 'src/nickel.yaml': ['Allow rotation'] } };
+    ui.blacklist = { 4.45: { 'src/nickel.yaml': ['Allow rotation'] } };
 
     assert.equal(ui.isBlacklisted('src/nickel.yaml', 'Allow rotation'), true);
     assert.equal(ui.isBlacklisted('src/nickel.yaml', 'Other patch'), false);
@@ -312,11 +306,11 @@ test('isBlacklisted matches on the short firmware version and exact file + name'
 
 test('isBlacklisted returns false without a blacklist, firmware, or version match', () => {
     const noVersion = new PatchUI();
-    noVersion.blacklist = { '4.45': { 'src/nickel.yaml': ['Allow rotation'] } };
+    noVersion.blacklist = { 4.45: { 'src/nickel.yaml': ['Allow rotation'] } };
     assert.equal(noVersion.isBlacklisted('src/nickel.yaml', 'Allow rotation'), false);
 
     const otherVersion = new PatchUI();
-    otherVersion.blacklist = { '4.45': { 'src/nickel.yaml': ['Allow rotation'] } };
+    otherVersion.blacklist = { 4.45: { 'src/nickel.yaml': ['Allow rotation'] } };
     otherVersion.firmwareVersion = '4.44.19619';
     assert.equal(otherVersion.isBlacklisted('src/nickel.yaml', 'Allow rotation'), false);
 

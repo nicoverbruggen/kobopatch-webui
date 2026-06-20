@@ -14,26 +14,24 @@ const WEBROOT_FIRMWARE = path.join(WEBROOT, '_test_firmware.zip');
 // redirected to a local symlink of this file. Set FIRMWARE_ZIP to reuse a copy
 // you already have anywhere on disk instead of caching another ~150 MB download
 // (same env var the WASM/patch test scripts honor).
-const FIRMWARE_PATH = process.env.FIRMWARE_ZIP
-  ? path.resolve(process.env.FIRMWARE_ZIP)
-  : path.join(CACHED_ASSETS, `kobo-update-${primary.version}.zip`);
+const FIRMWARE_PATH = process.env.FIRMWARE_ZIP ? path.resolve(process.env.FIRMWARE_ZIP) : path.join(CACHED_ASSETS, `kobo-update-${primary.version}.zip`);
 
 let cachedOriginalTgzSha1 = null;
 // Computes the SHA1 of KoboRoot.tgz inside the firmware zip. Used as a
 // reference for the "restore original firmware" flow.
 async function getOriginalTgzSha1() {
-  if (cachedOriginalTgzSha1) return cachedOriginalTgzSha1;
-  const zip = await JSZip.loadAsync(fs.readFileSync(FIRMWARE_PATH));
-  const entry = zip.file('KoboRoot.tgz');
-  if (!entry) throw new Error(`KoboRoot.tgz not found in ${FIRMWARE_PATH}`);
-  const data = await entry.async('nodebuffer');
-  cachedOriginalTgzSha1 = crypto.createHash('sha1').update(data).digest('hex');
-  return cachedOriginalTgzSha1;
+    if (cachedOriginalTgzSha1) return cachedOriginalTgzSha1;
+    const zip = await JSZip.loadAsync(fs.readFileSync(FIRMWARE_PATH));
+    const entry = zip.file('KoboRoot.tgz');
+    if (!entry) throw new Error(`KoboRoot.tgz not found in ${FIRMWARE_PATH}`);
+    const data = await entry.async('nodebuffer');
+    cachedOriginalTgzSha1 = crypto.createHash('sha1').update(data).digest('hex');
+    return cachedOriginalTgzSha1;
 }
 
 module.exports = {
-  FIRMWARE_PATH,
-  WEBROOT,
-  WEBROOT_FIRMWARE,
-  getOriginalTgzSha1,
+    FIRMWARE_PATH,
+    WEBROOT,
+    WEBROOT_FIRMWARE,
+    getOriginalTgzSha1,
 };

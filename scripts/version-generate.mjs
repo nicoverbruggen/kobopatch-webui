@@ -32,8 +32,7 @@ export async function generateVersion() {
 
     const fullHash = (process.env.SOURCE_COMMIT ?? '').trim() || tryExec('git rev-parse HEAD');
 
-    let tag = (process.env.SOURCE_TAG ?? '').trim()
-        || (fullHash ? tryExec(`git describe --tags --exact-match ${fullHash}`) : '');
+    let tag = (process.env.SOURCE_TAG ?? '').trim() || (fullHash ? tryExec(`git describe --tags --exact-match ${fullHash}`) : '');
 
     if (!tag && fullHash && !tryExec('git tag --list')) {
         tag = await resolveTagFromGitHub(fullHash);
@@ -42,8 +41,8 @@ export async function generateVersion() {
     const versionLink = tag
         ? `https://github.com/${repo}/releases/tag/${tag}`
         : fullHash
-            ? `https://github.com/${repo}/tree/${fullHash}`
-            : `https://github.com/${repo}`;
+          ? `https://github.com/${repo}/tree/${fullHash}`
+          : `https://github.com/${repo}`;
 
     const data = { versionStr, versionLink, commit: fullHash, tag: tag || null };
     writeFileSync(join(appDir, '.version.json'), JSON.stringify(data, null, 2) + '\n');

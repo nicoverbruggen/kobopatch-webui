@@ -22,10 +22,9 @@ function isTypeMismatchError(err) {
 }
 
 function devicePathError(operation, pathParts, err) {
-    const wrapped = new Error(
-        `Could not ${operation} ${formatDevicePath(pathParts)}: ${describeError(err)}`,
-        { cause: err }
-    );
+    const wrapped = new Error(`Could not ${operation} ${formatDevicePath(pathParts)}: ${describeError(err)}`, {
+        cause: err,
+    });
     wrapped.devicePath = formatDevicePath(pathParts);
     wrapped.deviceOperation = operation;
     wrapped.deviceWrite = operation === 'write';
@@ -33,10 +32,9 @@ function devicePathError(operation, pathParts, err) {
 }
 
 function deviceWriteError(pathParts, phase, err) {
-    const wrapped = new Error(
-        `Could not write ${formatDevicePath(pathParts)} while ${phase}: ${describeError(err)}`,
-        { cause: err }
-    );
+    const wrapped = new Error(`Could not write ${formatDevicePath(pathParts)} while ${phase}: ${describeError(err)}`, {
+        cause: err,
+    });
     wrapped.devicePath = formatDevicePath(pathParts);
     wrapped.deviceOperation = 'write';
     wrapped.deviceWrite = true;
@@ -47,9 +45,9 @@ function deviceWriteError(pathParts, phase, err) {
 function deviceWriteProbeError(err, probePathParts) {
     const wrapped = new Error(
         'Could not verify write access to the Kobo drive. The app could read ' +
-        '.kobo/version, but a small test write failed. Direct install is not safe ' +
-        `for this connection. Details: ${describeError(err)}`,
-        { cause: err }
+            '.kobo/version, but a small test write failed. Direct install is not safe ' +
+            `for this connection. Details: ${describeError(err)}`,
+        { cause: err },
     );
     wrapped.devicePath = formatDevicePath(probePathParts);
     wrapped.deviceOperation = 'write probe';
@@ -57,11 +55,4 @@ function deviceWriteProbeError(err, probePathParts) {
     return wrapped;
 }
 
-export {
-    describeError,
-    isNotFoundError,
-    isTypeMismatchError,
-    devicePathError,
-    deviceWriteError,
-    deviceWriteProbeError,
-};
+export { describeError, isNotFoundError, isTypeMismatchError, devicePathError, deviceWriteError, deviceWriteProbeError };

@@ -16,11 +16,11 @@ async function loadSoftwareUrls() {
 }
 
 function hardwareEntriesForSerialPrefix(serialPrefix) {
-    return Object.values(koboHardwareIds).filter(info => info.serialPrefix === serialPrefix);
+    return Object.values(koboHardwareIds).filter((info) => info.serialPrefix === serialPrefix);
 }
 
 function hardwareEntriesForChannel(channel) {
-    return Object.values(koboHardwareIds).filter(info => info.channel === channel);
+    return Object.values(koboHardwareIds).filter((info) => info.channel === channel);
 }
 
 function compareFirmwareChannelsDescending(a, b) {
@@ -45,9 +45,7 @@ function getSoftwareUrl(channel, version) {
 
     if (versionMap[channel]) return versionMap[channel];
 
-    const matchingPrefixes = new Set(
-        hardwareEntriesForChannel(channel).map(info => info.serialPrefix)
-    );
+    const matchingPrefixes = new Set(hardwareEntriesForChannel(channel).map((info) => info.serialPrefix));
     for (const [key, url] of Object.entries(versionMap)) {
         if (matchingPrefixes.has(key)) return url;
     }
@@ -68,9 +66,7 @@ function getChannelsForVersion(version) {
     const channels = new Map();
     const addChannelEntry = (info) => {
         const item = channels.get(info.channel) || { channel: info.channel, devices: [] };
-        const duplicate = item.devices.some(
-            device => device.model === info.model && device.serialPrefix === info.serialPrefix
-        );
+        const duplicate = item.devices.some((device) => device.model === info.model && device.serialPrefix === info.serialPrefix);
         if (!duplicate) {
             item.devices.push({
                 model: info.model,
@@ -99,9 +95,7 @@ function getChannelsForVersion(version) {
     return [...channels.values()]
         .sort((a, b) => compareFirmwareChannelsDescending(a.channel, b.channel))
         .map(({ channel, devices }) => {
-            const modelList = devices
-                .map(device => `${device.model} (${device.serialPrefix})`)
-                .join(', ');
+            const modelList = devices.map((device) => `${device.model} (${device.serialPrefix})`).join(', ');
             return {
                 channel,
                 label: modelList ? `${channel}: ${modelList}` : channel,

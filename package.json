@@ -7,6 +7,8 @@
     "build": "node scripts/build.mjs",
     "build:wasm": "bash tools/kobopatch-wasm/build.sh",
     "dev": "node scripts/serve-local.mjs --dev",
+    "format": "prettier --write \"**/*.{js,mjs}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs}\"",
     "lint": "eslint .",
     "screenshots": "bash tests/e2e/scripts/run-screenshots.sh",
     "serve": "node scripts/serve-local.mjs",
@@ -17,7 +19,8 @@
     "update:installables": "node tools/installables/installables.mjs --update --src --dist",
     "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
     "start": "node scripts/serve-dist.mjs",
-    "test": "node scripts/test.mjs",
+    "verify": "node scripts/verify.mjs",
+    "test": "node scripts/verify.mjs --quick",
     "test:e2e": "bash tests/e2e/scripts/run-e2e.sh",
     "test:e2e:fresh": "bash tests/e2e/scripts/run-e2e-fresh.sh",
     "test:patches": "bash tools/kobopatch-wasm/test-patches.sh",
@@ -32,7 +35,8 @@
     "@playwright/test": "^1.58.2",
     "esbuild": "^0.28.1",
     "eslint": "^9.0.0",
-    "jsdom": "^29.1.1"
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.4"
   },
   "dependencies": {
     "js-yaml": "^4.2.0",
