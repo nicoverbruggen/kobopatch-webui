@@ -27,6 +27,7 @@ const SCREENSHOT_DIRS = {
   edgeDeviceWrite: 'edge-cases/device-write',
   edgeDownload: 'edge-cases/download',
   edgeCompatibility: 'edge-cases/compatibility',
+  edgeAnalytics: 'edge-cases/analytics',
   edgeDialogs: 'edge-cases/dialogs',
   edgeNickelMenu: 'edge-cases/nickelmenu',
 };
@@ -1081,6 +1082,39 @@ test('disclaimer dialog', async ({ page }, testInfo) => {
   await page.click('#btn-how-it-works');
   await expect(page.locator('#how-it-works-dialog')).toBeVisible();
   await shot(page, dir, 'disclaimer-dialog', testInfo);
+});
+
+test('analytics feedback thumbs', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.edgeAnalytics;
+  await page.addInitScript(() => {
+    window.__ANALYTICS_ENABLED = true;
+    window.umami = { track: () => {} };
+  });
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await page.evaluate(() => {
+    for (const step of document.querySelectorAll('.step')) step.hidden = true;
+    document.getElementById('step-done').hidden = false;
+    document.getElementById('step-nav').hidden = false;
+    document.getElementById('build-status').innerHTML =
+      'Patching complete. <strong>KoboRoot.tgz</strong> (1.2 MB) is ready. Download the file and copy it to your Kobo.';
+    document.getElementById('done-log').textContent = 'Dummy analytics screenshot instance.';
+
+    const feedback = document.querySelector('#step-done .feedback');
+    feedback.hidden = false;
+    feedback.querySelector('.feedback-text').hidden = false;
+    feedback.querySelector('.feedback-thanks').hidden = true;
+    feedback.querySelectorAll('.feedback-btn').forEach(button => {
+      button.hidden = false;
+      button.disabled = false;
+    });
+  });
+
+  await page.locator('#step-done .feedback-btn--up').hover();
+  await shot(page, dir, 'feedback-thumbs-up', testInfo);
+
+  await page.locator('#step-done .feedback-btn--down').hover();
+  await shot(page, dir, 'feedback-thumbs-down', testInfo);
 });
 
 // Walk a connected device to the preset feature-selection step.
