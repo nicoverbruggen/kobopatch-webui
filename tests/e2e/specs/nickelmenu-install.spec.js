@@ -717,6 +717,7 @@ test.describe('NickelMenu — install', () => {
     // Kobo Aura HD (N204) is an older model that does not support Dark mode.
     await connectMockDevice(page, {
       serial: 'N204E0000000000',
+      hardwareId: '00000000-0000-0000-0000-000000000350',
       expectedModel: 'Kobo Aura HD',
     });
 

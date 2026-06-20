@@ -29,7 +29,73 @@
     & .value {
         font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
         font-size: 0.88rem;
+        min-width: 0;
+        text-align: right;
+        overflow-wrap: anywhere;
     }
+}
+
+#device-model {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    position: relative;
+}
+
+.device-identification-badge {
+    position: relative;
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    cursor: help;
+    outline-offset: 3px;
+
+    & svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 0.55rem);
+        z-index: 20;
+        width: 260px;
+        max-width: min(260px, 80vw);
+        padding: 0.55rem 0.65rem;
+        border-radius: 6px;
+        background: #111827;
+        color: #fff;
+        box-shadow: var(--shadow-md);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.35;
+        text-align: left;
+        white-space: normal;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(4px);
+        transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+
+    &:hover::after,
+    &:focus-visible::after {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.device-identification-badge--uuid {
+    color: var(--success-text);
+}
+
+.device-identification-badge--serial {
+    color: var(--warning-text);
 }
 
 /* "Reveal"/"Hide" toggle for the masked serial number — a compact secondary

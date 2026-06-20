@@ -10,6 +10,10 @@ const { hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
 
+const UUID_IDENTIFICATION_HINT = 'Your device was identified based on the UUID. This is the most reliable method.';
+const SERIAL_IDENTIFICATION_HINT =
+  'Your device was identified based on the serial number. This happens when the UUID could not be matched to an existing device, which is uncommon. You may want to verify that the device model matches before continuing.';
+
 /**
  * Read a downloaded patches ZIP and return the embedded KoboRoot.tgz bytes.
  * The download bundles `.kobo/KoboRoot.tgz` alongside the custom-patches manifest.
@@ -205,7 +209,12 @@ test.describe('Custom patches', () => {
     // Device info should be displayed
     await expect(page.locator('#step-device')).not.toBeHidden();
     await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+    await expect(page.locator('#device-model .device-identification-badge--uuid')).toHaveAttribute(
+      'data-tooltip',
+      UUID_IDENTIFICATION_HINT
+    );
     await expect(page.locator('#device-firmware')).toHaveText('5.0.0');
+    await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
     // Status message should show incompatibility warning
     await expect(page.locator('#device-status')).toContainText('incompatible');
@@ -377,14 +386,23 @@ test.describe('Custom patches', () => {
 
   test('with device — refurbished serial shows refurbished model label', async ({ page }) => {
     await page.goto('/');
-    await injectMockDevice(page, { serial: 'R4180A0000000', firmware: '4.38.23648' });
+    await injectMockDevice(page, {
+      serial: 'R4180A0000000',
+      firmware: '4.38.23648',
+      hardwareId: '00000000-0000-0000-0000-000000000388',
+    });
     await page.click('#btn-connect');
     await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
     await page.click('#btn-connect-ready');
 
     await expect(page.locator('#step-device')).not.toBeHidden();
     await expect(page.locator('#device-model')).toHaveText('Kobo Libra 2 (refurbished)');
+    await expect(page.locator('#device-model .device-identification-badge--uuid')).toHaveAttribute(
+      'data-tooltip',
+      UUID_IDENTIFICATION_HINT
+    );
     await expect(page.locator('#device-firmware')).toHaveText('4.38.23648');
+    await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000388');
     await expect(page.locator('#device-serial')).toContainText('R418');
     await expect(page.locator('#device-status')).toContainText('recognized');
     await expect(page.locator('#device-unknown-warning')).toBeHidden();
@@ -404,11 +422,37 @@ test.describe('Custom patches', () => {
 
     await expect(page.locator('#step-device')).not.toBeHidden();
     await expect(page.locator('#device-model')).toHaveText('Kobo Libra 2');
+    await expect(page.locator('#device-model .device-identification-badge--uuid')).toHaveAttribute(
+      'data-tooltip',
+      UUID_IDENTIFICATION_HINT
+    );
     await expect(page.locator('#device-firmware')).toHaveText('4.38.23648');
+    await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000388');
     await expect(page.locator('#device-serial')).toContainText('X999');
     await expect(page.locator('#device-status')).toContainText('recognized');
     await expect(page.locator('#device-unknown-warning')).toBeHidden();
     await expect(page.locator('#btn-device-restore')).toBeVisible();
+  });
+
+  test('with device — serial-number fallback shows verification warning badge', async ({ page }) => {
+    await page.goto('/');
+    await injectMockDevice(page, {
+      serial: 'N4180A0000000',
+      firmware: '4.38.23648',
+      hardwareId: '00000000-0000-0000-0000-999999999999',
+    });
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await page.click('#btn-connect-ready');
+
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await expect(page.locator('#device-model')).toHaveText('Kobo Libra 2');
+    await expect(page.locator('#device-model .device-identification-badge--serial')).toHaveAttribute(
+      'data-tooltip',
+      SERIAL_IDENTIFICATION_HINT
+    );
+    await expect(page.locator('#device-status')).toContainText('recognized');
+    await expect(page.locator('#device-unknown-warning')).toBeHidden();
   });
 
 
@@ -425,6 +469,7 @@ test.describe('Custom patches', () => {
     // Device info should be displayed with unknown model
     await expect(page.locator('#step-device')).not.toBeHidden();
     await expect(page.locator('#device-model')).toContainText('Unknown');
+    await expect(page.locator('#device-model .device-identification-badge')).toHaveCount(0);
     await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');
 
     // Warning should be visible with GitHub link

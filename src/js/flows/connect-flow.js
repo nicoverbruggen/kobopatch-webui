@@ -68,10 +68,41 @@ export function initConnectFlow(state, { patches }) {
         else fileManagerEl.textContent = 'your file manager';
     }
 
+    const identificationHints = {
+        uuid: 'Your device was identified based on the UUID. This is the most reliable method.',
+        serial: 'Your device was identified based on the serial number. ' +
+            'This happens when the UUID could not be matched to an existing device, which is uncommon. ' +
+            'You may want to verify that the device model matches before continuing.',
+    };
+
     function displayDeviceInfo(info) {
-        $('device-model').textContent = info.model;
+        renderModel(info.model, info.identifiedBy);
         renderSerial(info.serial, info.serialPrefix);
         $('device-firmware').textContent = info.firmware;
+        $('device-hardware-id').textContent = info.hardwareId || '--';
+    }
+
+    function renderModel(model, identifiedBy) {
+        const modelEl = $('device-model');
+        modelEl.textContent = '';
+        modelEl.appendChild(document.createTextNode(model));
+
+        const hint = identificationHints[identifiedBy];
+        if (!hint) return;
+
+        const badge = document.createElement('span');
+        badge.className = 'device-identification-badge device-identification-badge--' + identifiedBy;
+        badge.tabIndex = 0;
+        badge.setAttribute('role', 'img');
+        badge.setAttribute('aria-label', hint);
+        badge.setAttribute('data-tooltip', hint);
+        badge.innerHTML = `
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M12 1.75l2.11 1.56 2.62-.25 1.08 2.4 2.39 1.1-.25 2.62L21.5 12l-1.55 2.11.25 2.62-2.39 1.1-1.08 2.4-2.62-.25L12 21.5l-2.11-1.56-2.62.25-1.08-2.4-2.39-1.1.25-2.62L2.5 12l1.55-2.11-.25-2.62 2.39-1.1 1.08-2.4 2.62.25L12 1.75z"/>
+                <path d="M8 12.25l2.45 2.45L16.5 8.65" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+        modelEl.appendChild(badge);
     }
 
     function renderSerial(serial, serialPrefix) {

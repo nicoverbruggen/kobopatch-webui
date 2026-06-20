@@ -75,6 +75,15 @@ const capturePatchesBuildingScreen = async (page, folder, name, testInfo, hint) 
   await shot(page, folder, name, testInfo);
 };
 
+const connectToDeviceScreen = async (page, device = {}) => {
+  await page.goto('/');
+  await dismissMobileModal(page);
+  await injectMockDevice(page, device);
+  await page.click('#btn-connect');
+  await page.click('#btn-connect-ready');
+  await expect(page.locator('#step-device')).not.toBeHidden();
+};
+
 const poseRestoreDoneScreen = async (page, { manual = false, written = false, downloaded = false } = {}) => {
   await page.evaluate(({ isManual, isWritten, isDownloaded }) => {
     for (const step of document.querySelectorAll('.step')) step.hidden = true;
@@ -456,7 +465,10 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
   // Kobo Aura HD (N204) is an older model with no Dark mode support, so the
   // preset drops the Dark Mode item and warns about it. Combined with KOReader's
   // known-issue notice, the review step shows two warnings.
-  await injectMockDevice(page, { serial: 'N204E0000000000' });
+  await injectMockDevice(page, {
+    serial: 'N204E0000000000',
+    hardwareId: '00000000-0000-0000-0000-000000000350',
+  });
 
   await page.click('#btn-connect');
   await page.click('#btn-connect-ready');
@@ -1004,26 +1016,48 @@ test('unsupported browser', async ({ page }, testInfo) => {
 
 test('incompatible firmware', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.edgeCompatibility;
-  await page.goto('/');
-  await dismissMobileModal(page);
-  await injectMockDevice(page, { firmware: '5.0.0' });
-  await page.click('#btn-connect');
-  await page.click('#btn-connect-ready');
-  await expect(page.locator('#step-device')).not.toBeHidden();
+  await connectToDeviceScreen(page, { firmware: '5.0.0' });
   await shot(page, dir, 'incompatible-firmware', testInfo);
+});
+
+test('device identified by UUID', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.edgeCompatibility;
+  await connectToDeviceScreen(page);
+  await shot(page, dir, 'identified-by-uuid', testInfo);
+
+  await page.locator('#device-model .device-identification-badge--uuid').hover();
+  await shot(page, dir, 'identified-by-uuid-hint', testInfo);
+});
+
+test('device identified by serial number fallback', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.edgeCompatibility;
+  await connectToDeviceScreen(page, {
+    serial: 'N4180A0000000',
+    firmware: '4.38.23648',
+    hardwareId: '00000000-0000-0000-0000-999999999999',
+  });
+  await shot(page, dir, 'identified-by-serial-number', testInfo);
+
+  await page.locator('#device-model .device-identification-badge--serial').hover();
+  await shot(page, dir, 'identified-by-serial-number-hint', testInfo);
+});
+
+test('refurbished device identified by UUID', async ({ page }, testInfo) => {
+  const dir = SCREENSHOT_DIRS.edgeCompatibility;
+  await connectToDeviceScreen(page, {
+    serial: 'R4180A0000000',
+    firmware: '4.38.23648',
+    hardwareId: '00000000-0000-0000-0000-000000000388',
+  });
+  await shot(page, dir, 'refurbished-identified-by-uuid', testInfo);
 });
 
 test('unknown model', async ({ page }, testInfo) => {
   const dir = SCREENSHOT_DIRS.edgeCompatibility;
-  await page.goto('/');
-  await dismissMobileModal(page);
-  await injectMockDevice(page, {
+  await connectToDeviceScreen(page, {
     serial: 'X9990A0000000',
     hardwareId: '00000000-0000-0000-0000-999999999999',
   });
-  await page.click('#btn-connect');
-  await page.click('#btn-connect-ready');
-  await expect(page.locator('#step-device')).not.toBeHidden();
   await shot(page, dir, 'unknown-model', testInfo);
 });
 

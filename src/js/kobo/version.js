@@ -107,10 +107,11 @@ function parseKoboVersion(content) {
     const rawSerialPrefix = serial.substring(0, 4);
     const serialPrefixFromSerial = canonicalSerialPrefix(rawSerialPrefix);
     const hardwareInfo = koboHardwareIds[hardwareId] || null;
-    const serialPrefix = koboModels[serialPrefixFromSerial]
-        ? serialPrefixFromSerial
-        : (hardwareInfo?.serialPrefix || serialPrefixFromSerial);
+    const serialPrefix = hardwareInfo?.serialPrefix || serialPrefixFromSerial;
     const model = modelNameForSerialPrefix(serialPrefix, rawSerialPrefix, hardwareInfo);
+    const identifiedBy = hardwareInfo
+        ? 'uuid'
+        : (koboModels[serialPrefixFromSerial] ? 'serial' : null);
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
     const fwMinor = parseInt(fwParts[1], 10) || 0;
@@ -122,6 +123,7 @@ function parseKoboVersion(content) {
         firmware,
         hardwareId,
         model,
+        identifiedBy,
         isIncompatible,
     };
 }
