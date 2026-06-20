@@ -228,11 +228,10 @@ export class NickelMenuInstaller {
 
         let collectedFiles = [];
         let featureFiles = {};
-        let eReaderConfData = null;
 
         if (features.length > 0) {
             progressFn('Preparing Kobo eReader.conf...');
-            eReaderConfData = await this.buildEReaderConfData(device, features);
+            const eReaderConfData = await this.buildEReaderConfData(device, features);
 
             const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization });
             collectedFiles = result.files;

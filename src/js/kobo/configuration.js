@@ -165,7 +165,7 @@ function createExcludeSyncFoldersMatcher(value) {
 
 function validateExcludeSyncFoldersRegex(value) {
     const errors = [];
-    let regex = null;
+    let regex;
 
     try {
         regex = createExcludeSyncFoldersMatcher(value);

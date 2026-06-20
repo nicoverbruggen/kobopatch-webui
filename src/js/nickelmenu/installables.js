@@ -20,12 +20,6 @@ export function installableVersion(id) {
     return entry ? entry.version : null;
 }
 
-/** Whether this deployment shipped the installable's asset. */
-export function installableAvailable(id) {
-    const entry = manifest()[id];
-    return !!(entry && entry.available);
-}
-
 /** The full manifest object (used by app.js to mark features available at startup). */
 export function installablesManifest() {
     return manifest();
