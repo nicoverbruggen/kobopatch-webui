@@ -343,8 +343,10 @@ test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab over
     assert.match(items, /menu_item :main :Power :power :reboot/);
 });
 
-const AURA_HD = { serialPrefix: 'N204', model: 'Kobo Aura HD' }; // no Dark mode
-const LIBRA_COLOUR = { serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
+// Dark mode support is keyed on the hardware UUID, so these carry the real UUID
+// (the serial prefix is included to mirror a parsed deviceInfo).
+const AURA_HD = { hardwareId: '00000000-0000-0000-0000-000000000350', serialPrefix: 'N204', model: 'Kobo Aura HD' }; // no Dark mode
+const LIBRA_COLOUR = { hardwareId: '00000000-0000-0000-0000-000000000390', serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
 
 function itemsFiles(...lines) {
     return [{ path: NM_ITEMS_FILE, data: lines.join('\n') }];
