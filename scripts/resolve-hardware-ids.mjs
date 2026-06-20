@@ -1,6 +1,13 @@
+// Developer-only, manually-run interoperability tool. Not part of the shipped
+// app and not invoked at runtime. It queries Kobo's public, unauthenticated
+// UpgradeCheck endpoint (api.kobobooks.com) the same way a device does, in order
+// to map hardware UUIDs to firmware channels. Run it sparingly and do not abuse
+// the public API, even though it is being served via Cloudflare's CDN.
+
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { get as httpsGet } from 'node:https';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultInput = 'tmp/hardware-ids.json';
@@ -93,14 +100,34 @@ function firmwareVersionFromUrl(url) {
     return String(url || '').match(/\/kobo-update-([0-9.]+(?:-s)?)(?:-TF[0-9]+|-TouchFW-[0-9]+)?\.zip(?:[?#].*)?$/)?.[1] || null;
 }
 
+// Kobo's UpgradeCheck endpoint sits behind Cloudflare, which 500s requests made
+// with undici's (global fetch) TLS fingerprint. Node's https client is accepted,
+// so we use it directly instead of routing through a third-party CORS proxy.
+function fetchJson(url) {
+    return new Promise((resolvePromise, reject) => {
+        const req = httpsGet(url, { headers: { Accept: '*/*' } }, res => {
+            let body = '';
+            res.setEncoding('utf8');
+            res.on('data', chunk => { body += chunk; });
+            res.on('end', () => {
+                if (res.statusCode < 200 || res.statusCode >= 300) {
+                    reject(new Error(`${res.statusCode} ${res.statusMessage || ''} from ${url}`.trim()));
+                    return;
+                }
+                try {
+                    resolvePromise(JSON.parse(body));
+                } catch (error) {
+                    reject(new Error(`Invalid JSON from ${url}: ${error.message}`));
+                }
+            });
+        });
+        req.on('error', reject);
+    });
+}
+
 async function resolveChannel(row, opts) {
     const url = upgradeCheckUrl(opts, row.uuid);
-    const resp = await fetch(url);
-    if (!resp.ok) {
-        throw new Error(`${resp.status} ${resp.statusText} from ${url}`);
-    }
-
-    const data = await resp.json();
+    const data = await fetchJson(url);
     const channel = firmwareChannelFromUrl(data.UpgradeURL);
 
     return {
