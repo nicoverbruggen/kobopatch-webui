@@ -15,10 +15,6 @@ async function loadSoftwareUrls() {
     return _data;
 }
 
-function hardwareEntriesForSerialPrefix(serialPrefix) {
-    return Object.values(koboHardwareIds).filter((info) => info.serialPrefix === serialPrefix);
-}
-
 function hardwareEntriesForChannel(channel) {
     return Object.values(koboHardwareIds).filter((info) => info.channel === channel);
 }
@@ -33,24 +29,15 @@ function compareFirmwareChannelsDescending(a, b) {
 }
 
 /**
- * Get the firmware download URL for a given firmware channel and firmware
- * version. Older local/test manifests may still be serial-prefix keyed, so this
- * also maps channels back to their known prefixes for compatibility.
+ * Get the firmware download URL for a given firmware channel and version, or
+ * null when the (channel-keyed) manifest has no matching entry.
  */
 function getSoftwareUrl(channel, version) {
     const data = _data || window.FIRMWARE_DOWNLOADS;
     if (!data) return null;
     const versionMap = data[version];
     if (!versionMap) return null;
-
-    if (versionMap[channel]) return versionMap[channel];
-
-    const matchingPrefixes = new Set(hardwareEntriesForChannel(channel).map((info) => info.serialPrefix));
-    for (const [key, url] of Object.entries(versionMap)) {
-        if (matchingPrefixes.has(key)) return url;
-    }
-
-    return null;
+    return versionMap[channel] || null;
 }
 
 /**
@@ -76,19 +63,13 @@ function getChannelsForVersion(version) {
         channels.set(info.channel, item);
     };
 
-    for (const key of Object.keys(versionMap)) {
-        if (key.startsWith('kobo')) {
-            const entries = hardwareEntriesForChannel(key);
-            if (entries.length === 0) {
-                channels.set(key, channels.get(key) || { channel: key, devices: [] });
-            } else {
-                for (const info of entries) addChannelEntry(info);
-            }
-            continue;
-        }
-
-        for (const info of hardwareEntriesForSerialPrefix(key)) {
-            addChannelEntry(info);
+    for (const channel of Object.keys(versionMap)) {
+        const entries = hardwareEntriesForChannel(channel);
+        if (entries.length === 0) {
+            // A channel with no known devices (e.g. a brand-new one) still lists.
+            channels.set(channel, channels.get(channel) || { channel, devices: [] });
+        } else {
+            for (const info of entries) addChannelEntry(info);
         }
     }
 

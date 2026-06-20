@@ -17,14 +17,6 @@ test('getSoftwareUrl returns the URL for a known channel + version, else null', 
     assert.equal(getSoftwareUrl('kobo13', '9.9.9'), null); // unknown version
 });
 
-test('getSoftwareUrl accepts legacy prefix-keyed manifests', () => {
-    window.FIRMWARE_DOWNLOADS = {
-        '4.45.23646': { N428: 'https://dl/libra-colour.zip' },
-    };
-
-    assert.equal(getSoftwareUrl('kobo13', '4.45.23646'), 'https://dl/libra-colour.zip');
-});
-
 test('getSoftwareUrl returns null when no manifest is loaded', () => {
     window.FIRMWARE_DOWNLOADS = undefined;
     assert.equal(getSoftwareUrl('kobo7', '4.45.23646'), null);
@@ -55,7 +47,7 @@ test('compareFirmwareChannelsDescending sorts kobo channels from newest to oldes
 });
 
 test('getChannelsForVersion returns [] for an unknown version or missing manifest', () => {
-    window.FIRMWARE_DOWNLOADS = { '4.45.23646': { N306: 'u' } };
+    window.FIRMWARE_DOWNLOADS = { '4.45.23646': { kobo8: 'u' } };
     assert.deepEqual(getChannelsForVersion('1.2.3'), []);
 
     window.FIRMWARE_DOWNLOADS = undefined;
