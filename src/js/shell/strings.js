@@ -1,9 +1,12 @@
+const NAV_NICKELMENU = ['Device', 'Mode', 'Configure', 'Backup', 'Review', 'Install'];
+
 export const TL = {
-    NAV_NICKELMENU: ['Device', 'Mode', 'Configure', 'Backup', 'Review', 'Install'],
+    NAV_NICKELMENU,
     NAV_NICKELMENU_REMOVE: ['Device', 'Mode', 'Configure', 'Backup', 'Review', 'Remove'],
     NAV_NICKELMENU_MANUAL_REMOVE: ['Device', 'Mode', 'Configure', 'Remove'],
     NAV_PATCHES: ['Device', 'Mode', 'Customize', 'Build', 'Install'],
-    NAV_DEFAULT: ['Device', 'Mode', 'Customize', 'Build', 'Install'],
+    // Placeholder shown before a mode is chosen; mirrors the recommended NickelMenu flow.
+    NAV_DEFAULT: NAV_NICKELMENU,
 
     BUTTON: {
         RESTORE_ORIGINAL: 'Restore Original Software',

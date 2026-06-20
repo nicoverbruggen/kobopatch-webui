@@ -21,8 +21,18 @@ export function initModeFlow(state, { patches, nm, manual }) {
         'btn-mode-next': btnModeNext,
     } = collect(['step-mode', 'step-connect', 'step-device', 'btn-mode-back', 'btn-mode-next']);
 
-    setupCardRadios(stepMode, 'selection-card--selected', () => {
+    // The mode cards lead into two different flows with different step lists, so
+    // reflect the chosen mode in the progress bar live (NickelMenu is the
+    // recommended flow and acts as the placeholder until a choice is made).
+    const navLabelsForMode = (mode) => (mode === 'patches' ? TL.NAV_PATCHES : TL.NAV_NICKELMENU);
+    const applyModeNav = (mode) => {
+        setNavLabels(navLabelsForMode(mode));
+        setNavStep(2);
+    };
+
+    setupCardRadios(stepMode, 'selection-card--selected', (radio) => {
         btnModeNext.disabled = false;
+        applyModeNav(radio.value);
     });
 
     function goToModeSelection() {
@@ -56,6 +66,8 @@ export function initModeFlow(state, { patches, nm, manual }) {
             patchesHint.hidden = true;
         }
 
+        // Before a choice is made, show the default placeholder steps; the card
+        // change handler swaps them to the chosen mode's flow.
         setNavLabels(TL.NAV_DEFAULT);
         setNavStep(2);
         showStep(stepMode);
