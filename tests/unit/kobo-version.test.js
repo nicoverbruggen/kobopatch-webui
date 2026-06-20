@@ -17,6 +17,7 @@ test('parseKoboVersion reads known 4-character device prefixes', () => {
         firmware: '4.45.23646',
         hardwareId: HARDWARE_ID,
         model: 'Kobo Libra Colour',
+        channel: 'kobo13',
         identifiedBy: 'uuid',
         isIncompatible: false,
     });
@@ -117,16 +118,25 @@ test('parseKoboVersion does not fall back to a 3-character prefix', () => {
 test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000390'], {
         serialPrefix: 'N428',
+        channel: 'kobo13',
         model: 'Kobo Libra Colour',
     });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000393'], {
         serialPrefix: 'N367',
+        channel: 'kobo12',
         model: 'Kobo Clara Colour',
     });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000395'], {
         serialPrefix: 'P365',
+        channel: 'kobo14',
         model: 'Kobo Clara BW (v2)',
     });
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000380'], {
+        serialPrefix: 'N782',
+        channel: 'kobo7',
+        model: 'Kobo Forma',
+    });
+    assert.equal(Object.values(koboHardwareIds).every(info => info.channel), true);
 });
 
 test('parseKoboVersion rejects malformed version files', () => {
