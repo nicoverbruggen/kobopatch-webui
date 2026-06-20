@@ -150,10 +150,8 @@
 
 .selection-card--danger {
     &:not(.selection-card--disabled) {
-        border-color: var(--error-border);
-
         &:hover {
-            border-color: var(--error-text);
+            border-color: var(--error-border);
         }
     }
 
