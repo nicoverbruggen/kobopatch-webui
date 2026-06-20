@@ -172,3 +172,9 @@ button:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
+
+/* Intro */
+#step-connect .intro .no-jailbreak {
+    text-decoration: underline;
+
+}

@@ -57,22 +57,38 @@
     background: var(--error-bg);
     border-color: var(--error-border);
     color: var(--error-text);
+
+    & a {
+        color: var(--error-text);
+        text-decoration: underline;
+    }
 }
 
 .banner--success {
     background: var(--success-bg);
     border-color: var(--success-border);
     color: var(--success-text);
+
+    & a {
+        color: var(--success-text);
+        text-decoration: underline;
+    }
 }
 
 .banner--accent {
     background: var(--primary-light);
     border-color: var(--accent-border);
     color: var(--accent-text);
+
+    & a {
+        color: var(--accent-text);
+        text-decoration: underline;
+    }
 }
 
 /* --- Context-specific margins --- */
 
+#step-connect p.intro { margin-bottom: 1.5rem; }
 #step-connect > .banner { margin-bottom: 1.5rem; }
 #device-unknown-warning { margin-bottom: 1.5rem; }
 #existing-tgz-warning { margin-bottom: 1.5rem; }
