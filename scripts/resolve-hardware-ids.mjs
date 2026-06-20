@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultInput = 'tmp/hardware-ids.json';
 const defaultOutput = 'tmp/hardware-resolved.js';
-const defaultProxyBase = 'https://kfw.api.pgaskin.net';
+const defaultApiBase = 'https://api.kobobooks.com';
 const defaultAffiliate = 'kobo';
 const defaultVersion = '0.0';
 const defaultSerial = 'N000000000000';
@@ -19,7 +19,7 @@ and writes a reviewable version.js-shaped proposal.
 Options:
   --input <path>       Hardware evidence JSON. Default: ${defaultInput}
   --output <path>      Generated JS proposal. Default: ${defaultOutput}
-  --proxy-base <url>   UpgradeCheck proxy base. Default: ${defaultProxyBase}
+  --api-base <url>     UpgradeCheck API base. Default: ${defaultApiBase}
   --affiliate <name>   UpgradeCheck affiliate. Default: ${defaultAffiliate}
   --version <version>  Version sent to UpgradeCheck. Default: ${defaultVersion}
   --serial <serial>    Serial sent to UpgradeCheck. Default: ${defaultSerial}
@@ -31,7 +31,7 @@ function parseArgs(argv) {
     const opts = {
         input: defaultInput,
         output: defaultOutput,
-        proxyBase: defaultProxyBase,
+        apiBase: defaultApiBase,
         affiliate: defaultAffiliate,
         version: defaultVersion,
         serial: defaultSerial,
@@ -51,8 +51,8 @@ function parseArgs(argv) {
             opts.input = readValue(arg);
         } else if (arg === '--output') {
             opts.output = readValue(arg);
-        } else if (arg === '--proxy-base') {
-            opts.proxyBase = readValue(arg).replace(/\/+$/, '');
+        } else if (arg === '--api-base') {
+            opts.apiBase = readValue(arg).replace(/\/+$/, '');
         } else if (arg === '--affiliate') {
             opts.affiliate = readValue(arg);
         } else if (arg === '--version') {
@@ -73,7 +73,6 @@ async function readJson(path) {
 
 function upgradeCheckUrl(opts, uuid) {
     const path = [
-        'api.kobobooks.com',
         '1.0',
         'UpgradeCheck',
         'Device',
@@ -83,7 +82,7 @@ function upgradeCheckUrl(opts, uuid) {
         encodeURIComponent(opts.serial),
     ].join('/');
 
-    return `${opts.proxyBase}/${path}`;
+    return `${opts.apiBase}/${path}`;
 }
 
 function firmwareChannelFromUrl(url) {
@@ -163,7 +162,7 @@ function renderProposal({ hardwareIds, resolvedRows, opts }) {
         generatedBy: 'scripts/resolve-hardware-ids.mjs',
         hardwareInputGeneratedAt: hardwareIds.generatedAt,
         request: {
-            proxyBase: opts.proxyBase,
+            apiBase: opts.apiBase,
             affiliate: opts.affiliate,
             version: opts.version,
             serial: opts.serial,
