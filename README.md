@@ -19,7 +19,7 @@ The project itself currently has a few operational modes, depending on what it i
 
 **This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config).** 
 
-This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, [NickelClock](https://github.com/shermp/NickelClock) (a reading-screen clock), and reading apps like KOReader or Cadmus if you'd like.  (You can select which specific tweaks to apply.)
+This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, NickelClock (which displays the clock while you're reading), and alternative reading apps like KOReader or Cadmus if you'd like. (You can pick and choose which specific tweaks to apply.)
 
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
@@ -31,7 +31,7 @@ Works with most Kobo devices regardless of software version. If you don't like i
 
 **This mode applies community [kobopatch](https://github.com/pgaskin/kobopatch) patches to your Kobo's system software.**
 
-You can combine with with option A, if you'd like, but this is a more involved process. This requires a supported software version and device model, which is currently limited to more recent devices.
+You can combine this with option A, if you'd like, but this is a more involved process. This requires a supported software version and device model, which is currently limited to more recent devices.
 
 - This is a <u>more experimental mod</u>: you need to choose what tweaks to apply.
 - Changes made by these patches are usually reset when system updates are released. That means you must re-patch whenever your device is updated.
@@ -71,16 +71,16 @@ If you want to apply **custom patches**:
 
 ## User flow
 
-1. **Connect or download** — auto-detect your Kobo via File System Access API on Chromium, or choose manual download mode (any browser)
-2. **Choose mode** — NickelMenu (install/configure/remove) or custom patches
-3. **Configure** — for NickelMenu: select install options (fonts, screensaver, tab/homescreen tweaks, reading apps) or removal; for patches: enable/disable patches (or select none to restore original software)
-4. **Backup** — create or manually confirm a backup before changing NickelMenu files
-5. **Review** — confirm your selections before proceeding
-6. **Install or remove** — write directly to the device (Chromium auto mode) or download a ZIP/tgz for manual installation
+1. **Connect or download**: auto-detect your Kobo via File System Access API on Chromium, or choose manual download mode (any browser)
+2. **Choose mode**: NickelMenu (install/configure/remove) or custom patches
+3. **Configure**: for NickelMenu: select what mods to install (fonts, screensaver, tab/homescreen tweaks, reading apps) or remove; for patches: enable/disable patches (or select none to restore original software)
+4. **Backup**: create or manually confirm a backup before changing NickelMenu files
+5. **Review**: confirm your selections before proceeding
+6. **Install or remove**: write directly to the device (Chromium auto mode) or download a ZIP/tgz for manual installation
 
 ## Technical information
 
-**Note:** This project was built with some assistance of agentic coding tools, some local and some hosted. The resulting project has been thoroughly tested by the author on various Kobo devices, including: Kobo Libra 2, Kobo Clara BW, Kobo Libra Color, Kobo Elipsa.
+**Note:** This project was built with some assistance of agentic coding tools, some local and some hosted. The resulting project has been thoroughly tested by the author on various Kobo devices, including: Kobo Libra 2, Kobo Clara BW, Kobo Libra Color, Kobo Elipsa. A comprehensive test suite (unit tests and end-to-end tests) is also included to verify everything works as expected and no regressions occur.
 
 More relevant notes on architecture, file structure, build internals, and detailed testing notes live in [PROJECT.md](PROJECT.md). Instructions for agentic coding tools live in [AGENTS.md](AGENTS.md), and should be read before work on features starts.
 

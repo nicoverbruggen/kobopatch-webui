@@ -13,6 +13,8 @@ const { parseTar } = require('../support/tar');
 const VERIFIED_IDENTIFICATION_HINT = 'The hardware UUID and serial prefix match this device.';
 const REFURBISHED_IDENTIFICATION_HINT =
   'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.';
+const REFURBISHED_MODEL_HINT =
+  'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
 const MISMATCH_IDENTIFICATION_HINT =
   'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.';
 
@@ -386,7 +388,7 @@ test.describe('Custom patches', () => {
     await expect(toggle).toHaveText('Reveal');
   });
 
-  test('with device — refurbished serial is verified without changing the model label', async ({ page }) => {
+  test('with device — refurbished serial is verified and marked next to the model label', async ({ page }) => {
     await page.goto('/');
     await injectMockDevice(page, {
       serial: 'R4180A0000000',
@@ -398,7 +400,12 @@ test.describe('Custom patches', () => {
     await page.click('#btn-connect-ready');
 
     await expect(page.locator('#step-device')).not.toBeHidden();
-    await expect(page.locator('#device-model')).toHaveText('Kobo Libra 2');
+    await expect(page.locator('#device-model')).toContainText('Kobo Libra 2');
+    await expect(page.locator('#device-model .device-refurbished-marker')).toHaveText('(refurb.)');
+    await expect(page.locator('#device-model .device-refurbished-marker')).toHaveAttribute(
+      'data-tooltip',
+      REFURBISHED_MODEL_HINT
+    );
     await expect(page.locator('#device-model .device-identification-badge--refurbished')).toHaveAttribute(
       'data-tooltip',
       REFURBISHED_IDENTIFICATION_HINT

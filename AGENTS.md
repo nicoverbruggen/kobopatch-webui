@@ -46,7 +46,7 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 - `npm run test:unit` runs the frontend unit tests.
 - `npm run lint` runs ESLint.
 - `npm run build` builds the frontend.
-- `npm run test` runs lint, unit tests, build, WASM checks, patch blacklist checks, and E2E tests.
+- `npm run test` runs lint, unit tests, build, WASM checks, patch blacklist checks, E2E tests, and screenshot capture.
 - `npm run test:e2e` runs only the Playwright E2E suite.
 - `npm run test:e2e:fresh` removes `dist`, rebuilds the app and required WASM artifact, then runs Playwright without the standalone WASM test suites.
 - `npm run screenshots` captures mobile and desktop screenshots for visual review.

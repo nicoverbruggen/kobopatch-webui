@@ -73,6 +73,7 @@ export function initConnectFlow(state, { patches }) {
         refurbished: 'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.',
         mismatch: 'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
     };
+    const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
 
     function displayDeviceInfo(info) {
         renderModel(info);
@@ -85,6 +86,15 @@ export function initConnectFlow(state, { patches }) {
         const modelEl = $('device-model');
         modelEl.textContent = '';
         modelEl.appendChild(document.createTextNode(info.model));
+
+        if (info.isRefurbished) {
+            const refurbishedMarker = document.createElement('span');
+            refurbishedMarker.className = 'device-refurbished-marker';
+            refurbishedMarker.tabIndex = 0;
+            refurbishedMarker.textContent = '(refurb.)';
+            refurbishedMarker.setAttribute('data-tooltip', refurbishedModelHint);
+            modelEl.appendChild(refurbishedMarker);
+        }
 
         const hint = verificationHints[info.serialPrefixStatus];
         if (!hint) return;

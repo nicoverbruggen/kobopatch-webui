@@ -1051,6 +1051,9 @@ test('refurbished device verified by UUID', async ({ page }, testInfo) => {
   });
   await shot(page, dir, 'refurbished-device-verified', testInfo);
 
+  await page.locator('#device-model .device-refurbished-marker').hover();
+  await shot(page, dir, 'refurbished-device-marker-hint', testInfo);
+
   await page.locator('#device-model .device-identification-badge--refurbished').hover();
   await shot(page, dir, 'refurbished-device-verified-hint', testInfo);
 });

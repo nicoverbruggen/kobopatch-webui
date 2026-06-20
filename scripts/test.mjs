@@ -170,5 +170,7 @@ await phase('E2E tests (Playwright)', () => {
   return run(join(e2eDir, 'scripts/run-e2e.sh'), e2eArgs);
 });
 
+await phase('Screenshots (Playwright)', () => run(join(e2eDir, 'scripts/run-screenshots.sh'), []));
+
 printSummary();
 console.log(`\n${green('✓ All test phases passed')} ${dim(`(${formatDuration(performance.now() - suiteStart)} total)`)}`);

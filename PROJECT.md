@@ -143,7 +143,7 @@ Run all tests:
 npm run test
 ```
 
-This installs dependencies, sets up installable assets, builds WASM, builds the app, validates `dist`, checks the patch blacklist, runs unit tests, runs the WASM integration test when cached firmware is present, and runs Playwright E2E tests. On first run it may prompt to download firmware test assets to `tests/e2e/cached_assets/`.
+This installs dependencies, sets up installable assets, builds WASM, builds the app, validates `dist`, checks the patch blacklist, runs unit tests, runs the WASM integration test when cached firmware is present, runs Playwright E2E tests, and captures the screenshot set. On first run it may prompt to download firmware test assets to `tests/e2e/cached_assets/`.
 
 Useful commands:
 
@@ -170,7 +170,7 @@ bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 
 ### Screenshots
 
-`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
+`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
 
 Each test in `screenshots.mjs` walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus grouped edge cases. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read). Add-on availability comes from the baked installables manifest, and firmware-dependent flows skip when the firmware zip is absent.
 
