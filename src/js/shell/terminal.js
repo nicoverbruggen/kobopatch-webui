@@ -3,6 +3,7 @@ import { isEnabled as analyticsEnabled, track } from './analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
 import { DeviceWriter } from '../kobo/device-writer.js';
 import { markDeviceWriteError } from '../kobo/device-errors.js';
+import JSZip from 'jszip';
 
 /**
  * The shared "terminal" of a flow — the build/result tail that both the patches
@@ -46,7 +47,6 @@ export function createTerminal({ doneStep, showError }) {
      * @returns {Promise<Uint8Array>} the generated ZIP bytes.
      */
     async function download({ entries, instructions, filename }) {
-        const { default: JSZip } = await import('jszip');
         const zip = new JSZip();
         for (const entry of entries) {
             zip.file(entry.path, entry.data);
