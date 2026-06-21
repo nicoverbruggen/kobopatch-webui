@@ -1,4 +1,4 @@
-import { formatMB, fetchWithProgress } from '../shell/dom.js';
+import { formatBytes, fetchWithProgress } from '../shell/dom.js';
 import JSZip from 'jszip';
 
 export function appendLog(logEl, msg) {
@@ -12,11 +12,11 @@ export async function downloadFirmware(url, progressEl) {
         url,
         (received, total) => {
             if (!total) {
-                progressEl.textContent = `Downloading ${formatMB(received)}`;
+                progressEl.textContent = `Downloading ${formatBytes(received)}`;
                 return;
             }
             const pct = ((received / total) * 100).toFixed(0);
-            progressEl.textContent = `Downloading ${formatMB(received)} / ${formatMB(total)} (${pct}%)`;
+            progressEl.textContent = `Downloading ${formatBytes(received)} / ${formatBytes(total)} (${pct}%)`;
         },
         'Download failed',
     );
@@ -29,7 +29,7 @@ export async function extractOriginalTgz(firmwareBytes, progressEl, logFn) {
     const koboRoot = zip.file('KoboRoot.tgz');
     if (!koboRoot) throw new Error('Could not find KoboRoot.tgz in the downloaded firmware.');
     const tgz = new Uint8Array(await koboRoot.async('arraybuffer'));
-    logFn('Extracted KoboRoot.tgz: ' + formatMB(tgz.length));
+    logFn('Extracted KoboRoot.tgz: ' + formatBytes(tgz.length));
     return tgz;
 }
 

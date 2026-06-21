@@ -1,12 +1,12 @@
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { collect, formatMB, populateList } from '../shell/dom.js';
+import { collect, formatBytes, populateList } from '../shell/dom.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
 import { TL } from '../shell/strings.js';
 import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatchesManifest, checkExistingTgz } from './patches-execute.js';
 import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../patches/side-effects.js';
-import { mergeAdditionalFilesIntoTgz } from '../patches/additional-files.js';
+import { buildAdditionalFilesTgz, mergeAdditionalFilesIntoTgz } from '../patches/additional-files.js';
 
 export function initPatchesFlow(state) {
     const {
@@ -39,6 +39,7 @@ export function initPatchesFlow(state) {
         'firmware-version-label': firmwareVersionLabel,
         'firmware-device-label': firmwareDeviceLabel,
         'firmware-description': firmwareDescription,
+        'firmware-download-details': firmwareDownloadDetails,
         'patch-count-hint': patchCountHint,
         'done-log': _doneLog,
         'selected-patches-list': _selectedPatchesList,
@@ -78,6 +79,7 @@ export function initPatchesFlow(state) {
         'firmware-version-label',
         'firmware-device-label',
         'firmware-description',
+        'firmware-download-details',
         'patch-count-hint',
         'done-log',
         'selected-patches-list',
@@ -108,13 +110,19 @@ export function initPatchesFlow(state) {
             recoveryStep: 'patches',
             back: (ctx) => (ctx.isRestore ? null : 'patches'),
             onEnter: async () => {
+                const additionalFilesOnly = !state.isRestore && state.patchUI.getEnabledCount() === 0;
                 if (state.isRestore) {
                     firmwareDescription.textContent = TL.STATUS.RESTORE_ORIGINAL;
                     btnBuild.textContent = TL.BUTTON.RESTORE_ORIGINAL;
+                } else if (additionalFilesOnly) {
+                    firmwareDescription.textContent = TL.STATUS.ADDITIONAL_FILES_ONLY;
+                    btnBuild.textContent = TL.BUTTON.BUILD_ADDITIONAL_FILES;
                 } else {
                     firmwareDescription.textContent = TL.STATUS.FIRMWARE_WILL_BE_DOWNLOADED;
                     btnBuild.textContent = TL.BUTTON.BUILD_PATCHED;
                 }
+                // The download URL is only relevant when the firmware is actually fetched.
+                firmwareDownloadDetails.hidden = additionalFilesOnly;
                 populateSelectedPatchesList();
             },
         },
@@ -130,7 +138,8 @@ export function initPatchesFlow(state) {
             navLabels: TL.NAV_PATCHES,
             navIndex: 5,
             onEnter: async () => {
-                const action = state.isRestore ? 'Software extracted' : 'Patching complete';
+                const additionalFilesOnly = !state.isRestore && state.patchUI.getEnabledCount() === 0;
+                const action = state.isRestore ? 'Software extracted' : additionalFilesOnly ? 'Files packaged' : 'Patching complete';
                 const description = state.isRestore ? 'This will restore the original unpatched software.' : '';
                 const deviceName = state.deviceModelLabel || 'Kobo';
                 const installHint = state.manualMode
@@ -140,7 +149,7 @@ export function initPatchesFlow(state) {
                 buildStatus.innerHTML =
                     action +
                     '. <strong>KoboRoot.tgz</strong> (' +
-                    formatMB(state.resultTgz.length) +
+                    formatBytes(state.resultTgz.length) +
                     ') is ready. ' +
                     (description ? description + ' ' : '') +
                     installHint;
@@ -305,7 +314,7 @@ export function initPatchesFlow(state) {
 
             const size = document.createElement('span');
             size.className = 'patch-additional-file-size';
-            size.textContent = formatMB(file.size);
+            size.textContent = formatBytes(file.size);
             name.appendChild(size);
 
             const target = document.createElement('div');
@@ -412,18 +421,37 @@ export function initPatchesFlow(state) {
         buildProgress.textContent = TL.STATUS.BUILDING_STARTING;
         _buildWaitHint.textContent = state.isRestore
             ? 'Please wait while the original software is being downloaded and extracted...'
-            : 'Please wait while the patch is being applied...';
+            : state.patchUI.getEnabledCount() === 0
+              ? 'Please wait while KoboRoot.tgz is being built...'
+              : 'Please wait while the patch is being applied...';
 
         try {
+            const log = (msg) => appendLog(buildLog, msg);
+
+            // No patches selected, only additional files: build a KoboRoot.tgz
+            // containing just those files. The firmware and patched libraries are
+            // not needed, so skip the download and the patcher entirely.
+            if (!state.isRestore && state.patchUI.getEnabledCount() === 0) {
+                state.additionalFileEntries = await state.patchUI.readAdditionalFileEntries();
+                buildProgress.textContent = 'Building KoboRoot.tgz...';
+                log(
+                    `Building KoboRoot.tgz with ${state.additionalFileEntries.length} additional file${state.additionalFileEntries.length === 1 ? '' : 's'} (no patches selected)...`,
+                );
+                state.resultTgz = await buildAdditionalFilesTgz(state.additionalFileEntries);
+                for (const entry of state.additionalFileEntries) {
+                    log(`  ADD ${entry.sourceName} -> ${entry.path}`);
+                }
+                await flow.go('done', state);
+                return;
+            }
+
             if (!state.firmwareURL) {
                 state.showError(TL.STATUS.NO_FIRMWARE_URL);
                 return;
             }
 
-            const log = (msg) => appendLog(buildLog, msg);
-
             const firmwareBytes = await downloadFirmware(state.firmwareURL, buildProgress);
-            log('Download complete: ' + formatMB(firmwareBytes.length));
+            log('Download complete: ' + formatBytes(firmwareBytes.length));
 
             state.resultTgz = state.isRestore
                 ? await extractOriginalTgz(firmwareBytes, buildProgress, log)

@@ -383,6 +383,56 @@ test('manual patches restore original', async ({ page }, testInfo) => {
     await shot(page, dir, '10-restore-done-download', testInfo);
 });
 
+// Additional files only (no patches selected): the firmware is never downloaded
+// or patched — KoboRoot.tgz is built from the added files alone. This flow needs
+// no firmware zip, so the build runs for real all the way to the done screen.
+test('manual patches additional files only', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.manualPatches;
+    const isMobile = testInfo.project.name === 'mobile';
+
+    await page.goto('/');
+    if (isMobile) {
+        await page.click('#btn-mobile-continue');
+        await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+    }
+
+    await page.click('#btn-manual');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await selectManualPatchesModel(page);
+
+    // Open the Advanced section and add a file without enabling any patch.
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await page.locator('#patch-advanced-section summary').click();
+    await page.setInputFiles('#patch-additional-file-input', {
+        name: 'Georgia.ttf',
+        mimeType: 'font/ttf',
+        buffer: Buffer.from('font-bytes'),
+    });
+    await expect(page.locator('#patch-additional-files-list')).toContainText('Georgia.ttf');
+    await expect(page.locator('#patch-count-hint')).toContainText('1 additional file selected');
+    await shot(page, dir, '11-additional-files-config', testInfo);
+
+    // Build step — no firmware download, just packaging the added files.
+    await page.click('#btn-patches-next');
+    await expect(page.locator('#step-firmware')).not.toBeHidden();
+    await expect(page.locator('#firmware-description')).toContainText('no patches are selected');
+    await shot(page, dir, '12-additional-files-build', testInfo);
+
+    // Done — the KoboRoot.tgz is built for real from the added file alone.
+    await page.click('#btn-build');
+    const stepDone = page.locator('#step-done');
+    await expect(stepDone).not.toBeHidden({ timeout: 60_000 });
+    await shot(page, dir, '13-additional-files-done', testInfo);
+
+    await page.click('#btn-download');
+    await expect(stepDone.locator('#download-instructions')).toBeVisible();
+    await shot(page, dir, '14-additional-files-done-download', testInfo);
+});
+
 // ============================================================
 // 4. Connected NickelMenu flow
 // ============================================================

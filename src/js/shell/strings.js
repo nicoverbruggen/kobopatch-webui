@@ -11,6 +11,7 @@ export const TL = {
     BUTTON: {
         RESTORE_ORIGINAL: 'Restore Original Software',
         BUILD_PATCHED: 'Build Patched Software',
+        BUILD_ADDITIONAL_FILES: 'Build KoboRoot.tgz',
         WRITE_TO_KOBO: 'Write to Kobo',
         REMOVE_FROM_KOBO: 'Remove from Kobo',
         WRITING: 'Writing...',
@@ -43,6 +44,8 @@ export const TL = {
         PATCH_AND_EXTRA_FILE_COUNT: (patches, files) =>
             `${patches} patch${patches === 1 ? '' : 'es'} and ${files} additional file${files === 1 ? '' : 's'} selected.`,
         FIRMWARE_WILL_BE_DOWNLOADED: 'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes.',
+        ADDITIONAL_FILES_ONLY:
+            'will not be downloaded \u2014 no patches are selected, so only the additional files you added will be packaged into KoboRoot.tgz.',
         RESTORE_ORIGINAL: 'will be downloaded and extracted without modifications to restore the original unpatched software.',
         BUILDING_STARTING: 'Starting...',
         DOWNLOADING: 'Downloading software update...',

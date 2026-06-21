@@ -30,8 +30,11 @@ export function collect(ids) {
 }
 
 /** Format a byte count as a human-readable "X.X MB" string. */
-export function formatMB(bytes) {
-    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+export function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
 }
 
 /**
@@ -190,9 +193,9 @@ export function downloadProgress(report, label, expectedTotal = null) {
         if (knownTotal) {
             const fraction = Math.min(1, received / knownTotal);
             const pct = (fraction * 100).toFixed(0);
-            report(label, `${formatMB(received)} / ${formatMB(knownTotal)} (${pct}%)`, fraction);
+            report(label, `${formatBytes(received)} / ${formatBytes(knownTotal)} (${pct}%)`, fraction);
         } else {
-            report(label, formatMB(received), null);
+            report(label, formatBytes(received), null);
         }
     };
 }

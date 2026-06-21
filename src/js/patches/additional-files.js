@@ -76,6 +76,17 @@ export async function readAdditionalFileEntry(item) {
     };
 }
 
+export async function buildAdditionalFilesTgz(additionalEntries) {
+    const seen = new Set();
+    for (const entry of additionalEntries) {
+        if (seen.has(entry.path)) {
+            throw new Error(`Additional file destination already exists: ${entry.path}`);
+        }
+        seen.add(entry.path);
+    }
+    return buildTarGz(additionalEntries);
+}
+
 export async function mergeAdditionalFilesIntoTgz(tgzBytes, additionalEntries) {
     if (!additionalEntries.length) return tgzBytes;
 

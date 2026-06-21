@@ -165,16 +165,20 @@
 
 .patch-additional-file-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(12rem, 1.4fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "name remove"
+        "target target";
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.55rem;
+    gap: 0.5rem 0.6rem;
+    padding: 0.55rem 0.65rem;
     border: 1px solid var(--border-light);
     border-radius: 5px;
     background: var(--bg);
 }
 
 .patch-additional-file-name {
+    grid-area: name;
     min-width: 0;
     font-size: 0.82rem;
     font-weight: 500;
@@ -190,6 +194,7 @@
 }
 
 .patch-additional-file-target {
+    grid-area: target;
     min-width: 0;
 
     & label {
@@ -210,8 +215,8 @@
         border-radius: 4px;
         background: var(--card-bg);
         color: var(--text);
-        font-size: 0.78rem;
-        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
     }
 
     & input:focus {
@@ -233,6 +238,7 @@
 }
 
 .patch-additional-file-remove {
+    grid-area: remove;
     width: 2rem;
     height: 2rem;
     padding: 0;
@@ -247,17 +253,12 @@
 }
 
 @media (max-width: 680px) {
-    .patch-additional-files-head,
-    .patch-additional-file-row {
+    .patch-additional-files-head {
+        display: grid;
         grid-template-columns: 1fr;
     }
 
-    .patch-additional-files-head {
-        display: grid;
-    }
-
-    .patch-additional-files-head button,
-    .patch-additional-file-remove {
+    .patch-additional-files-head button {
         justify-self: start;
     }
 }

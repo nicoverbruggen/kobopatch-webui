@@ -229,13 +229,13 @@ test.describe('Custom patches', () => {
         expect(zip.file('.kobopatch-webui/custom-patches.json'), 'restore ZIP must not include a manifest').toBeNull();
     });
 
-    test('no device — additional files are included in the patched KoboRoot.tgz', async ({ page }) => {
-        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
-
+    // With no patches enabled, the firmware is never downloaded or run through the
+    // patcher: KoboRoot.tgz is built from the additional files alone (no lib files).
+    test('no device — additional files only build a KoboRoot.tgz without lib files', async ({ page }) => {
         await gotoManualPatchesStep(page);
         await expect(page.locator('#patch-advanced-section')).not.toHaveAttribute('open', '');
         await page.locator('#patch-advanced-section summary').click();
-        await expect(page.locator('.patch-additional-files-warning')).toContainText('Be careful with additional files');
+        await expect(page.locator('.patch-additional-files')).toContainText('Only add files when you know the exact destination path');
 
         await page.setInputFiles('#patch-additional-file-input', {
             name: 'Georgia.ttf',
@@ -252,7 +252,9 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#selected-additional-files-list')).toContainText(
             'Georgia.ttf -> usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf',
         );
-        await expect(page.locator('#firmware-description')).toContainText('will be patched');
+        await expect(page.locator('#firmware-description')).toContainText('no patches are selected');
+        await expect(page.locator('#firmware-download-details')).toBeHidden();
+        await expect(page.locator('#btn-build')).toHaveText('Build KoboRoot.tgz');
 
         await page.click('#btn-build');
         await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
@@ -261,6 +263,8 @@ test.describe('Custom patches', () => {
         const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
         const tgzEntries = parseTar(zlib.gunzipSync(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')));
         expect(Buffer.from(tgzEntries['usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf']).toString('utf8')).toBe('font-bytes');
+        // Only the additional file is packaged — no patched library files.
+        expect(Object.keys(tgzEntries)).toEqual(['usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf']);
 
         const manifest = JSON.parse(await zip.file('.kobopatch-webui/custom-patches.json').async('string'));
         expect(manifest.files).toContainEqual({
