@@ -29,6 +29,10 @@ function editPatch(ui, filename, patchName, newYaml) {
     ui._trackEdit(filename, patchName, newYaml);
 }
 
+function fakeFile(name, size = 1) {
+    return { name, size, async arrayBuffer() {} };
+}
+
 test('parsePatchYAML reads name, enabled, description and patchGroup', () => {
     const yaml = [
         'Some patch:',
@@ -379,12 +383,36 @@ test('buildPatchesManifest captures overrides, customizations, and install metad
     const ui = seedUI('src/nickel.yaml', raw);
     editPatch(ui, 'src/nickel.yaml', 'Second', 'Second:\n  - Enabled: yes\n  - FindReplaceString: x\n');
 
-    const manifest = buildPatchesManifest(ui, '4.45.23646', 'kobo9');
+    const manifest = buildPatchesManifest(ui, '4.45.23646', 'kobo9', [
+        { path: 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf', sourceName: 'Georgia.ttf', size: 1234 },
+    ]);
     assert.deepEqual(manifest.overrides, ui.getOverrides());
     assert.deepEqual(manifest.customized, ui.getCustomizations());
     assert.equal(manifest.files[0].path, '.kobo/KoboRoot.tgz');
+    assert.deepEqual(manifest.files[1], {
+        path: 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf',
+        type: 'additional-file',
+        sourceName: 'Georgia.ttf',
+        size: 1234,
+    });
     assert.equal(manifest.meta.writer.name, 'kobopatch-webui');
     assert.equal(manifest.meta.installed.firmware, '4.45.23646');
     assert.equal(manifest.meta.installed.channel, 'kobo9');
     assert.equal(typeof manifest.meta.installed.timestamp, 'string');
+});
+
+test('additional file validation reports duplicate destinations per item', () => {
+    const ui = new PatchUI();
+    ui.addAdditionalFiles([fakeFile('A.ttf'), fakeFile('B.ttf')]);
+    ui.updateAdditionalFileDestination(1, 'usr/local/Kobo/fonts/shared.ttf');
+    ui.updateAdditionalFileDestination(2, 'usr/local/Kobo/fonts/shared.ttf');
+
+    const files = ui.getAdditionalFiles();
+    assert.equal(files[0].validation.ok, false);
+    assert.equal(files[1].validation.ok, false);
+    assert.match(files[0].validation.message, /unique destination/);
+    assert.deepEqual(ui.validateAdditionalFiles(), {
+        ok: false,
+        message: 'Each additional file needs a unique destination.',
+    });
 });

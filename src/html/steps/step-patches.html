@@ -5,6 +5,27 @@
             </div>
             <p>Enable or disable patches below. Patches in the same group are mutually exclusive.</p>
             <div id="patch-container" class="patch-container-scroll"></div>
+            <details id="patch-advanced-section" class="patch-advanced">
+                <summary>Advanced</summary>
+                <div class="patch-advanced-body">
+                    <div class="banner banner--warning patch-additional-files-warning">
+                        <p><strong>Be careful with additional files.</strong> They are inserted into the generated KoboRoot.tgz and written to the Kobo system during the update. Only add files when you know the exact destination path and have a recovery plan.</p>
+                    </div>
+                    <section class="patch-additional-files" aria-labelledby="patch-additional-files-title">
+                        <div class="patch-additional-files-head">
+                            <div>
+                                <h3 id="patch-additional-files-title">Additional files</h3>
+                                <p>Add local files to the generated KoboRoot.tgz.</p>
+                            </div>
+                            <button id="btn-patch-additional-files" class="secondary" type="button">Choose files</button>
+                            <input id="patch-additional-file-input" type="file" multiple hidden>
+                        </div>
+                        <p id="patch-additional-files-empty" class="fallback-hint">No additional files selected.</p>
+                        <div id="patch-additional-files-list" class="patch-additional-files-list"></div>
+                        <p id="patch-additional-files-error" class="patch-additional-files-error" hidden></p>
+                    </section>
+                </div>
+            </details>
             <div class="step-actions">
                 <button id="btn-patches-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-patches-next" class="primary" disabled>Continue &#x203A;</button>

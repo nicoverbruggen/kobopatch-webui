@@ -229,6 +229,68 @@ test.describe('Custom patches', () => {
         expect(zip.file('.kobopatch-webui/custom-patches.json'), 'restore ZIP must not include a manifest').toBeNull();
     });
 
+    test('no device — additional files are included in the patched KoboRoot.tgz', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await gotoManualPatchesStep(page);
+        await expect(page.locator('#patch-advanced-section')).not.toHaveAttribute('open', '');
+        await page.locator('#patch-advanced-section summary').click();
+        await expect(page.locator('.patch-additional-files-warning')).toContainText('Be careful with additional files');
+
+        await page.setInputFiles('#patch-additional-file-input', {
+            name: 'Georgia.ttf',
+            mimeType: 'font/ttf',
+            buffer: Buffer.from('font-bytes'),
+        });
+
+        await expect(page.locator('#patch-additional-files-list')).toContainText('Georgia.ttf');
+        await expect(page.locator('#patch-additional-files-list input')).toHaveValue('usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf');
+        await expect(page.locator('#patch-count-hint')).toContainText('1 additional file selected');
+
+        await page.click('#btn-patches-next');
+        await expect(page.locator('#step-firmware')).not.toBeHidden();
+        await expect(page.locator('#selected-additional-files-list')).toContainText(
+            'Georgia.ttf -> usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf',
+        );
+        await expect(page.locator('#firmware-description')).toContainText('will be patched');
+
+        await page.click('#btn-build');
+        await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+
+        const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-download')]);
+        const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+        const tgzEntries = parseTar(zlib.gunzipSync(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')));
+        expect(Buffer.from(tgzEntries['usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf']).toString('utf8')).toBe('font-bytes');
+
+        const manifest = JSON.parse(await zip.file('.kobopatch-webui/custom-patches.json').async('string'));
+        expect(manifest.files).toContainEqual({
+            path: 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf',
+            type: 'additional-file',
+            sourceName: 'Georgia.ttf',
+            size: 10,
+        });
+    });
+
+    test('no device — additional file destinations are validated before build', async ({ page }) => {
+        await gotoManualPatchesStep(page);
+        await page.locator('#patch-advanced-section summary').click();
+
+        await page.setInputFiles('#patch-additional-file-input', {
+            name: 'Georgia.ttf',
+            mimeType: 'font/ttf',
+            buffer: Buffer.from('font-bytes'),
+        });
+
+        const destination = page.locator('#patch-additional-files-list input');
+        await destination.fill('/usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf');
+        await destination.blur();
+
+        await expect(destination).toHaveAttribute('aria-invalid', 'true');
+        await expect(page.locator('#patch-additional-files-error')).toContainText('Destination paths must not start with /');
+        await expect(page.locator('.patch-additional-file-error')).toContainText('Destination paths must not start with /');
+        await expect(page.locator('#btn-patches-next')).toBeDisabled();
+    });
+
     test('with device — incompatible version 5.x shows error', async ({ page }) => {
         await page.goto('/');
         await injectMockDevice(page, { firmware: '5.0.0' });

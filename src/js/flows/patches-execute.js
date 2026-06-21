@@ -45,12 +45,20 @@ export async function runPatcher(runner, configYAML, firmwareBytes, patchFiles, 
     return result.tgz;
 }
 
-export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel) {
+export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel, additionalFiles = []) {
     const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
     return {
         overrides: patchUI.getOverrides(),
         customized: patchUI.getCustomizations(),
-        files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
+        files: [
+            { path: '.kobo/KoboRoot.tgz', type: 'file' },
+            ...additionalFiles.map((file) => ({
+                path: file.path,
+                type: 'additional-file',
+                sourceName: file.sourceName,
+                size: file.size,
+            })),
+        ],
         meta: {
             writer: { name: 'kobopatch-webui', version },
             installed: {

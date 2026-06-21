@@ -38,6 +38,10 @@ export const TL = {
         PATCH_COUNT_ZERO: 'No patches selected \u2014 continuing will restore the original unpatched software.',
         PATCH_COUNT_ONE: '1 patch selected.',
         PATCH_COUNT_MULTI: (n) => `${n} patches selected.`,
+        PATCH_EXTRA_FILE_COUNT_ONE: '1 additional file selected.',
+        PATCH_EXTRA_FILE_COUNT_MULTI: (n) => `${n} additional files selected.`,
+        PATCH_AND_EXTRA_FILE_COUNT: (patches, files) =>
+            `${patches} patch${patches === 1 ? '' : 'es'} and ${files} additional file${files === 1 ? '' : 's'} selected.`,
         FIRMWARE_WILL_BE_DOWNLOADED: 'will be downloaded automatically from Kobo\u2019s servers and will be patched after the download completes.',
         RESTORE_ORIGINAL: 'will be downloaded and extracted without modifications to restore the original unpatched software.',
         BUILDING_STARTING: 'Starting...',

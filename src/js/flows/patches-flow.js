@@ -6,6 +6,7 @@ import { buildPatchesInstructions } from '../shell/instructions.js';
 import { TL } from '../shell/strings.js';
 import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatchesManifest, checkExistingTgz } from './patches-execute.js';
 import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../patches/side-effects.js';
+import { mergeAdditionalFilesIntoTgz } from '../patches/additional-files.js';
 
 export function initPatchesFlow(state) {
     const {
@@ -14,6 +15,12 @@ export function initPatchesFlow(state) {
         'patch-reload-banner': patchReloadBanner,
         'patch-reload-text': patchReloadText,
         'btn-patch-reload': btnPatchReload,
+        'patch-advanced-section': patchAdvancedSection,
+        'btn-patch-additional-files': btnPatchAdditionalFiles,
+        'patch-additional-file-input': patchAdditionalFileInput,
+        'patch-additional-files-empty': patchAdditionalFilesEmpty,
+        'patch-additional-files-list': patchAdditionalFilesList,
+        'patch-additional-files-error': patchAdditionalFilesError,
         'btn-patches-back': btnPatchesBack,
         'btn-patches-next': btnPatchesNext,
         'btn-build-back': btnBuildBack,
@@ -36,6 +43,8 @@ export function initPatchesFlow(state) {
         'done-log': _doneLog,
         'selected-patches-list': _selectedPatchesList,
         'selected-patches-heading': _selectedPatchesHeading,
+        'selected-additional-files-list': _selectedAdditionalFilesList,
+        'selected-additional-files-heading': _selectedAdditionalFilesHeading,
         'build-wait-hint': _buildWaitHint,
         'firmware-download-url': _firmwareDownloadUrl,
         'download-device-name': _downloadDeviceName,
@@ -45,6 +54,12 @@ export function initPatchesFlow(state) {
         'patch-reload-banner',
         'patch-reload-text',
         'btn-patch-reload',
+        'patch-advanced-section',
+        'btn-patch-additional-files',
+        'patch-additional-file-input',
+        'patch-additional-files-empty',
+        'patch-additional-files-list',
+        'patch-additional-files-error',
         'btn-patches-back',
         'btn-patches-next',
         'btn-build-back',
@@ -67,6 +82,8 @@ export function initPatchesFlow(state) {
         'done-log',
         'selected-patches-list',
         'selected-patches-heading',
+        'selected-additional-files-list',
+        'selected-additional-files-heading',
         'build-wait-hint',
         'firmware-download-url',
         'download-device-name',
@@ -163,11 +180,22 @@ export function initPatchesFlow(state) {
 
     function updatePatchCount() {
         const count = state.patchUI.getEnabledCount();
-        btnPatchesNext.disabled = false;
-        if (count === 0) {
+        const additionalCount = state.patchUI.getAdditionalFileCount();
+        const additionalValidation = state.patchUI.validateAdditionalFiles();
+        btnPatchesNext.disabled = !additionalValidation.ok;
+        renderAdditionalFiles();
+        patchAdditionalFilesError.hidden = additionalValidation.ok;
+        patchAdditionalFilesError.textContent = additionalValidation.message;
+        if (!additionalValidation.ok) patchAdvancedSection.open = true;
+
+        if (count === 0 && additionalCount === 0) {
             patchCountHint.textContent = TL.STATUS.PATCH_COUNT_ZERO;
-        } else {
+        } else if (count === 0) {
+            patchCountHint.textContent = additionalCount === 1 ? TL.STATUS.PATCH_EXTRA_FILE_COUNT_ONE : TL.STATUS.PATCH_EXTRA_FILE_COUNT_MULTI(additionalCount);
+        } else if (additionalCount === 0) {
             patchCountHint.textContent = count === 1 ? TL.STATUS.PATCH_COUNT_ONE : TL.STATUS.PATCH_COUNT_MULTI(count);
+        } else {
+            patchCountHint.textContent = TL.STATUS.PATCH_AND_EXTRA_FILE_COUNT(count, additionalCount);
         }
     }
 
@@ -242,7 +270,8 @@ export function initPatchesFlow(state) {
     });
 
     btnPatchesNext.addEventListener('click', () => {
-        state.isRestore = state.patchUI.getEnabledCount() === 0;
+        if (!state.patchUI.validateAdditionalFiles().ok) return;
+        state.isRestore = state.patchUI.getEnabledCount() === 0 && !state.patchUI.hasAdditionalFiles();
         flow.go('firmware', state, { skipHistory: true });
     });
 
@@ -253,6 +282,69 @@ export function initPatchesFlow(state) {
         const hasPatches = enabled.length > 0;
         patchList.hidden = !hasPatches;
         _selectedPatchesHeading.hidden = !hasPatches;
+
+        const additionalFiles = state.patchUI.getAdditionalFiles().map((file) => `${file.name} -> ${file.validation.path || file.destination}`);
+        populateList(_selectedAdditionalFilesList, additionalFiles);
+        const hasAdditionalFiles = additionalFiles.length > 0;
+        _selectedAdditionalFilesList.hidden = !hasAdditionalFiles;
+        _selectedAdditionalFilesHeading.hidden = !hasAdditionalFiles;
+    }
+
+    function renderAdditionalFiles() {
+        const files = state.patchUI.getAdditionalFiles();
+        patchAdditionalFilesEmpty.hidden = files.length > 0;
+        patchAdditionalFilesList.innerHTML = '';
+
+        for (const file of files) {
+            const row = document.createElement('div');
+            row.className = 'patch-additional-file-row';
+
+            const name = document.createElement('div');
+            name.className = 'patch-additional-file-name';
+            name.textContent = file.name;
+
+            const size = document.createElement('span');
+            size.className = 'patch-additional-file-size';
+            size.textContent = formatMB(file.size);
+            name.appendChild(size);
+
+            const target = document.createElement('div');
+            target.className = 'patch-additional-file-target';
+
+            const label = document.createElement('label');
+            label.setAttribute('for', `patch-additional-file-destination-${file.id}`);
+            label.textContent = 'Destination';
+
+            const input = document.createElement('input');
+            input.id = `patch-additional-file-destination-${file.id}`;
+            input.value = file.destination;
+            input.placeholder = 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Font.ttf';
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+            input.setAttribute('aria-invalid', file.validation.ok ? 'false' : 'true');
+            if (!file.validation.ok) input.setAttribute('aria-describedby', `patch-additional-file-error-${file.id}`);
+            input.addEventListener('change', () => state.patchUI.updateAdditionalFileDestination(file.id, input.value));
+            target.append(label, input);
+
+            if (!file.validation.ok) {
+                const error = document.createElement('p');
+                error.id = `patch-additional-file-error-${file.id}`;
+                error.className = 'patch-additional-file-error';
+                error.textContent = file.validation.message;
+                target.appendChild(error);
+            }
+
+            const remove = document.createElement('button');
+            remove.className = 'secondary patch-additional-file-remove';
+            remove.type = 'button';
+            remove.setAttribute('aria-label', `Remove ${file.name}`);
+            remove.title = `Remove ${file.name}`;
+            remove.textContent = '\u00d7';
+            remove.addEventListener('click', () => state.patchUI.removeAdditionalFile(file.id));
+
+            row.append(name, target, remove);
+            patchAdditionalFilesList.appendChild(row);
+        }
     }
 
     function selectedPatchConfSettings() {
@@ -337,6 +429,15 @@ export function initPatchesFlow(state) {
                 ? await extractOriginalTgz(firmwareBytes, buildProgress, log)
                 : await runPatcher(state.runner, state.patchUI.generateConfig(), firmwareBytes, state.patchUI.getPatchFileBytes(), buildProgress, log);
 
+            state.additionalFileEntries = state.isRestore ? [] : await state.patchUI.readAdditionalFileEntries();
+            if (state.additionalFileEntries.length > 0) {
+                log(`Adding ${state.additionalFileEntries.length} additional file${state.additionalFileEntries.length === 1 ? '' : 's'}...`);
+                state.resultTgz = await mergeAdditionalFilesIntoTgz(state.resultTgz, state.additionalFileEntries);
+                for (const entry of state.additionalFileEntries) {
+                    log(`  ADD ${entry.sourceName} -> ${entry.path}`);
+                }
+            }
+
             await flow.go('done', state);
         } catch (err) {
             state.showError('Build failed: ' + err.message, buildLog.textContent);
@@ -363,7 +464,7 @@ export function initPatchesFlow(state) {
                 label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
             });
             if (!state.isRestore) {
-                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
+                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, state.additionalFileEntries || []);
                 const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
                 writes.push({
                     path: [AUDIT_LOG_DIRECTORY, 'custom-patches.json'],
@@ -407,7 +508,7 @@ export function initPatchesFlow(state) {
             const entries = [{ path: '.kobo/KoboRoot.tgz', data: state.resultTgz }];
             const confSettings = selectedPatchConfSettings();
             if (!state.isRestore) {
-                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
+                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, state.additionalFileEntries || []);
                 const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
                 entries.push({ path: `${AUDIT_LOG_DIRECTORY}/custom-patches.json`, data: manifestData });
             }
@@ -436,6 +537,18 @@ export function initPatchesFlow(state) {
         downloadInstructions.hidden = false;
         _downloadDeviceName.textContent = state.deviceModelLabel || 'Kobo';
         terminal.end(state.isRestore ? 'restore-download' : 'patches-download');
+    });
+
+    btnPatchAdditionalFiles.addEventListener('click', () => {
+        patchAdditionalFileInput.click();
+    });
+
+    patchAdditionalFileInput.addEventListener('change', () => {
+        state.patchUI.addAdditionalFiles(Array.from(patchAdditionalFileInput.files || []));
+        patchAdditionalFileInput.value = '';
+        patchAdvancedSection.open = true;
+        renderAdditionalFiles();
+        updatePatchCount();
     });
 
     return { goToPatches, goToBuild, updatePatchCount, configureFirmwareStep };

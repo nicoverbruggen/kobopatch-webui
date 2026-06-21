@@ -14,6 +14,12 @@ import { fetchOrThrow } from '../shell/dom.js';
 import { parsePatchYAML, replacePatchLines, yamlScalar, parsePatchConfig } from './patch-yaml.js';
 import { renderPatchList, updatePatchCounts } from './patch-list-view.js';
 import { fetchPatchBlacklist } from './catalog.js';
+import {
+    defaultAdditionalFileDestination,
+    normalizeAdditionalFileDestination,
+    readAdditionalFileEntry,
+    validateAdditionalFileDestination,
+} from './additional-files.js';
 
 class PatchUI {
     constructor() {
@@ -30,6 +36,8 @@ class PatchUI {
         this.pristineText = {};
         // Names of user-edited patches keyed by filename -> Set<name>.
         this.modifiedPatches = {};
+        this.additionalFiles = [];
+        this.nextAdditionalFileId = 1;
         // Called when patch selection changes
         this.onChange = null;
     }
@@ -74,6 +82,7 @@ class PatchUI {
         this.patchFiles = {};
         this.pristineText = {};
         this.modifiedPatches = {};
+        this.additionalFiles = [];
         for (const filename of Object.keys(patches)) {
             const yamlFile = zip.file(filename);
             if (!yamlFile) {
@@ -203,6 +212,90 @@ class PatchUI {
             }
         }
         return names;
+    }
+
+    addAdditionalFiles(files) {
+        for (const file of files) {
+            this.additionalFiles.push({
+                id: this.nextAdditionalFileId++,
+                file,
+                destination: defaultAdditionalFileDestination(file.name),
+            });
+        }
+        this.onChange?.();
+    }
+
+    updateAdditionalFileDestination(id, destination) {
+        const item = this.additionalFiles.find((file) => file.id === id);
+        if (!item) return;
+        item.destination = normalizeAdditionalFileDestination(destination);
+        this.onChange?.();
+    }
+
+    removeAdditionalFile(id) {
+        this.additionalFiles = this.additionalFiles.filter((file) => file.id !== id);
+        this.onChange?.();
+    }
+
+    getAdditionalFiles() {
+        const items = this.additionalFiles.map((item) => {
+            const validation = validateAdditionalFileDestination(item.destination);
+            return {
+                id: item.id,
+                name: item.file.name,
+                size: item.file.size,
+                destination: item.destination,
+                validation,
+            };
+        });
+        const counts = new Map();
+        for (const item of items) {
+            if (!item.validation.ok) continue;
+            counts.set(item.validation.path, (counts.get(item.validation.path) || 0) + 1);
+        }
+        return items.map((item) => {
+            if (item.validation.ok && counts.get(item.validation.path) > 1) {
+                return {
+                    ...item,
+                    validation: {
+                        ok: false,
+                        path: item.validation.path,
+                        message: 'Each additional file needs a unique destination.',
+                    },
+                };
+            }
+            return item;
+        });
+    }
+
+    getAdditionalFileCount() {
+        return this.additionalFiles.length;
+    }
+
+    hasAdditionalFiles() {
+        return this.additionalFiles.length > 0;
+    }
+
+    validateAdditionalFiles() {
+        for (const item of this.getAdditionalFiles()) {
+            const validation = item.validation;
+            if (!validation.ok) return { ok: false, message: validation.message };
+        }
+        return { ok: true, message: '' };
+    }
+
+    async readAdditionalFileEntries() {
+        const validation = this.validateAdditionalFiles();
+        if (!validation.ok) throw new Error(validation.message);
+        const entries = [];
+        const seen = new Set();
+        for (const item of this.additionalFiles) {
+            const entry = await readAdditionalFileEntry(item);
+            if (seen.has(entry.path)) throw new Error(`Each additional file needs a unique destination. ${entry.path} is used more than once.`);
+            seen.add(entry.path);
+            entries.push(entry);
+        }
+        return entries;
     }
 
     /**

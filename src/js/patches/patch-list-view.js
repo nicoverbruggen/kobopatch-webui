@@ -7,9 +7,25 @@
  * off the passed PatchUI instance; mutates only the DOM and selection state.
  */
 
+import { CircleHelp, Minus, Pencil } from 'lucide';
 import { TL } from '../shell/strings.js';
 import { PATCH_FILE_LABELS } from './patch-yaml.js';
 import { openPatchEditor } from './patch-editor.js';
+
+function iconAttrs(attrs) {
+    return Object.entries(attrs || {})
+        .map(([key, value]) => ` ${key}="${String(value).replace(/"/g, '&quot;')}"`)
+        .join('');
+}
+
+function iconSvg(icon) {
+    const wrap = document.createElement('span');
+    wrap.className = 'patch-icon-btn-icon';
+    wrap.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon
+        .map(([tag, attrs]) => `<${tag}${iconAttrs(attrs)}/>`)
+        .join('')}</svg>`;
+    return wrap;
+}
 
 function patchSetKey(ui) {
     return `${ui.firmwareVersion || ''}\n${Object.keys(ui.patchFiles).join('\n')}`;
@@ -199,17 +215,20 @@ export function renderPatchList(ui, container) {
             }
 
             const editBtn = document.createElement('button');
-            editBtn.className = 'patch-edit-btn';
-            editBtn.textContent = '✎';
+            editBtn.className = 'patch-icon-btn patch-edit-btn';
+            editBtn.appendChild(iconSvg(Pencil));
             editBtn.title = 'Edit patch values';
+            editBtn.setAttribute('aria-label', `Edit values for ${patch.name}`);
             editBtn.type = 'button';
             header.appendChild(editBtn);
 
             if (patch.description) {
                 const toggle = document.createElement('button');
-                toggle.className = 'patch-desc-toggle';
-                toggle.textContent = '?';
+                toggle.className = 'patch-icon-btn patch-desc-toggle';
+                toggle.appendChild(iconSvg(CircleHelp));
                 toggle.title = 'Toggle description';
+                toggle.setAttribute('aria-label', `Toggle description for ${patch.name}`);
+                toggle.setAttribute('aria-expanded', 'false');
                 toggle.type = 'button';
                 header.appendChild(toggle);
             }
@@ -234,7 +253,8 @@ export function renderPatchList(ui, container) {
                     e.preventDefault();
                     e.stopPropagation();
                     desc.hidden = !desc.hidden;
-                    toggle.textContent = desc.hidden ? '?' : '−';
+                    toggle.setAttribute('aria-expanded', desc.hidden ? 'false' : 'true');
+                    toggle.replaceChildren(iconSvg(desc.hidden ? CircleHelp : Minus));
                 });
             }
 
