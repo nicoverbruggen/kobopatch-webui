@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
-import { createReadStream, readFileSync, statSync, existsSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { createReadStream, readFileSync, statSync, existsSync, watch } from 'node:fs';
+import { join, extname, sep } from 'node:path';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 
@@ -21,6 +21,29 @@ if (analyticsEnabled) {
         `    <script defer src="${UMAMI_SCRIPT_URL}" data-website-id="${UMAMI_WEBSITE_ID}"></script>\n`;
 }
 
+// CSS live-reload, enabled by the dev server (LIVE_RELOAD=1). When the watch build
+// regenerates css/style.css, the server pushes a Server-Sent Event to connected
+// browsers, which swap the stylesheet's href (cache-busted) in place. CSS-only — no
+// full page reload — so the in-progress wizard state survives an edit. Changes to
+// critical.css (inlined into index.html) still need a manual refresh.
+const liveReload = !!process.env.LIVE_RELOAD;
+const liveReloadSnippet = liveReload
+    ? `    <script>
+    (() => {
+      const es = new EventSource('/__livereload');
+      es.addEventListener('css', () => {
+        for (const link of document.querySelectorAll('link[rel="stylesheet"][href*="style.css"]')) {
+          const u = new URL(link.href, location.href);
+          u.searchParams.set('h', Date.now());
+          link.href = u.href;
+        }
+        console.info('[live-reload] CSS updated');
+      });
+    })();
+    </script>
+`
+    : '';
+
 // Cache the processed index.html (disabled when NO_CACHE is set, e.g. during --dev)
 const noCache = !!process.env.NO_CACHE;
 let cachedIndexHtml = null;
@@ -31,6 +54,9 @@ function getIndexHtml() {
     let html = readFileSync(indexPath, 'utf-8');
     if (analyticsSnippet) {
         html = html.replace('</head>', analyticsSnippet + '</head>');
+    }
+    if (liveReloadSnippet) {
+        html = html.replace('</head>', liveReloadSnippet + '</head>');
     }
     if (!noCache) cachedIndexHtml = html;
     return html;
@@ -167,9 +193,48 @@ function logServed(req, res, url) {
     });
 }
 
+// Connected live-reload browsers (held-open SSE responses) and the broadcast that
+// nudges them to swap the stylesheet after a CSS rebuild.
+const sseClients = new Set();
+function broadcastCss() {
+    for (const client of sseClients) client.write('event: css\ndata: reload\n\n');
+}
+
+// Watch the served tree for the regenerated css/style.css and broadcast. DIST itself
+// is never removed during a dev session (the watch build only rewrites its children),
+// so a recursive watch on the root stays alive across rebuilds; we filter to the one
+// output file and debounce the burst of events a rebuild produces.
+function setupCssWatch() {
+    let timer = null;
+    try {
+        watch(DIST, { recursive: true }, (_event, filename) => {
+            if (!filename || filename.split(sep).join('/') !== 'css/style.css') return;
+            clearTimeout(timer);
+            timer = setTimeout(broadcastCss, 100);
+        });
+    } catch {
+        // DIST not ready yet (build still creating it) — retry shortly.
+        setTimeout(setupCssWatch, 500);
+    }
+}
+
 createServer((req, res) => {
     const url = new URL(req.url, `http://localhost`);
     if (logRequests) logServed(req, res, url);
+
+    // Live-reload SSE stream: held open, never logged as a served file.
+    if (liveReload && url.pathname === '/__livereload') {
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+        });
+        res.write('retry: 1000\n\n');
+        sseClients.add(res);
+        req.on('close', () => sseClients.delete(res));
+        return;
+    }
+
     let filePath = join(DIST, decodeURIComponent(url.pathname));
     if (!filePath.startsWith(DIST + '/') && filePath !== DIST) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -249,4 +314,5 @@ createServer((req, res) => {
     }
 }).listen(PORT, () => {
     console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
+    if (liveReload) setupCssWatch();
 });

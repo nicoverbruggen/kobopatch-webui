@@ -118,13 +118,6 @@
     }
 }
 
-.patch-additional-files {
-    padding: 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background: var(--bg);
-}
-
 .patch-additional-files-head {
     display: flex;
     align-items: flex-start;

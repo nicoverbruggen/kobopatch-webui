@@ -79,7 +79,7 @@ function runDevServer() {
     const childStdio = ['ignore', 'inherit', 'inherit'];
     const builder = spawnLongRunning('node', ['scripts/build.mjs', '--watch'], { env: childEnv, stdio: childStdio });
     const server = spawnLongRunning('node', ['scripts/serve-dist.mjs'], {
-        env: { ...childEnv, NO_CACHE: '1', LOG_REQUESTS: '1' },
+        env: { ...childEnv, NO_CACHE: '1', LOG_REQUESTS: '1', LIVE_RELOAD: '1' },
         stdio: childStdio,
     });
 
@@ -124,6 +124,7 @@ function printDevBanner() {
         'Local:    http://localhost:8888',
         'Output:   dist-dev/  (removed on exit)',
         'Watching: src/ for changes',
+        'Reload:   CSS hot-swaps in the browser; other edits need a refresh',
         'Requests: logged below as they are served',
         '',
         'Press q or Ctrl-C to quit',
