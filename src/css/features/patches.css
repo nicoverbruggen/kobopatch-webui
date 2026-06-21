@@ -143,6 +143,20 @@
     }
 }
 
+#patch-additional-files-empty {
+    margin-bottom: -0.8rem;
+}
+
+#patch-additional-files-title {
+    margin-bottom: 0.5rem;
+}
+
+#btn-patch-additional-files {
+    font-size: 0.85rem;
+    padding: 0.30rem 1rem;
+    margin: 0.5rem 0;
+}
+
 .patch-additional-files-list {
     display: grid;
     gap: 0.55rem;
@@ -578,7 +592,7 @@
 
 /* Reload-from-device banner at the top of the patches step. */
 .patch-reload-banner {
-    display: flex;
+    display: block;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
@@ -594,11 +608,12 @@
 }
 
 .patch-reload-banner #patch-reload-text {
-    flex: 1;
+    display: block;
 }
 
 .patch-reload-banner #btn-patch-reload {
     flex-shrink: 0;
+    margin-top: 0.5rem;
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
     color: var(--text-secondary);
