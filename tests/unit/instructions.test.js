@@ -111,6 +111,33 @@ test('patches instructions include the device name, header, and disclaimer', () 
     assert.ok(text.includes(KOBO_RESET_HELP_URL));
 });
 
+test('patches instructions include side-effect config settings when needed', () => {
+    const text = buildPatchesInstructions({
+        version: '2.0.0',
+        date: DATE,
+        deviceName: 'Kobo Libra Color',
+        confSettings: [
+            {
+                section: 'ApplicationPreferences',
+                key: 'kobo_googledrive_link_account_enabled',
+                value: 'True',
+            },
+            {
+                section: 'ApplicationPreferences',
+                key: 'googledrive_link_account_start',
+                value: 'https://authorize.kobo.com/{region}/{language}/linkcloudstorage/provider/google_drive',
+            },
+        ],
+    });
+
+    assert.match(text, /^2\. Open \.kobo\/Kobo\/Kobo eReader\.conf in a text editor/m);
+    assert.match(text, /\[ApplicationPreferences\]/);
+    assert.ok(text.includes('kobo_googledrive_link_account_enabled=True'));
+    assert.ok(text.includes('googledrive_link_account_start=https://authorize.kobo.com/{region}/{language}/linkcloudstorage/provider/google_drive'));
+    assert.match(text, /^3\. Extract the downloaded ZIP/m);
+    assert.match(text, /^4\. Safely eject the Kobo/m);
+});
+
 test('patches instructions fall back to "Kobo" when no device name is given', () => {
     const text = buildPatchesInstructions({ version: '2.0.0', date: DATE });
     assert.match(text, /^1\. Connect your Kobo via USB/m);

@@ -90,6 +90,49 @@ test('parsePatchYAML reads multi-line block-scalar descriptions regardless of in
     assert.equal(patch.description, 'line one\nline two');
 });
 
+test('parsePatchYAML excludes detached section comments from the previous patch range', () => {
+    const yaml = [
+        'Last patch in section:',
+        '  - Enabled: no',
+        '  - ReplaceBytes: {FindH: AA, ReplaceH: BB}',
+        '',
+        '# The following patches belong to the next section.',
+        '# They should not be edited as part of the previous patch.',
+        '',
+        'First patch in next section:',
+        '  - Enabled: no',
+    ].join('\n');
+
+    const patches = parsePatchYAML(yaml);
+    const first = patches[0];
+    assert.equal(first.lineStart, 0);
+    assert.equal(first.lineEnd, 4);
+
+    const firstText = yaml.split('\n').slice(first.lineStart, first.lineEnd).join('\n');
+    assert.match(firstText, /Last patch in section/);
+    assert.doesNotMatch(firstText, /following patches/);
+});
+
+test('parsePatchYAML keeps adjacent top-level commented operations inside the patch range', () => {
+    const yaml = [
+        'Patch with optional operation:',
+        '  - Enabled: no',
+        '  - ReplaceBytes: {FindH: AA, ReplaceH: BB}',
+        '  # choose one replacement:',
+        '# - ReplaceBytes: {FindH: AA, ReplaceH: CC}',
+        '',
+        'Next patch:',
+        '  - Enabled: no',
+    ].join('\n');
+
+    const patches = parsePatchYAML(yaml);
+    const first = patches[0];
+    const firstText = yaml.split('\n').slice(first.lineStart, first.lineEnd).join('\n');
+    assert.match(firstText, /choose one replacement/);
+    assert.match(firstText, /ReplaceH: CC/);
+    assert.equal(first.lineEnd, 6);
+});
+
 test('parsePatchYAML returns [] for invalid YAML rather than corrupting boundaries', () => {
     assert.deepEqual(parsePatchYAML('some: random\n  - bad: indent'), []);
 });

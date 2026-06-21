@@ -13,11 +13,14 @@
             </div>
             <p id="write-instructions" class="banner banner--success" hidden>
                 KoboRoot.tgz has been written to your Kobo.
+                <span id="write-conf-settings-note" hidden>The required Kobo eReader.conf settings are in place too.</span>
                 <strong>Safely eject</strong> the device before unplugging the USB cable — it will reboot and apply the patches automatically.
             </p>
             <div id="download-instructions" class="install-instructions" hidden>
                 <ol class="install-steps">
                     <li>Connect your <span id="download-device-name">Kobo</span> via USB so it appears as a removable drive.</li>
+                    <li id="patch-download-conf-settings-step" hidden>Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor and apply the following settings (replace any existing lines that have the same key):
+                        <div id="patch-download-conf-settings"></div></li>
                     <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure. Make sure the hidden <code>.kobo</code> folder is also copied.</li>
                     <li><strong>Safely eject</strong> the Kobo before unplugging the USB cable — it will reboot and apply the patches automatically.</li>
                 </ol>

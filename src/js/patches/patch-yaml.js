@@ -39,6 +39,36 @@ function topLevelKeyName(line) {
     return key;
 }
 
+function isBlank(line) {
+    return line.trim() === '';
+}
+
+function isTopLevelComment(line) {
+    return line.startsWith('#');
+}
+
+function patchLineEnd(lines, lineStart, nominalEnd) {
+    let beforeTrailingBlanks = nominalEnd;
+    while (beforeTrailingBlanks > lineStart && isBlank(lines[beforeTrailingBlanks - 1])) {
+        beforeTrailingBlanks--;
+    }
+
+    if (beforeTrailingBlanks <= lineStart || !isTopLevelComment(lines[beforeTrailingBlanks - 1])) {
+        return nominalEnd;
+    }
+
+    let commentStart = beforeTrailingBlanks;
+    while (commentStart > lineStart && isTopLevelComment(lines[commentStart - 1])) {
+        commentStart--;
+    }
+
+    if (commentStart > lineStart && isBlank(lines[commentStart - 1])) {
+        return commentStart;
+    }
+
+    return nominalEnd;
+}
+
 /**
  * Parse a kobopatch YAML file and extract patch metadata.
  * Returns an array of patch objects with: name, enabled, description, patchGroup,
@@ -77,7 +107,8 @@ export function parsePatchYAML(content) {
     }
 
     return boundaries.map((boundary, idx) => {
-        const lineEnd = idx + 1 < boundaries.length ? boundaries[idx + 1].lineStart : lines.length;
+        const nominalEnd = idx + 1 < boundaries.length ? boundaries[idx + 1].lineStart : lines.length;
+        const lineEnd = patchLineEnd(lines, boundary.lineStart, nominalEnd);
         const body = doc[boundary.name];
         const items = Array.isArray(body) ? body : [];
 

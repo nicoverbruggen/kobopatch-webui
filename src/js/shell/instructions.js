@@ -168,17 +168,31 @@ export function buildNickelMenuInstructions({ version, date = new Date(), isPres
 /**
  * Build the instructions.txt body for the custom-patch manual download.
  *
- * @param {object} ctx
- * @param {string} ctx.version      App version string.
- * @param {Date}   [ctx.date]       Generation timestamp.
- * @param {string} [ctx.deviceName] Friendly device name (e.g. "Kobo Libra Color").
+ * @param {object}   ctx
+ * @param {string}   ctx.version        App version string.
+ * @param {Date}     [ctx.date]         Generation timestamp.
+ * @param {string}   [ctx.deviceName]   Friendly device name (e.g. "Kobo Libra Color").
+ * @param {object[]} [ctx.confSettings] Patch side-effect `Kobo eReader.conf` settings.
  */
-export function buildPatchesInstructions({ version, date = new Date(), deviceName = 'Kobo' } = {}) {
-    const steps = [
-        [`Connect your ${deviceName} via USB so it appears as a removable drive.`],
+export function buildPatchesInstructions({ version, date = new Date(), deviceName = 'Kobo', confSettings = [] } = {}) {
+    const steps = [[`Connect your ${deviceName} via USB so it appears as a removable drive.`]];
+
+    if (confSettings.length > 0) {
+        const confBlock = renderConfBlock('', confSettings);
+        steps.push([
+            'Open .kobo/Kobo/Kobo eReader.conf in a text editor and add the',
+            'settings shown below. Keep each line under its [Section] header,',
+            'adding a section if it is missing and replacing any existing line',
+            'that has the same key. Do not replace the entire file.',
+            '',
+            ...confBlock.map((line) => (line ? `    ${line}` : '')),
+        ]);
+    }
+
+    steps.push(
         ['Extract the downloaded ZIP to the root of the Kobo drive, preserving', 'the folder structure. Make sure the hidden .kobo folder is also', 'copied.'],
         ['Safely eject the Kobo before unplugging the USB cable — it will', 'reboot and apply the patches automatically.'],
-    ];
+    );
 
     return [header(version, date), '', disclaimer(), '', heading('Installation steps'), '', renderSteps(steps), ''].join('\n');
 }

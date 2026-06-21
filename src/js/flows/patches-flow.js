@@ -5,6 +5,7 @@ import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
 import { TL } from '../shell/strings.js';
 import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatchesManifest, checkExistingTgz } from './patches-execute.js';
+import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../patches/side-effects.js';
 
 export function initPatchesFlow(state) {
     const {
@@ -25,6 +26,9 @@ export function initPatchesFlow(state) {
         'existing-tgz-warning': existingTgzWarning,
         'write-instructions': writeInstructions,
         'download-instructions': downloadInstructions,
+        'write-conf-settings-note': writeConfSettingsNote,
+        'patch-download-conf-settings-step': patchDownloadConfSettingsStep,
+        'patch-download-conf-settings': patchDownloadConfSettings,
         'firmware-version-label': firmwareVersionLabel,
         'firmware-device-label': firmwareDeviceLabel,
         'firmware-description': firmwareDescription,
@@ -53,6 +57,9 @@ export function initPatchesFlow(state) {
         'existing-tgz-warning',
         'write-instructions',
         'download-instructions',
+        'write-conf-settings-note',
+        'patch-download-conf-settings-step',
+        'patch-download-conf-settings',
         'firmware-version-label',
         'firmware-device-label',
         'firmware-description',
@@ -130,7 +137,9 @@ export function initPatchesFlow(state) {
                 btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
                 btnDownload.disabled = false;
                 writeInstructions.hidden = true;
+                writeConfSettingsNote.hidden = true;
                 downloadInstructions.hidden = true;
+                patchDownloadConfSettingsStep.hidden = true;
                 existingTgzWarning.hidden = true;
 
                 terminal.wireFeedback();
@@ -246,6 +255,51 @@ export function initPatchesFlow(state) {
         _selectedPatchesHeading.hidden = !hasPatches;
     }
 
+    function selectedPatchConfSettings() {
+        if (state.isRestore) return [];
+        return patchSideEffectConfSettings(state.patchUI.getEnabledPatches());
+    }
+
+    async function addPatchSideEffectWrites(writes, confSettings) {
+        if (confSettings.length === 0) return false;
+
+        const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
+        const current = (await state.device.readFile(confPath)) || '';
+        const updated = applyPatchSideEffectConfSettings(current, confSettings);
+        if (updated === current) return false;
+
+        writes.push({
+            path: confPath,
+            data: new TextEncoder().encode(updated),
+            label: 'Updated .kobo/Kobo/Kobo eReader.conf for selected patch side effects',
+        });
+        return true;
+    }
+
+    function renderDownloadConfSettings(container, settings) {
+        container.innerHTML = '';
+
+        const sections = new Map();
+        for (const { section, key, value } of settings) {
+            if (!sections.has(section)) sections.set(section, []);
+            sections.get(section).push(`${key}=${value}`);
+        }
+
+        for (const [section, lines] of sections) {
+            const intro = document.createElement('p');
+            const sectionCode = document.createElement('code');
+            sectionCode.textContent = `[${section}]`;
+            intro.append('In the ', sectionCode, ' section (add it if it is missing):');
+            container.appendChild(intro);
+
+            for (const line of lines) {
+                const lineCode = document.createElement('code');
+                lineCode.textContent = line;
+                container.append(lineCode, document.createElement('br'));
+            }
+        }
+    }
+
     function goToBuild() {
         flow.go('firmware', state, { skipHistory: true });
     }
@@ -296,22 +350,33 @@ export function initPatchesFlow(state) {
         btnWrite.textContent = TL.BUTTON.WRITING;
         downloadInstructions.hidden = true;
 
-        const writes = [
-            {
+        const confSettings = selectedPatchConfSettings();
+        const writes = [];
+        let handledConfSettings = false;
+
+        try {
+            await addPatchSideEffectWrites(writes, confSettings);
+            handledConfSettings = confSettings.length > 0;
+            writes.push({
                 path: ['.kobo', 'KoboRoot.tgz'],
                 data: state.resultTgz,
                 label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
-            },
-        ];
-        if (!state.isRestore) {
-            const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
-            const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-            writes.push({
-                path: [AUDIT_LOG_DIRECTORY, 'custom-patches.json'],
-                data: manifestData,
-                label: 'Wrote .kobopatch-webui/custom-patches.json manifest',
-                optional: true,
             });
+            if (!state.isRestore) {
+                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
+                const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+                writes.push({
+                    path: [AUDIT_LOG_DIRECTORY, 'custom-patches.json'],
+                    data: manifestData,
+                    label: 'Wrote .kobopatch-webui/custom-patches.json manifest',
+                    optional: true,
+                });
+            }
+        } catch (err) {
+            state.showError(TL.STATUS.WRITE_FAILED(err.message));
+            btnWrite.disabled = false;
+            btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
+            return;
         }
 
         const result = await terminal.writeToDevice({
@@ -329,6 +394,7 @@ export function initPatchesFlow(state) {
 
         btnWrite.textContent = TL.BUTTON.WRITTEN;
         btnWrite.className = 'btn-success';
+        writeConfSettingsNote.hidden = !handledConfSettings;
         writeInstructions.hidden = false;
         terminal.end(state.isRestore ? 'restore-write' : 'patches-write');
     });
@@ -339,6 +405,7 @@ export function initPatchesFlow(state) {
         btnDownload.disabled = true;
         try {
             const entries = [{ path: '.kobo/KoboRoot.tgz', data: state.resultTgz }];
+            const confSettings = selectedPatchConfSettings();
             if (!state.isRestore) {
                 const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel);
                 const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
@@ -350,9 +417,12 @@ export function initPatchesFlow(state) {
                 instructions: buildPatchesInstructions({
                     version,
                     deviceName: state.deviceModelLabel || 'Kobo',
+                    confSettings,
                 }),
                 filename: 'custom-patches.zip',
             });
+            renderDownloadConfSettings(patchDownloadConfSettings, confSettings);
+            patchDownloadConfSettingsStep.hidden = confSettings.length === 0;
         } catch (err) {
             state.showError(TL.ERROR.DOWNLOAD_FAILED_MESSAGE, err.message, {
                 title: TL.ERROR.DOWNLOAD_FAILED_TITLE,
