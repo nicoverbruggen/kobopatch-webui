@@ -44,19 +44,14 @@ function loadAssetCached(assetCache, url) {
  * Create the context passed to a feature's installer-time hooks (`install` and
  * `postProcess`). Every hook receives `deviceInfo` and the selected `features`
  * so features can adapt to the connected hardware and to what else is being
- * installed; installer-time hooks additionally get `asset`, `sharedAsset`, and
- * `progress`. `asset(relativePath)` fetches from the feature's own directory
- * under /js/nickelmenu/features/<id>/; `sharedAsset(url)` fetches an asset by its
- * real path for assets shared between features. Both go through one per-run cache
- * (`assetCache`), so an asset used by several features is fetched only once.
+ * installed; installer-time hooks additionally get `bundledAsset` and
+ * `progress`. `bundledAsset(url)` fetches a Vite-tracked asset URL through one
+ * per-run cache (`assetCache`), so an asset used by several features is fetched
+ * only once.
  */
-function createContext(feature, progressFn, deviceInfo = null, features = [], menuCustomization = null, assetCache = new Map()) {
-    const basePath = `js/nickelmenu/features/${feature.id}/`;
+function createContext(progressFn, deviceInfo = null, features = [], menuCustomization = null, assetCache = new Map()) {
     return {
-        asset(relativePath) {
-            return loadAssetCached(assetCache, basePath + relativePath);
-        },
-        sharedAsset(url) {
+        bundledAsset(url) {
             return loadAssetCached(assetCache, url);
         },
         progress(msg, detail, fraction) {
@@ -147,7 +142,7 @@ export class NickelMenuInstaller {
         const extraEntries = [];
         for (const feature of features) {
             if (!feature.koboRootEntries) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo, features);
+            const ctx = createContext(progressFn, deviceInfo, features);
             extraEntries.push(...(await feature.koboRootEntries(ctx)));
         }
         if (extraEntries.length === 0) return baseTgz;
@@ -180,7 +175,7 @@ export class NickelMenuInstaller {
         // Run install() for features that have it
         for (const feature of features) {
             if (!feature.install) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo, features, menuCustomization, assetCache);
+            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache);
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
@@ -206,7 +201,7 @@ export class NickelMenuInstaller {
         const itemsFile = files.find((f) => f.path === NM_ITEMS_FILE);
         for (const feature of features) {
             if (!feature.postProcess) continue;
-            const ctx = createContext(feature, progressFn, deviceInfo, features, menuCustomization, assetCache);
+            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache);
             files = feature.postProcess(files, ctx);
         }
 

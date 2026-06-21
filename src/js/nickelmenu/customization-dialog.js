@@ -8,8 +8,9 @@ import {
     sanitizeMenuLabel,
     NM_MENU_LABEL_MAX_LENGTH,
 } from './customization.js';
+import { CUSTOM_MENU_ICON_URL } from './features/custom-menu/index.js';
 
-const NM_DEFAULT_ICON_ASSET = 'js/nickelmenu/features/custom-menu/.cog.png';
+const NM_DEFAULT_ICON_ASSET = CUSTOM_MENU_ICON_URL;
 const NM_PRESET_ICON_PNG_SIZE = 48;
 const NM_UPLOAD_ICON_SIZE = 64;
 

@@ -135,6 +135,12 @@ add-on availability and the on-screen version come from the bundle with **no run
 fetch** — the per-asset `*-release.json` files no longer exist. Asset downloads use
 `/assets/<file>?v=<version>` so the URL changes with the pinned version (see Production Serving).
 
+Small feature-owned NickelMenu assets (preset icons, sample screensavers, and on-device toggle
+scripts) are declared in their feature modules with `new URL('./asset', import.meta.url)` so Vite
+tracks and emits them into `dist/assets/`. Feature `install()` hooks load those URLs through
+`ctx.bundledAsset(url)`, which uses the installer's per-run cache; shared assets such as
+`toggle_hidden_home.sh` are fetched once even when several features contribute them.
+
 ## Testing
 
 Run the full pipeline:

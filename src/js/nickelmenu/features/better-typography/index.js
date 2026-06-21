@@ -1,3 +1,7 @@
+import { loadBundledAsset } from '../assets.js';
+
+export const TOGGLE_TYPOGRAPHY_SCRIPT_URL = new URL('./scripts/toggle_typography.sh', import.meta.url).href;
+
 // Reading-experience tweaks applied to Kobo eReader.conf. These mirror what the
 // "Typography Toggle" menu script does, but are set up front:
 //   - webkitTextRendering=optimizeLegibility enables ligatures/GPOS kerning in
@@ -36,8 +40,9 @@ export default {
 
     // Ship the on-device toggle script. install() runs only for selected
     // features, so the script lands exactly when the feature is installed.
-    async install(ctx) {
-        return [{ path: '.adds/nm/scripts/toggle_typography.sh', data: await ctx.asset('scripts/toggle_typography.sh') }];
+    async install(ctx = {}) {
+        const data = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_TYPOGRAPHY_SCRIPT_URL) : await loadBundledAsset(TOGGLE_TYPOGRAPHY_SCRIPT_URL);
+        return [{ path: '.adds/nm/scripts/toggle_typography.sh', data }];
     },
 
     // Contribute the Toggle-menu toggle that flips optimized WebKit rendering

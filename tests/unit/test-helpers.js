@@ -1,6 +1,8 @@
 import JSZip from 'jszip';
 
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
+import { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import { TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 
 const koboEReaderConfPath = '.kobo/Kobo/Kobo eReader.conf';
 const koboRootTgzPath = '.kobo/KoboRoot.tgz';
@@ -55,10 +57,10 @@ function useCustomMenuAssetFetch() {
     const originalFetch = globalThis.fetch;
     // The items file is generated from feature menuItems hooks now. custom-menu
     // fetches the menu icon; the home-content hiders fetch their shared toggle
-    // script (simplify-tabs fetches its own toggle script via ctx.asset).
+    // script through Vite-tracked asset URLs.
     const assets = new Map([
-        ['js/nickelmenu/features/custom-menu/.cog.png', 'cog png'],
-        ['js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh', '#!/bin/sh\ntoggle home'],
+        [CUSTOM_MENU_ICON_URL, 'cog png'],
+        [TOGGLE_HIDDEN_HOME_SCRIPT_URL, '#!/bin/sh\ntoggle home'],
     ]);
 
     globalThis.fetch = async (url) => {

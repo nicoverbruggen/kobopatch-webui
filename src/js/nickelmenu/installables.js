@@ -2,7 +2,7 @@
  * Build-time manifest of bundled installable assets.
  *
  * `scripts/build.mjs` derives this from `installables.lock` and injects it via
- * esbuild `define` (`globalThis.__INSTALLABLES__`), so the app knows each add-on's
+ * Vite `define` (`globalThis.__INSTALLABLES__`), so the app knows each add-on's
  * pinned version and whether this deployment shipped its asset — without any
  * runtime `*-release.json` fetch. Shape: `{ <id>: { version, available } }`.
  *

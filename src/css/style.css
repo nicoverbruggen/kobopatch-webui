@@ -1,7 +1,7 @@
 /* Design tokens (:root variables) are defined in critical.css, which is
    inlined into <head> at build time — do not redefine them here.
 
-   This file is a manifest of @imports resolved by esbuild at build time.
+   This file is a manifest of @imports resolved by Vite at build time.
    The output is a single concatenated CSS file. */
 
 @import './base.css';

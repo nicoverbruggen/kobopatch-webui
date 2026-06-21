@@ -69,7 +69,7 @@ const INSTALLABLES = [
 // timeout in fetch). Abort a transfer that makes no progress for this long, and
 // retry a few times, so setup fails fast with a clear error instead of hanging
 // (most visibly on the large cadmus archive).
-const API_TIMEOUT_MS = 30_000;
+const API_TIMEOUT_MS = 5_000;
 const DOWNLOAD_IDLE_TIMEOUT_MS = 60_000;
 const DOWNLOAD_ATTEMPTS = 3;
 
@@ -299,6 +299,10 @@ function parseArgs(argv) {
     return opts;
 }
 
+function checkLabel(item) {
+    return item.pinned ? `[${item.name}] pinned, no remote update check needed` : `[${item.name}] checking ${item.repo} (timeout ${API_TIMEOUT_MS / 1000}s)`;
+}
+
 function printCachePaths(items, targets) {
     const paths = [];
     for (const target of targets) {
@@ -332,17 +336,20 @@ if (opts.check) {
     }
 
     const reports = [];
-    for (const item of items) reports.push(await checkInstallable(item, lock));
+    for (const item of items) {
+        console.log(checkLabel(item));
+        const report = await checkInstallable(item, lock);
+        reports.push(report);
+
+        if (report.status === 'current') console.log(`[${report.name}] up to date (${report.version})`);
+        else if (report.status === 'pinned') console.log(`[${report.name}] pinned (${report.version ?? 'unknown'}), not tracked for updates`);
+        else if (report.status === 'outdated') console.warn(`[${report.name}] update available (${report.current ?? 'none'} -> ${report.latest})`);
+        else if (report.status === 'error') console.warn(`[${report.name}] could not check for updates: ${report.message}`);
+    }
 
     const trackable = reports.filter((r) => r.status !== 'pinned');
     const outdated = reports.filter((r) => r.status === 'outdated');
     const errors = reports.filter((r) => r.status === 'error');
-
-    for (const r of reports) {
-        if (r.status === 'current') console.log(`[${r.name}] up to date (${r.version})`);
-        else if (r.status === 'pinned') console.log(`[${r.name}] pinned (${r.version ?? 'unknown'}), not tracked for updates`);
-    }
-    for (const r of errors) console.warn(`[${r.name}] could not check for updates: ${r.message}`);
 
     if (outdated.length) {
         console.warn('\n⚠ Updates available for installables:');

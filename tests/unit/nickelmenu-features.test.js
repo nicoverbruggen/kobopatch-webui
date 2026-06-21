@@ -4,14 +4,14 @@ import { gzipSync } from 'node:zlib';
 
 import JSZip from 'jszip';
 
-import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import customMenu, { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import cadmus from '../../src/js/nickelmenu/features/cadmus/index.js';
-import { homeHiders } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
+import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
-import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
+import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
-import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
+import simplifyTabs, { TOGGLE_TABS_SCRIPT_URL } from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
 import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
@@ -156,16 +156,15 @@ test('Better Typography sets reading rendering and alignment; default font only 
 });
 
 test('Better Typography ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {
-    // install() ships the on-device toggle script from the feature's own assets.
     const requested = [];
     const ctx = {
-        async asset(path) {
-            requested.push(path);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('#!/bin/sh\ntoggle');
         },
     };
     const installed = await betterTypography.install(ctx);
-    assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
+    assert.deepEqual(requested, [TOGGLE_TYPOGRAPHY_SCRIPT_URL]);
     assert.deepEqual(
         installed.map((f) => f.path),
         ['.adds/nm/scripts/toggle_typography.sh'],
@@ -426,15 +425,15 @@ test('custom menu install ships only the menu icon when no hiders are selected',
     const requested = [];
     const ctx = {
         features: [],
-        async asset(path) {
-            requested.push(path);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('asset');
         },
     };
 
     const files = await customMenu.install(ctx);
 
-    assert.deepEqual(requested, ['.cog.png']);
+    assert.deepEqual(requested, [CUSTOM_MENU_ICON_URL]);
     assert.deepEqual(
         files.map((file) => file.path),
         ['.adds/nm/.cog.png'],
@@ -461,18 +460,18 @@ test('home-content hiders share one toggle item and append distinct flags', () =
 });
 
 test('a home-content hider ships the shared toggle script to .adds/nm/scripts', async () => {
-    // The hider fetches the shared script by its real path via ctx.sharedAsset(),
-    // which the installer routes through its per-run, de-duplicating asset cache.
+    // The hider fetches the shared script by its Vite-tracked URL, which the
+    // installer routes through its per-run, de-duplicating asset cache.
     let requestedUrl = null;
     const ctx = {
-        async sharedAsset(url) {
+        async bundledAsset(url) {
             requestedUrl = url;
             return new TextEncoder().encode('toggle home');
         },
     };
 
     const files = await hideNotices.install(ctx);
-    assert.equal(requestedUrl, 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
+    assert.equal(requestedUrl, TOGGLE_HIDDEN_HOME_SCRIPT_URL);
     assert.deepEqual(
         files.map((file) => file.path),
         ['.adds/nm/scripts/toggle_hidden_home.sh'],
@@ -482,15 +481,15 @@ test('a home-content hider ships the shared toggle script to .adds/nm/scripts', 
 test('simplify-tabs owns its navigation-tab toggle script and item', async () => {
     const requested = [];
     const ctx = {
-        async asset(path) {
-            requested.push(path);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('script');
         },
     };
 
     const files = await simplifyTabs.install(ctx);
 
-    assert.deepEqual(requested, ['scripts/toggle_tabs.sh']);
+    assert.deepEqual(requested, [TOGGLE_TABS_SCRIPT_URL]);
     assert.deepEqual(
         files.map((file) => file.path),
         ['.adds/nm/scripts/toggle_tabs.sh'],

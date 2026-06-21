@@ -8,9 +8,9 @@ import { NM_MENU_ICON_CUSTOM_PNG_PATH } from '../../src/js/nickelmenu/customizat
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
 import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
 import { AuditLog } from '../../src/js/kobo/audit-log.js';
-import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import customMenu, { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import excludeCalibre from '../../src/js/nickelmenu/features/exclude-calibre/index.js';
-import { homeHiders } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
+import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import {
     RecordingDevice,
     bytes,
@@ -154,10 +154,9 @@ test('installToDevice de-duplicates the shared home-content toggle across hiders
 
 test('install fetches the shared home-content toggle script only once across hiders', async () => {
     const originalFetch = globalThis.fetch;
-    const toggleUrl = 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh';
     const assets = {
-        'js/nickelmenu/features/custom-menu/.cog.png': 'cog png',
-        [toggleUrl]: '#!/bin/sh\ntoggle home',
+        [CUSTOM_MENU_ICON_URL]: 'cog png',
+        [TOGGLE_HIDDEN_HOME_SCRIPT_URL]: '#!/bin/sh\ntoggle home',
     };
     const fetchCounts = new Map();
     globalThis.fetch = async (url) => {
@@ -183,7 +182,7 @@ test('install fetches the shared home-content toggle script only once across hid
     }
 
     // The per-run asset cache collapses the three identical fetches into one.
-    assert.equal(fetchCounts.get(toggleUrl), 1);
+    assert.equal(fetchCounts.get(TOGGLE_HIDDEN_HOME_SCRIPT_URL), 1);
     // ...and the script is still written exactly once.
     const scriptWrites = device.writePaths().filter((path) => path.endsWith('toggle_hidden_home.sh'));
     assert.deepEqual(scriptWrites, ['.adds/nm/scripts/toggle_hidden_home.sh']);

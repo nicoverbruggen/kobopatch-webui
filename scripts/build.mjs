@@ -151,7 +151,6 @@ async function build() {
     });
 
     copyDir(srcDir, distDir, new Set(['js', 'css', 'html', 'index.html']));
-    copyDir(join(srcDir, 'js', 'nickelmenu'), join(distDir, 'js', 'nickelmenu'));
     await buildPatchZips();
     copyWorkerFiles();
 

@@ -3,6 +3,9 @@ import JSZip from 'jszip';
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
 import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { loadBundledAsset } from '../assets.js';
+
+export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclock.sh', import.meta.url).href;
 
 // A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
 // existing user-edited file is never overwritten). NickelClock otherwise creates
@@ -90,10 +93,11 @@ export default {
     // Toggle item is below. settings.ini is written `ifAbsent` so a user-edited
     // config is preserved across reinstalls.
     async install(ctx) {
+        const toggleScript = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_NICKELCLOCK_SCRIPT_URL) : await loadBundledAsset(TOGGLE_NICKELCLOCK_SCRIPT_URL);
         return [
             {
                 path: '.adds/nm/scripts/toggle_nickelclock.sh',
-                data: await ctx.asset('scripts/toggle_nickelclock.sh'),
+                data: toggleScript,
             },
             {
                 path: '.adds/nickelclock/settings.ini',

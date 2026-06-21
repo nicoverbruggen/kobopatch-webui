@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import JSZip from 'jszip';
 
-import nickelclock from '../../src/js/nickelmenu/features/nickelclock/index.js';
+import nickelclock, { TOGGLE_NICKELCLOCK_SCRIPT_URL } from '../../src/js/nickelmenu/features/nickelclock/index.js';
 import { menuItemPosition } from '../../src/js/nickelmenu/features/menu-order.js';
 import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
 import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
@@ -41,7 +41,7 @@ function useNickelClockAssetFetch() {
                 },
             };
         }
-        if (url === 'js/nickelmenu/features/nickelclock/scripts/toggle_nickelclock.sh') {
+        if (url === TOGGLE_NICKELCLOCK_SCRIPT_URL) {
             const data = bytes('#!/bin/sh\n');
             return {
                 ok: true,
@@ -75,14 +75,14 @@ test('nickelclock is an Advanced feature registered in the NickelMenu feature li
 test('contributes a "NickelClock" Toggle item and ships its toggle script', async () => {
     const requested = [];
     const ctx = {
-        async asset(relativePath) {
-            requested.push(relativePath);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('#!/bin/sh\n');
         },
     };
 
     const files = await nickelclock.install(ctx);
-    assert.deepEqual(requested, ['scripts/toggle_nickelclock.sh']);
+    assert.deepEqual(requested, [TOGGLE_NICKELCLOCK_SCRIPT_URL]);
     assert.deepEqual(
         files.map((f) => f.path),
         ['.adds/nm/scripts/toggle_nickelclock.sh', '.adds/nickelclock/settings.ini'],
@@ -101,7 +101,7 @@ test('its Toggle item id is registered in MENU_ITEM_ORDER', () => {
 
 test('ships a prefilled settings.ini (Margin=40, clock on) marked ifAbsent', async () => {
     const ctx = {
-        async asset() {
+        async bundledAsset() {
             return new TextEncoder().encode('#!/bin/sh\n');
         },
     };

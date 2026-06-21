@@ -1,3 +1,7 @@
+import { loadBundledAsset } from '../assets.js';
+
+export const SCREENSAVER_MOON_URL = new URL('./moon.png', import.meta.url).href;
+
 // Copies a sample screensaver image to .kobo/screensaver and adds a Toggle-menu
 // item that toggles the screensaver on or off (by moving the image between
 // .kobo/screensaver and a .disabled/ folder). The user can drop additional
@@ -21,8 +25,9 @@ export default {
         paths: [{ path: ['.kobo', 'screensaver', 'moon.png'] }],
     },
 
-    async install(ctx) {
-        return [{ path: '.kobo/screensaver/moon.png', data: await ctx.asset('moon.png') }];
+    async install(ctx = {}) {
+        const data = ctx.bundledAsset ? await ctx.bundledAsset(SCREENSAVER_MOON_URL) : await loadBundledAsset(SCREENSAVER_MOON_URL);
+        return [{ path: '.kobo/screensaver/moon.png', data }];
     },
 
     // The Toggle-menu entry that toggles the screensaver on/off. menuItems only

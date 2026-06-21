@@ -1,4 +1,7 @@
 import { appendToNmConfig } from '../helpers.js';
+import { loadBundledAsset } from '../assets.js';
+
+export const TOGGLE_HIDDEN_HOME_SCRIPT_URL = new URL('./scripts/toggle_hidden_home.sh', import.meta.url).href;
 
 // The home-screen hiders are near-identical: each one appends a single
 // experimental:hide_home_*_enabled:1 line and shares ONE on-device toggle — the
@@ -20,13 +23,10 @@ function makeHider({ id, title, description, flag }) {
         // Ship the shared toggle script (de-duplicated by path in the installer,
         // so it lands once however many hiders are selected). It goes under
         // .adds/nm/scripts so NickelMenu removal's recursive delete cleans it up.
-        // ctx.asset() is scoped to features/<feature.id>/, but these features
-        // share a single directory under different ids, so the script is fetched
-        // by its real path via ctx.sharedAsset(). That path goes through the
-        // installer's per-run asset cache, so the script is fetched exactly once
-        // even when several hiders are selected.
-        async install(ctx) {
-            const data = await ctx.sharedAsset('js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
+        // The Vite-tracked URL goes through the installer's per-run asset cache,
+        // so the script is fetched exactly once even when several hiders are selected.
+        async install(ctx = {}) {
+            const data = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_HIDDEN_HOME_SCRIPT_URL) : await loadBundledAsset(TOGGLE_HIDDEN_HOME_SCRIPT_URL);
             return [{ path: '.adds/nm/scripts/toggle_hidden_home.sh', data }];
         },
 

@@ -17,12 +17,14 @@ const required = [
     'assets/NickelMenu.zip',
     'assets/koreader-kobo.zip',
     'assets/KF_Readerly.zip',
-    // Runtime-fetched NickelMenu feature assets (the items file is generated from
+    // Vite-tracked NickelMenu feature assets (the items file is generated from
     // feature menuItems hooks, so it is no longer shipped as a static asset).
-    'js/nickelmenu/features/custom-menu/.cog.png',
-    'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh',
-    'js/nickelmenu/features/simplify-tabs/scripts/toggle_tabs.sh',
-    'js/nickelmenu/features/nickelclock/scripts/toggle_nickelclock.sh',
+    'assets/.cog.png',
+    'assets/moon.png',
+    'assets/toggle_hidden_home.sh',
+    'assets/toggle_tabs.sh',
+    'assets/toggle_typography.sh',
+    'assets/toggle_nickelclock.sh',
 ];
 
 let missing = 0;

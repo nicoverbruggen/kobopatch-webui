@@ -1,5 +1,8 @@
 import { darkModeSupport } from '../../../kobo/dark-mode.js';
 import { resolveMenuCustomization, NM_MENU_ICON_DEFAULT_PATH } from '../../customization.js';
+import { loadBundledAsset } from '../assets.js';
+
+export const CUSTOM_MENU_ICON_URL = new URL('./.cog.png', import.meta.url).href;
 
 // Sets up the "Toggle" tab and its base NickelMenu entries (the tab header, plus
 // screenshots, auto-USB, rescan, invert, sleep, reboot, and a device-conditional
@@ -52,7 +55,8 @@ export default {
             return [resolved.iconFile];
         }
 
-        return [{ path: NM_MENU_ICON_DEFAULT_PATH, data: await ctx.asset('.cog.png') }];
+        const data = ctx.bundledAsset ? await ctx.bundledAsset(CUSTOM_MENU_ICON_URL) : await loadBundledAsset(CUSTOM_MENU_ICON_URL);
+        return [{ path: NM_MENU_ICON_DEFAULT_PATH, data }];
     },
 
     // Contribute the base Toggle-menu entries: the tab header first, then the

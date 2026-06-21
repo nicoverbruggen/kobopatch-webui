@@ -198,6 +198,7 @@ export default defineConfig(async ({ command }) => {
             target: 'es2020',
             sourcemap: isDev,
             minify: !isDev,
+            assetsInlineLimit: 0,
             rollupOptions: {
                 input: join(srcDir, 'index.html'),
                 output: {

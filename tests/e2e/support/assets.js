@@ -3,10 +3,7 @@ const path = require('path');
 const { WEBROOT, WEBROOT_FIRMWARE, FIRMWARE_PATH } = require('./paths');
 
 function hasNickelMenuAssets() {
-    return (
-        fs.existsSync(path.join(WEBROOT, 'assets', 'NickelMenu.zip')) &&
-        fs.existsSync(path.join(WEBROOT, 'js', 'nickelmenu', 'features', 'custom-menu', '.cog.png'))
-    );
+    return fs.existsSync(path.join(WEBROOT, 'assets', 'NickelMenu.zip')) && fs.existsSync(path.join(WEBROOT, 'assets', '.cog.png'));
 }
 
 function hasKOReaderAssets() {

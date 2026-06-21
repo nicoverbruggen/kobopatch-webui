@@ -1,4 +1,7 @@
 import { prependToNmConfig } from '../helpers.js';
+import { loadBundledAsset } from '../assets.js';
+
+export const TOGGLE_TABS_SCRIPT_URL = new URL('./scripts/toggle_tabs.sh', import.meta.url).href;
 
 // Simplifies the bottom navigation tab bar: hides the "My Notebooks" and
 // "Discover" tabs and surfaces reading stats as a separate "Stats" tab. This
@@ -17,7 +20,8 @@ export default {
 
     // Ship the on-device toggle script.
     async install(ctx = {}) {
-        return [{ path: '.adds/nm/scripts/toggle_tabs.sh', data: await ctx.asset('scripts/toggle_tabs.sh') }];
+        const data = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_TABS_SCRIPT_URL) : await loadBundledAsset(TOGGLE_TABS_SCRIPT_URL);
+        return [{ path: '.adds/nm/scripts/toggle_tabs.sh', data }];
     },
 
     // Contribute the "Simple Tabs" Toggle-menu item. Its position (just after

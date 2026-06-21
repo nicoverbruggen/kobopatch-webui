@@ -97,10 +97,7 @@ test.describe('NickelMenu — install', () => {
         await page.getByRole('button', { name: 'Customize NickelMenu preset tab' }).click();
         await expect(page.locator('#nm-customize-dialog')).toBeVisible();
         await expect(page.locator('.nm-icon-choice')).toHaveCount(12);
-        await expect(page.getByRole('button', { name: 'Use Cog icon' }).locator('img')).toHaveAttribute(
-            'src',
-            /\/?js\/nickelmenu\/features\/custom-menu\/\.cog\.png$/,
-        );
+        await expect(page.getByRole('button', { name: 'Use Cog icon' }).locator('img')).toHaveAttribute('src', /\/assets\/\.cog\.png$/);
         await page.fill('#nm-customize-label', 'ReadMode!');
         await expect(page.locator('#nm-customize-label')).toHaveValue('ReadMode');
         await page.getByRole('button', { name: 'Use Spark icon' }).click();
