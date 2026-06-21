@@ -40,7 +40,9 @@
     "prettier": "^3.8.4"
   },
   "dependencies": {
+    "fflate": "^0.8.3",
     "js-yaml": "^4.2.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "lucide": "^1.21.0"
   }
 }

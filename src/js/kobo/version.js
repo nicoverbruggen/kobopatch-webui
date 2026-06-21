@@ -1,8 +1,8 @@
 /**
  * Known Kobo hardware UUIDs mapped to the device metadata needed by the app.
  * UUIDs are authoritative for connected devices. The serial prefix is a
- * secondary consistency check and a compatibility bridge for the current
- * prefix-keyed firmware download manifest.
+ * secondary consistency check and display hint; firmware downloads are keyed
+ * by the channel stored on each hardware entry.
  */
 const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000310': { serialPrefix: 'N905', channel: 'kobo3', model: 'Kobo Touch A/B' },

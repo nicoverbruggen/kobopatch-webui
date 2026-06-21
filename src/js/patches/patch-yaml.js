@@ -130,33 +130,23 @@ export function yamlScalar(str) {
  */
 export function parsePatchConfig(configYAML) {
     const patches = {};
-    let version = null;
-    const lines = configYAML.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-    let inPatches = false;
 
-    for (const line of lines) {
-        // Extract version
-        const versionMatch = line.match(/^version:\s*(.+)$/);
-        if (versionMatch) {
-            version = versionMatch[1].trim().replace(/['"]/g, '');
-            continue;
-        }
+    let doc;
+    try {
+        doc = yaml.load(configYAML);
+    } catch {
+        doc = null;
+    }
 
-        if (line.match(/^patches:\s*$/)) {
-            inPatches = true;
-            continue;
-        }
+    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+        return { version: null, patches };
+    }
 
-        // A new top-level key ends the patches section
-        if (inPatches && line.length > 0 && !line.startsWith(' ') && !line.startsWith('#')) {
-            inPatches = false;
-        }
-
-        if (inPatches) {
-            const match = line.match(/^\s+([\w/.]+\.yaml):\s*(.+)$/);
-            if (match) {
-                patches[match[1]] = match[2].trim();
-            }
+    const version = doc.version === null || doc.version === undefined ? null : String(doc.version);
+    if (doc.patches && typeof doc.patches === 'object' && !Array.isArray(doc.patches)) {
+        for (const [filename, target] of Object.entries(doc.patches)) {
+            if (target === null || target === undefined) continue;
+            patches[filename] = String(target);
         }
     }
 

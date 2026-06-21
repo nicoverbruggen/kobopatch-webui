@@ -273,6 +273,18 @@ test('parsePatchConfig reads an unquoted version and ignores comments in the pat
     assert.deepEqual(patches, { 'src/nickel.yaml': 'usr/local/Kobo/nickel' });
 });
 
+test('parsePatchConfig tolerates invalid YAML and unexpected shapes', () => {
+    assert.deepEqual(parsePatchConfig('version: ok\n  - bad: indent'), { version: null, patches: {} });
+    assert.deepEqual(parsePatchConfig('version: "4.45.23646"\npatches:\n  - src/nickel.yaml'), { version: '4.45.23646', patches: {} });
+});
+
+test('parsePatchConfig parses quoted patch targets through js-yaml', () => {
+    const config = ['version: "4.45.23646"', 'patches:', '  "src/nickel_custom.yaml": "usr/local/Kobo/nickel:custom"'].join('\n');
+    const { version, patches } = parsePatchConfig(config);
+    assert.equal(version, '4.45.23646');
+    assert.deepEqual(patches, { 'src/nickel_custom.yaml': 'usr/local/Kobo/nickel:custom' });
+});
+
 test('generateConfig emits the version, patch targets, and quoted overrides', () => {
     const ui = new PatchUI();
     ui.firmwareVersion = '4.45.23646';

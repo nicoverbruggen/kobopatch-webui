@@ -10,6 +10,7 @@ import {
     NM_MENU_ICON_DEFAULT_PATH,
     NM_MENU_ICON_CUSTOM_PNG_PATH,
     NM_MENU_ICON_CUSTOM_SVG_PATH,
+    NM_MENU_PRESET_ICONS,
 } from '../../src/js/nickelmenu/customization.js';
 
 test('resolveMenuCustomization falls back to the default label and cog icon', () => {
@@ -46,6 +47,15 @@ test('resolveMenuCustomization writes a preset without raster data as its SVG', 
     assert.equal(result.iconPath, NM_MENU_ICON_CUSTOM_SVG_PATH);
     assert.equal(result.iconFile.path, NM_MENU_ICON_CUSTOM_SVG_PATH);
     assert.match(new TextDecoder().decode(result.iconFile.data), /^<svg/);
+});
+
+test('preset icons render from Lucide node data with the expected SVG attributes', () => {
+    const book = findPresetIcon('book');
+    assert.equal(NM_MENU_PRESET_ICONS.length, 12);
+    assert.match(book.svg, /^<svg /);
+    assert.match(book.svg, /stroke="#111827"/);
+    assert.match(book.svg, /stroke-width="1.0"/);
+    assert.match(book.svg, /<path d="M12 7v14"\/>/);
 });
 
 test('resolveMenuCustomization ignores an unknown preset and uses the default icon', () => {
