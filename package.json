@@ -34,10 +34,10 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "esbuild": "^0.28.1",
     "eslint": "^9.0.0",
     "jsdom": "^29.1.1",
-    "prettier": "^3.8.4"
+    "prettier": "^3.8.4",
+    "vite": "^7.2.7"
   },
   "dependencies": {
     "fflate": "^0.8.3",

@@ -65,7 +65,7 @@ function createTarGzFixture(entries) {
     return gzipSync(Buffer.concat(blocks));
 }
 
-// Set the build-time installables manifest (normally injected by esbuild define)
+// Set the build-time installables manifest (normally injected by Vite define)
 // so features can resolve their pinned version and versioned asset URL in tests.
 async function withManifest(manifest, fn) {
     const original = globalThis.__INSTALLABLES__;

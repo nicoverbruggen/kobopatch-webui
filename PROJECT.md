@@ -30,7 +30,6 @@ src/                            # Source assets (committed)
   favicon/
 
 dist/                           # Build output (gitignored, fully regenerable)
-dist-dev/                       # Throwaway dev-server build (gitignored; created and removed by `npm run dev`)
 
 patches/                        # Patch catalog and source YAML files served by the app
   index.json
@@ -54,10 +53,10 @@ tools/
   kobopatch-wasm/               # Go/WASM wrapper around kobopatch
 
 scripts/
-  build.mjs                     # esbuild build (+ installables manifest, precompression .br/.gz)
+  build.mjs                     # Vite production build plus patch ZIPs, worker/WASM placement, cache-bust queries, precompression
   serve-dist.mjs                # Production static server: Content-Length, cache tiers, ETag revalidation, br/gzip negotiation (see "Production Serving")
   verify.mjs                    # Phase runner for `npm run verify` (full) and `npm run test` (--quick subset)
-  serve-local.mjs               # Sets up, builds, and serves locally (dev mode uses a throwaway dist-dev/)
+  serve-local.mjs               # Sets up local assets/WASM, then starts Vite dev or the production static server
   validate-dist.mjs             # Validates all required dist resources exist
 ```
 
@@ -73,7 +72,7 @@ The JS source lives in `src/js/` as ES modules, organized by role:
 - **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, preset-conflict, legacy-items, optional-cleanup, and Kobo-user-count probes) live in `probes.js`; the menu-icon customization dialog and its image processing (canvas resize, SVG→PNG rendering) live in `customization-dialog.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
-The wizard's mutable state is a `Session` (`shell/session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/step-machine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/terminal.js`), which both flows construct and configure. esbuild bundles everything into `dist/bundle.js`.
+The wizard's mutable state is a `Session` (`shell/session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/step-machine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/terminal.js`), which both flows construct and configure. Vite bundles the app into `dist/bundle.js`.
 
 ## Adding a Software Version
 
@@ -129,8 +128,8 @@ Updating an installable is therefore a deliberate, reviewable change (a lock dif
 container (it conflicted with the immutable, version-suffixed asset URLs the CDN caches).
 
 The build derives a **build-time manifest** from the lock — each id's pinned `version` plus whether
-its asset is present (`scripts/build.mjs` → `installablesManifest()`) — and injects it into the
-bundle via esbuild `define` (`globalThis.__INSTALLABLES__`). The app reads it through
+its asset is present (`vite.config.mjs` → `installablesManifest()`) — and injects it into the
+bundle via Vite `define` (`globalThis.__INSTALLABLES__`). The app reads it through
 `src/js/nickelmenu/installables.js` (`installableVersion`/`installableAvailable`/`installableAssetUrl`):
 add-on availability and the on-screen version come from the bundle with **no runtime metadata
 fetch** — the per-asset `*-release.json` files no longer exist. Asset downloads use
@@ -201,7 +200,7 @@ For watch mode:
 npm run dev
 ```
 
-This builds into a throwaway `dist-dev/` (so it never clashes with the production `dist/` the e2e and screenshot suites build), serves it on `http://localhost:8888`, logs each request as it is served, and removes `dist-dev/` on exit. Press `q` or `Ctrl-C` to quit.
+This starts Vite on `http://localhost:8888` with module/CSS hot reload and full-page reloads for `src/index.html` plus included `src/html/**/*.html` partials. `serve-local.mjs` still prepares the locked installable assets and ensures `dist/wasm/kobopatch.wasm` exists first; `vite.config.mjs` serves the few generated/static resources that live outside `src/` during production builds (patch ZIPs, the WASM binary, and `wasm_exec.js` at the worker-relative path). Press `q` or `Ctrl-C` to quit.
 
 To test analytics UI locally without sending data:
 
@@ -222,12 +221,12 @@ injection, so the server is kept but made production-grade. The behaviour and *w
   length, leaving the browser unable to compute download progress. The asset download-progress UI
   (`fetchWithProgress` in `src/js/shell/dom.js`) depends on this header — without it, progress
   silently degrades to the no-percentage fallback.
-- **Build-time precompression, not on-the-fly.** `scripts/build.mjs` writes `.br`/`.gz` siblings for
+- **Build-time precompression, not on-the-fly.** After Vite writes the production bundle, `scripts/build.mjs` writes `.br`/`.gz` siblings for
   compressible types (`PRECOMPRESS_EXT`); the server negotiates them via `Accept-Encoding` (brotli
   preferred) at zero per-request CPU. Already-compressed archives (`.zip`/`.tgz`) and images are
   **excluded on purpose**: re-compressing them gains nothing, and adding `Content-Encoding` to an
   archive would make its `Content-Length` (compressed) smaller than the decompressed stream the
-  browser reads, breaking the progress percentage. Precompression is skipped for dev/watch builds.
+  browser reads, breaking the progress percentage. Precompression is skipped for Vite dev.
 - **Cache tiers** (`cacheControl`): just two. **Versioned URLs are `immutable, max-age=1yr`** —
   `?h=<content hash>` on `bundle.js`/`style.css`/`kobopatch.wasm`, and `?v=<pinned version>` on the
   `assets/*` add-on archives (the version comes from the build-time manifest; see Build And Assets).
@@ -251,9 +250,9 @@ injection, so the server is kept but made production-grade. The behaviour and *w
   as its source file, so a compressible asset replaced live without regenerating siblings falls back
   to serving the fresh identity bytes rather than a stale compressed copy.
 
-`scripts/serve-dist.mjs` is the single server for production, `npm run serve`, `npm run dev` (via
-`serve-local.mjs`, with `NO_CACHE=1` so caching/compression are bypassed for fast iteration), and the
-screenshot runner — so this behaviour is exercised by the E2E suite, not just in production.
+`scripts/serve-dist.mjs` is the single server for production, `npm run serve`, and the screenshot
+runner — so this behaviour is exercised by the E2E suite, not just in production. `npm run dev`
+uses Vite's dev server instead.
 
 ## Analytics
 

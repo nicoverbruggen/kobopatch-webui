@@ -1,10 +1,9 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, cpSync, rmSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const appDir = join(import.meta.dirname, '..');
 const distDir = join(appDir, 'dist');
-const devDistDir = join(appDir, 'dist-dev');
 const wasmDir = join(appDir, 'tools/kobopatch-wasm');
 const devMode = process.argv.includes('--dev');
 
@@ -52,7 +51,7 @@ if (!existsSync(join(distDir, 'wasm/kobopatch.wasm'))) {
 }
 
 if (devMode) {
-    runDevServer();
+    await runDevServer();
 } else {
     console.log('Building...');
     await run('npm', ['run', 'build']);
@@ -61,27 +60,14 @@ if (devMode) {
 }
 
 /**
- * Dev server: a watch build + static server that live in their own throwaway
- * dist-dev/ directory, so they never conflict with the production dist/ used by
- * the e2e and screenshot suites. The directory is removed on exit. Press q (or
- * Ctrl-C) to quit.
+ * Dev server: Vite serves src/index.html directly, with real module/CSS hot reload.
+ * The custom Vite plugin serves the few generated/static resources that live
+ * outside src/ during production builds: patch ZIPs, the WASM binary, and
+ * wasm_exec.js at the worker-relative path.
  */
-function runDevServer() {
-    // Fresh output dir, seeded with the prebuilt WASM so the watch build (which
-    // preserves wasm/) doesn't recompile Go on startup.
-    rmSync(devDistDir, { recursive: true, force: true });
-    mkdirSync(join(devDistDir, 'wasm'), { recursive: true });
-    cpSync(join(distDir, 'wasm', 'kobopatch.wasm'), join(devDistDir, 'wasm', 'kobopatch.wasm'));
-
-    const childEnv = { DIST_DIR: devDistDir };
-    // Children don't read stdin (the parent owns it for the quit key), so hand
-    // them only stdout/stderr.
-    const childStdio = ['ignore', 'inherit', 'inherit'];
-    const builder = spawnLongRunning('node', ['scripts/build.mjs', '--watch'], { env: childEnv, stdio: childStdio });
-    const server = spawnLongRunning('node', ['scripts/serve-dist.mjs'], {
-        env: { ...childEnv, NO_CACHE: '1', LOG_REQUESTS: '1', LIVE_RELOAD: '1' },
-        stdio: childStdio,
-    });
+async function runDevServer() {
+    const viteBin = join(appDir, 'node_modules', 'vite', 'bin', 'vite.js');
+    const server = spawnLongRunning('node', [viteBin, '--host', '127.0.0.1', '--port', '8888'], { stdio: ['ignore', 'inherit', 'inherit'] });
 
     let shuttingDown = false;
     const shutDown = (code = 0) => {
@@ -89,11 +75,8 @@ function runDevServer() {
         shuttingDown = true;
 
         if (process.stdin.isTTY) process.stdin.setRawMode(false);
-        for (const child of [builder, server]) {
-            if (!child.killed) child.kill();
-        }
-        rmSync(devDistDir, { recursive: true, force: true });
-        console.log('\nDev server stopped — removed dist-dev/.');
+        if (!server.killed) server.kill();
+        console.log('\nDev server stopped.');
         process.exit(code);
     };
 
@@ -110,8 +93,7 @@ function runDevServer() {
     process.on('SIGINT', () => shutDown(130));
     process.on('SIGTERM', () => shutDown(143));
 
-    // If a child dies on its own, tear the rest down too.
-    builder.on('exit', () => shutDown(1));
+    // If Vite dies on its own, tear down too.
     server.on('exit', () => shutDown(1));
 
     printDevBanner();
@@ -122,10 +104,9 @@ function printDevBanner() {
         'kobopatch-webui — dev server',
         '',
         'Local:    http://localhost:8888',
-        'Output:   dist-dev/  (removed on exit)',
-        'Watching: src/ for changes',
-        'Reload:   CSS hot-swaps in the browser; other edits need a refresh',
-        'Requests: logged below as they are served',
+        'Server:   Vite',
+        'Watching: src/, patches/',
+        'Reload:   Vite hot reload',
         '',
         'Press q or Ctrl-C to quit',
     ];

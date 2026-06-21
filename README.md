@@ -105,7 +105,7 @@ Some dependencies (see `installables.lock`) are bundled as part of the webapp, a
 **Libraries & tooling**
 
 - [JSZip](https://stuk.github.io/jszip/) for client-side ZIP handling _(MIT or GPL-3.0)_ and [js-yaml](https://github.com/nodeca/js-yaml) for parsing patch files _(MIT)_.
-- [esbuild](https://esbuild.github.io/) for bundling _(MIT)_ and [Go](https://go.dev/) for compiling kobopatch to WebAssembly _(BSD-3-Clause)_.
+- [Vite](https://vite.dev/) for bundling and local development _(MIT)_ and [Go](https://go.dev/) for compiling kobopatch to WebAssembly _(BSD-3-Clause)_.
 - [ESLint](https://eslint.org/) _(MIT)_ and [Playwright](https://playwright.dev/) _(Apache-2.0)_ for linting and end-to-end testing.
 
 Software patches and discussion come from the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) community.

@@ -23,7 +23,7 @@ const nickelclockEntries = [
 // wrapping a real KoboRoot.tgz, mirroring the published asset layout.
 function useNickelClockAssetFetch() {
     const originalFetch = globalThis.fetch;
-    // The version/availability come from the build-time manifest (esbuild define);
+    // The version/availability come from the build-time manifest (Vite define);
     // set it here so koboRootEntries resolves the pinned version + versioned URL.
     const originalManifest = globalThis.__INSTALLABLES__;
     globalThis.__INSTALLABLES__ = { nickelclock: { version: 'v0.4.0', available: true } };
