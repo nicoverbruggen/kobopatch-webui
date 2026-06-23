@@ -133,6 +133,7 @@ overrides:
      Remove forgot pin button from lock screen: no
      Increase size of kepub/audio chapter progress chart: no
      Change TOC level indentation: no
+     Remove line from bottom tab bar via CSS: no
    src/nickel_custom.yaml:
      jackie_w Screensaver full: no
      beta Increase width available for book Title in Booklists - Storm only: no
