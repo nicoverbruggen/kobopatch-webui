@@ -11,7 +11,7 @@
 
 import JSZip from 'jszip';
 import { fetchOrThrow } from '../shell/dom.js';
-import { parsePatchYAML, replacePatchLines, yamlScalar, parsePatchConfig } from './patch-yaml.js';
+import { parsePatchYAML, replacePatchLines, yamlScalar } from './patch-yaml.js';
 import { renderPatchList, updatePatchCounts } from './patch-list-view.js';
 import { fetchPatchBlacklist } from './catalog.js';
 import {
@@ -25,10 +25,9 @@ class PatchUI {
     constructor() {
         // Map of filename -> { raw: string, patches: Array }
         this.patchFiles = {};
-        // Parsed from kobopatch.yaml inside the zip
+        // File→target map (from patches/index.json), used to generate the config.
         this.patchConfig = {};
         this.firmwareVersion = null;
-        this.configYAML = null;
         // Blacklisted patches keyed by short version -> filename -> [names]
         this.blacklist = null;
         // Pristine patch text keyed by filename -> name, captured at load time so
@@ -62,20 +61,16 @@ class PatchUI {
 
     /**
      * Load patches from a zip file (ArrayBuffer or Uint8Array).
-     * The zip should contain kobopatch.yaml and src/*.yaml.
+     * The zip contains the src/*.yaml patch files; the firmware version and the
+     * file→target map come from patches/index.json (via the catalog), passed in
+     * as `version` and `patchConfig`.
      */
-    async loadFromZip(zipData) {
+    async loadFromZip(zipData, { version, patchConfig } = {}) {
         const zip = await JSZip.loadAsync(zipData);
 
-        // Load kobopatch.yaml
-        const configFile = zip.file('kobopatch.yaml');
-        if (!configFile) {
-            throw new Error('Patch zip does not contain kobopatch.yaml');
-        }
-        this.configYAML = await configFile.async('string');
-        const { version, patches } = parsePatchConfig(this.configYAML);
-        this.firmwareVersion = version;
-        this.patchConfig = patches;
+        this.firmwareVersion = version || null;
+        this.patchConfig = patchConfig || {};
+        const patches = this.patchConfig;
 
         // Load each patch YAML file referenced in the config. A fresh load is a
         // clean slate, so any previously tracked edits are discarded here.
@@ -122,12 +117,13 @@ class PatchUI {
     }
 
     /**
-     * Load patches from a URL pointing to a zip file.
+     * Load patches from a URL pointing to a zip file. `version` and
+     * `patchConfig` come from the catalog entry (patches/index.json).
      */
-    async loadFromURL(url) {
+    async loadFromURL(url, { version, patchConfig } = {}) {
         const resp = await fetchOrThrow(url, 'Failed to fetch patch zip');
         const data = await resp.arrayBuffer();
-        await this.loadFromZip(data);
+        await this.loadFromZip(data, { version, patchConfig });
     }
 
     /** Render the patch configuration UI into a container element. */

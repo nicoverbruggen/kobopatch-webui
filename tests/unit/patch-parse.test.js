@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { PatchUI } from '../../src/js/patches/ui.js';
-import { parsePatchYAML, replacePatchLines, yamlScalar, parsePatchConfig } from '../../src/js/patches/patch-yaml.js';
+import { parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/patch-yaml.js';
 import { buildPatchesManifest } from '../../src/js/flows/patches-execute.js';
 
 /**
@@ -291,45 +291,6 @@ test('yamlScalar leaves plain names bare and quotes significant characters', () 
     assert.equal(yamlScalar('- leading dash'), '"- leading dash"');
     assert.equal(yamlScalar('yes'), '"yes"');
     assert.equal(yamlScalar('say "hi"'), '"say \\"hi\\""');
-});
-
-test('parsePatchConfig extracts the version and the patches file→target map', () => {
-    const config = [
-        'version: "4.45.23646"',
-        'in: firmware.zip',
-        'out: out/KoboRoot.tgz',
-        'patches:',
-        '  src/nickel.yaml: usr/local/Kobo/nickel',
-        '  src/libnickel.so.1.0.0.yaml: usr/local/Kobo/libnickel.so.1.0.0',
-        'overrides:',
-        '  src/nickel.yaml:',
-        '    Some patch: yes',
-    ].join('\n');
-    const { version, patches } = parsePatchConfig(config);
-    assert.equal(version, '4.45.23646');
-    assert.deepEqual(patches, {
-        'src/nickel.yaml': 'usr/local/Kobo/nickel',
-        'src/libnickel.so.1.0.0.yaml': 'usr/local/Kobo/libnickel.so.1.0.0',
-    });
-});
-
-test('parsePatchConfig reads an unquoted version and ignores comments in the patches block', () => {
-    const config = ['version: 4.44.19619', 'patches:', '  # core UI patches', '  src/nickel.yaml: usr/local/Kobo/nickel'].join('\n');
-    const { version, patches } = parsePatchConfig(config);
-    assert.equal(version, '4.44.19619');
-    assert.deepEqual(patches, { 'src/nickel.yaml': 'usr/local/Kobo/nickel' });
-});
-
-test('parsePatchConfig tolerates invalid YAML and unexpected shapes', () => {
-    assert.deepEqual(parsePatchConfig('version: ok\n  - bad: indent'), { version: null, patches: {} });
-    assert.deepEqual(parsePatchConfig('version: "4.45.23646"\npatches:\n  - src/nickel.yaml'), { version: '4.45.23646', patches: {} });
-});
-
-test('parsePatchConfig parses quoted patch targets through js-yaml', () => {
-    const config = ['version: "4.45.23646"', 'patches:', '  "src/nickel_custom.yaml": "usr/local/Kobo/nickel:custom"'].join('\n');
-    const { version, patches } = parsePatchConfig(config);
-    assert.equal(version, '4.45.23646');
-    assert.deepEqual(patches, { 'src/nickel_custom.yaml': 'usr/local/Kobo/nickel:custom' });
 });
 
 test('generateConfig emits the version, patch targets, and quoted overrides', () => {

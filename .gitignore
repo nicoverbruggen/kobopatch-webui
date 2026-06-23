@@ -9,6 +9,10 @@ tools/kobopatch-wasm/kobopatch-src/
 tools/kobopatch-wasm/kobopatch.wasm
 tools/kobopatch-wasm/wasm_exec.js
 
+# Generated kobopatch config — produced on demand by the test-only tooling
+patches/**/kobopatch.yaml
+kobopatch.yaml
+
 # Generated files in src (written by build scripts, regenerated on demand)
 src/js/wasm_exec.js
 

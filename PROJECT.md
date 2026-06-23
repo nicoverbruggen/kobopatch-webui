@@ -32,11 +32,10 @@ src/                            # Source assets (committed)
 dist/                           # Build output (gitignored, fully regenerable)
 
 patches/                        # Patch catalog and source YAML files served by the app
-  index.json
+  index.json                     # Catalog: per-zip versions + the file→target patch map (formerly kobopatch.yaml)
   blacklist.json
   downloads.json                 # Firmware URLs keyed by version -> firmware channel (kobo12, kobo13, ...)
   <version>/
-    kobopatch.yaml
     src/*.yaml
 
 tests/

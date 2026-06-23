@@ -2,16 +2,17 @@
  * catalog.js — discovery of the available patch catalog.
  *
  * Reads the served `patches/index.json` and flattens it into the flat
- * `{ filename, version }` list the flows match a device's firmware against.
- * This is catalog lookup, not patch state — the loaded-patch model lives in
- * ui.js (PatchUI).
+ * `{ filename, version, patches }` list the flows match a device's firmware
+ * against. This is catalog lookup, not patch state — the loaded-patch model
+ * lives in ui.js (PatchUI).
  */
 
 /**
  * Scan the patches/ directory for available patch zips.
- * Returns an array of { filename, version } objects.
+ * Returns an array of { filename, version, patches } objects.
  * Each entry in index.json may list multiple versions; these are flattened
  * so that each version gets its own entry pointing to the same filename.
+ * `patches` is the file→target map kobopatch needs (formerly in kobopatch.yaml).
  */
 async function scanAvailablePatches() {
     try {
@@ -21,7 +22,7 @@ async function scanAvailablePatches() {
         const result = [];
         for (const entry of list) {
             for (const version of entry.versions) {
-                result.push({ filename: entry.filename, version });
+                result.push({ filename: entry.filename, version, patches: entry.patches || {} });
             }
         }
         return result;

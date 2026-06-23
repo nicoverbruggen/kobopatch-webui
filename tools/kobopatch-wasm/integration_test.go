@@ -42,13 +42,24 @@ func TestIntegrationPatch(t *testing.T) {
 		t.Fatalf("could not read patches zip: %v", err)
 	}
 
-	patchFiles, configYAML, err := extractPatchFilesAndConfig(patchesZip)
+	patchFiles, err := extractPatchFiles(patchesZip)
 	if err != nil {
 		t.Fatalf("could not extract patch files: %v", err)
 	}
 
-	// Replace the existing overrides section with our test override.
-	// The config from the zip has all patches disabled; we enable one to verify patching works.
+	// The patches zip no longer ships a kobopatch.yaml; test-integration.sh
+	// generates the config from patches/index.json and passes its path here.
+	configPath := os.Getenv("CONFIG_YAML")
+	if configPath == "" {
+		t.Fatal("CONFIG_YAML not set (run test-integration.sh)")
+	}
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("could not read CONFIG_YAML at %s: %v", configPath, err)
+	}
+	configYAML := string(configBytes)
+
+	// Enable a single patch to verify patching actually modifies the binary.
 	if idx := strings.Index(configYAML, "\noverrides:"); idx != -1 {
 		configYAML = configYAML[:idx]
 	}
@@ -126,37 +137,33 @@ overrides:
 	t.Logf("log output:\n%s", result.log)
 }
 
-// extractPatchFilesAndConfig reads a patches zip and returns the src/*.yaml
-// patch files and the kobopatch.yaml config content.
-func extractPatchFilesAndConfig(zipData []byte) (map[string][]byte, string, error) {
+// extractPatchFiles reads a patches zip and returns the src/*.yaml patch files.
+func extractPatchFiles(zipData []byte) (map[string][]byte, error) {
 	r, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	files := make(map[string][]byte)
-	var configYAML string
 	for _, f := range r.File {
+		if !strings.HasPrefix(f.Name, "src/") || !strings.HasSuffix(f.Name, ".yaml") {
+			continue
+		}
 		rc, err := f.Open()
 		if err != nil {
-			return nil, "", fmt.Errorf("open %s: %w", f.Name, err)
+			return nil, fmt.Errorf("open %s: %w", f.Name, err)
 		}
 		data, err := io.ReadAll(rc)
 		rc.Close()
 		if err != nil {
-			return nil, "", fmt.Errorf("read %s: %w", f.Name, err)
+			return nil, fmt.Errorf("read %s: %w", f.Name, err)
 		}
-
-		if f.Name == "kobopatch.yaml" {
-			configYAML = string(data)
-		} else if strings.HasPrefix(f.Name, "src/") && strings.HasSuffix(f.Name, ".yaml") {
-			files[f.Name] = data
-		}
+		files[f.Name] = data
 	}
-	if configYAML == "" {
-		return nil, "", fmt.Errorf("kobopatch.yaml not found in patches zip")
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no src/*.yaml patch files found in patches zip")
 	}
-	return files, configYAML, nil
+	return files, nil
 }
 
 // lookupEntry finds an entry in a tgz entries map, tolerating a "./" prefix.

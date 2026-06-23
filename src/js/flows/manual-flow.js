@@ -88,7 +88,10 @@ export function initManualFlow(state, { patches }) {
         const match = available.find((p) => p.version === version);
         if (!match) return false;
 
-        await Promise.all([state.patchUI.loadFromURL('patches/' + match.filename), state.blacklistReady]);
+        await Promise.all([
+            state.patchUI.loadFromURL('patches/' + match.filename, { version: match.version, patchConfig: match.patches }),
+            state.blacklistReady,
+        ]);
         state.patchUI.render(patchContainer);
         patches.updatePatchCount();
         state.patchesLoaded = true;

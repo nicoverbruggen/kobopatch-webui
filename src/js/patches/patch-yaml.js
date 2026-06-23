@@ -2,8 +2,8 @@
  * patch-yaml.js — Pure parsing and serialization for kobopatch YAML.
  *
  * No DOM, no state: just functions that read patch metadata, rewrite patch
- * line ranges, quote scalars, and parse the kobopatch.yaml config. Shared by
- * the PatchUI model, the editor dialog, and the unit tests.
+ * line ranges, and quote scalars. Shared by the PatchUI model, the editor
+ * dialog, and the unit tests.
  */
 
 import yaml from 'js-yaml';
@@ -153,33 +153,4 @@ export function yamlScalar(str) {
         return s;
     }
     return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-}
-
-/**
- * Parse the `patches:` section from kobopatch.yaml to get the file→target mapping.
- * Returns e.g. { "src/nickel.yaml": "usr/local/Kobo/nickel", ... }
- */
-export function parsePatchConfig(configYAML) {
-    const patches = {};
-
-    let doc;
-    try {
-        doc = yaml.load(configYAML);
-    } catch {
-        doc = null;
-    }
-
-    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
-        return { version: null, patches };
-    }
-
-    const version = doc.version === null || doc.version === undefined ? null : String(doc.version);
-    if (doc.patches && typeof doc.patches === 'object' && !Array.isArray(doc.patches)) {
-        for (const [filename, target] of Object.entries(doc.patches)) {
-            if (target === null || target === undefined) continue;
-            patches[filename] = String(target);
-        }
-    }
-
-    return { version, patches };
 }

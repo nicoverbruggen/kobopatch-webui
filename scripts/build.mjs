@@ -39,6 +39,7 @@ async function buildPatchZips() {
 
         function addDirToZip(dirPath, zipPath) {
             for (const name of readdirSync(dirPath)) {
+                if (name.startsWith('.')) continue;
                 const fullPath = join(dirPath, name);
                 const entryPath = zipPath ? `${zipPath}/${name}` : name;
                 if (statSync(fullPath).isDirectory()) {

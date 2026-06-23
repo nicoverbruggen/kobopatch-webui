@@ -255,7 +255,7 @@ export function initConnectFlow(state, { patches }) {
             }
 
             if (canPatchDevice && match) {
-                await state.patchUI.loadFromURL('patches/' + match.filename);
+                await state.patchUI.loadFromURL('patches/' + match.filename, { version: match.version, patchConfig: match.patches });
                 state.patchUI.render(patchContainer);
                 patches.updatePatchCount();
                 state.patchesLoaded = true;
