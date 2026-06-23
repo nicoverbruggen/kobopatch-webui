@@ -24,10 +24,10 @@
     },
     "cadmus": {
       "asset": "cadmus-kobo.tar.gz",
-      "version": "v0.10.1",
-      "url": "https://github.com/OGKevin/cadmus/releases/download/v0.10.1/cadmus-kobo.tar.gz",
-      "sha256": "ddd079a6f361fcc43984d25905b0bac6af28faf27a2388efdc803a0cc5c1cc11",
-      "size": 29724790
+      "version": "v0.11.0",
+      "url": "https://github.com/OGKevin/cadmus/releases/download/v0.11.0/cadmus-kobo.tar.gz",
+      "sha256": "2dddf585ca174c28f6ba85a6ac4b21cef559c84e7fc659925ecb81a4c808492e",
+      "size": 30243464
     },
     "readerly": {
       "asset": "KF_Readerly.zip",
