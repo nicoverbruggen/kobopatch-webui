@@ -7,30 +7,6 @@ import { loadBundledAsset } from '../assets.js';
 
 export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclock.sh', import.meta.url).href;
 
-// A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
-// existing user-edited file is never overwritten). NickelClock otherwise creates
-// this on first boot with Margin=Auto, which hugs the screen edge tightly; 40px
-// is roomier. The [Clock] (on) and [Battery] (off) sections mirror NickelClock's
-// own defaults so its menu toggle works on the first reboot and the battery
-// indicator stays hidden; NickelClock's syncSettings() preserves these on boot.
-const DEFAULT_SETTINGS_INI = [
-    '[General]',
-    'Margin=40',
-    '',
-    '[Clock]',
-    'Enabled=true',
-    'Placement=Header',
-    'Position=Right',
-    '',
-    '[Battery]',
-    'BatteryType=Level',
-    'Enabled=false',
-    'Placement=Header',
-    'Position=Right',
-    'LevelTemplate=%1%',
-    '',
-].join('\n');
-
 // Installs NickelClock (https://github.com/shermp/NickelClock), which shows a
 // clock and battery indicator while reading. Like NickelMenu, it ships as a Qt
 // imageformats plugin inside its own KoboRoot.tgz, so it cannot be expressed as
@@ -88,21 +64,13 @@ export default {
     },
 
     // Ship the on-device toggle script under .adds/nm/scripts (so NickelMenu
-    // removal's recursive delete cleans it up) plus a prefilled settings.ini. The
-    // script flips [Clock] Enabled in settings.ini and reboots; the matching
-    // Toggle item is below. settings.ini is written `ifAbsent` so a user-edited
-    // config is preserved across reinstalls.
+    // removal's recursive delete cleans it up). The matching Toggle item is below.
     async install(ctx) {
         const toggleScript = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_NICKELCLOCK_SCRIPT_URL) : await loadBundledAsset(TOGGLE_NICKELCLOCK_SCRIPT_URL);
         return [
             {
                 path: '.adds/nm/scripts/toggle_nickelclock.sh',
                 data: toggleScript,
-            },
-            {
-                path: '.adds/nickelclock/settings.ini',
-                data: new TextEncoder().encode(DEFAULT_SETTINGS_INI),
-                ifAbsent: true,
             },
         ];
     },

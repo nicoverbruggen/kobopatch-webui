@@ -570,12 +570,6 @@ test.describe('NickelMenu — install', () => {
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
         expect(itemsContent).toContain('menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh');
         expect(Object.keys(zip.files)).toContainEqual('.adds/nm/scripts/toggle_nickelclock.sh');
-
-        // ...and a prefilled settings.ini: roomier Margin=40, clock on, battery hidden.
-        const settingsIni = await zip.file('.adds/nickelclock/settings.ini').async('string');
-        expect(settingsIni).toContain('Margin=40');
-        expect(settingsIni).toMatch(/\[Clock\]\nEnabled=true/);
-        expect(settingsIni).toMatch(/\[Battery\]\nBatteryType=Level\nEnabled=false/);
     });
 
     test('no device — install with KOReader via manual download', async ({ page }) => {

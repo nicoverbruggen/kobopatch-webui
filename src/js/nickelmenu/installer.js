@@ -6,16 +6,10 @@ import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.
 import { installableAssetUrl, installableSize } from './installables.js';
 import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import { removeExcludeSyncFoldersLine, revertableConfSettings, setConfSetting, setExcludeSyncFoldersLine } from '../kobo/configuration.js';
-import { isFsaBlockedName } from '../kobo/blocked-extensions.js';
 
 import { menuItemPosition } from './features/menu-order.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
 import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../kobo/sync-exclusions.js';
-
-// Tar path prefix that makes a KoboRoot.tgz entry extract onto onboard storage.
-// The device extracts the archive over `/` on boot and onboard is mounted at
-// `/mnt/onboard`, so `mnt/onboard/.adds/foo` lands at `/mnt/onboard/.adds/foo`.
-const ONBOARD_TGZ_PREFIX = 'mnt/onboard';
 
 export function getExcludeSyncFoldersLine(features = []) {
     return buildExcludeSyncFoldersLine({
@@ -137,16 +131,12 @@ export class NickelMenuInstaller {
      * archive alongside NickelMenu's. A feature declares this generically via a
      * `koboRootEntries(ctx)` hook returning tar entries (`{ path, data, mode }`).
      *
-     * `extraOnboardEntries` are already-built tar entries (under `mnt/onboard/…`)
-     * for onboard files the File System Access API refuses to write directly —
-     * see `installToDevice`. They are merged the same way feature payloads are.
-     *
-     * When nothing extra is contributed — the common case — the base NickelMenu
-     * tgz is returned verbatim (no parse/rebuild), so the default install path is
-     * byte-for-byte unchanged. Only when something contributes do we parse the
-     * base archive and rebuild a merged one.
+     * When no selected feature contributes entries — the common case — the base
+     * NickelMenu tgz is returned verbatim (no parse/rebuild), so the default
+     * install path is byte-for-byte unchanged. Only when a feature contributes do
+     * we parse the base archive and rebuild a merged one.
      */
-    async buildKoboRootTgz(features = [], progressFn = () => {}, deviceInfo = null, extraOnboardEntries = []) {
+    async buildKoboRootTgz(features = [], progressFn = () => {}, deviceInfo = null) {
         const baseTgz = await this.getKoboRootTgz();
 
         const extraEntries = [];
@@ -155,7 +145,6 @@ export class NickelMenuInstaller {
             const ctx = createContext(progressFn, deviceInfo, features);
             extraEntries.push(...(await feature.koboRootEntries(ctx)));
         }
-        extraEntries.push(...extraOnboardEntries);
         if (extraEntries.length === 0) return baseTgz;
 
         // Merge base + feature entries, keeping the first occurrence of any path.
@@ -230,60 +219,30 @@ export class NickelMenuInstaller {
     async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null } = {}) {
         await this.loadNickelMenu(progressFn);
 
+        const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
+
         let collectedFiles = [];
         let featureFiles = {};
-        let eReaderConfData = null;
-
-        // Onboard files split two ways: those we write directly, and those whose
-        // extension the File System Access API refuses to create (e.g. `.ini`;
-        // see kobo/blocked-extensions.js). The blocked ones are staged into
-        // KoboRoot.tgz under `mnt/onboard/…` so the device extracts them on boot.
-        const directWrites = [];
-        const stagedOnboardEntries = [];
 
         if (features.length > 0) {
             progressFn('Preparing Kobo eReader.conf...');
-            eReaderConfData = await this.buildEReaderConfData(device, features);
+            const eReaderConfData = await this.buildEReaderConfData(device, features);
 
             const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
 
-            // Decide each file's fate against the pristine device state, before
-            // any write happens.
-            for (const file of collectedFiles) {
-                const fileData = typeof file.data === 'string' ? new TextEncoder().encode(file.data) : file.data;
-                // A feature can mark a user-owned file (e.g. NickelClock's
-                // settings.ini) `ifAbsent`: ship it on a fresh install but never
-                // overwrite — nor stage over — one the user has since edited.
-                if (file.ifAbsent && (await device.pathExists(file.path.split('/')))) {
-                    audit?.record(`Kept existing ${file.path}`);
-                    continue;
-                }
-                if (isFsaBlockedName(file.path)) {
-                    stagedOnboardEntries.push({ path: `${ONBOARD_TGZ_PREFIX}/${file.path}`, data: fileData });
-                    audit?.record(`Staged ${file.path} in KoboRoot.tgz (${fileData.length} bytes)`);
-                } else {
-                    directWrites.push({ path: file.path, data: fileData });
-                }
-            }
-        }
-
-        // Build the combined archive (NickelMenu base + feature payloads + staged
-        // onboard files). Built now, but written last — after the direct writes.
-        const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo, stagedOnboardEntries);
-
-        if (features.length > 0) {
             progressFn('Updating Kobo eReader.conf...');
             await device.writeFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], eReaderConfData);
             this.recordEReaderConfUpdates(features, device.deviceInfo, audit);
 
             progressFn('Writing files to Kobo...');
-            for (let i = 0; i < directWrites.length; i++) {
-                const { path, data } = directWrites[i];
-                progressFn(`Writing files to Kobo (${i + 1} of ${directWrites.length})...`);
-                await device.writeFile(path.split('/'), data);
-                audit?.record(`Wrote ${path} (${data.length} bytes)`);
+            for (let i = 0; i < collectedFiles.length; i++) {
+                const { path, data } = collectedFiles[i];
+                const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+                progressFn(`Writing files to Kobo (${i + 1} of ${collectedFiles.length})...`);
+                await device.writeFile(path.split('/'), fileData);
+                audit?.record(`Wrote ${path} (${fileData.length} bytes)`);
             }
         }
 
