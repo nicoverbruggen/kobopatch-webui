@@ -739,6 +739,58 @@ test.describe('Custom patches', () => {
         await expect(patchLabel.locator('input')).toBeChecked();
         await expect(patchLabel.locator('.patch-modified')).toBeVisible();
         await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
+
+        // The summary dialog lists the re-applied patch by name. The patch is
+        // compatible with this firmware, so no incompatibility footnote shows. The
+        // manifest carries a manual edit (and no firmware match), so the "modified
+        // patches" caveat shows; it has no additional files, so that note is hidden.
+        const dialog = page.locator('#patch-reload-dialog');
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('#patch-reload-dialog-list li')).toHaveText(['Increase library cover size']);
+        await expect(dialog.locator('#patch-reload-dialog-footnote')).toBeHidden();
+        await expect(dialog.locator('#patch-reload-dialog-modified-note')).toContainText('may not apply correctly');
+        await expect(dialog.locator('#patch-reload-dialog-additional-note')).toBeHidden();
+
+        await dialog.locator('#btn-patch-reload-dialog-close').click();
+        await expect(dialog).toBeHidden();
+    });
+
+    test('with device — reload summary hides the modified-patches caveat on the same firmware and shows the additional-files note', async ({ page }) => {
+        // Manifest recorded for the device's own firmware (4.45.23646), carrying a
+        // manual edit and an additional file. Re-applying onto the same firmware
+        // runs the edit identically, so the "modified patches" caveat must NOT show;
+        // the additional file was recorded, so that note MUST show.
+        const manifest = {
+            overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+            customized: {
+                'src/nickel.yaml': {
+                    'Increase library cover size':
+                        'Increase library cover size:\n  - Enabled: no\n  - FindReplaceString: {Find: "width: 60px;", Replace: "width: 99px;"}\n',
+                },
+            },
+            files: [
+                { path: '.kobo/KoboRoot.tgz', type: 'file' },
+                { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
+            ],
+            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.45.23646', channel: 'kobo12' } },
+        };
+
+        await connectMockDevice(page, {
+            extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+
+        await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
+        await page.click('#btn-patch-reload');
+
+        const dialog = page.locator('#patch-reload-dialog');
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('#patch-reload-dialog-modified-note')).toBeHidden();
+        await expect(dialog.locator('#patch-reload-dialog-additional-note')).toContainText('Additional Files');
     });
 
     test('with device — no reload banner when the device has no patches manifest', async ({ page }) => {
@@ -826,6 +878,9 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
         await page.click('#btn-patch-reload');
         await expect(page.locator('#patch-reload-banner')).toContainText('reloaded');
+        // The restore summary dialog opens; dismiss it before continuing.
+        await page.click('#btn-patch-reload-dialog-close');
+        await expect(page.locator('#patch-reload-dialog')).toBeHidden();
         // The restored patch is enabled and flagged as modified, untouched by hand.
         await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
 

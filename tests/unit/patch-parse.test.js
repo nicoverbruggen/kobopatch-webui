@@ -239,6 +239,21 @@ test('applyReloadManifest re-applies enabled overrides and manual edits to a fre
     assert.equal(ui.patchFiles['f.yaml'].patches.find((x) => x.name === 'Q').enabled, false);
 });
 
+test('applyReloadManifest reports re-applied patches and flags blacklisted ones as incompatible', () => {
+    const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\nQ:\n  - Enabled: no\nR:\n  - Enabled: no\n');
+    // R is blacklisted for the loaded firmware; P and Q are fine.
+    ui.firmwareVersion = '4.45.23646';
+    ui.blacklist = { 4.45: { 'f.yaml': ['R'] } };
+
+    const summary = ui.applyReloadManifest({ overrides: { 'f.yaml': { P: true, Q: false, R: true } }, customized: {} });
+
+    // Only the enabled patches (P, R) are listed; the disabled Q is omitted.
+    assert.deepEqual(summary.applied, [
+        { name: 'P', filename: 'f.yaml', incompatible: false },
+        { name: 'R', filename: 'f.yaml', incompatible: true },
+    ]);
+});
+
 test('applyReloadManifest counts entries with no matching file or patch as missing', () => {
     const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n');
     const summary = ui.applyReloadManifest({

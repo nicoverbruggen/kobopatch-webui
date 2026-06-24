@@ -49,6 +49,7 @@ const SCREENSHOT_DIRS = {
     edgeAnalytics: 'edge-cases/analytics',
     edgeDialogs: 'edge-cases/dialogs',
     edgeNickelMenu: 'edge-cases/nickelmenu',
+    edgeRestore: 'edge-cases/restore',
 };
 
 /** Dismiss the mobile warning modal if it's open. */
@@ -1043,10 +1044,110 @@ test('connected patches reload', async ({ page }, testInfo) => {
     await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
     await shot(page, dir, '11-patches-reload-offer', testInfo);
 
-    // After restoring, the banner confirms success.
+    // Restoring opens a summary dialog (captured per-variant under edge-cases/restore);
+    // dismiss it here so the connected flow shows the resulting success banner.
     await page.click('#btn-patch-reload');
+    const reloadDialog = page.locator('#patch-reload-dialog');
+    await expect(reloadDialog).toBeVisible();
+    await page.click('#btn-patch-reload-dialog-close');
+    await expect(reloadDialog).not.toBeVisible();
     await expect(page.locator('#patch-reload-banner')).toContainText('reloaded');
     await shot(page, dir, '12-patches-reload-applied', testInfo);
+});
+
+// The "Restore previous patches" summary dialog has three independent, conditional
+// footer notices (incompatible patch ⚠️, modified-patches caveat across firmware,
+// and the Additional Files reminder). Capture each variant of the dialog.
+const RESTORE_EDIT = 'Increase library cover size:\n  - Enabled: no\n  - FindReplaceString: {Find: "width: 60px;", Replace: "width: 99px;"}\n';
+const restoreMeta = (firmware) => ({ writer: { name: 'kobopatch-webui', version: 'screenshot' }, installed: { firmware, channel: 'kobo12' } });
+
+const openRestoreSummary = async (page, manifest) => {
+    await page.goto('/');
+    await dismissMobileModal(page);
+    await injectMockDevice(page, {
+        extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }],
+    });
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
+    await page.click('#btn-patch-reload');
+    await expect(page.locator('#patch-reload-dialog')).toBeVisible();
+};
+
+// Variant 1: compatible patch, no edits, no additional files → just the list, no notices.
+test('restore summary — no notices', async ({ page }, testInfo) => {
+    await openRestoreSummary(page, {
+        overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+        customized: {},
+        files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
+        meta: restoreMeta('4.45.23646'),
+    });
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '01-no-notices', testInfo);
+});
+
+// Variant 2: a patch blacklisted for this firmware is re-applied → ⚠️ marker + footnote.
+test('restore summary — incompatible patch', async ({ page }, testInfo) => {
+    await openRestoreSummary(page, {
+        overrides: { 'src/libnickel.so.1.0.0.yaml': { 'Allow rotation on all devices': true } },
+        customized: {},
+        files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
+        meta: restoreMeta('4.45.23646'),
+    });
+    await expect(page.locator('#patch-reload-dialog-footnote')).toBeVisible();
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '02-incompatible', testInfo);
+});
+
+// Variant 3: edited patch re-applied onto a DIFFERENT firmware → modified-patches caveat.
+test('restore summary — modified patches across firmware', async ({ page }, testInfo) => {
+    await openRestoreSummary(page, {
+        overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+        customized: { 'src/nickel.yaml': { 'Increase library cover size': RESTORE_EDIT } },
+        files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
+        meta: restoreMeta('4.38.23648'),
+    });
+    await expect(page.locator('#patch-reload-dialog-modified-note')).toBeVisible();
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '03-modified-patches', testInfo);
+});
+
+// Variant 4: the manifest recorded additional files → Additional Files reminder.
+test('restore summary — additional files', async ({ page }, testInfo) => {
+    await openRestoreSummary(page, {
+        overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+        customized: {},
+        files: [
+            { path: '.kobo/KoboRoot.tgz', type: 'file' },
+            { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
+        ],
+        meta: restoreMeta('4.45.23646'),
+    });
+    await expect(page.locator('#patch-reload-dialog-additional-note')).toBeVisible();
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '04-additional-files', testInfo);
+});
+
+// Variant 5: all three notices at once — an incompatible patch, an edited patch from
+// a different firmware, and recorded additional files.
+test('restore summary — all notices', async ({ page }, testInfo) => {
+    await openRestoreSummary(page, {
+        overrides: {
+            'src/libnickel.so.1.0.0.yaml': { 'Allow rotation on all devices': true },
+            'src/nickel.yaml': { 'Increase library cover size': true },
+        },
+        customized: { 'src/nickel.yaml': { 'Increase library cover size': RESTORE_EDIT } },
+        files: [
+            { path: '.kobo/KoboRoot.tgz', type: 'file' },
+            { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
+        ],
+        meta: restoreMeta('4.38.23648'),
+    });
+    await expect(page.locator('#patch-reload-dialog-footnote')).toBeVisible();
+    await expect(page.locator('#patch-reload-dialog-modified-note')).toBeVisible();
+    await expect(page.locator('#patch-reload-dialog-additional-note')).toBeVisible();
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '05-all-notices', testInfo);
 });
 
 test('connected patches restore original shortcut', async ({ page }, testInfo) => {

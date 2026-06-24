@@ -627,3 +627,24 @@
         background: var(--bg);
     }
 }
+
+.patch-reload-dialog-list {
+    & li {
+        color: var(--text);
+    }
+}
+
+.patch-reload-dialog-notes {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.patch-reload-dialog-note {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}

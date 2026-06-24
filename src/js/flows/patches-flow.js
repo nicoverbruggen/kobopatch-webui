@@ -15,6 +15,14 @@ export function initPatchesFlow(state) {
         'patch-reload-banner': patchReloadBanner,
         'patch-reload-text': patchReloadText,
         'btn-patch-reload': btnPatchReload,
+        'patch-reload-dialog': patchReloadDialog,
+        'btn-patch-reload-dialog-close': btnPatchReloadDialogClose,
+        'patch-reload-dialog-intro': patchReloadDialogIntro,
+        'patch-reload-dialog-list': patchReloadDialogList,
+        'patch-reload-dialog-notes': patchReloadDialogNotes,
+        'patch-reload-dialog-footnote': patchReloadDialogFootnote,
+        'patch-reload-dialog-modified-note': patchReloadDialogModifiedNote,
+        'patch-reload-dialog-additional-note': patchReloadDialogAdditionalNote,
         'patch-advanced-section': patchAdvancedSection,
         'btn-patch-additional-files': btnPatchAdditionalFiles,
         'patch-additional-file-input': patchAdditionalFileInput,
@@ -55,6 +63,14 @@ export function initPatchesFlow(state) {
         'patch-reload-banner',
         'patch-reload-text',
         'btn-patch-reload',
+        'patch-reload-dialog',
+        'btn-patch-reload-dialog-close',
+        'patch-reload-dialog-intro',
+        'patch-reload-dialog-list',
+        'patch-reload-dialog-notes',
+        'patch-reload-dialog-footnote',
+        'patch-reload-dialog-modified-note',
+        'patch-reload-dialog-additional-note',
         'patch-advanced-section',
         'btn-patch-additional-files',
         'patch-additional-file-input',
@@ -248,6 +264,42 @@ export function initPatchesFlow(state) {
         } catch {}
     }
 
+    function showReloadSummaryDialog({ applied, showModifiedNote, showAdditionalFilesNote }) {
+        patchReloadDialogIntro.textContent = TL.PATCH.RELOAD_SUMMARY_INTRO;
+
+        patchReloadDialogList.innerHTML = '';
+        let anyIncompatible = false;
+        for (const patch of applied) {
+            const li = document.createElement('li');
+            li.textContent = patch.name;
+            if (patch.incompatible) {
+                li.append(' ⚠️');
+                anyIncompatible = true;
+            }
+            patchReloadDialogList.appendChild(li);
+        }
+
+        // Conditional footer notices. A normal "just checked patches" reload shows
+        // none of these; each only appears for the situation it describes.
+        patchReloadDialogFootnote.textContent = anyIncompatible ? `⚠️ ${TL.PATCH.RELOAD_SUMMARY_INCOMPATIBLE}` : '';
+        patchReloadDialogFootnote.hidden = !anyIncompatible;
+
+        patchReloadDialogModifiedNote.textContent = showModifiedNote ? TL.PATCH.RELOAD_SUMMARY_MODIFIED_NOTE : '';
+        patchReloadDialogModifiedNote.hidden = !showModifiedNote;
+
+        patchReloadDialogAdditionalNote.textContent = showAdditionalFilesNote ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_NOTE : '';
+        patchReloadDialogAdditionalNote.hidden = !showAdditionalFilesNote;
+
+        patchReloadDialogNotes.hidden = !(anyIncompatible || showModifiedNote || showAdditionalFilesNote);
+
+        patchReloadDialog.showModal();
+    }
+
+    btnPatchReloadDialogClose.addEventListener('click', () => patchReloadDialog.close());
+    patchReloadDialog.addEventListener('click', (e) => {
+        if (e.target === patchReloadDialog) patchReloadDialog.close();
+    });
+
     btnPatchReload.addEventListener('click', () => {
         if (!state.reloadManifest) return;
         btnPatchReload.disabled = true;
@@ -263,6 +315,20 @@ export function initPatchesFlow(state) {
         } else {
             patchReloadBanner.classList.add('banner--success');
             patchReloadText.textContent = TL.PATCH.RELOAD_APPLIED;
+            // Only surface the summary modal when there are re-enabled patches to
+            // list; an edits-only reload just updates the banner.
+            if (summary.applied.length > 0) {
+                const manifest = state.reloadManifest;
+                // Re-applying onto the same firmware re-runs identical edits, so the
+                // "modified patches may not apply" caveat only applies across versions.
+                const recordedFirmware = manifest?.meta?.installed?.firmware;
+                const sameFirmware = !!recordedFirmware && recordedFirmware === state.patchUI.firmwareVersion;
+                showReloadSummaryDialog({
+                    applied: summary.applied,
+                    showModifiedNote: summary.edits > 0 && !sameFirmware,
+                    showAdditionalFilesNote: Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file'),
+                });
+            }
         }
         btnPatchReload.hidden = true;
     });

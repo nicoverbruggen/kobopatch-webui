@@ -59,6 +59,7 @@ proposals/
 
 # Claude
 .claude
+CLAUDE.md
 
 # JetBrains
 .idea

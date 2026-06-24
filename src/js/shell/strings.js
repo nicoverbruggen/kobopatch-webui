@@ -91,5 +91,11 @@ export const TL = {
             'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
         RELOAD_APPLIED: 'Previously applied patches have been reloaded, including any manual edits.',
         RELOAD_NONE_MATCHED: 'None of the previously applied patches could be matched to the patches for this software version.',
+        RELOAD_SUMMARY_TITLE: 'Patches re-applied',
+        RELOAD_SUMMARY_INTRO: 'The following patches have been re-applied:',
+        RELOAD_SUMMARY_INCOMPATIBLE: 'This patch may not be compatible with this software version, but you can try to apply it.',
+        RELOAD_SUMMARY_MODIFIED_NOTE:
+            'Patches that were modified may not apply correctly. If they don’t work, you may want to reset them and to edit them again yourself.',
+        RELOAD_SUMMARY_ADDITIONAL_FILES_NOTE: 'Additional Files from the Advanced section are never re-applied.',
     },
 };

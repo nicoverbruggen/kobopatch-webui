@@ -337,10 +337,14 @@ class PatchUI {
      * first the manual edits (`customized`), then the enabled/disabled state
      * (`overrides`). Entries referencing a file or patch that is not present in
      * the current set (e.g. a different firmware version) are skipped and counted
-     * as `missing`. Returns `{ edits, enabled, missing }`.
+     * as `missing`. Returns `{ matched, edits, enabled, missing, applied }`, where
+     * `applied` lists the patches the manifest turned on — `{ name, filename,
+     * incompatible }`, with `incompatible` true when the patch is blacklisted for
+     * the current firmware (re-applied from an older firmware where it still
+     * worked) — so the caller can summarize what was restored.
      */
     applyReloadManifest(manifest) {
-        const summary = { matched: 0, edits: 0, enabled: 0, missing: 0 };
+        const summary = { matched: 0, edits: 0, enabled: 0, missing: 0, applied: [] };
         if (!manifest || typeof manifest !== 'object') return summary;
 
         // Manual edits first, reparsing after each so later lookups (and override
@@ -372,7 +376,10 @@ class PatchUI {
                 if (Object.prototype.hasOwnProperty.call(patches, p.name)) {
                     p.enabled = !!patches[p.name];
                     summary.matched++;
-                    if (p.enabled) summary.enabled++;
+                    if (p.enabled) {
+                        summary.enabled++;
+                        summary.applied.push({ name: p.name, filename, incompatible: this.isBlacklisted(filename, p.name) });
+                    }
                 }
             }
         }
