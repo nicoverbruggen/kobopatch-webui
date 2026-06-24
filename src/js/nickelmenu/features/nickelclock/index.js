@@ -4,30 +4,6 @@ import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
 import { installableVersion, installableAssetUrl } from '../../installables.js';
 
-// A prefilled settings.ini shipped on a fresh install (written `ifAbsent`, so an
-// existing user-edited file is never overwritten). NickelClock otherwise creates
-// this on first boot with Margin=Auto, which hugs the screen edge tightly; 40px
-// is roomier. The [Clock] (on) and [Battery] (off) sections mirror NickelClock's
-// own defaults so its menu toggle works on the first reboot and the battery
-// indicator stays hidden; NickelClock's syncSettings() preserves these on boot.
-const DEFAULT_SETTINGS_INI = [
-    '[General]',
-    'Margin=40',
-    '',
-    '[Clock]',
-    'Enabled=true',
-    'Placement=Header',
-    'Position=Right',
-    '',
-    '[Battery]',
-    'BatteryType=Level',
-    'Enabled=false',
-    'Placement=Header',
-    'Position=Right',
-    'LevelTemplate=%1%',
-    '',
-].join('\n');
-
 // Installs NickelClock (https://github.com/shermp/NickelClock), which shows a
 // clock and battery indicator while reading. Like NickelMenu, it ships as a Qt
 // imageformats plugin inside its own KoboRoot.tgz, so it cannot be expressed as
@@ -86,20 +62,20 @@ export default {
     },
 
     // Ship the on-device toggle script under .adds/nm/scripts (so NickelMenu
-    // removal's recursive delete cleans it up) plus a prefilled settings.ini. The
-    // script flips [Clock] Enabled in settings.ini and reboots; the matching
-    // Toggle item is below. settings.ini is written `ifAbsent` so a user-edited
-    // config is preserved across reinstalls.
+    // removal's recursive delete cleans it up). The script flips [Clock] Enabled
+    // in settings.ini and reboots; the matching Toggle item is below.
+    //
+    // We deliberately do NOT ship a prefilled .adds/nickelclock/settings.ini:
+    // Chromium's File System Access API refuses to create `.ini` files
+    // (getFileHandle throws "Name is not allowed"), which broke device installs.
+    // NickelClock generates its own settings.ini on first boot, so omitting it
+    // here is the simplest fix — at the cost of NickelClock's default Margin
+    // rather than our roomier Margin=40.
     async install(ctx) {
         return [
             {
                 path: '.adds/nm/scripts/toggle_nickelclock.sh',
                 data: await ctx.asset('scripts/toggle_nickelclock.sh'),
-            },
-            {
-                path: '.adds/nickelclock/settings.ini',
-                data: new TextEncoder().encode(DEFAULT_SETTINGS_INI),
-                ifAbsent: true,
             },
         ];
     },

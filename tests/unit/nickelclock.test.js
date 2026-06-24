@@ -91,7 +91,6 @@ test('contributes a "NickelClock" Toggle item and ships its toggle script', asyn
     assert.deepEqual(requested, ['scripts/toggle_nickelclock.sh']);
     assert.deepEqual(files.map(f => f.path), [
         '.adds/nm/scripts/toggle_nickelclock.sh',
-        '.adds/nickelclock/settings.ini',
     ]);
 
     const items = nickelclock.menuItems();
@@ -108,27 +107,20 @@ test('its Toggle item id is registered in MENU_ITEM_ORDER', () => {
     assert.doesNotThrow(() => menuItemPosition('nickelclock'));
 });
 
-test('ships a prefilled settings.ini (Margin=40, clock on) marked ifAbsent', async () => {
+test('does not ship a settings.ini (Chromium blocks creating .ini; NickelClock generates its own)', async () => {
     const ctx = { async asset() { return new TextEncoder().encode('#!/bin/sh\n'); } };
     const files = await nickelclock.install(ctx);
 
     const settings = files.find(f => f.path === '.adds/nickelclock/settings.ini');
-    assert.ok(settings, 'expected a settings.ini file');
-    // ifAbsent so a user-edited settings.ini is never overwritten on reinstall.
-    assert.equal(settings.ifAbsent, true);
-
-    const ini = new TextDecoder().decode(settings.data);
-    assert.match(ini, /^\[General\]\nMargin=40$/m);
-    assert.match(ini, /^\[Clock\]\nEnabled=true$/m);
-    // Battery indicator is hidden by default (full default block).
-    assert.match(ini, /^\[Battery\]\nBatteryType=Level\nEnabled=false\nPlacement=Header\nPosition=Right\nLevelTemplate=%1%$/m);
+    assert.ok(!settings, 'expected no settings.ini file');
 });
 
-test('installToDevice writes the prefilled settings.ini on a fresh install but keeps an existing one', async () => {
+test('installToDevice does not write a settings.ini', async () => {
     const settingsPath = '.adds/nickelclock/settings.ini';
     const baseTgz = await baseNickelMenuTgz();
 
-    // Fresh device: settings.ini does not exist yet, so it is written.
+    // The File System Access API refuses to create `.ini` files, so we never
+    // write one — NickelClock generates settings.ini itself on first boot.
     const restoreFetch = useNickelClockAssetFetch();
     const fresh = new RecordingDevice();
     try {
@@ -136,20 +128,7 @@ test('installToDevice writes the prefilled settings.ini on a fresh install but k
     } finally {
         restoreFetch();
     }
-    assert.ok(fresh.writePaths().includes(settingsPath));
-    assert.match(new TextDecoder().decode(fresh.writeFor(settingsPath).data), /Margin=40/);
-
-    // Device with a user-edited settings.ini: it is kept, not overwritten.
-    const restoreFetch2 = useNickelClockAssetFetch();
-    const existing = new RecordingDevice({
-        textFiles: { [settingsPath]: '[General]\nMargin=80\n\n[Clock]\nEnabled=false\n' },
-    });
-    try {
-        await createInstaller(baseTgz).installToDevice(existing, [nickelclock], createProgressRecorder());
-    } finally {
-        restoreFetch2();
-    }
-    assert.ok(!existing.writePaths().includes(settingsPath), 'should not overwrite an existing settings.ini');
+    assert.ok(!fresh.writePaths().includes(settingsPath), 'should not write a settings.ini');
 });
 
 test('koboRootEntries downloads NickelClock and returns its KoboRoot.tgz entries', async () => {

@@ -1,6 +1,5 @@
-# Local device data
-kobo_usb_root/
-firmware/
+# Temporary folder
+tmp/
 
 # Kobopatch WASM build artifacts
 tools/kobopatch-wasm/kobopatch
@@ -53,6 +52,7 @@ proposals/
 
 # Claude
 .claude
+CLAUDE.md
 
 # JetBrains
 .idea
