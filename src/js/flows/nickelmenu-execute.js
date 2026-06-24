@@ -102,6 +102,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             connectionTips: configReadFailed,
             configReadFailed,
             auditLog: audit,
+            error: err,
             title: state.nickelMenuOption === 'remove' ? TL.ERROR.NM_REMOVE_FAILED_TITLE : TL.ERROR.NM_INSTALL_FAILED_TITLE,
         });
     }

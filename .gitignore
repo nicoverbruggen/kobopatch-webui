@@ -1,4 +1,5 @@
-# Temporary folder
+# Temporary folder (also holds local persisted data at tmp/storage — deploy
+# logs, etc.; production writes to a mounted STORAGE_DIR volume instead)
 tmp
 tmp-doc
 

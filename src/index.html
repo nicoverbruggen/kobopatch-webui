@@ -245,13 +245,15 @@
                         unselected. This helps the author understand which features are popular and worth maintaining.</li>
                     <li><strong>How the flow ended</strong> &mdash; whether files were written to the
                         device or downloaded as a ZIP. This helps the author understand how many people have actually used the complete flow successfully.</li>
+                    <li><strong>Unexpected errors and device-write failures</strong> &mdash; a random
+                        per-session ID, app version, current step, browser user agent, and error message/stack. This helps the author fix broken flows.</li>
                 </ul>
 
                 <h3>What is not tracked</h3>
                 <p>
                     No personal identifiers are collected. No cookies are used. Your device model, serial
-                    number, firmware version, IP address, and browsing behaviour are never recorded by the
-                    analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
+                    number, hardware UUID, firmware version, IP address, onboard file contents, and browsing
+                    behaviour are never recorded by the analytics tool or the error reporter. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
                 </p>
             </div>
         </div>

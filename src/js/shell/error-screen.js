@@ -10,6 +10,7 @@ import { TL } from './strings.js';
 import { $, collect, triggerDownload } from './dom.js';
 import { showStep, showNav, hideNav, stepHistory } from './navigation.js';
 import { getActiveFlow } from './step-machine.js';
+import { reportError } from './error-report.js';
 
 export function initErrorScreen(state) {
     const {
@@ -38,7 +39,20 @@ export function initErrorScreen(state) {
 
     let errorAuditLog = null;
 
+    function activeFlowStep() {
+        const flow = getActiveFlow();
+        return flow && flow.current ? flow.current() : null;
+    }
+
     function showError(message, log, options = {}) {
+        if (options.deviceWrite) {
+            reportError({
+                kind: 'deviceWrite',
+                error: options.error || log || message,
+                flowStep: activeFlowStep(),
+            });
+        }
+
         errorAuditLog = options.auditLog || null;
         errorMessage.textContent = message;
         btnErrorDownloadLog.hidden = !errorAuditLog;
@@ -112,6 +126,7 @@ export function initErrorScreen(state) {
         handlingUnexpectedError = true;
         try {
             const detail = err ? err.stack || err.message || String(err) : 'Unknown error';
+            reportError({ kind: 'unexpected', error: err, flowStep: activeFlowStep() });
             showError(TL.ERROR.UNEXPECTED_MESSAGE, detail, { title: TL.ERROR.UNEXPECTED_TITLE });
         } catch (e) {
             console.error('Failed to display the error screen:', e);

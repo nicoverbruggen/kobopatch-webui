@@ -1,7 +1,10 @@
 providers = ["node"]
 
+# Pin Node 24 (nixpkgs `nodejs_24`, matching package.json `engines.node`) so the
+# server's `node:sqlite` usage is guaranteed available. A bare `nodejs` would pull
+# whatever default the nixpkgs snapshot ships, which may be older.
 [phases.setup]
-nixPkgs = ["git", "curl", "zip", "gnutar", "nginx", "nodejs", "gettext", "jq"]
+nixPkgs = ["git", "curl", "zip", "gnutar", "nginx", "nodejs_24", "gettext", "jq"]
 paths = ["/usr/local/go/bin"]
 
 [phases.build]
@@ -10,10 +13,16 @@ cmds = [
     "npm run setup:wasm",
     "npm run build:wasm",
     "npm run setup:installables",
+    # Write .version.json (version + resolved commit/tag) so the deploy log can
+    # record the commit. `npm run build` also does this via vite.config.mjs; kept
+    # explicit so the build step is visible and not reliant on a build side effect.
+    "npm run version:generate",
     "npm run build",
     "npm run validate:dist",
 ]
 
 [start]
+# Record this deploy to the persistent STORAGE_DIR volume before serving. Must be the
+# start phase, not build — the volume isn't mounted during the Nixpacks build.
 # TODO: replace simple node server with something better
-cmd = "npm start"
+cmd = "node scripts/log-deploy.mjs && npm start"

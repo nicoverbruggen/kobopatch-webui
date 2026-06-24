@@ -20,7 +20,7 @@
     "check:installables": "node tools/installables/installables.mjs --check --force",
     "check:patch-metadata": "node scripts/check-patch-metadata.mjs",
     "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
-    "start": "node scripts/serve-dist.mjs",
+    "start": "node --disable-warning=ExperimentalWarning scripts/serve-dist.mjs",
     "verify": "node scripts/verify.mjs",
     "test": "node scripts/verify.mjs --quick",
     "test:e2e": "bash tests/e2e/scripts/run-e2e.sh",
@@ -45,5 +45,8 @@
     "js-yaml": "^4.2.0",
     "jszip": "^3.10.1",
     "lucide": "^1.21.0"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

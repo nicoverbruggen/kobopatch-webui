@@ -236,7 +236,19 @@ For watch mode:
 npm run dev
 ```
 
-This starts Vite on `http://localhost:8888` with module/CSS hot reload and full-page reloads for `src/index.html` plus included `src/html/**/*.html` partials. `serve-local.mjs` still prepares the locked installable assets and ensures `dist/wasm/kobopatch.wasm` exists first; `vite.config.mjs` serves the few generated/static resources that live outside `src/` during production builds (patch ZIPs, the WASM binary, and `wasm_exec.js` at the worker-relative path). Press `q` or `Ctrl-C` to quit.
+This starts Vite on `http://localhost:8888` with module/CSS hot reload and full-page reloads for `src/index.html` plus included `src/html/**/*.html` partials. `serve-local.mjs` still prepares the locked installable assets and ensures `dist/wasm/kobopatch.wasm` exists first; `vite.config.mjs` serves the few generated/static resources that live outside `src/` during production builds (patch ZIPs, the WASM binary, and `wasm_exec.js` at the worker-relative path). It also mounts the shared admin backend routes (`GET /admin`, `GET /admin/errors.sqlite`, and `POST /api/error`) through `scripts/admin/routes/index.js`, so local dev and the production server exercise the same backend handlers. Press `q` or `Ctrl-C` to quit.
+
+To test the browser Basic Auth prompt locally, run dev with admin credentials:
+
+```bash
+ADMIN_USERNAME=admin ADMIN_PASSWORD=secret npm run dev
+```
+
+The built Node server uses the same backend route handlers:
+
+```bash
+ADMIN_USERNAME=admin ADMIN_PASSWORD=secret npm run serve
+```
 
 To test analytics UI locally without sending data:
 
@@ -308,6 +320,91 @@ injection, so the server is kept but made production-grade. The behaviour and *w
 runner — so this behaviour is exercised by the E2E suite, not just in production. `npm run dev`
 uses Vite's dev server instead.
 
+## Deploy Logging
+
+Each container start records a line to a **persistent log volume**, so the deploy history
+survives Coolify redeploys. The container filesystem is ephemeral — a redeploy builds a fresh
+image and wipes anything written inside it — so the log must land on a mounted volume.
+
+The logic lives in `scripts/deploy-log.mjs` (unit-tested in `tests/unit/deploy-log.test.js`) and
+is run by the `scripts/log-deploy.mjs` CLI, invoked from `nixpacks.toml`'s `[start]` command
+*before* the server:
+
+```toml
+[start]
+cmd = "node scripts/log-deploy.mjs && npm start"
+```
+
+It must be the **start** phase, not `[phases.build]`: the persistent volume isn't mounted during
+the Nixpacks build, so a build-phase write would never reach it. Keeping it out of
+`serve-dist.mjs` leaves that a pure static server. It is a *boot* record — `[start]` runs on every
+container start, so a restart re-appends, not only a redeploy; distinguishing true redeploys would
+require baking a build-time identity into the image (not done).
+
+Output is `<STORAGE_DIR>/logs/deploy-<version>.log`, one line appended per boot:
+
+```
+2026-06-24T13:36:59.215Z  deploy  version=1.37  commit=46f0a5d  node=v26.3.0  pid=2992  port=8888
+```
+
+The version comes from `package.json` (the hand-bumped source of truth); the commit comes from
+`.version.json`, written during the build by `generateVersion()` (`vite.config.mjs`, and also run
+explicitly as `npm run version:generate` in the Nixpacks build phase), so it's present in a deployed
+image — the read is still best-effort and the field is simply omitted if the file is missing.
+Logging is best-effort overall: a write failure is warned and ignored, never fatal, and the filename
+is sanitised so a stray version string can't escape the log directory.
+
+`STORAGE_DIR` is the persistent **data** directory (a single volume holding all persisted state,
+not just logs). In production Coolify sets `STORAGE_DIR=/app/storage`; with it unset the CLI falls
+back to `./tmp/storage` (gitignored) for local runs. Deploy logs live under its `logs/` subdir;
+client error reports are stored in a SQLite database at `<STORAGE_DIR>/errors.sqlite`:
+
+```
+/app/storage/
+  logs/deploy-<version>.log   # deploy/boot records (one file per version)
+  errors.sqlite               # error reports
+```
+
+The client reports unexpected/global errors and device-write failures through
+`src/js/shell/error-report.js`. Firmware build/patch failures are handled workflow errors and are
+not reported. It sends a random per-session ID, app version, error kind/message/stack, browser user
+agent, and current flow step; it never sends Kobo serials, hardware UUIDs, or onboard file contents.
+Reports use `navigator.sendBeacon('/api/error', ...)` first, fall back to
+`fetch(..., { keepalive: true })`, de-duplicate identical reports, and cap each page load at 10
+reports. The production server accepts those reports at `POST /api/error`. The route always returns
+`204`, including malformed bodies and write failures, so reporting can never create another
+user-visible failure. Reports are best-effort, capped before insertion, server-stamped with the
+current time, stored without client IPs, and written through parameterised SQLite statements. Abuse
+protection rate-limits `POST /api/error` to 10 requests per 15 minutes per client IP; when an IP
+exceeds that threshold it is stored in the separate `ip_blacklist` table and later requests from
+that IP are dropped with the same quiet `204` response. The admin backend code lives under
+`scripts/admin/`. The database schema is maintained by timestamped migration files in
+`scripts/admin/migrations/`, with an ordered registry/runner in `scripts/admin/migrations/index.js`;
+applied migrations are recorded in a `migrations` table with a Laravel-style `batch` number so future
+schema changes can be added without replacing existing databases.
+
+The error log can be viewed at `GET /admin` when both `ADMIN_USERNAME` and `ADMIN_PASSWORD` are
+set. The endpoint uses browser Basic Auth, returns a native login prompt for missing or wrong
+credentials, and shows a paginated newest-first table of reports. `GET /admin/errors.sqlite`
+streams the raw database as an attachment. If either admin env var is missing, both endpoints are
+disabled and return 404.
+
+**Coolify persistent storage (one-time setup).** The app deploys via Nixpacks, so Coolify cannot
+infer a volume from the repo — add it once in the UI and it persists across every redeploy (a
+redeploy replaces the container, never the volume):
+
+1. Resource → **Storages** → **+ Add** → **Volume Mount** (a Coolify-managed named Docker volume —
+   survives redeploys and recreation, with no host bind-mount permission issues):
+   - **Name:** any label (e.g. `app-storage`).
+   - **Source Path:** *leave empty* — empty is what makes it a managed named volume; a value here
+     turns it into a host bind mount instead.
+   - **Destination Path:** `/app/storage` (the path inside the container).
+2. Resource → **Environment Variables** → `STORAGE_DIR=/app/storage` (must match the Destination
+   Path).
+
+The named volume is deleted only when you delete it or the whole resource — back it up before
+tearing the resource down. One volume holds all persisted state: deploy logs and `errors.sqlite`.
+
 ## Analytics
 
 The hosted build sends a small number of anonymous events to [Umami](https://umami.is) via the
@@ -335,6 +432,10 @@ Events currently emitted:
 The `add-*` events fire only when that add-on is actually included in the install (in
 `executeNmInstall`, for both write-to-device and download paths, never on removal), so each event
 counts a real install rather than a yes/no toggle.
+
+Unexpected errors and device-write failures are reported separately through the self-hosted
+`POST /api/error` endpoint, not Umami. See "Deploy Logging" for the stored fields and the `/admin`
+viewer.
 
 ## Output Validation
 

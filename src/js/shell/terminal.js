@@ -101,6 +101,7 @@ export function createTerminal({ doneStep, showError }) {
             showError(failMessage ? failMessage(err) : err.message, null, {
                 deviceWrite: !!err.deviceWrite,
                 auditLog: audit,
+                error: err,
             });
             return { ok: false, audit, error: err };
         }

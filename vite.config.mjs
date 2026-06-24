@@ -2,6 +2,8 @@ import { createReadStream, existsSync, readdirSync, readFileSync, statSync } fro
 import { extname, join, relative, sep } from 'node:path';
 import { defineConfig, transformWithEsbuild } from 'vite';
 import JSZip from 'jszip';
+import { handleAdminBackendRoute, errorLoggingEnabledFromEnv } from './scripts/admin/routes/index.js';
+import { storageDir } from './scripts/storage.mjs';
 import { generateVersion } from './scripts/version-generate.mjs';
 
 const appDir = import.meta.dirname;
@@ -131,6 +133,21 @@ function koboDevStaticPlugin() {
     };
 }
 
+function koboAdminBackendPlugin() {
+    const errorLoggingEnabled = errorLoggingEnabledFromEnv();
+
+    return {
+        name: 'kobopatch-admin-backend',
+        configureServer(server) {
+            server.middlewares.use((req, res, next) => {
+                const url = new URL(req.url || '/', 'http://localhost');
+                if (handleAdminBackendRoute(req, res, { storageDir: storageDir(), url, errorLoggingEnabled })) return;
+                next();
+            });
+        },
+    };
+}
+
 function koboHtmlPlugin({ versionStr, versionLink, isDev }) {
     return {
         name: 'kobopatch-html',
@@ -184,7 +201,7 @@ export default defineConfig(async ({ command }) => {
         root: srcDir,
         base: '/',
         publicDir: false,
-        plugins: [koboHtmlPlugin({ versionStr, versionLink, isDev }), koboDevStaticPlugin()],
+        plugins: [koboAdminBackendPlugin(), koboHtmlPlugin({ versionStr, versionLink, isDev }), koboDevStaticPlugin()],
         define: {
             'globalThis.__APP_VERSION__': JSON.stringify(versionStr),
             'globalThis.__DEV_BUILD__': JSON.stringify(isDev),

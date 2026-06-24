@@ -4,10 +4,17 @@ import { join, extname, sep } from 'node:path';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 
+import { handleAdminBackendRoute, errorLoggingEnabledFromEnv } from './admin/routes/index.js';
+import { storageDir } from './storage.mjs';
+
 // Served directory. Defaults to dist/; the dev server points it (via DIST_DIR)
 // at its own throwaway build directory.
 const DIST = process.env.DIST_DIR || join(import.meta.dirname, '..', 'dist');
 const PORT = process.env.PORT || 8888;
+
+// Error logging is always-on, operator-controlled: disable by setting
+// ERROR_LOGGING to off/false/0/no. Reports land in <STORAGE_DIR>/errors.sqlite.
+const errorLoggingEnabled = errorLoggingEnabledFromEnv();
 
 const UMAMI_WEBSITE_ID = process.env.UMAMI_WEBSITE_ID || '';
 const UMAMI_SCRIPT_URL = process.env.UMAMI_SCRIPT_URL || '';
@@ -339,6 +346,11 @@ createServer((req, res) => {
         res.write('retry: 1000\n\n');
         sseClients.add(res);
         req.on('close', () => sseClients.delete(res));
+        return;
+    }
+
+    // Admin backend routes: error reporting plus authenticated persisted-error views.
+    if (handleAdminBackendRoute(req, res, { storageDir: storageDir(), url, errorLoggingEnabled })) {
         return;
     }
 

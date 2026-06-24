@@ -315,6 +315,7 @@ export function initConnectFlow(state, { patches }) {
             state.showError(err.message, null, {
                 deviceWrite: !!err.deviceWrite,
                 writeProbe: err.deviceOperation === 'write probe',
+                error: err,
             });
         }
     });
