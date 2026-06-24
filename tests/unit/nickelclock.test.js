@@ -5,10 +5,10 @@ import JSZip from 'jszip';
 
 import nickelclock, { TOGGLE_NICKELCLOCK_SCRIPT_URL } from '../../src/js/nickelmenu/features/nickelclock/index.js';
 import { menuItemPosition } from '../../src/js/nickelmenu/features/menu-order.js';
-import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
+import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
 import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
-import { RecordingDevice, createInstaller, createProgressRecorder } from './test-helpers.js';
+import { RecordingDevice, createInstaller, createProgressRecorder, koboRootTgzPath } from './test-helpers.js';
 
 function bytes(value) {
     return new TextEncoder().encode(value);
@@ -119,11 +119,14 @@ test('ships a prefilled settings.ini (Margin=40, clock on) marked ifAbsent', asy
     assert.match(ini, /^\[Battery\]\nBatteryType=Level\nEnabled=false\nPlacement=Header\nPosition=Right\nLevelTemplate=%1%$/m);
 });
 
-test('installToDevice writes the prefilled settings.ini on a fresh install but keeps an existing one', async () => {
+test('installToDevice stages the prefilled settings.ini inside KoboRoot.tgz on a fresh install but keeps an existing one', async () => {
     const settingsPath = '.adds/nickelclock/settings.ini';
+    const stagedEntryPath = 'mnt/onboard/.adds/nickelclock/settings.ini';
     const baseTgz = await baseNickelMenuTgz();
 
-    // Fresh device: settings.ini does not exist yet, so it is written.
+    // Fresh device: settings.ini does not exist yet. The File System Access API
+    // refuses to create a `.ini` directly, so it rides inside KoboRoot.tgz under
+    // mnt/onboard for the device to extract on boot — never written directly.
     const restoreFetch = useNickelClockAssetFetch();
     const fresh = new RecordingDevice();
     try {
@@ -131,10 +134,14 @@ test('installToDevice writes the prefilled settings.ini on a fresh install but k
     } finally {
         restoreFetch();
     }
-    assert.ok(fresh.writePaths().includes(settingsPath));
-    assert.match(new TextDecoder().decode(fresh.writeFor(settingsPath).data), /Margin=40/);
+    assert.ok(!fresh.writePaths().includes(settingsPath), 'settings.ini must not be written directly');
+    const freshEntries = await parseTarGz(fresh.writeFor(koboRootTgzPath).data);
+    const staged = freshEntries.find((e) => e.path === stagedEntryPath);
+    assert.ok(staged, 'expected settings.ini staged inside KoboRoot.tgz');
+    assert.match(new TextDecoder().decode(staged.data), /Margin=40/);
 
-    // Device with a user-edited settings.ini: it is kept, not overwritten.
+    // Device with a user-edited settings.ini: it is kept — neither written
+    // directly nor staged into the tgz, so the edited file survives the reboot.
     const restoreFetch2 = useNickelClockAssetFetch();
     const existing = new RecordingDevice({
         textFiles: { [settingsPath]: '[General]\nMargin=80\n\n[Clock]\nEnabled=false\n' },
@@ -145,6 +152,8 @@ test('installToDevice writes the prefilled settings.ini on a fresh install but k
         restoreFetch2();
     }
     assert.ok(!existing.writePaths().includes(settingsPath), 'should not overwrite an existing settings.ini');
+    const existingEntries = await parseTarGz(existing.writeFor(koboRootTgzPath).data);
+    assert.ok(!existingEntries.some((e) => e.path === stagedEntryPath), 'should not stage over an existing settings.ini');
 });
 
 test('koboRootEntries downloads NickelClock and returns its KoboRoot.tgz entries', async () => {

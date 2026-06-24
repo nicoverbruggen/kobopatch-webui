@@ -68,10 +68,41 @@ The JS source lives in `src/js/` as ES modules, organized by role:
 - **`flows/`** — the two main user journeys: NickelMenu and custom patches. Each declares its steps to the step machine and routes its build→write/download tail through the terminal.
 - **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`audit-log.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
 - **`patches/`** — custom patch UI and runner modules.
-- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, preset-conflict, legacy-items, optional-cleanup, and Kobo-user-count probes) live in `probes.js`; the menu-icon customization dialog and its image processing (canvas resize, SVG→PNG rendering) live in `customization-dialog.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
+- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, preset-conflict, legacy-items, optional-cleanup, and Kobo-user-count probes) live in `probes.js`; the menu-icon customization dialog and its image processing (canvas resize, SVG→PNG rendering) live in `customization-dialog.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`. The installer also stages any collected onboard file the browser refuses to write directly (see "File System Access write restrictions" below) into that same archive under `mnt/onboard/…`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
 The wizard's mutable state is a `Session` (`shell/session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/step-machine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/terminal.js`), which both flows construct and configure. Vite bundles the app into `dist/bundle.js`.
+
+## File System Access write restrictions
+
+Some installs failed for users with `Failed to execute 'getFileHandle' on
+'FileSystemDirectoryHandle': Name is not allowed.` — surfaced to them as the
+generic "writing to your device didn't work."
+
+**Cause.** Chromium blocks `getFileHandle(name, {create:true})` when the file's
+extension is on its "dangerous / shell-integrated" list — the same filter
+`showSaveFilePicker()` enforces, later extended to cover `getFileHandle`. There
+is no prompt and no override: the page simply cannot create such a file. The
+block is by extension (regardless of contents or whether the file already
+exists) and rolled out gradually across browser versions, which is why the same
+install worked for some users and failed for others on a newer browser. For our
+payloads the affected file is NickelClock's `.adds/nickelclock/settings.ini`
+(`.ini` is blocked). Extensionless files (`.adds/nm/items`/`webui-preset`),
+`.sh`, `.png`, `.ttf` and `Kobo eReader.conf` are **not** blocked and still write
+directly. References: [Chromium issue 380857453](https://issues.chromium.org/issues/380857453),
+[blink-dev intent](https://groups.google.com/a/chromium.org/g/blink-dev/c/bFUbINgQNgk).
+
+**Fix.** Blocked onboard files are not written through the API at all — they are
+staged into `.kobo/KoboRoot.tgz` under `mnt/onboard/…`. The device extracts that
+archive over `/` on the next boot, and onboard storage is mounted at
+`/mnt/onboard`, so the entry lands exactly where a direct write would have put
+it. The blocklist lives in `src/js/kobo/blocked-extensions.js`
+(`isFsaBlockedName`); the routing is in `nickelmenu/installer.js`
+`installToDevice`, which partitions collected files into direct writes vs. staged
+tgz entries. Files marked `ifAbsent` (e.g. `settings.ini`) are still skipped when
+the user already has one, so an edited file is neither overwritten nor staged
+over. The manual-download flow (`buildDownloadZip`) is unaffected: it ships these
+files loose for the user to copy by hand, which the blocklist never touches.
 
 ## Adding a Software Version
 
