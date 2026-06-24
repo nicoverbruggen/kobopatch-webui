@@ -23,6 +23,12 @@ function installablesManifest() {
     return manifest;
 }
 
+function patchBlacklistUpdatedAt() {
+    const blacklistPath = join(appDir, 'patches', 'blacklist.json');
+    if (!existsSync(blacklistPath)) return null;
+    return statSync(blacklistPath).mtime.toISOString();
+}
+
 function expandIncludes(html) {
     const includeRe = /<!--\s*include:\s*([\w./-]+)\s*-->/g;
     while (includeRe.test(html)) {
@@ -183,6 +189,7 @@ export default defineConfig(async ({ command }) => {
             'globalThis.__APP_VERSION__': JSON.stringify(versionStr),
             'globalThis.__DEV_BUILD__': JSON.stringify(isDev),
             'globalThis.__INSTALLABLES__': JSON.stringify(installablesManifest()),
+            'globalThis.__PATCH_BLACKLIST_UPDATED__': JSON.stringify(patchBlacklistUpdatedAt()),
         },
         server: {
             host: '127.0.0.1',

@@ -86,6 +86,17 @@ export const TL = {
         NONE: 'None (do not patch)',
         MODIFIED: 'modified',
         MODIFIED_TITLE: 'You edited this patch’s definition.',
+        BLACKLIST_BUTTON: 'Incompatible patches',
+        BLACKLIST_BUTTON_TITLE: 'View incompatible patches for this firmware',
+        BLACKLIST_DIALOG_TITLE: 'Known incompatible patches',
+        BLACKLIST_DESCRIPTION: (testedVersion) =>
+            `This list is based on testing against firmware ${testedVersion}. Patch compatibility may vary based on the firmware you have installed on your device.`,
+        BLACKLIST_YOUR_VERSION: (version) => `Your firmware version: ${version}`,
+        BLACKLIST_VERSION_MATCH_TITLE: 'Your firmware version matches the version that was tested',
+        BLACKLIST_LAST_UPDATED: (date) => `Last updated: ${date || 'unknown'}`,
+        BLACKLIST_EMPTY: 'No known incompatible patches for this version.',
+        BLACKLIST_OTHER_SECTION: 'Other patches',
+        BLACKLIST_UNKNOWN_VERSION: 'unknown',
         DISCARD_EDITS_CONFIRM: 'You have unsaved edits to one or more patches. Going back will discard them. Continue?',
         RELOAD_OFFER:
             'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',

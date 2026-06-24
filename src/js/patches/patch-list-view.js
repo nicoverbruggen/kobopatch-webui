@@ -7,7 +7,7 @@
  * off the passed PatchUI instance; mutates only the DOM and selection state.
  */
 
-import { CircleHelp, Minus, Pencil } from 'lucide';
+import { CircleHelp, Info, Minus, Pencil } from 'lucide';
 import { TL } from '../shell/strings.js';
 import { PATCH_FILE_LABELS } from './patch-yaml.js';
 import { openPatchEditor } from './patch-editor.js';
@@ -29,6 +29,123 @@ function iconSvg(icon) {
 
 function patchSetKey(ui) {
     return `${ui.firmwareVersion || ''}\n${Object.keys(ui.patchFiles).join('\n')}`;
+}
+
+function blacklistUpdatedDate() {
+    const value = typeof globalThis.__PATCH_BLACKLIST_UPDATED__ !== 'undefined' ? globalThis.__PATCH_BLACKLIST_UPDATED__ : null;
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString().slice(0, 10);
+}
+
+function firmwareMatchBadge() {
+    const badge = document.createElement('span');
+    badge.className = 'device-identification-badge device-identification-badge--verified';
+    badge.tabIndex = 0;
+    badge.setAttribute('role', 'img');
+    badge.setAttribute('aria-label', TL.PATCH.BLACKLIST_VERSION_MATCH_TITLE);
+    badge.setAttribute('aria-describedby', 'patch-blacklist-version-tooltip');
+    badge.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 1.75l2.11 1.56 2.62-.25 1.08 2.4 2.39 1.1-.25 2.62L21.5 12l-1.55 2.11.25 2.62-2.39 1.1-1.08 2.4-2.62-.25L12 21.5l-2.11-1.56-2.62.25-1.08-2.4-2.39-1.1.25-2.62L2.5 12l1.55-2.11-.25-2.62 2.39-1.1 1.08-2.4 2.62.25L12 1.75z"/>
+            <path d="M8 12.25l2.45 2.45L16.5 8.65" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    `;
+    return badge;
+}
+
+function showFirmwareMatchTooltip(dialog, tooltip, badge) {
+    const content = dialog.querySelector('.patch-blacklist-dialog-content');
+    if (!content) return;
+
+    tooltip.textContent = TL.PATCH.BLACKLIST_VERSION_MATCH_TITLE;
+    tooltip.hidden = false;
+
+    const contentBox = content.getBoundingClientRect();
+    const badgeBox = badge.getBoundingClientRect();
+    const tooltipBox = tooltip.getBoundingClientRect();
+    const gap = 8;
+    const minLeft = 12;
+    const maxLeft = Math.max(minLeft, contentBox.width - tooltipBox.width - 12);
+    const centeredLeft = badgeBox.left - contentBox.left + badgeBox.width / 2 - tooltipBox.width / 2;
+
+    tooltip.style.left = `${Math.min(Math.max(centeredLeft, minLeft), maxLeft)}px`;
+    tooltip.style.top = `${badgeBox.bottom - contentBox.top + gap}px`;
+    tooltip.classList.add('patch-blacklist-version-tooltip--visible');
+}
+
+function hideFirmwareMatchTooltip(tooltip) {
+    tooltip.classList.remove('patch-blacklist-version-tooltip--visible');
+    tooltip.hidden = true;
+}
+
+function bindFirmwareMatchTooltip(dialog, badge) {
+    const tooltip = document.getElementById('patch-blacklist-version-tooltip');
+    if (!tooltip) return;
+
+    const show = () => showFirmwareMatchTooltip(dialog, tooltip, badge);
+    const hide = () => hideFirmwareMatchTooltip(tooltip);
+
+    badge.addEventListener('mouseenter', show);
+    badge.addEventListener('focus', show);
+    badge.addEventListener('mouseleave', hide);
+    badge.addEventListener('blur', hide);
+    dialog.addEventListener('close', hide, { once: true });
+}
+
+function renderBlacklistDialog(ui) {
+    const dialog = document.getElementById('patch-blacklist-dialog');
+    if (!dialog) return null;
+
+    const version = ui.firmwareVersion || ui.currentBlacklistVersion() || TL.PATCH.BLACKLIST_UNKNOWN_VERSION;
+    const testedVersion = ui.testedFirmwareVersion || version;
+    const descriptionEl = document.getElementById('patch-blacklist-description');
+    const firmwareEl = document.getElementById('patch-blacklist-current-version');
+    const updatedEl = document.getElementById('patch-blacklist-updated');
+    const listEl = document.getElementById('patch-blacklist-list');
+    const emptyEl = document.getElementById('patch-blacklist-empty');
+    if (!descriptionEl || !firmwareEl || !updatedEl || !listEl || !emptyEl) return dialog;
+
+    const versionsMatch = version === testedVersion;
+    updatedEl.textContent = TL.PATCH.BLACKLIST_LAST_UPDATED(blacklistUpdatedDate());
+    descriptionEl.textContent = TL.PATCH.BLACKLIST_DESCRIPTION(testedVersion);
+    firmwareEl.textContent = TL.PATCH.BLACKLIST_YOUR_VERSION(version);
+    if (versionsMatch) {
+        const badge = firmwareMatchBadge();
+        firmwareEl.append(' ', badge);
+        bindFirmwareMatchTooltip(dialog, badge);
+    }
+    listEl.innerHTML = '';
+
+    const entries = ui.getCurrentBlacklist();
+    emptyEl.hidden = entries.length > 0;
+    listEl.hidden = entries.length === 0;
+
+    if (entries.length === 0) {
+        emptyEl.textContent = TL.PATCH.BLACKLIST_EMPTY;
+        return dialog;
+    }
+
+    for (const entry of entries) {
+        const section = document.createElement('section');
+        section.className = 'patch-blacklist-group';
+
+        const title = document.createElement('h3');
+        title.textContent = PATCH_FILE_LABELS[entry.filename] || TL.PATCH.BLACKLIST_OTHER_SECTION;
+        section.appendChild(title);
+
+        const list = document.createElement('ul');
+        for (const name of entry.names) {
+            const item = document.createElement('li');
+            item.textContent = name;
+            list.appendChild(item);
+        }
+        section.appendChild(list);
+        listEl.appendChild(section);
+    }
+
+    return dialog;
 }
 
 /**
@@ -53,11 +170,13 @@ export function renderPatchList(ui, container) {
 
     const searchWrap = document.createElement('div');
     searchWrap.className = 'patch-search-wrap';
+    const searchField = document.createElement('div');
+    searchField.className = 'patch-search-field';
     const searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.className = 'patch-search';
     searchInput.placeholder = 'Search patches…';
-    searchWrap.appendChild(searchInput);
+    searchField.appendChild(searchInput);
     const clearBtn = document.createElement('button');
     clearBtn.className = 'patch-search-clear';
     clearBtn.type = 'button';
@@ -68,7 +187,22 @@ export function renderPatchList(ui, container) {
         clearBtn.hidden = true;
         filterPatches(container, listWrapper, nullEl, '');
     });
-    searchWrap.appendChild(clearBtn);
+    searchField.appendChild(clearBtn);
+    searchWrap.appendChild(searchField);
+
+    const blacklistBtn = document.createElement('button');
+    blacklistBtn.className = 'secondary patch-blacklist-button';
+    blacklistBtn.type = 'button';
+    blacklistBtn.append(iconSvg(Info), document.createTextNode(TL.PATCH.BLACKLIST_BUTTON));
+    blacklistBtn.title = TL.PATCH.BLACKLIST_BUTTON_TITLE;
+    blacklistBtn.setAttribute('aria-label', TL.PATCH.BLACKLIST_BUTTON_TITLE);
+    blacklistBtn.addEventListener('click', () => {
+        const dialog = renderBlacklistDialog(ui);
+        if (!dialog) return;
+        dialog.showModal();
+        document.getElementById('btn-patch-blacklist-close')?.focus();
+    });
+    searchWrap.appendChild(blacklistBtn);
     container.appendChild(searchWrap);
 
     const listWrapper = document.createElement('div');

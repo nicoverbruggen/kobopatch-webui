@@ -73,6 +73,9 @@ Author sources (only credit where the yaml names someone — don't invent):
   - [ ] Flatten patches across all files, bucket by `category` in
         `PATCH_CATEGORIES` order; unknown → trailing "Other" section. Render one
         `<details>` per non-empty category instead of one per file.
+  - [ ] Update the incompatible-patches modal (`#patch-blacklist-dialog`) to use
+        the same visual section labels/order, since it currently mirrors the
+        patch-list grouping with only user-facing section names.
   - [ ] Display name = `meta.label || patch.name`; search matches the displayed
         label.
   - [ ] Surface `author` in the notes (append to the shown `Description`, or show

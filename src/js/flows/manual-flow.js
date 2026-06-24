@@ -12,6 +12,7 @@ import { $, collect, populateSelect } from '../shell/dom.js';
 import { setNavStep, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
+import { latestPatchVersionForFamily } from '../patches/catalog.js';
 
 export function initManualFlow(state, { patches }) {
     const {
@@ -89,7 +90,11 @@ export function initManualFlow(state, { patches }) {
         if (!match) return false;
 
         await Promise.all([
-            state.patchUI.loadFromURL('patches/' + match.filename, { version: match.version, patchConfig: match.patches }),
+            state.patchUI.loadFromURL('patches/' + match.filename, {
+                version: match.version,
+                patchConfig: match.patches,
+                testedFirmwareVersion: latestPatchVersionForFamily(available, match.version),
+            }),
             state.blacklistReady,
         ]);
         state.patchUI.render(patchContainer);

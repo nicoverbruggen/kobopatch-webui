@@ -354,6 +354,43 @@ test('isBlacklisted returns false without a blacklist, firmware, or version matc
     assert.equal(noBlacklist.isBlacklisted('src/nickel.yaml', 'Allow rotation'), false);
 });
 
+test('getCurrentBlacklist returns names for the loaded firmware grouped by file', () => {
+    const ui = new PatchUI();
+    ui.firmwareVersion = '4.45.23646';
+    ui.patchFiles = {
+        'src/nickel.yaml': { raw: '', patches: [] },
+        'src/libnickel.so.1.0.0.yaml': { raw: '', patches: [] },
+    };
+    ui.blacklist = {
+        4.45: {
+            'src/libnickel.so.1.0.0.yaml': ['Allow rotation', 'Set KePub hyphenation'],
+            'src/libadobe.so.yaml': ['Remove PDF map widget shown during panning'],
+        },
+        4.44: {
+            'src/nickel.yaml': ['Other version only'],
+        },
+    };
+
+    assert.deepEqual(ui.getCurrentBlacklist(), [
+        {
+            filename: 'src/libnickel.so.1.0.0.yaml',
+            names: ['Allow rotation', 'Set KePub hyphenation'],
+        },
+        {
+            filename: 'src/libadobe.so.yaml',
+            names: ['Remove PDF map widget shown during panning'],
+        },
+    ]);
+});
+
+test('getCurrentBlacklist returns empty without a matching firmware blacklist', () => {
+    const ui = new PatchUI();
+    ui.firmwareVersion = '4.44.19619';
+    ui.blacklist = { 4.45: { 'src/nickel.yaml': ['Allow rotation'] } };
+
+    assert.deepEqual(ui.getCurrentBlacklist(), []);
+});
+
 test('buildPatchesManifest captures overrides, customizations, and install metadata', () => {
     const raw = 'First:\n  - Enabled: yes\nSecond:\n  - Enabled: no\n';
     const ui = seedUI('src/nickel.yaml', raw);

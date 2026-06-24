@@ -28,6 +28,7 @@ class PatchUI {
         // File→target map (from patches/index.json), used to generate the config.
         this.patchConfig = {};
         this.firmwareVersion = null;
+        this.testedFirmwareVersion = null;
         // Blacklisted patches keyed by short version -> filename -> [names]
         this.blacklist = null;
         // Pristine patch text keyed by filename -> name, captured at load time so
@@ -46,17 +47,41 @@ class PatchUI {
         this.blacklist = await fetchPatchBlacklist();
     }
 
-    /** Check if a patch is blacklisted for the current firmware version. */
-    isBlacklisted(filename, patchName) {
-        if (!this.blacklist || !this.firmwareVersion) return false;
+    /** Short firmware version used by the blacklist, e.g. "4.45". */
+    currentBlacklistVersion() {
+        if (!this.firmwareVersion) return null;
         // Match against short version (e.g. "4.45" from "4.45.23646")
         const parts = this.firmwareVersion.split('.');
-        const shortVersion = parts[0] + '.' + parts[1];
+        return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : this.firmwareVersion;
+    }
+
+    /** Check if a patch is blacklisted for the current firmware version. */
+    isBlacklisted(filename, patchName) {
+        const shortVersion = this.currentBlacklistVersion();
+        if (!shortVersion || !this.blacklist) return false;
         const versionBlacklist = this.blacklist[shortVersion];
         if (!versionBlacklist) return false;
         const fileBlacklist = versionBlacklist[filename];
         if (!fileBlacklist) return false;
         return fileBlacklist.includes(patchName);
+    }
+
+    /** Get blacklisted patch names for the current firmware version, grouped by file. */
+    getCurrentBlacklist() {
+        const shortVersion = this.currentBlacklistVersion();
+        if (!shortVersion || !this.blacklist) return [];
+        const versionBlacklist = this.blacklist[shortVersion];
+        if (!versionBlacklist) return [];
+
+        const loadedFiles = new Set(Object.keys(this.patchFiles));
+        const orderedFiles = [...Object.keys(this.patchFiles), ...Object.keys(versionBlacklist).filter((filename) => !loadedFiles.has(filename))];
+        return orderedFiles
+            .filter((filename) => !filename.startsWith('_'))
+            .map((filename) => ({
+                filename,
+                names: [...(versionBlacklist[filename] || [])],
+            }))
+            .filter((entry) => entry.names.length > 0);
     }
 
     /**
@@ -65,10 +90,11 @@ class PatchUI {
      * file→target map come from patches/index.json (via the catalog), passed in
      * as `version` and `patchConfig`.
      */
-    async loadFromZip(zipData, { version, patchConfig } = {}) {
+    async loadFromZip(zipData, { version, patchConfig, testedFirmwareVersion } = {}) {
         const zip = await JSZip.loadAsync(zipData);
 
         this.firmwareVersion = version || null;
+        this.testedFirmwareVersion = testedFirmwareVersion || this.firmwareVersion;
         this.patchConfig = patchConfig || {};
         const patches = this.patchConfig;
 
@@ -120,10 +146,10 @@ class PatchUI {
      * Load patches from a URL pointing to a zip file. `version` and
      * `patchConfig` come from the catalog entry (patches/index.json).
      */
-    async loadFromURL(url, { version, patchConfig } = {}) {
+    async loadFromURL(url, { version, patchConfig, testedFirmwareVersion } = {}) {
         const resp = await fetchOrThrow(url, 'Failed to fetch patch zip');
         const data = await resp.arrayBuffer();
-        await this.loadFromZip(data, { version, patchConfig });
+        await this.loadFromZip(data, { version, patchConfig, testedFirmwareVersion });
     }
 
     /** Render the patch configuration UI into a container element. */

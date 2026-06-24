@@ -47,4 +47,38 @@ async function fetchPatchBlacklist() {
     return null;
 }
 
-export { scanAvailablePatches, fetchPatchBlacklist };
+function shortFirmwareVersion(version) {
+    const parts = String(version || '').split('.');
+    return parts.length >= 2 ? `${parts[0]}.${parts[1]}` : String(version || '');
+}
+
+function compareFirmware(a, b) {
+    const partsA = String(a || '')
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    const partsB = String(b || '')
+        .split('.')
+        .map((n) => parseInt(n, 10) || 0);
+    const length = Math.max(partsA.length, partsB.length);
+
+    for (let i = 0; i < length; i++) {
+        const segmentA = partsA[i] || 0;
+        const segmentB = partsB[i] || 0;
+        if (segmentA !== segmentB) return segmentA < segmentB ? -1 : 1;
+    }
+
+    return 0;
+}
+
+function latestPatchVersionForFamily(availablePatches, version) {
+    const shortVersion = shortFirmwareVersion(version);
+    return (
+        (availablePatches || [])
+            .filter((patches) => shortFirmwareVersion(patches.version) === shortVersion)
+            .map((patches) => patches.version)
+            .sort(compareFirmware)
+            .at(-1) || version
+    );
+}
+
+export { scanAvailablePatches, fetchPatchBlacklist, latestPatchVersionForFamily };

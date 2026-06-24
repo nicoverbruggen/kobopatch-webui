@@ -36,6 +36,17 @@ function setupDialog(dialogId, openBtnId, closeBtnId) {
     });
 }
 
+function setupCloseOnlyDialog(dialogId, closeBtnId) {
+    const dlg = $(dialogId);
+    const closeBtn = $(closeBtnId);
+    if (!dlg || !closeBtn) return;
+    trapFocus(dlg);
+    closeBtn.addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', (e) => {
+        if (e.target === dlg) dlg.close();
+    });
+}
+
 // The theme follows the OS. The inline <head> script sets data-theme on first
 // load; here we keep it in sync if the system theme changes mid-session. The
 // swap suppresses transitions so colours flip instantly rather than animating.
@@ -116,6 +127,7 @@ export function initGlobalUI() {
         $('privacy-link-separator').hidden = false;
     }
     setupDialog('privacy-dialog', 'btn-privacy', 'btn-close-privacy');
+    setupCloseOnlyDialog('patch-blacklist-dialog', 'btn-patch-blacklist-close');
 
     setupTheme();
     showEnvironmentPill();

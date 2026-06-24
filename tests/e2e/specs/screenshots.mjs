@@ -281,15 +281,21 @@ test('manual patches', async ({ page }, testInfo) => {
     await shot(page, dir, '02-version-selection', testInfo);
 
     // Select firmware version and channel
-    await page.selectOption('#manual-version', { index: 1 });
+    await page.selectOption('#manual-version', '4.45.23646');
     await expect(page.locator('#manual-model')).not.toBeHidden();
-    await page.selectOption('#manual-model', { index: 1 });
+    await page.selectOption('#manual-model', 'kobo13');
     await shot(page, dir, '02a-version-channel-selected', testInfo);
     await page.click('#btn-manual-confirm');
 
     // Patches config
     await expect(page.locator('#step-patches')).not.toBeHidden();
     await shot(page, dir, '03-patches-config', testInfo);
+    await page.locator('.patch-blacklist-button').click();
+    const blacklistDialog = page.locator('#patch-blacklist-dialog');
+    await expect(blacklistDialog).toBeVisible();
+    await shot(page, dir, '03a-patch-blacklist-dialog', testInfo);
+    await blacklistDialog.locator('#btn-patch-blacklist-close').click();
+    await expect(blacklistDialog).not.toBeVisible();
 
     // Expand section and select a standalone (checkbox) patch.
     const section = page.locator('.patch-file-section').first();
@@ -432,6 +438,41 @@ test('manual patches additional files only', async ({ page }, testInfo) => {
     await page.click('#btn-download');
     await expect(stepDone.locator('#download-instructions')).toBeVisible();
     await shot(page, dir, '14-additional-files-done-download', testInfo);
+});
+
+test('manual patches blacklist matching firmware tooltip', async ({ page }, testInfo) => {
+    test.skip(!hasFirmwareZip(), 'Firmware zip not available');
+
+    const dir = SCREENSHOT_DIRS.manualPatches;
+    const isMobile = testInfo.project.name === 'mobile';
+
+    await page.goto('/');
+    await injectMockDevice(page);
+    await page.waitForFunction(() => !!window.FIRMWARE_DOWNLOADS);
+    await overrideFirmwareURLs(page);
+
+    if (isMobile) {
+        await page.click('#btn-mobile-continue');
+        await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+    }
+
+    await page.click('#btn-manual');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="patches"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-manual-version')).not.toBeHidden();
+    await page.selectOption('#manual-version', '4.45.23697');
+    await expect(page.locator('#manual-model')).not.toBeHidden();
+    await page.selectOption('#manual-model', 'kobo13');
+    await page.click('#btn-manual-confirm');
+
+    await expect(page.locator('#step-patches')).not.toBeHidden();
+    await page.locator('.patch-blacklist-button').click();
+    const blacklistDialog = page.locator('#patch-blacklist-dialog');
+    await expect(blacklistDialog).toBeVisible();
+    await blacklistDialog.locator('.device-identification-badge--verified').hover();
+    await expect(blacklistDialog.locator('#patch-blacklist-version-tooltip')).toBeVisible();
+    await shot(page, dir, '03b-patch-blacklist-match-tooltip', testInfo);
 });
 
 // ============================================================

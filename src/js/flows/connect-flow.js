@@ -14,6 +14,7 @@ import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
+import { latestPatchVersionForFamily } from '../patches/catalog.js';
 
 export function initConnectFlow(state, { patches }) {
     const {
@@ -255,7 +256,11 @@ export function initConnectFlow(state, { patches }) {
             }
 
             if (canPatchDevice && match) {
-                await state.patchUI.loadFromURL('patches/' + match.filename, { version: match.version, patchConfig: match.patches });
+                await state.patchUI.loadFromURL('patches/' + match.filename, {
+                    version: match.version,
+                    patchConfig: match.patches,
+                    testedFirmwareVersion: latestPatchVersionForFamily(state.availablePatches, match.version),
+                });
                 state.patchUI.render(patchContainer);
                 patches.updatePatchCount();
                 state.patchesLoaded = true;

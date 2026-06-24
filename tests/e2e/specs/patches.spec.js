@@ -1098,6 +1098,57 @@ test.describe('Custom patches', () => {
                 await expect(badge).toHaveText('known to fail');
             }
         }
+
+        await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
+        const blacklistDialog = page.locator('#patch-blacklist-dialog');
+        await expect(blacklistDialog).toBeVisible();
+        await expect(blacklistDialog.locator('#patch-blacklist-updated')).toHaveText(/Last updated: \d{4}-\d{2}-\d{2}/);
+        await expect(blacklistDialog.locator('#patch-blacklist-description')).toContainText('firmware 4.45.23697');
+        await expect(blacklistDialog.locator('#patch-blacklist-description')).toContainText('Patch compatibility may vary');
+        await expect(blacklistDialog.locator('#patch-blacklist-current-version')).toHaveText('Your firmware version: 4.45.23646');
+        await expect(blacklistDialog.locator('#patch-blacklist-current-version .device-identification-badge--verified')).toHaveCount(0);
+        await expect(blacklistDialog.locator('#patch-blacklist-empty')).toBeHidden();
+        await expect(blacklistDialog).not.toContainText('src/libnickel.so.1.0.0.yaml');
+        await expect(blacklistDialog).toContainText('Nickel Library');
+
+        for (const patchNames of Object.values(version45)) {
+            for (const name of patchNames) {
+                await expect(blacklistDialog).toContainText(name);
+            }
+        }
+
+        await blacklistDialog.locator('#btn-patch-blacklist-close').click();
+        await expect(blacklistDialog).toBeHidden();
+    });
+
+    test('blacklist dialog match tooltip stays inside the modal', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await connectMockDevice(page, { hasNickelMenu: false, firmware: '4.45.23697', overrideFirmware: true });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+        await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
+        const blacklistDialog = page.locator('#patch-blacklist-dialog');
+        await expect(blacklistDialog).toBeVisible();
+
+        const badge = blacklistDialog.locator('.device-identification-badge--verified');
+        await expect(badge).toBeVisible();
+        await badge.hover();
+
+        const tooltip = blacklistDialog.locator('#patch-blacklist-version-tooltip');
+        await expect(tooltip).toBeVisible();
+        await expect(tooltip).toHaveText('Your firmware version matches the version that was tested');
+
+        const tooltipBox = await tooltip.boundingBox();
+        const contentBox = await blacklistDialog.locator('.patch-blacklist-dialog-content').boundingBox();
+        expect(tooltipBox.x).toBeGreaterThanOrEqual(contentBox.x);
+        expect(tooltipBox.x + tooltipBox.width).toBeLessThanOrEqual(contentBox.x + contentBox.width + 1);
+        expect(tooltipBox.y).toBeGreaterThanOrEqual(contentBox.y);
+        expect(tooltipBox.y + tooltipBox.height).toBeLessThanOrEqual(contentBox.y + contentBox.height + 1);
     });
 
     test('with device — real patch failure with Go Back (Allow rotation)', async ({ page }) => {

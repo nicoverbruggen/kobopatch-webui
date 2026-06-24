@@ -46,6 +46,27 @@ function container() {
     return document.createElement('div');
 }
 
+function installBlacklistDialog() {
+    const previous = document.getElementById('patch-blacklist-dialog');
+    previous?.remove();
+
+    const dialog = document.createElement('dialog');
+    dialog.id = 'patch-blacklist-dialog';
+    dialog.innerHTML = [
+        '<div class="patch-blacklist-dialog-content">',
+        '  <p id="patch-blacklist-updated"></p>',
+        '  <p id="patch-blacklist-description"></p>',
+        '  <p id="patch-blacklist-current-version"></p>',
+        '  <p id="patch-blacklist-empty" hidden></p>',
+        '  <div id="patch-blacklist-list"></div>',
+        '  <div id="patch-blacklist-version-tooltip" hidden></div>',
+        '  <button id="btn-patch-blacklist-close" type="button">Close</button>',
+        '</div>',
+    ].join('');
+    document.body.appendChild(dialog);
+    return dialog;
+}
+
 function itemByName(root, name) {
     return [...root.querySelectorAll('.patch-item')].find((el) => el.querySelector('.patch-name')?.textContent === name);
 }
@@ -98,6 +119,63 @@ test('marks blacklisted patches with a "known to fail" badge and disabled stylin
     const risky = itemByName(el, 'Risky patch');
     assert.ok(risky.classList.contains('patch-disabled'));
     assert.equal(risky.querySelector('.patch-incompatible').textContent, 'known to fail');
+});
+
+test('view blacklist button opens a dialog scoped to the current firmware', () => {
+    const previousUpdated = globalThis.__PATCH_BLACKLIST_UPDATED__;
+    globalThis.__PATCH_BLACKLIST_UPDATED__ = '2026-06-20T10:37:15.000Z';
+    const dialog = installBlacklistDialog();
+    const ui = makeUI();
+    ui.testedFirmwareVersion = '4.45.23697';
+    const el = container();
+
+    try {
+        ui.render(el);
+        el.querySelector('.patch-blacklist-button').click();
+
+        assert.equal(dialog.open, true);
+        assert.equal(el.querySelector('.patch-blacklist-button').textContent, 'Incompatible patches');
+        assert.match(document.getElementById('patch-blacklist-description').textContent, /firmware 4\.45\.23697/);
+        assert.match(document.getElementById('patch-blacklist-description').textContent, /Patch compatibility may vary/);
+        assert.equal(document.getElementById('patch-blacklist-current-version').textContent, 'Your firmware version: 4.45.23646');
+        assert.equal(document.getElementById('patch-blacklist-updated').textContent, 'Last updated: 2026-06-20');
+        assert.equal(document.getElementById('patch-blacklist-empty').hidden, true);
+        assert.equal(document.querySelector('.device-identification-badge--verified'), null);
+        assert.equal(document.querySelector('.patch-blacklist-group h3').textContent, PATCH_FILE_LABELS[FILE]);
+
+        assert.deepEqual(
+            [...document.querySelectorAll('#patch-blacklist-list li')].map((item) => item.textContent),
+            ['Risky patch'],
+        );
+        assert.equal(dialog.textContent.includes(FILE), false);
+    } finally {
+        if (previousUpdated === undefined) delete globalThis.__PATCH_BLACKLIST_UPDATED__;
+        else globalThis.__PATCH_BLACKLIST_UPDATED__ = previousUpdated;
+        dialog.remove();
+    }
+});
+
+test('view blacklist dialog marks an exact tested-firmware match', () => {
+    const dialog = installBlacklistDialog();
+    const ui = makeUI();
+    ui.testedFirmwareVersion = '4.45.23646';
+    const el = container();
+
+    try {
+        ui.render(el);
+        el.querySelector('.patch-blacklist-button').click();
+
+        const match = document.querySelector('.device-identification-badge--verified');
+        assert.ok(match);
+        assert.equal(match.getAttribute('aria-describedby'), 'patch-blacklist-version-tooltip');
+        match.dispatchEvent(new window.Event('mouseenter'));
+        const tooltip = document.getElementById('patch-blacklist-version-tooltip');
+        assert.equal(tooltip.hidden, false);
+        assert.equal(tooltip.textContent, 'Your firmware version matches the version that was tested');
+        assert.equal(tooltip.classList.contains('patch-blacklist-version-tooltip--visible'), true);
+    } finally {
+        dialog.remove();
+    }
 });
 
 test('shows a modified badge only for user-edited patches', () => {

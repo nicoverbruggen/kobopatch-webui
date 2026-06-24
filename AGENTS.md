@@ -30,6 +30,7 @@ Guidance for agents working in this repository. For the full maintainer notes, s
 - Be especially careful with code that writes to a Kobo device: `writeFile`, `removeEntry`, `ensureDirectory`, NickelMenu install/removal, backup creation, firmware restore, and generated `KoboRoot.tgz` output.
 - Prefer small, testable changes. Crucial functionality must be unit tested, especially pure parsing/validation and mocked filesystem write sequences.
 - User-facing behavior must be covered by integration tests. If a change affects wizard steps, visible copy, selections, generated downloads, or device-write outcomes, add or update Playwright coverage.
+- New user-facing features should normally also be added to the screenshot flow (`tests/e2e/specs/screenshots.mjs`) for visual validation, in addition to E2E assertions. Capture each visually distinct state the feature introduces, especially dialogs, banners, badges, and hover/help states.
 - Do not invent fake product features just to test installers. Test the real feature modules, real generated paths, and real failure ordering.
 - When changing `Kobo eReader.conf` handling, preserve line endings and unrelated sections. Validate generated `ExcludeSyncFolders` regexes.
 - Unknown Kobo serial prefixes should consistently use the first 4 serial characters.

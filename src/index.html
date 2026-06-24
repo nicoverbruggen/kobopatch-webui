@@ -332,6 +332,23 @@
         </div>
     </dialog>
 
+    <dialog id="patch-blacklist-dialog" class="modal" aria-labelledby="patch-blacklist-dialog-title">
+        <div class="modal-content patch-blacklist-dialog-content">
+            <div class="modal-header">
+                <h2 id="patch-blacklist-dialog-title">Known incompatible patches</h2>
+                <button id="btn-patch-blacklist-close" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="patch-blacklist-updated" class="patch-blacklist-meta"></p>
+                <p id="patch-blacklist-description" class="patch-blacklist-description"></p>
+                <p id="patch-blacklist-current-version" class="patch-blacklist-meta patch-blacklist-current-version"></p>
+                <p id="patch-blacklist-empty" class="fallback-hint" hidden></p>
+                <div id="patch-blacklist-list" class="patch-blacklist-list"></div>
+            </div>
+            <div id="patch-blacklist-version-tooltip" class="patch-blacklist-version-tooltip" role="tooltip" hidden></div>
+        </div>
+    </dialog>
+
     <dialog id="nm-customize-dialog" class="modal nm-customize-dialog" aria-labelledby="nm-customize-title">
         <div class="modal-content">
             <div class="modal-header">
