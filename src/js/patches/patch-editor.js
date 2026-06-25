@@ -10,6 +10,35 @@
 import yaml from 'js-yaml';
 import { trapFocus } from '../shell/dom.js';
 import { parsePatchYAML } from './patch-yaml.js';
+import { getPatchMeta } from './patch-metadata.js';
+
+/**
+ * Populate the editor's customization tips from a patch's metadata. Tips are the
+ * webui-owned replacement for the old tuning instructions that lived only as
+ * YAML comments; they render where a user actually changes values.
+ */
+function renderEditorTips(dialog, patchName) {
+    const tipsEl = dialog.querySelector('.patch-editor-tips');
+    if (!tipsEl) return;
+    tipsEl.innerHTML = '';
+    const tips = getPatchMeta(patchName).tips;
+    if (!tips || tips.length === 0) {
+        tipsEl.hidden = true;
+        return;
+    }
+    const heading = document.createElement('p');
+    heading.className = 'patch-editor-tips-heading';
+    heading.textContent = 'Customization tips';
+    tipsEl.appendChild(heading);
+    const list = document.createElement('ul');
+    for (const tip of tips) {
+        const li = document.createElement('li');
+        li.textContent = tip;
+        list.appendChild(li);
+    }
+    tipsEl.appendChild(list);
+    tipsEl.hidden = false;
+}
 
 // One shared dialog, bound once; `editing` holds the patch currently open.
 let editorBound = false;
@@ -178,6 +207,7 @@ export function openPatchEditor(ui, patch, filename, container) {
     const statusEl = dialog.querySelector('.patch-editor-status');
 
     titleEl.textContent = `Edit: ${patch.name}`;
+    renderEditorTips(dialog, patch.name);
     textarea.value = patchYaml;
     statusEl.textContent = '';
     statusEl.className = 'patch-editor-status';

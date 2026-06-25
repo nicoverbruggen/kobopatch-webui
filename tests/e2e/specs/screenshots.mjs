@@ -290,12 +290,15 @@ test('manual patches', async ({ page }, testInfo) => {
     // Patches config
     await expect(page.locator('#step-patches')).not.toBeHidden();
     await shot(page, dir, '03-patches-config', testInfo);
+    // The "Incompatible patches" button now lives under the Advanced section.
+    await page.locator('#patch-advanced-section > summary').click();
     await page.locator('.patch-blacklist-button').click();
     const blacklistDialog = page.locator('#patch-blacklist-dialog');
     await expect(blacklistDialog).toBeVisible();
     await shot(page, dir, '03a-patch-blacklist-dialog', testInfo);
     await blacklistDialog.locator('#btn-patch-blacklist-close').click();
     await expect(blacklistDialog).not.toBeVisible();
+    await page.locator('#patch-advanced-section > summary').click(); // collapse Advanced again
 
     // Expand section and select a standalone (checkbox) patch.
     const section = page.locator('.patch-file-section').first();
@@ -308,13 +311,12 @@ test('manual patches', async ({ page }, testInfo) => {
     await shot(page, dir, '04-patches-selected', testInfo);
 
     // Patch editor — open, validate an edit, and show the "modified" indicator.
-    // Edit a different patch than the one selected above (the first, near the top
-    // of the list) so the selection count carries through and the badge is
-    // prominently visible in the modified-indicator shot.
-    const editTarget = section
-        .locator('.patch-item')
-        .filter({ has: page.locator('.patch-edit-btn') })
-        .first();
+    // Edit a different patch than the one selected above (a CSS patch that uses
+    // only ops the validator recognises, so the edit validates cleanly) so the
+    // selection count carries through and the badge is prominent in the shot.
+    const editPatchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+    await editPatchName.locator('xpath=ancestor::details').locator('summary').click();
+    const editTarget = editPatchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
     await editTarget.locator('.patch-edit-btn').click();
     const editorDialog = page.locator('#patch-editor-dialog');
     await expect(editorDialog).toBeVisible();
@@ -331,6 +333,21 @@ test('manual patches', async ({ page }, testInfo) => {
     await expect(editorDialog).not.toBeVisible();
     await expect(page.locator('.patch-modified').first()).toBeVisible();
     await shot(page, dir, '04c-patch-modified', testInfo);
+
+    // Reveal a patch's notes (description, author credit) surfaced from metadata.
+    const notesToggle = section.locator('.patch-desc-toggle').first();
+    await notesToggle.click();
+    await expect(section.locator('.patch-notes').first()).toBeVisible();
+    await shot(page, dir, '04d-patch-notes', testInfo);
+    await notesToggle.click();
+
+    // Advanced toggle: switch to the original file-based names/sections, capture, revert.
+    await page.locator('#patch-advanced-section > summary').click();
+    await page.locator('#patch-original-format').check();
+    await expect(page.locator('.patch-file-name', { hasText: 'Nickel (UI patches)' }).first()).toBeVisible();
+    await shot(page, dir, '04e-patches-original-format', testInfo);
+    await page.locator('#patch-original-format').uncheck();
+    await page.locator('#patch-advanced-section > summary').click();
 
     // Review & build
     await page.click('#btn-patches-next');
@@ -467,6 +484,7 @@ test('manual patches blacklist matching firmware tooltip', async ({ page }, test
     await page.click('#btn-manual-confirm');
 
     await expect(page.locator('#step-patches')).not.toBeHidden();
+    await page.locator('#patch-advanced-section > summary').click();
     await page.locator('.patch-blacklist-button').click();
     const blacklistDialog = page.locator('#patch-blacklist-dialog');
     await expect(blacklistDialog).toBeVisible();

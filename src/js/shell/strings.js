@@ -86,8 +86,6 @@ export const TL = {
         NONE: 'None (do not patch)',
         MODIFIED: 'modified',
         MODIFIED_TITLE: 'You edited this patch’s definition.',
-        BLACKLIST_BUTTON: 'Incompatible patches',
-        BLACKLIST_BUTTON_TITLE: 'View incompatible patches for this firmware',
         BLACKLIST_DIALOG_TITLE: 'Known incompatible patches',
         BLACKLIST_DESCRIPTION: (testedVersion) =>
             `This list is based on testing against firmware ${testedVersion}. Patch compatibility may vary based on the firmware you have installed on your device.`,

@@ -18,6 +18,7 @@
     "setup:installables": "node tools/installables/installables.mjs --src",
     "update:installables": "node tools/installables/installables.mjs --update --src --dist",
     "check:installables": "node tools/installables/installables.mjs --check --force",
+    "check:patch-metadata": "node scripts/check-patch-metadata.mjs",
     "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
     "start": "node scripts/serve-dist.mjs",
     "verify": "node scripts/verify.mjs",

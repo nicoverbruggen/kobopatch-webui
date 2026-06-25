@@ -6,6 +6,8 @@ import { buildPatchesInstructions } from '../shell/instructions.js';
 import { TL } from '../shell/strings.js';
 import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatchesManifest, checkExistingTgz } from './patches-execute.js';
 import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../patches/side-effects.js';
+import { getPatchMeta } from '../patches/patch-metadata.js';
+import { openBlacklistDialog } from '../patches/patch-list-view.js';
 import { buildAdditionalFilesTgz, mergeAdditionalFilesIntoTgz } from '../patches/additional-files.js';
 
 export function initPatchesFlow(state) {
@@ -24,6 +26,8 @@ export function initPatchesFlow(state) {
         'patch-reload-dialog-modified-note': patchReloadDialogModifiedNote,
         'patch-reload-dialog-additional-note': patchReloadDialogAdditionalNote,
         'patch-advanced-section': patchAdvancedSection,
+        'btn-patch-blacklist': btnPatchBlacklist,
+        'patch-original-format': patchOriginalFormat,
         'btn-patch-additional-files': btnPatchAdditionalFiles,
         'patch-additional-file-input': patchAdditionalFileInput,
         'patch-additional-files-empty': patchAdditionalFilesEmpty,
@@ -72,6 +76,8 @@ export function initPatchesFlow(state) {
         'patch-reload-dialog-modified-note',
         'patch-reload-dialog-additional-note',
         'patch-advanced-section',
+        'btn-patch-blacklist',
+        'patch-original-format',
         'btn-patch-additional-files',
         'patch-additional-file-input',
         'patch-additional-files-empty',
@@ -271,7 +277,7 @@ export function initPatchesFlow(state) {
         let anyIncompatible = false;
         for (const patch of applied) {
             const li = document.createElement('li');
-            li.textContent = patch.name;
+            li.textContent = getPatchMeta(patch.name).label || patch.name;
             if (patch.incompatible) {
                 li.append(' ⚠️');
                 anyIncompatible = true;
@@ -631,6 +637,18 @@ export function initPatchesFlow(state) {
         downloadInstructions.hidden = false;
         _downloadDeviceName.textContent = state.deviceModelLabel || 'Kobo';
         terminal.end(state.isRestore ? 'restore-download' : 'patches-download');
+    });
+
+    btnPatchBlacklist.addEventListener('click', () => {
+        openBlacklistDialog(state.patchUI, patchContainer);
+    });
+
+    // Toggle between the themed metadata view and the original kobopatch/MobileRead
+    // format (grouped by source file, raw YAML titles). The preference lives on the
+    // patch container so renderPatchList/updatePatchCounts read it across re-renders.
+    patchOriginalFormat.addEventListener('change', () => {
+        patchContainer.dataset.originalFormat = patchOriginalFormat.checked ? 'true' : 'false';
+        state.patchUI.render(patchContainer);
     });
 
     btnPatchAdditionalFiles.addEventListener('click', () => {

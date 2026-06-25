@@ -8,6 +8,18 @@
             <details id="patch-advanced-section" class="patch-advanced">
                 <summary>Advanced</summary>
                 <div class="patch-advanced-body">
+                    <section class="patch-history" aria-labelledby="patch-history-title">
+                        <h3 id="patch-history-title">Patch History</h3>
+                        <p>Check which patches are known to be incompatible with the firmware you're patching.</p>
+                        <button id="btn-patch-blacklist" class="secondary patch-blacklist-button" type="button" title="View incompatible patches for this firmware" aria-label="View incompatible patches for this firmware">Incompatible patches</button>
+                    </section>
+                    <section class="patch-display-format" aria-labelledby="patch-display-format-title">
+                        <h3 id="patch-display-format-title">Use original patch names &amp; sections</h3>
+                        <label class="patch-display-format-toggle">
+                            <input id="patch-original-format" type="checkbox">
+                            <span>Group patches by their source file and show their original kobopatch titles instead of the themed labels. Users who are used to the original format as used on the MobileRead forums might be able to find their patches more easily this way.</span>
+                        </label>
+                    </section>
                     <section class="patch-additional-files" aria-labelledby="patch-additional-files-title">
                         <div class="patch-additional-files-head">
                             <div>

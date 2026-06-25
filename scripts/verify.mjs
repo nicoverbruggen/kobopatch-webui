@@ -164,6 +164,7 @@ const allPhases = [
     { name: 'Prettier', quick: true, task: () => run('npx', ['prettier', '--check', '**/*.{js,mjs}']) },
     { name: 'Lint', quick: true, task: () => run('npx', ['eslint', '.']) },
     { name: 'Unit tests', quick: true, task: () => run('npm', ['run', 'test:unit']) },
+    { name: 'Check patch metadata', quick: true, task: () => run('npm', ['run', 'check:patch-metadata']) },
     { name: 'Build WASM', quick: false, task: () => run(join(toolsDir, 'kobopatch-wasm/build.sh'), []) },
     { name: 'Build web app', quick: true, task: () => run('node', ['scripts/build.mjs']) },
     { name: 'Validate dist resources', quick: true, task: () => run('npm', ['run', 'validate:dist']) },

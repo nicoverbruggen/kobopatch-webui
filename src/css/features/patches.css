@@ -151,6 +151,46 @@
     padding: 0.85rem;
 }
 
+.patch-history,
+.patch-display-format {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.patch-history h3,
+.patch-display-format h3 {
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
+    line-height: 1.25;
+}
+
+.patch-history p {
+    margin: 0 0 0.55rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.patch-display-format-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.patch-display-format-toggle input {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.patch-display-format-toggle span {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
 .patch-additional-files-warning {
     margin-bottom: 0.85rem;
 
@@ -529,19 +569,35 @@
     padding: 0.45rem 0.75rem 0;
 }
 
-.step .patch-description {
+.patch-notes[hidden] {
+    display: none;
+}
+
+.step .patch-notes {
     margin-top: 0.3rem;
     margin-left: 1.6rem;
-    margin-bottom: 0;
+    padding: 0.25rem 0;
+}
+
+.step .patch-notes p {
+    margin: 0;
     font-size: 0.72rem;
     color: var(--text-secondary);
     white-space: pre-line;
     line-height: 1.4;
-    padding: 0.25rem 0;
 }
 
-.patch-description[hidden] {
-    display: none;
+.step .patch-notes p + p {
+    margin-top: 0.35rem;
+}
+
+.step .patch-note {
+    font-style: italic;
+}
+
+.step .patch-author {
+    font-size: 0.68rem;
+    opacity: 0.8;
 }
 
 /* Edit button for patches */
@@ -569,6 +625,42 @@
     color: var(--text-secondary);
     margin: 0 0 0.75rem;
     line-height: 1.4;
+}
+
+.patch-editor-tips[hidden] {
+    display: none;
+}
+
+.patch-editor-tips {
+    margin: 0 0 0.75rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 6px;
+    background: var(--surface-muted, rgba(127, 127, 127, 0.1));
+    border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+}
+
+.patch-editor-tips-heading {
+    margin: 0 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+
+.patch-editor-tips ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.patch-editor-tips li {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.patch-editor-tips li + li {
+    margin-top: 0.25rem;
 }
 
 .patch-editor-textarea {

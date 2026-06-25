@@ -74,6 +74,85 @@ async function gotoManualPatchesStep(page) {
 }
 
 test.describe('Custom patches', () => {
+    test('patches are grouped into themed sections, not by patch file', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await gotoManualPatchesStep(page);
+
+        // Sections are labelled by user-facing theme (the old per-file labels like
+        // "Nickel (UI patches)" are gone).
+        const labels = await page.locator('.patch-file-section .patch-file-name').allTextContents();
+        expect(labels).toContain('Typography & Fonts');
+        expect(labels).toContain('Cloud Sync');
+        expect(labels).not.toContain('Nickel (UI patches)');
+
+        // A patch keeps its YAML name as identity but can show a friendlier label:
+        // "Remove footer (row3) on new home screen" → "Hide home-screen footer row".
+        const homeSection = page.locator('.patch-file-section').filter({ has: page.locator('.patch-file-name', { hasText: 'Home & Library' }) });
+        await homeSection.locator('summary').click();
+        await expect(homeSection.locator('.patch-name', { hasText: 'Hide home-screen footer row' }).first()).toBeVisible();
+    });
+
+    test('Advanced toggle switches to the original file-based names and sections', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await gotoManualPatchesStep(page);
+
+        // Themed by default.
+        let labels = await page.locator('.patch-file-section .patch-file-name').allTextContents();
+        expect(labels).toContain('Typography & Fonts');
+        expect(labels).not.toContain('Nickel (UI patches)');
+
+        // Flip the toggle in the Advanced section.
+        await page.locator('#patch-advanced-section > summary').click();
+        await page.locator('#patch-original-format').check();
+
+        // Now grouped by source file, under the original kobopatch titles.
+        labels = await page.locator('.patch-file-section .patch-file-name').allTextContents();
+        expect(labels).toContain('Nickel (UI patches)');
+        expect(labels).not.toContain('Typography & Fonts');
+
+        const nickelSection = page.locator('.patch-file-section').filter({ has: page.locator('.patch-file-name', { hasText: 'Nickel (UI patches)' }) });
+        await nickelSection.locator('summary').click();
+        // The raw YAML name shows instead of the friendlier metadata label.
+        await expect(nickelSection.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first()).toBeVisible();
+        await expect(page.locator('.patch-name', { hasText: 'Hide home-screen footer row' })).toHaveCount(0);
+
+        // Unchecking returns to the themed view.
+        await page.locator('#patch-original-format').uncheck();
+        labels = await page.locator('.patch-file-section .patch-file-name').allTextContents();
+        expect(labels).toContain('Typography & Fonts');
+        expect(labels).not.toContain('Nickel (UI patches)');
+    });
+
+    test('patch notes surface metadata description and author; editor shows customization tips', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await gotoManualPatchesStep(page);
+
+        // "My 10 line spacing values" (typography) has a description, author, and tips.
+        const patchName = page.locator('.patch-name', { hasText: 'My 10 line spacing values' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
+        const item = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+
+        // Notes are collapsed until the help toggle is pressed.
+        const notes = item.locator('.patch-notes');
+        await expect(notes).toBeHidden();
+        await item.locator('.patch-desc-toggle').click();
+        await expect(notes).toBeVisible();
+        await expect(notes.locator('.patch-author')).toHaveText('Patch by GeoffR');
+        await expect(notes.locator('.patch-description')).toContainText('line-spacing slider');
+
+        // The editor surfaces the tips where values are actually changed.
+        await item.locator('.patch-edit-btn').click();
+        const dialog = page.locator('#patch-editor-dialog');
+        await expect(dialog).toBeVisible();
+        const tips = dialog.locator('.patch-editor-tips');
+        await expect(tips).toBeVisible();
+        await expect(tips.locator('li').first()).toContainText('ReplaceFloat');
+        await dialog.locator('.patch-editor-cancel').first().click();
+    });
+
     test('no device — full manual mode patching pipeline', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
@@ -651,8 +730,8 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#step-patches')).not.toBeHidden();
         await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
 
-        // Enable a patch
-        const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
+        // Enable a patch (shown under its friendlier metadata label)
+        const patchName = page.locator('.patch-name', { hasText: 'Hide home-screen footer row' }).first();
         const patchSection = patchName.locator('xpath=ancestor::details');
         await patchSection.locator('summary').click();
         await expect(patchName).toBeVisible();
@@ -839,9 +918,8 @@ test.describe('Custom patches', () => {
         // custom-patches manifest that a device install would also write.
         await goToConnectedPatches({ hasNickelMenu: false });
 
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
         const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
         await expect(patchName).toBeVisible();
         const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
 
@@ -995,8 +1073,8 @@ test.describe('Custom patches', () => {
         await page.click('input[name="mode"][value="patches"]');
         await page.click('#btn-mode-next');
 
-        // Enable "Remove footer (row3) on new home screen"
-        const patchName = page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first();
+        // Enable "Remove footer (row3) on new home screen" (label: "Hide home-screen footer row")
+        const patchName = page.locator('.patch-name', { hasText: 'Hide home-screen footer row' }).first();
         const patchSection = patchName.locator('xpath=ancestor::details');
         await patchSection.locator('summary').click();
         await patchName.locator('xpath=ancestor::label').locator('input').check();
@@ -1041,11 +1119,11 @@ test.describe('Custom patches', () => {
 
         const searchInput = page.locator('.patch-search');
 
-        // Type a search query
+        // Type a search query (matches against the displayed label)
         await searchInput.fill('home screen');
 
         // Matching patches remain visible
-        await expect(page.locator('.patch-name', { hasText: 'Remove footer (row3) on new home screen' }).first()).toBeVisible();
+        await expect(page.locator('.patch-name', { hasText: 'Increase home screen cover size' }).first()).toBeVisible();
 
         // Non-matching patches are hidden
         await expect(page.locator('.patch-item-hidden')).not.toHaveCount(0);
@@ -1064,6 +1142,10 @@ test.describe('Custom patches', () => {
         const blacklist = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', '..', '..', 'patches', 'blacklist.json'), 'utf-8'));
         const version45 = blacklist['4.45'];
         test.skip(!version45, 'No 4.45 blacklist entries found');
+
+        // Patches show their metadata display label, not the raw YAML name.
+        const { getPatchMeta } = await import('../../../src/js/patches/patch-metadata.js');
+        const displayName = (name) => getPatchMeta(name).label || name;
 
         await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
@@ -1086,7 +1168,7 @@ test.describe('Custom patches', () => {
         // remains interactive (users can override the warning and try anyway).
         for (const [filename, patchNames] of Object.entries(version45)) {
             for (const name of patchNames) {
-                const patchName = page.locator('.patch-name', { hasText: name }).first();
+                const patchName = page.locator('.patch-name', { hasText: displayName(name) }).first();
                 await expect(patchName).toBeVisible();
 
                 const label = patchName.locator('xpath=ancestor::label');
@@ -1099,6 +1181,7 @@ test.describe('Custom patches', () => {
             }
         }
 
+        await page.locator('#patch-advanced-section > summary').click();
         await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
         const blacklistDialog = page.locator('#patch-blacklist-dialog');
         await expect(blacklistDialog).toBeVisible();
@@ -1109,11 +1192,13 @@ test.describe('Custom patches', () => {
         await expect(blacklistDialog.locator('#patch-blacklist-current-version .device-identification-badge--verified')).toHaveCount(0);
         await expect(blacklistDialog.locator('#patch-blacklist-empty')).toBeHidden();
         await expect(blacklistDialog).not.toContainText('src/libnickel.so.1.0.0.yaml');
-        await expect(blacklistDialog).toContainText('Nickel Library');
+        // The dialog mirrors the patch list's themed section labels, not file names.
+        await expect(blacklistDialog).toContainText('Privacy & Features');
+        await expect(blacklistDialog).toContainText('PDF');
 
         for (const patchNames of Object.values(version45)) {
             for (const name of patchNames) {
-                await expect(blacklistDialog).toContainText(name);
+                await expect(blacklistDialog).toContainText(displayName(name));
             }
         }
 
@@ -1131,6 +1216,7 @@ test.describe('Custom patches', () => {
         await page.click('#btn-mode-next');
         await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
 
+        await page.locator('#patch-advanced-section > summary').click();
         await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
         const blacklistDialog = page.locator('#patch-blacklist-dialog');
         await expect(blacklistDialog).toBeVisible();
@@ -1491,12 +1577,9 @@ test.describe('Custom patches', () => {
 
         await gotoManualPatchesStep(page);
 
-        // Open the first section (Nickel UI patches)
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
-
-        // Find a known patch and click its edit button
+        // Find a known patch and open its section, then click its edit button
         const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
         await expect(patchName).toBeVisible();
         const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
         const editBtn = patchItem.locator('.patch-edit-btn');
@@ -1552,9 +1635,8 @@ test.describe('Custom patches', () => {
 
         await gotoManualPatchesStep(page);
 
-        // Open the first section so its patches (and edit buttons) are in the DOM.
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
+        // The patches all live in the DOM (inside collapsed sections); the search
+        // below re-expands whichever section holds a match, so nothing to open here.
 
         // Search for a query that matches the patch we'll edit.
         const searchInput = page.locator('.patch-search');
@@ -1590,10 +1672,9 @@ test.describe('Custom patches', () => {
 
         await gotoManualPatchesStep(page);
 
-        // Open first section and find a patch
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
+        // Find a patch, open its section, and open the editor
         const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
         await expect(patchName).toBeVisible();
         const editBtn = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]').locator('.patch-edit-btn');
         await editBtn.click();
@@ -1630,10 +1711,9 @@ test.describe('Custom patches', () => {
         // --- First build: edited patch ---
         await gotoManualPatchesStep(page);
 
-        // Open section, edit patch value
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
+        // Open the patch's section, edit patch value
         const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
         await expect(patchName).toBeVisible();
         const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
         const editBtn = patchItem.locator('.patch-edit-btn');
@@ -1670,9 +1750,8 @@ test.describe('Custom patches', () => {
         await gotoManualPatchesStep(page);
 
         // Enable the same patch WITHOUT editing
-        const section2 = page.locator('.patch-file-section').first();
-        await section2.locator('summary').click();
         const patchName2 = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName2.locator('xpath=ancestor::details').locator('summary').click();
         await expect(patchName2).toBeVisible();
         await patchName2.locator('xpath=ancestor::label').locator('input').check();
         await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
@@ -1698,11 +1777,9 @@ test.describe('Custom patches', () => {
 
         await gotoManualPatchesStep(page);
 
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
-
         const patchLabel = 'Reduce top/bottom page spacer';
         const itemFor = () => page.locator('.patch-name', { hasText: patchLabel }).first().locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+        await page.locator('.patch-name', { hasText: patchLabel }).first().locator('xpath=ancestor::details').locator('summary').click();
 
         // No indicator before any edit.
         await expect(itemFor().locator('.patch-modified')).toHaveCount(0);
@@ -1731,12 +1808,9 @@ test.describe('Custom patches', () => {
 
         await gotoManualPatchesStep(page);
 
-        const section = page.locator('.patch-file-section').first();
-        await section.locator('summary').click();
-        const patchItem = page
-            .locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' })
-            .first()
-            .locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+        const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
+        const patchItem = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
 
         // Edit a patch so there are unsaved edits.
         await patchItem.locator('.patch-edit-btn').click();

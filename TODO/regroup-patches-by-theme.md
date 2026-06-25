@@ -1,5 +1,10 @@
 # Re-group the patch UI by theme (presentation metadata layer)
 
+> ✅ Implemented. Metadata lives in `src/js/patches/patch-metadata.js`; the patch
+> list and incompatible-patches modal group by `PATCH_CATEGORIES`; validation is
+> `scripts/check-patch-metadata.mjs` (`npm run check:patch-metadata`, a quick
+> phase of `verify`/`test`).
+
 **Goal:** stop grouping the patch list by the binary that gets patched (`Nickel`,
 `Adobe RMSDK`, …). Instead present patches by user-facing theme, with clearer
 display names and author credit in the notes.
@@ -67,26 +72,26 @@ Author sources (only credit where the yaml names someone — don't invent):
 
 ## Tasks
 
-- [ ] Create `patch-metadata.js` with `PATCH_CATEGORIES`, `PATCH_META`
+- [x] Create `patch-metadata.js` with `PATCH_CATEGORIES`, `PATCH_META`
       (one entry per patch), and `getPatchMeta()`.
-- [ ] Rewrite grouping in `patch-list-view.js`:
-  - [ ] Flatten patches across all files, bucket by `category` in
+- [x] Rewrite grouping in `patch-list-view.js`:
+  - [x] Flatten patches across all files, bucket by `category` in
         `PATCH_CATEGORIES` order; unknown → trailing "Other" section. Render one
         `<details>` per non-empty category instead of one per file.
-  - [ ] Update the incompatible-patches modal (`#patch-blacklist-dialog`) to use
+  - [x] Update the incompatible-patches modal (`#patch-blacklist-dialog`) to use
         the same visual section labels/order, since it currently mirrors the
         patch-list grouping with only user-facing section names.
-  - [ ] Display name = `meta.label || patch.name`; search matches the displayed
+  - [x] Display name = `meta.label || patch.name`; search matches the displayed
         label.
-  - [ ] Surface `author` in the notes (append to the shown `Description`, or show
+  - [x] Surface `author` in the notes (append to the shown `Description`, or show
         it even when there's no description).
-  - [ ] Keep `patchGroup` mutual-exclusion: radio `name` stays
+  - [x] Keep `patchGroup` mutual-exclusion: radio `name` stays
         `pg_${filename}_${group}` regardless of visual grouping.
-  - [ ] Update `updatePatchCounts` + `filterPatches` to key off category instead
+  - [x] Update `updatePatchCounts` + `filterPatches` to key off category instead
         of `dataset.filename` (they assume one section per file today).
-- [ ] Remove `PATCH_FILE_LABELS` from `patch-yaml.js` (unused once per-file
+- [x] Remove `PATCH_FILE_LABELS` from `patch-yaml.js` (unused once per-file
       grouping is gone).
-- [ ] Add the validation script + verify phase (below).
+- [x] Add the validation script + verify phase (below).
 
 ## Validation (required)
 
@@ -94,14 +99,14 @@ The yaml is the source of truth and keeps changing, so the metadata can drift.
 Without a check, a newly added patch silently lands in "Other" with no
 label/category.
 
-- [ ] Add `scripts/check-patch-metadata.mjs`, exposed as `check:patch-metadata`
+- [x] Add `scripts/check-patch-metadata.mjs`, exposed as `check:patch-metadata`
       in `package.json` (mirror `validate:dist` / `test:patches:check`).
-- [ ] It parses every `patches/*/src/*.yaml` with `parsePatchYAML`, loads
+- [x] It parses every `patches/*/src/*.yaml` with `parsePatchYAML`, loads
       `PATCH_META`, and **fails (exit non-zero, listing `file → name`)** for any
       patch with no entry (or an entry missing `category`).
-- [ ] It also flags **orphan** entries (a `PATCH_META` name not present in any
+- [x] It also flags **orphan** entries (a `PATCH_META` name not present in any
       yaml) so the map doesn't rot — decide warn vs fail.
-- [ ] Wire it into `scripts/verify.mjs` as a new `quick: true` phase (runs in both
+- [x] Wire it into `scripts/verify.mjs` as a new `quick: true` phase (runs in both
       `npm run verify` and `npm run test`), near the other static checks (after
       Unit tests, around Build).
 

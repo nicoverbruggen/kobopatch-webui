@@ -9,18 +9,6 @@
 import yaml from 'js-yaml';
 
 /**
- * Friendly display names for patch files.
- */
-export const PATCH_FILE_LABELS = {
-    'src/nickel.yaml': 'Nickel (UI patches)',
-    'src/nickel_custom.yaml': 'Nickel Custom',
-    'src/libadobe.so.yaml': 'Adobe (PDF patches)',
-    'src/libnickel.so.1.0.0.yaml': 'Nickel Library (core patches)',
-    'src/librmsdk.so.1.0.0.yaml': 'Adobe RMSDK (ePub patches)',
-    'src/cloud_sync.yaml': 'Cloud Sync',
-};
-
-/**
  * Extract the key name from a top-level YAML mapping line, or null if the line
  * is not a top-level key (indented, blank, a comment, or a list item).
  *

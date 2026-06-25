@@ -1,5 +1,9 @@
 # Own the patch prose in metadata (descriptions, notes, customization tips)
 
+> ✅ Implemented. `PATCH_META` entries carry optional `description`/`note`/`tips`;
+> the patch list prefers `meta.description` and renders the note + author, and the
+> patch editor surfaces `tips` next to the value fields.
+
 **Goal:** move all human-facing prose into the metadata layer too — a polished
 description, an optional note, and customization tips/instructions. This makes
 the `#` comments in the yaml files no longer relevant to the UI: today the
@@ -33,13 +37,13 @@ changes values — that's where the old yaml comments were useful.
 
 ## Tasks
 
-- [ ] Add `description` / `note` / `tips` to `PATCH_META` (incrementally — only
+- [x] Add `description` / `note` / `tips` to `PATCH_META` (incrementally — only
       where there's something worth saying; the validation script must NOT
       require them, unlike `category`).
-- [ ] Update `patch-list-view.js` to prefer `meta.description` over the parsed
+- [x] Update `patch-list-view.js` to prefer `meta.description` over the parsed
       `patch.description`, and render `note`.
-- [ ] Update `patch-editor.js` to show `tips` alongside the value fields.
-- [ ] Migrate the worthwhile yaml-comment instructions into `tips` (one pass per
+- [x] Update `patch-editor.js` to show `tips` alongside the value fields.
+- [x] Migrate the worthwhile yaml-comment instructions into `tips` (one pass per
       file). Leave the comments in the yaml for upstream/maintainer reference —
       the point is only that the UI no longer needs them.
 

@@ -1,16 +1,114 @@
 /**
  * patch-list-view.js — Rendering and filtering of the patch selection list.
  *
- * Builds the searchable, grouped checkbox/radio UI for a PatchUI's loaded
- * patches, keeps the per-file enabled counts in sync as toggles change, and
- * implements the search filter. Reads patch state and blacklist/modified flags
- * off the passed PatchUI instance; mutates only the DOM and selection state.
+ * Builds the searchable, themed checkbox/radio UI for a PatchUI's loaded
+ * patches, keeps the per-category enabled counts in sync as toggles change, and
+ * implements the search filter. Patches are flattened across all patch files
+ * and grouped by the user-facing theme declared in patch-metadata.js (not by the
+ * binary they patch); each theme renders as one collapsible section. Reads patch
+ * state and blacklist/modified flags off the passed PatchUI instance; mutates
+ * only the DOM and selection state.
  */
 
-import { CircleHelp, Info, Minus, Pencil } from 'lucide';
+import { CircleHelp, Minus, Pencil } from 'lucide';
 import { TL } from '../shell/strings.js';
-import { PATCH_FILE_LABELS } from './patch-yaml.js';
+import { getPatchMeta, PATCH_CATEGORIES, OTHER_CATEGORY, PATCH_FILE_LABELS } from './patch-metadata.js';
 import { openPatchEditor } from './patch-editor.js';
+
+/**
+ * Whether the user has opted (via the Advanced toggle) to see patches the way
+ * they appear in the original kobopatch/MobileRead format: grouped by source
+ * file and shown under their raw YAML names instead of the themed metadata layer.
+ */
+function isOriginalFormat(container) {
+    return container?.dataset?.originalFormat === 'true';
+}
+
+/** The displayed title for a patch: the raw YAML name in original mode, else the metadata label fallback. */
+function displayName(name, original) {
+    return original ? name : getPatchMeta(name).label || name;
+}
+
+/**
+ * Flatten patches across all files and bucket them by category, in
+ * PATCH_CATEGORIES order, with a trailing "Other" section for anything whose
+ * category isn't listed (including the `other` fallback). Each entry keeps its
+ * source `filename` so PatchGroup mutual-exclusion stays scoped per file.
+ */
+function categoryBuckets(ui) {
+    const byId = new Map();
+    for (const [filename, { patches }] of Object.entries(ui.patchFiles)) {
+        for (const patch of patches) {
+            const id = getPatchMeta(patch.name).category || OTHER_CATEGORY.id;
+            if (!byId.has(id)) byId.set(id, []);
+            byId.get(id).push({ patch, filename });
+        }
+    }
+
+    const ordered = [];
+    for (const { id, label } of PATCH_CATEGORIES) {
+        if (byId.has(id)) {
+            ordered.push({ id, label, entries: byId.get(id) });
+            byId.delete(id);
+        }
+    }
+    // Anything left (the `other` fallback plus any unknown ids) folds into one
+    // trailing "Other" section, preserving discovery order.
+    const leftover = [];
+    for (const entries of byId.values()) leftover.push(...entries);
+    if (leftover.length > 0) ordered.push({ id: OTHER_CATEGORY.id, label: OTHER_CATEGORY.label, entries: leftover });
+    return ordered;
+}
+
+/** Bucket patches by their source file (the "original format" view), in file order. */
+function fileBuckets(ui) {
+    const ordered = [];
+    for (const [filename, { patches }] of Object.entries(ui.patchFiles)) {
+        if (patches.length === 0) continue;
+        ordered.push({
+            id: filename,
+            label: PATCH_FILE_LABELS[filename] || filename,
+            entries: patches.map((patch) => ({ patch, filename })),
+        });
+    }
+    return ordered;
+}
+
+/** Section buckets for the current view mode: by file (original) or by theme. */
+function sectionBuckets(ui, original) {
+    return original ? fileBuckets(ui) : categoryBuckets(ui);
+}
+
+/** Stable key for a PatchGroup, scoped per source file. */
+function groupKey(filename, group) {
+    return `${filename} ${group}`;
+}
+
+/**
+ * The "X / Y enabled" tally for a section. A mutually-exclusive PatchGroup is a
+ * single choice (pick one option or none), so it counts as ONE toward the total
+ * and as one enabled when any of its options is selected — not once per option.
+ */
+function bucketCounts(entries) {
+    let total = 0;
+    let enabled = 0;
+    const groupsSeen = new Set();
+    const groupsEnabled = new Set();
+    for (const { patch, filename } of entries) {
+        if (patch.patchGroup) {
+            const key = groupKey(filename, patch.patchGroup);
+            if (!groupsSeen.has(key)) {
+                groupsSeen.add(key);
+                total++;
+            }
+            if (patch.enabled) groupsEnabled.add(key);
+        } else {
+            total++;
+            if (patch.enabled) enabled++;
+        }
+    }
+    return { enabled: enabled + groupsEnabled.size, total };
+}
 
 function iconAttrs(attrs) {
     return Object.entries(attrs || {})
@@ -94,7 +192,42 @@ function bindFirmwareMatchTooltip(dialog, badge) {
     dialog.addEventListener('close', hide, { once: true });
 }
 
-function renderBlacklistDialog(ui) {
+/**
+ * Bucket the blacklisted patch names for the modal so it mirrors the patch list.
+ * In themed mode the blacklist (keyed by file) is flattened and re-bucketed by
+ * category; in original mode it stays grouped by file under the file labels.
+ */
+function blacklistGroups(ui, original) {
+    if (original) {
+        return ui.getCurrentBlacklist().map(({ filename, names }) => ({
+            label: PATCH_FILE_LABELS[filename] || filename,
+            names,
+        }));
+    }
+
+    const byId = new Map();
+    for (const { names } of ui.getCurrentBlacklist()) {
+        for (const name of names) {
+            const id = getPatchMeta(name).category || OTHER_CATEGORY.id;
+            if (!byId.has(id)) byId.set(id, []);
+            byId.get(id).push(name);
+        }
+    }
+
+    const ordered = [];
+    for (const { id, label } of PATCH_CATEGORIES) {
+        if (byId.has(id)) {
+            ordered.push({ label, names: byId.get(id) });
+            byId.delete(id);
+        }
+    }
+    const leftover = [];
+    for (const names of byId.values()) leftover.push(...names);
+    if (leftover.length > 0) ordered.push({ label: OTHER_CATEGORY.label, names: leftover });
+    return ordered;
+}
+
+function renderBlacklistDialog(ui, original) {
     const dialog = document.getElementById('patch-blacklist-dialog');
     if (!dialog) return null;
 
@@ -118,27 +251,28 @@ function renderBlacklistDialog(ui) {
     }
     listEl.innerHTML = '';
 
-    const entries = ui.getCurrentBlacklist();
-    emptyEl.hidden = entries.length > 0;
-    listEl.hidden = entries.length === 0;
+    const groups = blacklistGroups(ui, original);
+    const hasEntries = groups.length > 0;
+    emptyEl.hidden = hasEntries;
+    listEl.hidden = !hasEntries;
 
-    if (entries.length === 0) {
+    if (!hasEntries) {
         emptyEl.textContent = TL.PATCH.BLACKLIST_EMPTY;
         return dialog;
     }
 
-    for (const entry of entries) {
+    for (const group of groups) {
         const section = document.createElement('section');
         section.className = 'patch-blacklist-group';
 
         const title = document.createElement('h3');
-        title.textContent = PATCH_FILE_LABELS[entry.filename] || TL.PATCH.BLACKLIST_OTHER_SECTION;
+        title.textContent = group.label;
         section.appendChild(title);
 
         const list = document.createElement('ul');
-        for (const name of entry.names) {
+        for (const name of group.names) {
             const item = document.createElement('li');
-            item.textContent = name;
+            item.textContent = displayName(name, original);
             list.appendChild(item);
         }
         section.appendChild(list);
@@ -146,6 +280,18 @@ function renderBlacklistDialog(ui) {
     }
 
     return dialog;
+}
+
+/**
+ * Open the incompatible-patches modal (the "Patch History" entry in the Advanced
+ * section) for the patch list's current view mode. Exported so the flow can wire
+ * the button that now lives in static HTML rather than in the rendered list.
+ */
+export function openBlacklistDialog(ui, container) {
+    const dialog = renderBlacklistDialog(ui, isOriginalFormat(container));
+    if (!dialog) return;
+    dialog.showModal();
+    document.getElementById('btn-patch-blacklist-close')?.focus();
 }
 
 /**
@@ -159,8 +305,10 @@ export function renderPatchList(ui, container) {
         delete container.dataset.patchSavedOpenState;
     }
 
+    const original = isOriginalFormat(container);
+
     // Preserve which sections are expanded across re-renders (e.g. after a save).
-    const openFiles = new Set([...container.querySelectorAll('.patch-file-section[open]')].map((s) => s.dataset.filename));
+    const openCategories = new Set([...container.querySelectorAll('.patch-file-section[open]')].map((s) => s.dataset.category));
     // Preserve an active search query so an edit/save (which re-renders) keeps
     // the search box and its filtered view instead of resetting to show all.
     const previousSearch = container.querySelector('.patch-search');
@@ -190,19 +338,6 @@ export function renderPatchList(ui, container) {
     searchField.appendChild(clearBtn);
     searchWrap.appendChild(searchField);
 
-    const blacklistBtn = document.createElement('button');
-    blacklistBtn.className = 'secondary patch-blacklist-button';
-    blacklistBtn.type = 'button';
-    blacklistBtn.append(iconSvg(Info), document.createTextNode(TL.PATCH.BLACKLIST_BUTTON));
-    blacklistBtn.title = TL.PATCH.BLACKLIST_BUTTON_TITLE;
-    blacklistBtn.setAttribute('aria-label', TL.PATCH.BLACKLIST_BUTTON_TITLE);
-    blacklistBtn.addEventListener('click', () => {
-        const dialog = renderBlacklistDialog(ui);
-        if (!dialog) return;
-        dialog.showModal();
-        document.getElementById('btn-patch-blacklist-close')?.focus();
-    });
-    searchWrap.appendChild(blacklistBtn);
     container.appendChild(searchWrap);
 
     const listWrapper = document.createElement('div');
@@ -215,55 +350,62 @@ export function renderPatchList(ui, container) {
     nullEl.hidden = true;
     container.appendChild(nullEl);
 
-    for (const [filename, { patches }] of Object.entries(ui.patchFiles)) {
-        if (patches.length === 0) continue;
+    for (const { id, label, entries } of sectionBuckets(ui, original)) {
+        if (entries.length === 0) continue;
 
         const section = document.createElement('details');
         section.className = 'patch-file-section';
-        section.dataset.filename = filename;
-        section.open = openFiles.has(filename);
+        section.dataset.category = id;
+        section.open = openCategories.has(id);
 
         const summary = document.createElement('summary');
-        const label = PATCH_FILE_LABELS[filename] || filename;
-        const enabledCount = patches.filter((p) => p.enabled).length;
-        summary.innerHTML = `<span class="patch-file-name">${label}</span> <span class="patch-count">${enabledCount} / ${patches.length} enabled</span>`;
+        const { enabled: enabledCount, total } = bucketCounts(entries);
+        summary.innerHTML = `<span class="patch-file-name">${label}</span> <span class="patch-count">${enabledCount} / ${total} enabled</span>`;
         section.appendChild(summary);
 
         const list = document.createElement('div');
         list.className = 'patch-list';
 
-        // Group patches by PatchGroup for mutual exclusion
+        // Group patches by PatchGroup (scoped per file) for mutual exclusion.
         const patchGroups = {};
-        for (const patch of patches) {
+        for (const { patch, filename } of entries) {
             if (patch.patchGroup) {
-                if (!patchGroups[patch.patchGroup]) {
-                    patchGroups[patch.patchGroup] = [];
-                }
-                patchGroups[patch.patchGroup].push(patch);
+                const key = groupKey(filename, patch.patchGroup);
+                if (!patchGroups[key]) patchGroups[key] = [];
+                patchGroups[key].push(patch);
             }
         }
 
-        // Sort: grouped patches first, then compatible standalone, then incompatible standalone.
-        const sorted = [...patches].sort((a, b) => {
-            const rank = (p) => {
-                if (p.patchGroup) return 0;
-                if (ui.isBlacklisted(filename, p.name)) return 2;
+        // Sort: grouped patches first, then compatible standalone, then incompatible
+        // standalone. In themed mode, order by display label within a rank so related
+        // patches (e.g. a "part 1 of 2"/"part 2 of 2" pair, or the "Default ePub …
+        // font" family) sit together; in original mode keep the source-file order.
+        const sorted = [...entries].sort((a, b) => {
+            const rank = ({ patch, filename }) => {
+                if (patch.patchGroup) return 0;
+                if (ui.isBlacklisted(filename, patch.name)) return 2;
                 return 1;
             };
-            return rank(a) - rank(b);
+            const byRank = rank(a) - rank(b);
+            if (byRank !== 0 || original) return byRank;
+            return displayName(a.patch.name, false).localeCompare(displayName(b.patch.name, false), undefined, {
+                sensitivity: 'base',
+                numeric: true,
+            });
         });
 
         const renderedGroupNone = {};
-        // Group wrapper elements keyed by patchGroup name.
+        // Group wrapper elements keyed by the composite group key.
         const groupWrappers = {};
 
-        for (const patch of sorted) {
+        for (const { patch, filename } of sorted) {
             const isGrouped = !!patch.patchGroup;
+            const key = isGrouped ? groupKey(filename, patch.patchGroup) : null;
             const blacklisted = ui.isBlacklisted(filename, patch.name);
 
             // Create a group wrapper and "None" option before the first patch in each group.
-            if (isGrouped && !renderedGroupNone[patch.patchGroup]) {
-                renderedGroupNone[patch.patchGroup] = true;
+            if (isGrouped && !renderedGroupNone[key]) {
+                renderedGroupNone[key] = true;
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'patch-group';
@@ -280,9 +422,9 @@ export function renderPatchList(ui, container) {
                 const noneInput = document.createElement('input');
                 noneInput.type = 'radio';
                 noneInput.name = `pg_${filename}_${patch.patchGroup}`;
-                noneInput.checked = !patchGroups[patch.patchGroup].some((p) => p.enabled);
+                noneInput.checked = !patchGroups[key].some((p) => p.enabled);
                 noneInput.addEventListener('change', () => {
-                    for (const other of patchGroups[patch.patchGroup]) {
+                    for (const other of patchGroups[key]) {
                         other.enabled = false;
                     }
                     updatePatchCounts(ui, container);
@@ -295,7 +437,7 @@ export function renderPatchList(ui, container) {
                 noneItem.appendChild(noneHeader);
                 wrapper.appendChild(noneItem);
 
-                groupWrappers[patch.patchGroup] = wrapper;
+                groupWrappers[key] = wrapper;
                 list.appendChild(wrapper);
             }
 
@@ -312,7 +454,7 @@ export function renderPatchList(ui, container) {
                 input.name = `pg_${filename}_${patch.patchGroup}`;
                 input.checked = patch.enabled;
                 input.addEventListener('change', () => {
-                    for (const other of patchGroups[patch.patchGroup]) {
+                    for (const other of patchGroups[key]) {
                         other.enabled = other === patch;
                     }
                     updatePatchCounts(ui, container);
@@ -328,7 +470,7 @@ export function renderPatchList(ui, container) {
 
             const nameSpan = document.createElement('span');
             nameSpan.className = 'patch-name';
-            nameSpan.textContent = patch.name;
+            nameSpan.textContent = displayName(patch.name, original);
 
             header.appendChild(input);
             header.appendChild(nameSpan);
@@ -352,16 +494,22 @@ export function renderPatchList(ui, container) {
             editBtn.className = 'patch-icon-btn patch-edit-btn';
             editBtn.appendChild(iconSvg(Pencil));
             editBtn.title = 'Edit patch values';
-            editBtn.setAttribute('aria-label', `Edit values for ${patch.name}`);
+            editBtn.setAttribute('aria-label', `Edit values for ${displayName(patch.name, original)}`);
             editBtn.type = 'button';
             header.appendChild(editBtn);
 
-            if (patch.description) {
+            // Prose to surface: a metadata description (preferred) or the YAML
+            // Description, plus an optional metadata note and author credit.
+            const meta = getPatchMeta(patch.name);
+            const descText = meta.description ?? patch.description;
+            const hasNotes = !!(descText || meta.note || meta.author);
+
+            if (hasNotes) {
                 const toggle = document.createElement('button');
                 toggle.className = 'patch-icon-btn patch-desc-toggle';
                 toggle.appendChild(iconSvg(CircleHelp));
                 toggle.title = 'Toggle description';
-                toggle.setAttribute('aria-label', `Toggle description for ${patch.name}`);
+                toggle.setAttribute('aria-label', `Toggle description for ${displayName(patch.name, original)}`);
                 toggle.setAttribute('aria-expanded', 'false');
                 toggle.type = 'button';
                 header.appendChild(toggle);
@@ -375,25 +523,43 @@ export function renderPatchList(ui, container) {
                 openPatchEditor(ui, patch, filename, container);
             });
 
-            if (patch.description) {
-                const desc = document.createElement('p');
-                desc.className = 'patch-description';
-                desc.textContent = patch.description;
-                desc.hidden = true;
-                item.appendChild(desc);
+            if (hasNotes) {
+                const notes = document.createElement('div');
+                notes.className = 'patch-notes';
+                notes.hidden = true;
+
+                if (descText) {
+                    const desc = document.createElement('p');
+                    desc.className = 'patch-description';
+                    desc.textContent = descText;
+                    notes.appendChild(desc);
+                }
+                if (meta.note) {
+                    const note = document.createElement('p');
+                    note.className = 'patch-note';
+                    note.textContent = meta.note;
+                    notes.appendChild(note);
+                }
+                if (meta.author) {
+                    const author = document.createElement('p');
+                    author.className = 'patch-author';
+                    author.textContent = `Patch by ${meta.author}`;
+                    notes.appendChild(author);
+                }
+                item.appendChild(notes);
 
                 const toggle = header.querySelector('.patch-desc-toggle');
                 toggle.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    desc.hidden = !desc.hidden;
-                    toggle.setAttribute('aria-expanded', desc.hidden ? 'false' : 'true');
-                    toggle.replaceChildren(iconSvg(desc.hidden ? CircleHelp : Minus));
+                    notes.hidden = !notes.hidden;
+                    toggle.setAttribute('aria-expanded', notes.hidden ? 'false' : 'true');
+                    toggle.replaceChildren(iconSvg(notes.hidden ? CircleHelp : Minus));
                 });
             }
 
             if (isGrouped) {
-                groupWrappers[patch.patchGroup].appendChild(item);
+                groupWrappers[key].appendChild(item);
             } else {
                 list.appendChild(item);
             }
@@ -419,13 +585,14 @@ export function renderPatchList(ui, container) {
 
 export function updatePatchCounts(ui, container) {
     const sections = container.querySelectorAll('.patch-file-section');
-    let idx = 0;
-    for (const [, { patches }] of Object.entries(ui.patchFiles)) {
-        if (patches.length === 0) continue;
-        const count = patches.filter((p) => p.enabled).length;
-        const countEl = sections[idx]?.querySelector('.patch-count');
-        if (countEl) countEl.textContent = `${count} / ${patches.length} enabled`;
-        idx++;
+    const buckets = sectionBuckets(ui, isOriginalFormat(container));
+    const byId = new Map(buckets.map((b) => [b.id, b]));
+    for (const section of sections) {
+        const bucket = byId.get(section.dataset.category);
+        if (!bucket) continue;
+        const { enabled, total } = bucketCounts(bucket.entries);
+        const countEl = section.querySelector('.patch-count');
+        if (countEl) countEl.textContent = `${enabled} / ${total} enabled`;
     }
     if (ui.onChange) ui.onChange();
 }
@@ -445,7 +612,7 @@ function filterPatches(container, wrapper, nullEl, query) {
     }
     if (q && !savedOpenState) {
         savedOpenState = new Map();
-        for (const section of sections) savedOpenState.set(section.dataset.filename, section.open);
+        for (const section of sections) savedOpenState.set(section.dataset.category, section.open);
         container.dataset.patchSavedOpenState = JSON.stringify([...savedOpenState.entries()]);
     }
 
@@ -490,8 +657,8 @@ function filterPatches(container, wrapper, nullEl, query) {
 
     if (!q && savedOpenState) {
         for (const section of sections) {
-            const filename = section.dataset.filename;
-            if (savedOpenState.has(filename)) section.open = savedOpenState.get(filename);
+            const category = section.dataset.category;
+            if (savedOpenState.has(category)) section.open = savedOpenState.get(category);
         }
         delete container.dataset.patchSavedOpenState;
     }
