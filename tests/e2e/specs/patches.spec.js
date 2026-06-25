@@ -103,8 +103,8 @@ test.describe('Custom patches', () => {
         expect(labels).toContain('Typography & Fonts');
         expect(labels).not.toContain('Nickel (UI patches)');
 
-        // Flip the toggle in the Advanced section.
-        await page.locator('#patch-advanced-section > summary').click();
+        // Flip the toggle in the Customize Patch List section.
+        await page.locator('#patch-about-patches-section > summary').click();
         await page.locator('#patch-original-format').check();
 
         // Now grouped by source file, under the original kobopatch titles.
@@ -1181,7 +1181,7 @@ test.describe('Custom patches', () => {
             }
         }
 
-        await page.locator('#patch-advanced-section > summary').click();
+        await page.locator('#patch-about-patches-section > summary').click();
         await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
         const blacklistDialog = page.locator('#patch-blacklist-dialog');
         await expect(blacklistDialog).toBeVisible();
@@ -1216,7 +1216,7 @@ test.describe('Custom patches', () => {
         await page.click('#btn-mode-next');
         await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
 
-        await page.locator('#patch-advanced-section > summary').click();
+        await page.locator('#patch-about-patches-section > summary').click();
         await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
         const blacklistDialog = page.locator('#patch-blacklist-dialog');
         await expect(blacklistDialog).toBeVisible();

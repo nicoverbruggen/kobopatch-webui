@@ -290,15 +290,15 @@ test('manual patches', async ({ page }, testInfo) => {
     // Patches config
     await expect(page.locator('#step-patches')).not.toBeHidden();
     await shot(page, dir, '03-patches-config', testInfo);
-    // The "Incompatible patches" button now lives under the Advanced section.
-    await page.locator('#patch-advanced-section > summary').click();
+    // The compatibility report lives under the Customize Patch List section.
+    await page.locator('#patch-about-patches-section > summary').click();
     await page.locator('.patch-blacklist-button').click();
     const blacklistDialog = page.locator('#patch-blacklist-dialog');
     await expect(blacklistDialog).toBeVisible();
     await shot(page, dir, '03a-patch-blacklist-dialog', testInfo);
     await blacklistDialog.locator('#btn-patch-blacklist-close').click();
     await expect(blacklistDialog).not.toBeVisible();
-    await page.locator('#patch-advanced-section > summary').click(); // collapse Advanced again
+    await page.locator('#patch-about-patches-section > summary').click(); // collapse Customize Patch List again
 
     // Expand section and select a standalone (checkbox) patch.
     const section = page.locator('.patch-file-section').first();
@@ -342,12 +342,12 @@ test('manual patches', async ({ page }, testInfo) => {
     await notesToggle.click();
 
     // Advanced toggle: switch to the original file-based names/sections, capture, revert.
-    await page.locator('#patch-advanced-section > summary').click();
+    await page.locator('#patch-about-patches-section > summary').click();
     await page.locator('#patch-original-format').check();
     await expect(page.locator('.patch-file-name', { hasText: 'Nickel (UI patches)' }).first()).toBeVisible();
     await shot(page, dir, '04e-patches-original-format', testInfo);
     await page.locator('#patch-original-format').uncheck();
-    await page.locator('#patch-advanced-section > summary').click();
+    await page.locator('#patch-about-patches-section > summary').click();
 
     // Review & build
     await page.click('#btn-patches-next');
@@ -484,7 +484,7 @@ test('manual patches blacklist matching firmware tooltip', async ({ page }, test
     await page.click('#btn-manual-confirm');
 
     await expect(page.locator('#step-patches')).not.toBeHidden();
-    await page.locator('#patch-advanced-section > summary').click();
+    await page.locator('#patch-about-patches-section > summary').click();
     await page.locator('.patch-blacklist-button').click();
     const blacklistDialog = page.locator('#patch-blacklist-dialog');
     await expect(blacklistDialog).toBeVisible();
