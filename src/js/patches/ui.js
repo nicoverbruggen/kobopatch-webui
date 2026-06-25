@@ -365,13 +365,15 @@ class PatchUI {
      * the current set (e.g. a different firmware version) are skipped and counted
      * as `missing`. Returns `{ matched, edits, enabled, missing, applied }`, where
      * `applied` lists the patches the manifest turned on — `{ name, filename,
-     * incompatible }`, with `incompatible` true when the patch is blacklisted for
-     * the current firmware (re-applied from an older firmware where it still
-     * worked) — so the caller can summarize what was restored.
+     * incompatible, customized }`, with `incompatible` true when the patch is
+     * blacklisted for the current firmware (re-applied from an older firmware
+     * where it still worked), and `customized` true when a saved manual edit was
+     * restored for that patch — so the caller can summarize what was restored.
      */
     applyReloadManifest(manifest) {
         const summary = { matched: 0, edits: 0, enabled: 0, missing: 0, applied: [] };
         if (!manifest || typeof manifest !== 'object') return summary;
+        const customized = new Set();
 
         // Manual edits first, reparsing after each so later lookups (and override
         // matching) see the final patch text and any shifted line ranges.
@@ -391,6 +393,7 @@ class PatchUI {
                 file.patches = parsePatchYAML(file.raw);
                 this._trackEdit(filename, name, text);
                 summary.edits++;
+                customized.add(`${filename}\0${name}`);
             }
         }
 
@@ -404,7 +407,12 @@ class PatchUI {
                     summary.matched++;
                     if (p.enabled) {
                         summary.enabled++;
-                        summary.applied.push({ name: p.name, filename, incompatible: this.isBlacklisted(filename, p.name) });
+                        summary.applied.push({
+                            name: p.name,
+                            filename,
+                            incompatible: this.isBlacklisted(filename, p.name),
+                            customized: customized.has(`${filename}\0${p.name}`),
+                        });
                     }
                 }
             }

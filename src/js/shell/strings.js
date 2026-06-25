@@ -101,9 +101,11 @@ export const TL = {
         RELOAD_APPLIED: 'Previously applied patches have been reloaded, including any manual edits.',
         RELOAD_NONE_MATCHED: 'None of the previously applied patches could be matched to the patches for this software version.',
         RELOAD_SUMMARY_INTRO: 'The following patches have been re-applied:',
-        RELOAD_SUMMARY_INCOMPATIBLE: 'This patch may not be compatible with this software version, but you can try to apply it.',
+        RELOAD_SUMMARY_COMPATIBLE: 'None of the restored patches are marked as known to fail for this software version.',
+        RELOAD_SUMMARY_INCOMPATIBLE: 'Some restored patches are marked as known to fail for this software version. You can still try to apply them.',
+        RELOAD_SUMMARY_CUSTOMIZED: 'Customized',
         RELOAD_SUMMARY_MODIFIED_NOTE:
-            'Patches that were modified may not apply correctly. If they don’t work, you may want to reset them and to edit them again yourself.',
+            'Customized patches are restored exactly as they were saved. If they don’t work, you may want to reset them and edit them again yourself.',
         RELOAD_SUMMARY_ADDITIONAL_FILES_NOTE: 'Additional Files from the Advanced section are never re-applied.',
     },
 };

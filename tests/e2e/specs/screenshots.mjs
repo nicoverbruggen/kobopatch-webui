@@ -1114,9 +1114,10 @@ test('connected patches reload', async ({ page }, testInfo) => {
     await shot(page, dir, '12-patches-reload-applied', testInfo);
 });
 
-// The "Restore previous patches" summary dialog has three independent, conditional
-// footer notices (incompatible patch ⚠️, modified-patches caveat across firmware,
-// and the Additional Files reminder). Capture each variant of the dialog.
+// The "Restore previous patches" summary dialog always reports compatibility,
+// and has additional conditional notices for incompatible patches, customized
+// patches, and the Additional Files reminder. Capture
+// each variant of the dialog.
 const RESTORE_EDIT = 'Increase library cover size:\n  - Enabled: no\n  - FindReplaceString: {Find: "width: 60px;", Replace: "width: 99px;"}\n';
 const restoreMeta = (firmware) => ({ writer: { name: 'kobopatch-webui', version: 'screenshot' }, installed: { firmware, channel: 'kobo12' } });
 
@@ -1138,8 +1139,8 @@ const openRestoreSummary = async (page, manifest) => {
     await expect(page.locator('#patch-reload-dialog')).toBeVisible();
 };
 
-// Variant 1: compatible patch, no edits, no additional files → just the list, no notices.
-test('restore summary — no notices', async ({ page }, testInfo) => {
+// Variant 1: compatible patch, no edits, no additional files.
+test('restore summary — compatible patch', async ({ page }, testInfo) => {
     await openRestoreSummary(page, {
         overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
         customized: {},
@@ -1149,7 +1150,7 @@ test('restore summary — no notices', async ({ page }, testInfo) => {
     await shot(page, SCREENSHOT_DIRS.edgeRestore, '01-no-notices', testInfo);
 });
 
-// Variant 2: a patch blacklisted for this firmware is re-applied → ⚠️ marker + footnote.
+// Variant 2: a patch blacklisted for this firmware is re-applied.
 test('restore summary — incompatible patch', async ({ page }, testInfo) => {
     await openRestoreSummary(page, {
         overrides: { 'src/libnickel.so.1.0.0.yaml': { 'Allow rotation on all devices': true } },
@@ -1158,17 +1159,19 @@ test('restore summary — incompatible patch', async ({ page }, testInfo) => {
         meta: restoreMeta('4.45.23646'),
     });
     await expect(page.locator('#patch-reload-dialog-footnote')).toBeVisible();
+    await expect(page.locator('#patch-reload-dialog-footnote')).toContainText('marked as known to fail');
     await shot(page, SCREENSHOT_DIRS.edgeRestore, '02-incompatible', testInfo);
 });
 
-// Variant 3: edited patch re-applied onto a DIFFERENT firmware → modified-patches caveat.
-test('restore summary — modified patches across firmware', async ({ page }, testInfo) => {
+// Variant 3: edited patch restored from the manifest.
+test('restore summary — customized patch', async ({ page }, testInfo) => {
     await openRestoreSummary(page, {
         overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
         customized: { 'src/nickel.yaml': { 'Increase library cover size': RESTORE_EDIT } },
         files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
         meta: restoreMeta('4.38.23648'),
     });
+    await expect(page.locator('.patch-reload-dialog-badge', { hasText: 'Customized' })).toBeVisible();
     await expect(page.locator('#patch-reload-dialog-modified-note')).toBeVisible();
     await shot(page, SCREENSHOT_DIRS.edgeRestore, '03-modified-patches', testInfo);
 });

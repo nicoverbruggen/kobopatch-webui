@@ -277,18 +277,29 @@ export function initPatchesFlow(state) {
         let anyIncompatible = false;
         for (const patch of applied) {
             const li = document.createElement('li');
-            li.textContent = getPatchMeta(patch.name).label || patch.name;
+            const label = document.createElement('span');
+            label.textContent = getPatchMeta(patch.name).label || patch.name;
+            li.appendChild(label);
+            if (patch.customized) {
+                const badge = document.createElement('span');
+                badge.className = 'patch-reload-dialog-badge';
+                badge.textContent = TL.PATCH.RELOAD_SUMMARY_CUSTOMIZED;
+                li.appendChild(badge);
+            }
             if (patch.incompatible) {
-                li.append(' ⚠️');
+                const badge = document.createElement('span');
+                badge.className = 'patch-reload-dialog-badge patch-reload-dialog-badge--warning';
+                badge.textContent = 'Known to fail';
+                li.appendChild(badge);
                 anyIncompatible = true;
             }
             patchReloadDialogList.appendChild(li);
         }
 
-        // Conditional footer notices. A normal "just checked patches" reload shows
-        // none of these; each only appears for the situation it describes.
-        patchReloadDialogFootnote.textContent = anyIncompatible ? `⚠️ ${TL.PATCH.RELOAD_SUMMARY_INCOMPATIBLE}` : '';
-        patchReloadDialogFootnote.hidden = !anyIncompatible;
+        // The compatibility status always appears; the remaining notes only show
+        // for the situations they describe.
+        patchReloadDialogFootnote.textContent = anyIncompatible ? TL.PATCH.RELOAD_SUMMARY_INCOMPATIBLE : TL.PATCH.RELOAD_SUMMARY_COMPATIBLE;
+        patchReloadDialogFootnote.hidden = false;
 
         patchReloadDialogModifiedNote.textContent = showModifiedNote ? TL.PATCH.RELOAD_SUMMARY_MODIFIED_NOTE : '';
         patchReloadDialogModifiedNote.hidden = !showModifiedNote;
@@ -296,7 +307,7 @@ export function initPatchesFlow(state) {
         patchReloadDialogAdditionalNote.textContent = showAdditionalFilesNote ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_NOTE : '';
         patchReloadDialogAdditionalNote.hidden = !showAdditionalFilesNote;
 
-        patchReloadDialogNotes.hidden = !(anyIncompatible || showModifiedNote || showAdditionalFilesNote);
+        patchReloadDialogNotes.hidden = !(applied.length > 0 || showModifiedNote || showAdditionalFilesNote);
 
         patchReloadDialog.showModal();
     }
@@ -325,13 +336,9 @@ export function initPatchesFlow(state) {
             // list; an edits-only reload just updates the banner.
             if (summary.applied.length > 0) {
                 const manifest = state.reloadManifest;
-                // Re-applying onto the same firmware re-runs identical edits, so the
-                // "modified patches may not apply" caveat only applies across versions.
-                const recordedFirmware = manifest?.meta?.installed?.firmware;
-                const sameFirmware = !!recordedFirmware && recordedFirmware === state.patchUI.firmwareVersion;
                 showReloadSummaryDialog({
                     applied: summary.applied,
-                    showModifiedNote: summary.edits > 0 && !sameFirmware,
+                    showModifiedNote: summary.edits > 0,
                     showAdditionalFilesNote: Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file'),
                 });
             }

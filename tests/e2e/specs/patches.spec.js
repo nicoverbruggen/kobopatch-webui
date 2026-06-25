@@ -819,26 +819,28 @@ test.describe('Custom patches', () => {
         await expect(patchLabel.locator('.patch-modified')).toBeVisible();
         await expect(page.locator('#patch-count-hint')).toContainText('1 patch selected');
 
-        // The summary dialog lists the re-applied patch by name. The patch is
-        // compatible with this firmware, so no incompatibility footnote shows. The
-        // manifest carries a manual edit (and no firmware match), so the "modified
-        // patches" caveat shows; it has no additional files, so that note is hidden.
+        // The summary dialog lists the re-applied patch by name and marks that it
+        // carries a saved manual edit. The patch is compatible with this firmware,
+        // so the compatibility note says nothing restored is known to fail. The
+        // manifest carries a manual edit (and no firmware match), so the
+        // customized-patches caveat shows; it has no additional files, so that
+        // note is hidden.
         const dialog = page.locator('#patch-reload-dialog');
         await expect(dialog).toBeVisible();
-        await expect(dialog.locator('#patch-reload-dialog-list li')).toHaveText(['Increase library cover size']);
-        await expect(dialog.locator('#patch-reload-dialog-footnote')).toBeHidden();
-        await expect(dialog.locator('#patch-reload-dialog-modified-note')).toContainText('may not apply correctly');
+        await expect(dialog.locator('#patch-reload-dialog-list li')).toContainText(['Increase library cover size']);
+        await expect(dialog.locator('#patch-reload-dialog-list li .patch-reload-dialog-badge')).toHaveText('Customized');
+        await expect(dialog.locator('#patch-reload-dialog-footnote')).toContainText('None of the restored patches are marked as known to fail');
+        await expect(dialog.locator('#patch-reload-dialog-modified-note')).toContainText('restored exactly as they were saved');
         await expect(dialog.locator('#patch-reload-dialog-additional-note')).toBeHidden();
 
         await dialog.locator('#btn-patch-reload-dialog-close').click();
         await expect(dialog).toBeHidden();
     });
 
-    test('with device — reload summary hides the modified-patches caveat on the same firmware and shows the additional-files note', async ({ page }) => {
+    test('with device — reload summary notes customized patches and additional files on the same firmware', async ({ page }) => {
         // Manifest recorded for the device's own firmware (4.45.23646), carrying a
-        // manual edit and an additional file. Re-applying onto the same firmware
-        // runs the edit identically, so the "modified patches" caveat must NOT show;
-        // the additional file was recorded, so that note MUST show.
+        // manual edit and an additional file. The edit is still restored as-is and
+        // noted, and the recorded additional file reminder is shown.
         const manifest = {
             overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
             customized: {
@@ -868,7 +870,8 @@ test.describe('Custom patches', () => {
 
         const dialog = page.locator('#patch-reload-dialog');
         await expect(dialog).toBeVisible();
-        await expect(dialog.locator('#patch-reload-dialog-modified-note')).toBeHidden();
+        await expect(dialog.locator('#patch-reload-dialog-list li .patch-reload-dialog-badge')).toHaveText('Customized');
+        await expect(dialog.locator('#patch-reload-dialog-modified-note')).toContainText('restored exactly as they were saved');
         await expect(dialog.locator('#patch-reload-dialog-additional-note')).toContainText('Additional Files');
     });
 

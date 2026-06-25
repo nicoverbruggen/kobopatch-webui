@@ -791,6 +791,25 @@ label.patch-pref-row {
     }
 }
 
+.patch-reload-dialog-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    background: var(--primary-light);
+    color: var(--accent-text);
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-left: 0.35rem;
+    vertical-align: 0.05rem;
+}
+
+.patch-reload-dialog-badge--warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
 .patch-reload-dialog-notes {
     margin-top: 1rem;
     padding-top: 0.75rem;

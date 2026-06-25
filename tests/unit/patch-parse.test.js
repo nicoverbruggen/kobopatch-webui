@@ -229,6 +229,7 @@ test('applyReloadManifest re-applies enabled overrides and manual edits to a fre
     assert.equal(summary.missing, 0);
     // Both P and Q exist in the loaded set, so both override entries matched.
     assert.equal(summary.matched, 2);
+    assert.deepEqual(summary.applied, [{ name: 'P', filename: 'f.yaml', incompatible: false, customized: true }]);
 
     // P is enabled (from overrides) and its manual edit is applied and flagged.
     const p = ui.patchFiles['f.yaml'].patches.find((x) => x.name === 'P');
@@ -249,8 +250,8 @@ test('applyReloadManifest reports re-applied patches and flags blacklisted ones 
 
     // Only the enabled patches (P, R) are listed; the disabled Q is omitted.
     assert.deepEqual(summary.applied, [
-        { name: 'P', filename: 'f.yaml', incompatible: false },
-        { name: 'R', filename: 'f.yaml', incompatible: true },
+        { name: 'P', filename: 'f.yaml', incompatible: false, customized: false },
+        { name: 'R', filename: 'f.yaml', incompatible: true, customized: false },
     ]);
 });
 
