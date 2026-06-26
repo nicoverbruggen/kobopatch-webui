@@ -48,14 +48,14 @@ export const TL = {
             'will not be downloaded \u2014 no patches are selected, so only the additional files you added will be packaged into KoboRoot.tgz.',
         RESTORE_ORIGINAL: 'will be downloaded and extracted without modifications to restore the original unpatched software.',
         BUILDING_STARTING: 'Starting...',
-        DOWNLOADING: 'Downloading software update...',
-        DOWNLOADING_PROGRESS: (received, total, pct) => `Downloading software update... ${received} / ${total} (${pct}%)`,
-        EXTRACTING: 'Extracting KoboRoot.tgz...',
+        DOWNLOADING: 'Downloading...',
+        DOWNLOADING_PROGRESS: (received, total, pct) => `Downloading ${received} / ${total} (${pct}%)`,
+        EXTRACTING: 'Extracting...',
         APPLYING_PATCHES: 'Applying patches...',
         NO_FIRMWARE_URL: 'No download URL available for this device.',
         WRITE_FAILED: (msg) => `Failed to write KoboRoot.tgz: ${msg}`,
         NM_INSTALL_FAILED: (msg) => `NickelMenu installation failed: ${msg}`,
-        EXTRACT_FAILED: 'KoboRoot.tgz not found in software update',
+        EXTRACT_FAILED: 'Could not find KoboRoot.tgz in the downloaded firmware.',
     },
 
     ERROR: {

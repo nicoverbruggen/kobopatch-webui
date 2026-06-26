@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const JSZip = require('jszip');
 
-const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../../support/paths');
+const { FIRMWARE_PATH, paths, getOriginalTgzSha1 } = require('../../support/paths');
 const { hasFirmwareZip } = require('../../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../../support/mock-device');
 const { parseTar } = require('../../support/tar');
@@ -13,7 +13,7 @@ const { parseTar } = require('../../support/tar');
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
 // does, so a seeded manifest can reference bytes the app will accept on reload.
 async function buildPatchFilesArchive(entries) {
-    const { buildAdditionalFilesTgz, sha256Hex } = await import('../../../../src/js/patches/additional-files.js');
+    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
     const archiveBytes = await buildAdditionalFilesTgz(entries);
     const sha256 = await sha256Hex(archiveBytes);
     return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };

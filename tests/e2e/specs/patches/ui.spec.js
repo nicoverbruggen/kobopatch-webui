@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const JSZip = require('jszip');
 
-const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../../support/paths');
+const { FIRMWARE_PATH, paths, getOriginalTgzSha1 } = require('../../support/paths');
 const { hasFirmwareZip } = require('../../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../../support/mock-device');
 const { parseTar } = require('../../support/tar');
@@ -13,7 +13,7 @@ const { parseTar } = require('../../support/tar');
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
 // does, so a seeded manifest can reference bytes the app will accept on reload.
 async function buildPatchFilesArchive(entries) {
-    const { buildAdditionalFilesTgz, sha256Hex } = await import('../../../../src/js/patches/additional-files.js');
+    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
     const archiveBytes = await buildAdditionalFilesTgz(entries);
     const sha256 = await sha256Hex(archiveBytes);
     return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };
@@ -202,12 +202,12 @@ test.describe('Custom patches', () => {
     test('blacklisted patches are marked "known to fail" but remain enableable', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-        const blacklist = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', '..', '..', 'patches', 'blacklist.json'), 'utf-8'));
+        const blacklist = JSON.parse(fs.readFileSync(paths.repo('patches', 'blacklist.json'), 'utf-8'));
         const version45 = blacklist['4.45'];
         test.skip(!version45, 'No 4.45 blacklist entries found');
 
         // Patches show their metadata display label, not the raw YAML name.
-        const { getPatchMeta } = await import('../../../src/js/patches/patch-metadata.js');
+        const { getPatchMeta } = await import(paths.src('js/patches/patch-metadata.js'));
         const displayName = (name) => getPatchMeta(name).label || name;
 
         await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });

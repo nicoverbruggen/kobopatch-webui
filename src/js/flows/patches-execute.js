@@ -7,6 +7,7 @@
  */
 
 import { formatBytes, fetchWithProgress } from '../shell/dom.js';
+import { TL } from '../shell/strings.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { additionalFilesArchiveName } from '../patches/additional-files.js';
 import JSZip from 'jszip';
@@ -17,34 +18,36 @@ export function appendLog(logEl, msg) {
 }
 
 export async function downloadFirmware(url, progressEl) {
-    progressEl.textContent = 'Downloading...';
+    progressEl.textContent = TL.STATUS.DOWNLOADING;
     return fetchWithProgress(
         url,
         (received, total) => {
             if (!total) {
+                // No Content-Length from the server: no TL constant covers this
+                // size-only variant, so it is formatted inline.
                 progressEl.textContent = `Downloading ${formatBytes(received)}`;
                 return;
             }
             const pct = ((received / total) * 100).toFixed(0);
-            progressEl.textContent = `Downloading ${formatBytes(received)} / ${formatBytes(total)} (${pct}%)`;
+            progressEl.textContent = TL.STATUS.DOWNLOADING_PROGRESS(formatBytes(received), formatBytes(total), pct);
         },
         'Download failed',
     );
 }
 
 export async function extractOriginalTgz(firmwareBytes, progressEl, logFn) {
-    progressEl.textContent = 'Extracting...';
+    progressEl.textContent = TL.STATUS.EXTRACTING;
     logFn('Extracting original KoboRoot.tgz from firmware...');
     const zip = await JSZip.loadAsync(firmwareBytes);
     const koboRoot = zip.file('KoboRoot.tgz');
-    if (!koboRoot) throw new Error('Could not find KoboRoot.tgz in the downloaded firmware.');
+    if (!koboRoot) throw new Error(TL.STATUS.EXTRACT_FAILED);
     const tgz = new Uint8Array(await koboRoot.async('arraybuffer'));
     logFn('Extracted KoboRoot.tgz: ' + formatBytes(tgz.length));
     return tgz;
 }
 
 export async function runPatcher(runner, configYAML, firmwareBytes, patchFiles, progressEl, logFn) {
-    progressEl.textContent = 'Applying patches...';
+    progressEl.textContent = TL.STATUS.APPLYING_PATCHES;
     const result = await runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
         logFn(msg);
         const trimmed = msg.trimStart();

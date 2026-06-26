@@ -1,13 +1,32 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { pathToFileURL } = require('url');
 const JSZip = require('jszip');
 
 const { primary } = require('../config/firmware-config');
 
+// Anchor everything to the repo root so specs never depend on their own depth.
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const SRC_DIR = path.join(REPO_ROOT, 'src');
 const CACHED_ASSETS = path.resolve(__dirname, '..', 'cached_assets');
-const WEBROOT = path.resolve(__dirname, '..', '..', '..', 'dist');
+const WEBROOT = path.join(REPO_ROOT, 'dist');
 const WEBROOT_FIRMWARE = path.join(WEBROOT, '_test_firmware.zip');
+
+// Path resolvers, grouped so call sites read self-documentingly (paths.repo /
+// paths.src) and never count `..` to reach the repo root.
+const paths = {
+    // Absolute filesystem path to a repo-root-relative file, e.g.
+    // paths.repo('patches', 'blacklist.json'). Replaces brittle
+    // `path.join(__dirname, '..', '..', ...)` chains that break when a spec moves.
+    repo: (...segments) => path.join(REPO_ROOT, ...segments),
+
+    // Dynamic-import specifier for an app ESM module under `src/`, e.g.
+    //   await import(paths.src('js/patches/patch-metadata.js'))
+    // Keeps the `import()` explicit at the call site while avoiding the brittle
+    // `../../../../src` specifiers whose depth silently breaks when a spec moves.
+    src: (relPath) => pathToFileURL(path.join(SRC_DIR, relPath)).href,
+};
 
 // The cached primary-version firmware zip. E2E never downloads it: tests use it
 // only when present (and skip otherwise), and the app's firmware URLs are
@@ -33,5 +52,6 @@ module.exports = {
     FIRMWARE_PATH,
     WEBROOT,
     WEBROOT_FIRMWARE,
+    paths,
     getOriginalTgzSha1,
 };
