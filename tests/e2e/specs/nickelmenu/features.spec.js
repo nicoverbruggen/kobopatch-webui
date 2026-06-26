@@ -257,6 +257,82 @@ test.describe('NickelMenu — install', () => {
         expect(koreaderDirExists, '.adds/koreader/ should exist').toBe(true);
     });
 
+    test('with device — install with Cadmus extracts its app directory to the device', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasCadmusAssets(), 'Cadmus assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await expect(page.locator('input[name="nm-cfg-cadmus"]')).not.toBeChecked();
+        // Drop the additional fonts so this run only depends on the Cadmus assets.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-cadmus"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('Cadmus');
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        // The Cadmus tarball is extracted onboard under .adds/cadmus/ (the same
+        // payload the manual-download test verifies inside the ZIP).
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles.some((f) => f.includes('.adds/cadmus/'))).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'cadmus', 'cadmus.sh')).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'cadmus', 'cadmus')).toBe(true);
+
+        // Its launcher is wired into the NickelMenu preset written to the device.
+        const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
+        expect(items).toContain('menu_item:main:Open Cadmus');
+    });
+
+    test('with device — install with NickelClock writes the merged KoboRoot.tgz and toggle script', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasNickelClockAssets(), 'NickelClock assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        // NickelClock is an Advanced feature; open the section and select only it.
+        await openNmSection(page, 'Advanced');
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-nickelclock"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('Install NickelClock');
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        // NickelClock ships as a plugin inside KoboRoot.tgz, so the device write goes
+        // through the merged .kobo/KoboRoot.tgz (the merge contents are verified in the
+        // manual-download test). It also drops its onboard toggle script...
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles.some((f) => f.includes('KoboRoot.tgz'))).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'nm', 'scripts', 'toggle_nickelclock.sh')).toBe(true);
+
+        // ...and contributes its Toggle item to the preset written to the device.
+        const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
+        expect(items).toContain('menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh');
+    });
+
     test('with device — preset warns about Dark Mode on unsupported devices', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

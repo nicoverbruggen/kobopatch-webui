@@ -119,6 +119,78 @@ test.describe('Custom patches', () => {
         expect(manifest.files).toContainEqual({ path: 'extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 });
     });
 
+    // Drive the additional-files-only build to the done step. This path needs no
+    // firmware download (nothing is patched — the result is just the companion
+    // archive), so it exercises the write-step UI branches without the heavy
+    // firmware fixture the patch-apply tests require.
+    async function buildAdditionalFilesOnlyToDone(page) {
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+
+        await page.locator('#patch-advanced-section summary').click();
+        await page.setInputFiles('#patch-additional-file-input', {
+            name: 'extra.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('hi!!'),
+        });
+        await expect(page.locator('#patch-additional-files-list')).toContainText('extra.txt');
+
+        await page.click('#btn-patches-next');
+        await expect(page.locator('#step-firmware')).not.toBeHidden();
+        await page.click('#btn-build');
+        await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+    }
+
+    test('with device — overwrite warning appears when a KoboRoot.tgz is already staged', async ({ page }) => {
+        // A leftover .kobo/KoboRoot.tgz means a pending update hasn't been applied;
+        // writing again would clobber it, so the done step warns before the write.
+        await connectMockDevice(page, {
+            hasNickelMenu: false,
+            extraRootFiles: [{ path: ['.kobo', 'KoboRoot.tgz'], content: 'pending-update' }],
+        });
+
+        await buildAdditionalFilesOnlyToDone(page);
+
+        await expect(page.locator('#existing-tgz-warning')).toBeVisible();
+        await expect(page.locator('#existing-tgz-warning')).toContainText('existing');
+        await expect(page.locator('#existing-tgz-warning')).toContainText('overwritten');
+    });
+
+    test('with device — a failed KoboRoot.tgz write routes through the device-write recovery screen', async ({ page }) => {
+        // The mock rejects the KoboRoot.tgz write, so the patches write path must
+        // surface the same device-write error recovery the other flows use.
+        await connectMockDevice(page, {
+            hasNickelMenu: false,
+            failWritePaths: ['KOBOeReader/.kobo/KoboRoot.tgz'],
+        });
+
+        await buildAdditionalFilesOnlyToDone(page);
+
+        await page.click('#btn-write');
+
+        await expect(page.locator('#step-error')).not.toBeHidden();
+        await expect(page.locator('#error-title')).toContainText('Writing to your device didn’t work');
+        await expect(page.locator('#error-device-write-help')).toBeVisible();
+        await expect(page.locator('#btn-error-download-log')).toBeVisible();
+    });
+
+    test('with device — additional-files-only write shows no conf-settings note and no overwrite warning', async ({ page }) => {
+        // A clean device with no pending update and no conf-settings patch: the
+        // overwrite warning stays hidden, and after writing, the "settings are in
+        // place" note is omitted because nothing touched Kobo eReader.conf.
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await buildAdditionalFilesOnlyToDone(page);
+
+        await expect(page.locator('#existing-tgz-warning')).toBeHidden();
+
+        await page.click('#btn-write');
+        await expect(page.locator('#write-instructions')).toBeVisible();
+        await expect(page.locator('#write-conf-settings-note')).toBeHidden();
+    });
+
     test('with device — apply patches and verify checksums', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
