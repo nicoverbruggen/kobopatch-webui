@@ -33,6 +33,7 @@ const defaultConfig = {
     hasNickelDbus: false,
     hasNickelSeries: false,
     hasNickelClock: false,
+    hasCadmus: false,
     hasAdditionalFonts: false,
     hasScreensaver: false,
     hasCalibreExclude: false,
@@ -120,6 +121,11 @@ async function injectMockDevice(page, opts = {}) {
         if (config.hasNickelClock) {
             if (!filesystem['.adds']) filesystem['.adds'] = dir();
             filesystem['.adds']['nickelclock'] = dir();
+        }
+
+        if (config.hasCadmus) {
+            if (!filesystem['.adds']) filesystem['.adds'] = dir();
+            filesystem['.adds']['cadmus'] = dir({ 'cadmus.sh': file('#!/bin/sh') });
         }
 
         for (const folderName of config.extraAddsDirs) {

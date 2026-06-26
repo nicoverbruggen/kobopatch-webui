@@ -275,6 +275,75 @@ test.describe('NickelMenu — removal', () => {
         expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
     });
 
+    test('with device — remove Cadmus deletes its app directory', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasCadmus: true,
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+
+        await page.click('input[name="nm-option"][value="remove"]');
+
+        // Cadmus is detected via its cleanup.detect ([['.adds','cadmus']]) and offered
+        // as an optional removal, checked by default.
+        await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+        await expect(page.locator('input[name="nm-uninstall-cadmus"]')).toBeChecked();
+
+        await page.click('#btn-nm-next');
+        await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-summary')).toContainText('removal');
+        await expect(page.locator('#nm-review-list')).toContainText('Cadmus');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('removed');
+
+        // The whole .adds/cadmus directory (and its launcher script) is deleted recursively.
+        expect(await mockPathExists(page, '.adds', 'cadmus', 'cadmus.sh')).toBe(false);
+        expect(await mockPathExists(page, '.adds', 'cadmus')).toBe(false);
+    });
+
+    test('with device — remove NickelClock deletes its folder to trigger the xflag self-uninstall', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasNickelClock: true,
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+
+        await page.click('input[name="nm-option"][value="remove"]');
+
+        await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+        await expect(page.locator('input[name="nm-uninstall-nickelclock"]')).toBeChecked();
+
+        await page.click('#btn-nm-next');
+        await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-summary')).toContainText('removal');
+        await expect(page.locator('#nm-review-list')).toContainText('NickelClock');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('removed');
+
+        // NickelClock uninstalls via uninstall_xflag: it removes itself when its marker
+        // is ABSENT, so deleting .adds/nickelclock both clears the onboard footprint and
+        // triggers NickelClock's own self-uninstall on the next reboot. No marker is written.
+        expect(await mockPathExists(page, '.adds', 'nickelclock')).toBe(false);
+    });
+
     test('with device — better typography is detected by its conf setting and reverts only the WebKit tweak', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
