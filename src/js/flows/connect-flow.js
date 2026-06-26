@@ -98,14 +98,9 @@ export function initConnectFlow(state, { patches }) {
     }
 
     function renderLanguage(uiLocale) {
-        const row = $('device-language-row');
-        const name = localeDisplayName(uiLocale);
-        if (!name) {
-            row.hidden = true;
-            return;
-        }
-        $('device-language').textContent = name;
-        row.hidden = false;
+        // Real Kobos always record CurrentLocale; show "Unknown" only when the conf
+        // was missing/unreadable, matching the always-present rows above.
+        $('device-language').textContent = localeDisplayName(uiLocale) ?? 'Unknown';
     }
 
     function renderModel(info) {

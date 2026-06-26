@@ -37,9 +37,10 @@ const defaultConfig = {
     hasScreensaver: false,
     hasCalibreExclude: false,
     eReaderConf: null,
-    // The device UI language (CurrentLocale), e.g. 'en', 'fr', 'de'. null leaves
-    // the conf without an [ApplicationPreferences] CurrentLocale (locale unknown).
-    uiLocale: null,
+    // The device UI language (CurrentLocale), e.g. 'en', 'fr', 'de'. Defaults to
+    // 'en' so a connected device looks realistic; set null to omit the
+    // [ApplicationPreferences] CurrentLocale entirely (locale unknown).
+    uiLocale: 'en',
     extraAddsDirs: [],
     extraAddsFiles: [],
     // Files placed at arbitrary device-root paths, e.g.

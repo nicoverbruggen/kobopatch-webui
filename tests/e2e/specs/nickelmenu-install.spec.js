@@ -635,7 +635,9 @@ test.describe('NickelMenu — install', () => {
         test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
         test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
 
-        await connectMockDevice(page, { hasNickelMenu: false });
+        // uiLocale: null omits CurrentLocale from the conf, so the overview shows "Unknown".
+        await connectMockDevice(page, { hasNickelMenu: false, uiLocale: null });
+        await expect(page.locator('#device-language')).toHaveText('Unknown');
 
         await page.click('#btn-device-next');
         await page.click('input[name="mode"][value="nickelmenu"]');
