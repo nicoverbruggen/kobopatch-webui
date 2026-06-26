@@ -509,7 +509,8 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
         await page.click('#btn-mobile-continue');
     }
     await expect(page.locator('#step-connect')).not.toBeHidden();
-    await injectMockDevice(page);
+    // Give the device a UI language so the overview's Language row is captured.
+    await injectMockDevice(page, { uiLocale: 'en' });
     await shot(page, dir, '01-connect', testInfo);
 
     // Connection instructions

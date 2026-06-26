@@ -1,6 +1,7 @@
 import { assertValidDevicePath, formatDevicePath } from './device-paths.js';
 import { devicePathError, deviceWriteError, deviceWriteProbeError, isNotFoundError, isTypeMismatchError } from './device-errors.js';
 import { parseKoboVersion } from './version.js';
+import { readUiLocale } from './locale.js';
 
 class KoboDevice {
     static WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
@@ -52,6 +53,7 @@ class KoboDevice {
         const file = await versionFile.getFile();
         const content = await file.text();
         this.deviceInfo = KoboDevice.parseVersion(content.trim());
+        this.deviceInfo.uiLocale = await this.readUiLocale();
 
         if (!this.deviceInfo.isIncompatible) {
             try {
@@ -189,6 +191,20 @@ class KoboDevice {
     async resolveFileHandle(filePath) {
         const dir = await this.resolveDirectory(filePath.slice(0, -1));
         return dir.getFileHandle(filePath[filePath.length - 1]);
+    }
+
+    /**
+     * Read the device UI locale from Kobo eReader.conf (best effort). Returns the
+     * raw `CurrentLocale` value (e.g. `en`, `fr_CA`) or null when the conf is
+     * missing/unreadable or the key is absent.
+     */
+    async readUiLocale() {
+        try {
+            const conf = await this.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']);
+            return readUiLocale(conf);
+        } catch {
+            return null;
+        }
     }
 
     /**

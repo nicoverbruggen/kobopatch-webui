@@ -10,6 +10,7 @@
 
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
+import { localeDisplayName } from '../kobo/locale.js';
 import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
@@ -93,6 +94,18 @@ export function initConnectFlow(state, { patches }) {
         renderSerial(info.serial, info.rawSerialPrefix || info.serialPrefix);
         $('device-firmware').textContent = info.firmware;
         $('device-hardware-id').textContent = info.hardwareId || '--';
+        renderLanguage(info.uiLocale);
+    }
+
+    function renderLanguage(uiLocale) {
+        const row = $('device-language-row');
+        const name = localeDisplayName(uiLocale);
+        if (!name) {
+            row.hidden = true;
+            return;
+        }
+        $('device-language').textContent = name;
+        row.hidden = false;
     }
 
     function renderModel(info) {

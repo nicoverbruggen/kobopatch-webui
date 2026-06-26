@@ -826,7 +826,11 @@ test.describe('NickelMenu — install', () => {
                 track: (eventName, data) => window.__trackedEvents.push({ eventName, data }),
             };
         });
-        await connectMockDevice(page, { hasNickelMenu: false });
+        await connectMockDevice(page, { hasNickelMenu: false, uiLocale: 'en' });
+
+        // The device overview surfaces the detected UI language.
+        await expect(page.locator('#device-language-row')).toBeVisible();
+        await expect(page.locator('#device-language')).toHaveText('English');
 
         // Continue to mode selection
         await page.click('#btn-device-next');
@@ -918,6 +922,10 @@ test.describe('NickelMenu — install', () => {
         expect(items).toContain('experimental:hide_home_row3_enabled:1');
         // With simplify-tabs enabled, TAB_CONFIG should be prepended
         expect(items).toContain('experimental :menu_main_15505_enabled: 1');
+        // On an English device the tab labels are renamed (possessive dropped, "Stats" for Activity).
+        expect(items).toContain('experimental :menu_main_15505_1_label: Books');
+        expect(items).toContain('experimental :menu_main_15505_2_label: Stats');
+        expect(items).toContain('experimental :menu_main_15505_3_label: Notes');
         expect(items).toContain('menu_item :library :Rescan books    :nickel_misc        :rescan_books_full');
         // Screensaver was not selected, so its toggle is absent from the menu.
         expect(items).not.toContain('menu_item :main :Screensaver');
@@ -932,6 +940,43 @@ test.describe('NickelMenu — install', () => {
         expect(manifest.meta.writer.name).toBe('kobopatch-webui');
         expect(manifest.meta.installed.firmware).toBe('4.45.23646');
         expect(manifest.meta.installed.channel).toBe('kobo13');
+    });
+
+    test('with device — simplify-tabs localizes the tab labels to the device language', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        // A German device: the overview shows the language and the tabs are renamed
+        // with the German labels instead of the English ones.
+        await connectMockDevice(page, { hasNickelMenu: false, uiLocale: 'de' });
+        await expect(page.locator('#device-language-row')).toBeVisible();
+        await expect(page.locator('#device-language')).toHaveText('German');
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await page.check('input[name="nm-cfg-simplify-tabs"]');
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#step-nm-review')).not.toBeHidden();
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+        const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
+        // The structural overrides are still applied...
+        expect(items).toContain('experimental :menu_main_15505_enabled: 1');
+        expect(items).toContain('experimental :menu_main_15505_0_enabled: 1');
+        // ...with German labels ("Stats" is kept as a short pan-European clipping),
+        // and none of the English-only ones.
+        expect(items).toContain('experimental :menu_main_15505_1_label: Bücher');
+        expect(items).toContain('experimental :menu_main_15505_2_label: Stats');
+        expect(items).toContain('experimental :menu_main_15505_3_label: Notizen');
+        expect(items).not.toContain('_label: Books');
+        expect(items).not.toContain('_label: Notes');
     });
 
     test('with device — failed write aborts and offers the audit log, leaving partial changes in place', async ({ page }) => {

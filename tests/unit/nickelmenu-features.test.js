@@ -11,7 +11,7 @@ import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
 import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
-import simplifyTabs, { TOGGLE_TABS_SCRIPT_URL } from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
+import simplifyTabs, { TOGGLE_TABS_SCRIPT_URL, tabLabelsFor, tabOverrideLines } from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
 import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
@@ -324,6 +324,52 @@ test('NickelMenu postProcess features prepend tab config and append hide flags',
     // simplify-tabs prepends its tab config block, hide-notices appends its flag.
     assert.match(items, /^experimental :menu_main_15505_0_enabled: 1\n/);
     assert.match(items, /menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n$/);
+});
+
+test('simplify-tabs renames tabs in English with the possessive dropped and "Stats" for Activity', () => {
+    assert.deepEqual(tabLabelsFor('en'), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+    // Region variants resolve by language subtag.
+    assert.deepEqual(tabLabelsFor('en_US'), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+
+    const lines = tabOverrideLines('en_GB');
+    assert.ok(lines.includes('experimental :menu_main_15505_1_label: Books'));
+    assert.ok(lines.includes('experimental :menu_main_15505_2_label: Stats'));
+    assert.ok(lines.includes('experimental :menu_main_15505_3_label: Notes'));
+});
+
+test('simplify-tabs uses localized labels for a translated non-English language', () => {
+    assert.deepEqual(tabLabelsFor('fr_CA'), { books: 'Livres', stats: 'Stats', notes: 'Notes' });
+
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
+    const items = simplifyTabs.postProcess(files, { deviceInfo: { uiLocale: 'de' } })[0].data;
+    assert.match(items, /^experimental :menu_main_15505_1_label: Bücher$/m);
+    assert.match(items, /^experimental :menu_main_15505_2_label: Stats$/m);
+    assert.match(items, /^experimental :menu_main_15505_3_label: Notizen$/m);
+    // Structural lines are still present.
+    assert.match(items, /^experimental :menu_main_15505_enabled: 1$/m);
+});
+
+test('simplify-tabs omits the label lines for an untranslated language so the device keeps its names', () => {
+    assert.equal(tabLabelsFor('ja'), null);
+
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
+    const items = simplifyTabs.postProcess(files, { deviceInfo: { uiLocale: 'ja' } })[0].data;
+    assert.doesNotMatch(items, /_label:/);
+    // The structural tab overrides are still applied.
+    assert.match(items, /^experimental :menu_main_15505_0_enabled: 1$/m);
+    assert.match(items, /^experimental :menu_main_15505_enabled: 1$/m);
+});
+
+test('simplify-tabs omits the label lines when the locale is unknown (manual connection / download)', () => {
+    assert.equal(tabLabelsFor(null), null);
+    assert.equal(tabLabelsFor(undefined), null);
+
+    // No ctx at all (download flow) and an explicit null locale both skip labels.
+    const noCtx = simplifyTabs.postProcess([{ path: NM_ITEMS_FILE, data: 'base' }])[0].data;
+    const nullLocale = simplifyTabs.postProcess([{ path: NM_ITEMS_FILE, data: 'base' }], { deviceInfo: { uiLocale: null } })[0].data;
+    assert.doesNotMatch(noCtx, /_label:/);
+    assert.doesNotMatch(nullLocale, /_label:/);
+    assert.match(noCtx, /^experimental :menu_main_15505_0_enabled: 1$/m);
 });
 
 test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab override can be commented out', () => {

@@ -37,6 +37,9 @@ const defaultConfig = {
     hasScreensaver: false,
     hasCalibreExclude: false,
     eReaderConf: null,
+    // The device UI language (CurrentLocale), e.g. 'en', 'fr', 'de'. null leaves
+    // the conf without an [ApplicationPreferences] CurrentLocale (locale unknown).
+    uiLocale: null,
     extraAddsDirs: [],
     extraAddsFiles: [],
     // Files placed at arbitrary device-root paths, e.g.
@@ -53,11 +56,16 @@ const defaultConfig = {
 
 async function injectMockDevice(page, opts = {}) {
     const config = { ...defaultConfig, ...opts };
+    // A real Kobo records its UI language as CurrentLocale in [ApplicationPreferences].
+    // When a test sets uiLocale (and doesn't override the whole conf), prepend that
+    // section so device language detection has something to read.
+    const localeSection = config.uiLocale ? '[ApplicationPreferences]\nCurrentLocale=' + config.uiLocale + '\n' : '';
     config.eReaderConf =
         config.eReaderConf ??
-        (config.hasCalibreExclude
-            ? '[General]\nsome=setting\n[FeatureSettings]\n' + EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n' + READING_DEFAULTS
-            : '[General]\nsome=setting\n' + READING_DEFAULTS);
+        localeSection +
+            (config.hasCalibreExclude
+                ? '[General]\nsome=setting\n[FeatureSettings]\n' + EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE + '\n' + READING_DEFAULTS
+                : '[General]\nsome=setting\n' + READING_DEFAULTS);
 
     // Load the matching KoboReader.sqlite fixture (as base64) when a sign-in state
     // is requested, so the in-page mock can expose its real bytes.
