@@ -1,4 +1,6 @@
 import { formatBytes, fetchWithProgress } from '../shell/dom.js';
+import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
+import { additionalFilesArchiveName } from '../patches/additional-files.js';
 import JSZip from 'jszip';
 
 export function appendLog(logEl, msg) {
@@ -45,9 +47,9 @@ export async function runPatcher(runner, configYAML, firmwareBytes, patchFiles, 
     return result.tgz;
 }
 
-export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel, additionalFiles = []) {
+export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel, additionalFiles = [], archiveInfo = null) {
     const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
-    return {
+    const manifest = {
         overrides: patchUI.getOverrides(),
         customized: patchUI.getCustomizations(),
         files: [
@@ -68,6 +70,18 @@ export function buildPatchesManifest(patchUI, firmwareVersion, selectedChannel, 
             },
         },
     };
+
+    // Point a reload at the companion archive holding the Additional Files' bytes,
+    // with a checksum it can verify before trusting (and re-merging) those files.
+    if (additionalFiles.length > 0 && archiveInfo) {
+        manifest.additionalFilesArchive = {
+            path: `${AUDIT_LOG_DIRECTORY}/${additionalFilesArchiveName}`,
+            sha256: archiveInfo.sha256,
+            size: archiveInfo.size,
+        };
+    }
+
+    return manifest;
 }
 
 export async function checkExistingTgz(device, manualMode) {

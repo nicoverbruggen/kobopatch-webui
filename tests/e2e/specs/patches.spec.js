@@ -10,6 +10,15 @@ const { hasFirmwareZip } = require('../support/assets');
 const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../support/mock-device');
 const { parseTar } = require('../support/tar');
 
+// Build a custom-patches-files archive (and its checksum) exactly the way the app
+// does, so a seeded manifest can reference bytes the app will accept on reload.
+async function buildPatchFilesArchive(entries) {
+    const { buildAdditionalFilesTgz, sha256Hex } = await import('../../../src/js/patches/additional-files.js');
+    const archiveBytes = await buildAdditionalFilesTgz(entries);
+    const sha256 = await sha256Hex(archiveBytes);
+    return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };
+}
+
 const VERIFIED_IDENTIFICATION_HINT = 'The hardware UUID and serial prefix match this device.';
 const REFURBISHED_IDENTIFICATION_HINT =
     'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.';
@@ -352,6 +361,53 @@ test.describe('Custom patches', () => {
             sourceName: 'Georgia.ttf',
             size: 10,
         });
+
+        // The download bundle also persists the companion archive, referenced by the
+        // manifest with a checksum, so a later restore can re-add the file.
+        const archiveBuf = await zip.file('.kobopatch-webui/custom-patches-files.tgz').async('nodebuffer');
+        const archiveEntries = parseTar(zlib.gunzipSync(archiveBuf));
+        expect(Buffer.from(archiveEntries['usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf']).toString('utf8')).toBe('font-bytes');
+        expect(manifest.additionalFilesArchive).toEqual({
+            path: '.kobopatch-webui/custom-patches-files.tgz',
+            sha256: crypto.createHash('sha256').update(archiveBuf).digest('hex'),
+            size: archiveBuf.length,
+        });
+    });
+
+    test('with device — additional files only writes the archive alongside the manifest', async ({ page }) => {
+        await connectMockDevice(page, { hasNickelMenu: false });
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+
+        await page.locator('#patch-advanced-section summary').click();
+        await page.setInputFiles('#patch-additional-file-input', {
+            name: 'extra.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('hi!!'),
+        });
+        await expect(page.locator('#patch-additional-files-list')).toContainText('extra.txt');
+
+        await page.click('#btn-patches-next');
+        await expect(page.locator('#step-firmware')).not.toBeHidden();
+        await page.click('#btn-build');
+        await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+
+        await page.click('#btn-write');
+        await expect(page.locator('#write-instructions')).not.toBeHidden();
+
+        // The companion archive is written next to the manifest, and the manifest
+        // points at it with a checksum a later reload can verify.
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles).toContainEqual(expect.stringContaining('.kobopatch-webui/custom-patches-files.tgz'));
+        expect(writtenFiles).toContainEqual(expect.stringContaining('.kobopatch-webui/custom-patches.json'));
+
+        const manifest = JSON.parse(await readMockFile(page, '.kobopatch-webui', 'custom-patches.json'));
+        expect(manifest.additionalFilesArchive.path).toBe('.kobopatch-webui/custom-patches-files.tgz');
+        expect(typeof manifest.additionalFilesArchive.sha256).toBe('string');
+        expect(manifest.additionalFilesArchive.sha256).toHaveLength(64);
+        expect(manifest.files).toContainEqual({ path: 'extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 });
     });
 
     test('no device — additional file destinations are validated before build', async ({ page }) => {
@@ -837,10 +893,12 @@ test.describe('Custom patches', () => {
         await expect(dialog).toBeHidden();
     });
 
-    test('with device — reload summary notes customized patches and additional files on the same firmware', async ({ page }) => {
+    test('with device — legacy manifest with no stored archive cannot restore its additional files', async ({ page }) => {
         // Manifest recorded for the device's own firmware (4.45.23646), carrying a
-        // manual edit and an additional file. The edit is still restored as-is and
-        // noted, and the recorded additional file reminder is shown.
+        // manual edit and an additional file but NO `additionalFilesArchive` (an
+        // older install that predates the stored archive). The edit is still
+        // restored as-is and noted; the additional file cannot be restored, so the
+        // "unavailable" reminder is shown instead.
         const manifest = {
             overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
             customized: {
@@ -872,7 +930,99 @@ test.describe('Custom patches', () => {
         await expect(dialog).toBeVisible();
         await expect(dialog.locator('#patch-reload-dialog-list li .patch-reload-dialog-badge')).toHaveText('Customized');
         await expect(dialog.locator('#patch-reload-dialog-modified-note')).toContainText('restored exactly as they were saved');
-        await expect(dialog.locator('#patch-reload-dialog-additional-note')).toContainText('Additional Files');
+        await expect(dialog.locator('#patch-reload-dialog-additional-note')).toContainText('could not be restored');
+        // No archive was present, so nothing landed in the Advanced section list.
+        await expect(page.locator('#patch-additional-files-list')).not.toContainText('extra.txt');
+    });
+
+    test('with device — additional files are restored from the stored archive on reload', async ({ page }) => {
+        // A manifest plus its companion archive (matching checksum). Reloading
+        // re-enables the patch AND re-adds the stored additional file to the
+        // Advanced section, ready to be re-applied.
+        const archiveEntries = [{ path: '.adds/extra.txt', data: new TextEncoder().encode('hi!!'), mode: 0o777 }];
+        const { archiveBytes, sha256, base64 } = await buildPatchFilesArchive(archiveEntries);
+        const manifest = {
+            overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+            customized: {},
+            files: [
+                { path: '.kobo/KoboRoot.tgz', type: 'file' },
+                { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
+            ],
+            additionalFilesArchive: { path: '.kobopatch-webui/custom-patches-files.tgz', sha256, size: archiveBytes.length },
+            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.45.23646', channel: 'kobo12' } },
+        };
+
+        await connectMockDevice(page, {
+            extraRootFiles: [
+                { path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) },
+                { path: ['.kobopatch-webui', 'custom-patches-files.tgz'], base64 },
+            ],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+
+        await expect(page.locator('#patch-reload-banner')).not.toBeHidden();
+        await page.click('#btn-patch-reload');
+
+        const dialog = page.locator('#patch-reload-dialog');
+        await expect(dialog).toBeVisible();
+        // The restored-files summary reports the count directly under the patch list
+        // (above the notes divider), not among the caveat notes below it.
+        await expect(dialog.locator('#patch-reload-dialog-additional-summary')).toContainText(
+            '1 additional file from the previous patching process was restored below',
+        );
+        await expect(dialog.locator('#patch-reload-dialog-additional-note')).toBeHidden();
+
+        // The file is back in the Advanced section with its original destination, the
+        // section is auto-opened for review, and the count reflects both the patch
+        // and the restored file.
+        await expect(page.locator('#patch-advanced-section')).toHaveAttribute('open', '');
+        await expect(page.locator('#patch-additional-files-list')).toContainText('extra.txt');
+        await expect(page.locator('#patch-additional-files-list input')).toHaveValue('.adds/extra.txt');
+        await expect(page.locator('#patch-count-hint')).toContainText('1 patch and 1 additional file selected');
+    });
+
+    test('with device — a checksum mismatch leaves the stored additional files unrestored', async ({ page }) => {
+        // The archive is present but its bytes do not match the manifest's recorded
+        // sha256 (tampered/stale). It must not be trusted: the file is not restored
+        // and the "unavailable" note is shown.
+        // A syntactically valid (64 hex chars) but deliberately incorrect SHA-256.
+        const WRONG_SHA = 'f'.repeat(64);
+        const archiveEntries = [{ path: '.adds/extra.txt', data: new TextEncoder().encode('hi!!'), mode: 0o777 }];
+        const { archiveBytes, base64 } = await buildPatchFilesArchive(archiveEntries);
+        const manifest = {
+            overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+            customized: {},
+            files: [
+                { path: '.kobo/KoboRoot.tgz', type: 'file' },
+                { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
+            ],
+            // Deliberately wrong checksum for the seeded archive bytes.
+            additionalFilesArchive: { path: '.kobopatch-webui/custom-patches-files.tgz', sha256: WRONG_SHA, size: archiveBytes.length },
+            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.45.23646', channel: 'kobo12' } },
+        };
+
+        await connectMockDevice(page, {
+            extraRootFiles: [
+                { path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) },
+                { path: ['.kobopatch-webui', 'custom-patches-files.tgz'], base64 },
+            ],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+
+        await page.click('#btn-patch-reload');
+
+        const dialog = page.locator('#patch-reload-dialog');
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('#patch-reload-dialog-additional-note')).toContainText('could not be restored');
+        await expect(page.locator('#patch-additional-files-list')).not.toContainText('extra.txt');
     });
 
     test('with device — no reload banner when the device has no patches manifest', async ({ page }) => {

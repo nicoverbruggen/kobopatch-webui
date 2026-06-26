@@ -1,5 +1,13 @@
 import { buildTarGz, parseTarGz } from '../nickelmenu/archive.js';
 
+// The custom-patches manifest and its companion file archive share one base name
+// so the two filenames can never drift apart. The manifest records which patches
+// were applied; the archive stores the bytes of the user's Additional Files so a
+// later reload can re-merge them into KoboRoot.tgz.
+export const patchManifestBaseName = 'custom-patches';
+export const patchManifestName = `${patchManifestBaseName}.json`;
+export const additionalFilesArchiveName = `${patchManifestBaseName}-files.tgz`;
+
 const ADDITIONAL_FILE_MODE = 0o777;
 const ENCRYPTED_FONT_DIR = 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts';
 const FONT_EXTENSIONS = new Set(['.otf', '.ttf', '.ttc']);
@@ -100,4 +108,27 @@ export async function mergeAdditionalFilesIntoTgz(tgzBytes, additionalEntries) {
     }
 
     return buildTarGz([...existing, ...additionalEntries]);
+}
+
+/**
+ * Read a persisted Additional Files archive back into a map of destination path →
+ * file bytes. Tar entries are keyed by the same destination path the manifest's
+ * `additional-file` entries record, so the caller can rejoin bytes with each
+ * file's original source name.
+ */
+export async function readAdditionalFilesArchive(tgzBytes) {
+    const entries = await parseTarGz(tgzBytes);
+    const map = new Map();
+    for (const entry of entries) {
+        map.set(entry.path, entry.data);
+    }
+    return map;
+}
+
+/** Lowercase hex SHA-256 of the given bytes, used to verify a stored archive. */
+export async function sha256Hex(bytes) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
 }

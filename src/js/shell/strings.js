@@ -106,6 +106,9 @@ export const TL = {
         RELOAD_SUMMARY_CUSTOMIZED: 'Customized',
         RELOAD_SUMMARY_MODIFIED_NOTE:
             'Customized patches are restored exactly as they were saved. If they don’t work, you may want to reset them and edit them again yourself.',
-        RELOAD_SUMMARY_ADDITIONAL_FILES_NOTE: 'Additional Files from the Advanced section are never re-applied.',
+        RELOAD_SUMMARY_ADDITIONAL_FILES_RESTORED: (count) =>
+            `${count} additional file${count === 1 ? '' : 's'} from the previous patching process ${count === 1 ? 'was' : 'were'} restored below.`,
+        RELOAD_SUMMARY_ADDITIONAL_FILES_UNAVAILABLE:
+            'Additional Files from the original install could not be restored (no stored copy was found), so you will need to add them again.',
     },
 };

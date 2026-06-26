@@ -45,6 +45,7 @@ export class Session {
         this.nmOptionalCleanupIds = [];
         this.koboUserCount = undefined;
         this.reloadManifest = null;
+        this.reloadAdditionalFiles = null;
         this.resultTgz = null;
         this.resultNmZip = null;
     }
@@ -59,6 +60,7 @@ export class Session {
         this.patchesUnavailableReason = null;
         this.koboUserCount = undefined;
         this.reloadManifest = null;
+        this.reloadAdditionalFiles = null;
         this.resultTgz = null;
         this.resultNmZip = null;
     }

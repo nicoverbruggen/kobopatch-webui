@@ -10,6 +10,7 @@
 import { test, expect } from '@playwright/test';
 import { injectMockDevice, overrideFirmwareURLs } from '../support/mock-device.js';
 import { hasFirmwareZip } from '../support/assets.js';
+import { buildAdditionalFilesTgz, sha256Hex } from '../../../src/js/patches/additional-files.js';
 
 const THEMES = ['light', 'dark'];
 
@@ -1121,11 +1122,11 @@ test('connected patches reload', async ({ page }, testInfo) => {
 const RESTORE_EDIT = 'Increase library cover size:\n  - Enabled: no\n  - FindReplaceString: {Find: "width: 60px;", Replace: "width: 99px;"}\n';
 const restoreMeta = (firmware) => ({ writer: { name: 'kobopatch-webui', version: 'screenshot' }, installed: { firmware, channel: 'kobo12' } });
 
-const openRestoreSummary = async (page, manifest) => {
+const openRestoreSummary = async (page, manifest, extraFiles = []) => {
     await page.goto('/');
     await dismissMobileModal(page);
     await injectMockDevice(page, {
-        extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }],
+        extraRootFiles: [{ path: ['.kobopatch-webui', 'custom-patches.json'], content: JSON.stringify(manifest) }, ...extraFiles],
     });
     await page.click('#btn-connect');
     await page.click('#btn-connect-ready');
@@ -1176,8 +1177,9 @@ test('restore summary — customized patch', async ({ page }, testInfo) => {
     await shot(page, SCREENSHOT_DIRS.edgeRestore, '03-modified-patches', testInfo);
 });
 
-// Variant 4: the manifest recorded additional files → Additional Files reminder.
-test('restore summary — additional files', async ({ page }, testInfo) => {
+// Variant 4: a legacy manifest recorded additional files but stored no archive →
+// the "could not be restored" reminder.
+test('restore summary — additional files unavailable', async ({ page }, testInfo) => {
     await openRestoreSummary(page, {
         overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
         customized: {},
@@ -1187,8 +1189,31 @@ test('restore summary — additional files', async ({ page }, testInfo) => {
         ],
         meta: restoreMeta('4.45.23646'),
     });
-    await expect(page.locator('#patch-reload-dialog-additional-note')).toBeVisible();
-    await shot(page, SCREENSHOT_DIRS.edgeRestore, '04-additional-files', testInfo);
+    await expect(page.locator('#patch-reload-dialog-additional-note')).toContainText('could not be restored');
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '04-additional-files-unavailable', testInfo);
+});
+
+// Variant 4b: the manifest stored a checksummed archive → the additional files are
+// restored to the Advanced section and the dialog confirms it.
+test('restore summary — additional files restored', async ({ page }, testInfo) => {
+    const archiveBytes = await buildAdditionalFilesTgz([{ path: '.adds/extra.txt', data: new TextEncoder().encode('hi!!'), mode: 0o777 }]);
+    const base64 = Buffer.from(archiveBytes).toString('base64');
+    await openRestoreSummary(
+        page,
+        {
+            overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
+            customized: {},
+            files: [
+                { path: '.kobo/KoboRoot.tgz', type: 'file' },
+                { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
+            ],
+            additionalFilesArchive: { path: '.kobopatch-webui/custom-patches-files.tgz', sha256: await sha256Hex(archiveBytes), size: archiveBytes.length },
+            meta: restoreMeta('4.45.23646'),
+        },
+        [{ path: ['.kobopatch-webui', 'custom-patches-files.tgz'], base64 }],
+    );
+    await expect(page.locator('#patch-reload-dialog-additional-summary')).toContainText('was restored below');
+    await shot(page, SCREENSHOT_DIRS.edgeRestore, '04b-additional-files-restored', testInfo);
 });
 
 // Variant 5: all three notices at once — an incompatible patch, an edited patch from

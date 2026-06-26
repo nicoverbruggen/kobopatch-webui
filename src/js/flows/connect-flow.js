@@ -15,6 +15,7 @@ import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { latestPatchVersionForFamily } from '../patches/catalog.js';
+import { patchManifestName } from '../patches/additional-files.js';
 
 export function initConnectFlow(state, { patches }) {
     const {
@@ -85,7 +86,7 @@ export function initConnectFlow(state, { patches }) {
             'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
     };
     const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
-    const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, 'custom-patches.json'];
+    const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, patchManifestName];
 
     function displayDeviceInfo(info) {
         renderModel(info);

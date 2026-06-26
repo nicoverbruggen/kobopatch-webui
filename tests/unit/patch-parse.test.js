@@ -397,9 +397,15 @@ test('buildPatchesManifest captures overrides, customizations, and install metad
     const ui = seedUI('src/nickel.yaml', raw);
     editPatch(ui, 'src/nickel.yaml', 'Second', 'Second:\n  - Enabled: yes\n  - FindReplaceString: x\n');
 
-    const manifest = buildPatchesManifest(ui, '4.45.23646', 'kobo9', [
-        { path: 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf', sourceName: 'Georgia.ttf', size: 1234 },
-    ]);
+    // A sentinel hash (not a real digest); the manifest just records whatever it is handed.
+    const WRONG_SHA = 'f'.repeat(64);
+    const manifest = buildPatchesManifest(
+        ui,
+        '4.45.23646',
+        'kobo9',
+        [{ path: 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf', sourceName: 'Georgia.ttf', size: 1234 }],
+        { sha256: WRONG_SHA, size: 2048 },
+    );
     assert.deepEqual(manifest.overrides, ui.getOverrides());
     assert.deepEqual(manifest.customized, ui.getCustomizations());
     assert.equal(manifest.files[0].path, '.kobo/KoboRoot.tgz');
@@ -409,10 +415,24 @@ test('buildPatchesManifest captures overrides, customizations, and install metad
         sourceName: 'Georgia.ttf',
         size: 1234,
     });
+    // The companion archive is referenced with its checksum so a reload can verify it.
+    assert.deepEqual(manifest.additionalFilesArchive, {
+        path: '.kobopatch-webui/custom-patches-files.tgz',
+        sha256: WRONG_SHA,
+        size: 2048,
+    });
     assert.equal(manifest.meta.writer.name, 'kobopatch-webui');
     assert.equal(manifest.meta.installed.firmware, '4.45.23646');
     assert.equal(manifest.meta.installed.channel, 'kobo9');
     assert.equal(typeof manifest.meta.installed.timestamp, 'string');
+});
+
+test('buildPatchesManifest omits the archive reference when there are no additional files', () => {
+    const ui = seedUI('src/nickel.yaml', 'First:\n  - Enabled: yes\n');
+    const manifest = buildPatchesManifest(ui, '4.45.23646', 'kobo9');
+    assert.equal(manifest.additionalFilesArchive, undefined);
+    assert.equal(manifest.files.length, 1);
+    assert.equal(manifest.files[0].path, '.kobo/KoboRoot.tgz');
 });
 
 test('additional file validation reports duplicate destinations per item', () => {

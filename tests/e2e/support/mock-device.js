@@ -165,7 +165,16 @@ async function injectMockDevice(page, opts = {}) {
                 if (!current[part]) current[part] = dir();
                 current = current[part];
             }
-            current[parts[parts.length - 1]] = file(entry.content || '');
+            // A `base64` field seeds a genuine binary file (e.g. the patch-files
+            // archive); otherwise the entry is plain text content.
+            if (entry.base64 !== undefined) {
+                const binary = atob(entry.base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                current[parts[parts.length - 1]] = binaryFile(bytes);
+            } else {
+                current[parts[parts.length - 1]] = file(entry.content || '');
+            }
         }
 
         // Swap the placeholder KoboReader.sqlite for a real fixture (decoded from

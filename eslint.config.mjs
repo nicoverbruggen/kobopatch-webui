@@ -13,6 +13,8 @@ export default [
                 fetch: 'readonly',
                 URL: 'readonly',
                 Blob: 'readonly',
+                File: 'readonly',
+                crypto: 'readonly',
                 Uint8Array: 'readonly',
                 TextEncoder: 'readonly',
                 TextDecoder: 'readonly',

@@ -8,7 +8,14 @@ import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatch
 import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../patches/side-effects.js';
 import { getPatchMeta } from '../patches/patch-metadata.js';
 import { openBlacklistDialog } from '../patches/patch-list-view.js';
-import { buildAdditionalFilesTgz, mergeAdditionalFilesIntoTgz } from '../patches/additional-files.js';
+import {
+    buildAdditionalFilesTgz,
+    mergeAdditionalFilesIntoTgz,
+    readAdditionalFilesArchive,
+    sha256Hex,
+    additionalFilesArchiveName,
+    patchManifestName,
+} from '../patches/additional-files.js';
 
 export function initPatchesFlow(state) {
     const {
@@ -24,6 +31,7 @@ export function initPatchesFlow(state) {
         'patch-reload-dialog-notes': patchReloadDialogNotes,
         'patch-reload-dialog-footnote': patchReloadDialogFootnote,
         'patch-reload-dialog-modified-note': patchReloadDialogModifiedNote,
+        'patch-reload-dialog-additional-summary': patchReloadDialogAdditionalSummary,
         'patch-reload-dialog-additional-note': patchReloadDialogAdditionalNote,
         'patch-advanced-section': patchAdvancedSection,
         'btn-patch-blacklist': btnPatchBlacklist,
@@ -74,6 +82,7 @@ export function initPatchesFlow(state) {
         'patch-reload-dialog-notes',
         'patch-reload-dialog-footnote',
         'patch-reload-dialog-modified-note',
+        'patch-reload-dialog-additional-summary',
         'patch-reload-dialog-additional-note',
         'patch-advanced-section',
         'btn-patch-blacklist',
@@ -248,6 +257,7 @@ export function initPatchesFlow(state) {
 
     async function maybeOfferReload() {
         state.reloadManifest = null;
+        state.reloadAdditionalFiles = null;
         patchReloadBanner.hidden = true;
         btnPatchReload.hidden = false;
         btnPatchReload.disabled = false;
@@ -258,19 +268,55 @@ export function initPatchesFlow(state) {
         if (state.manualMode || !state.device?.directoryHandle || !state.patchesLoaded) return;
 
         try {
-            const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json']);
+            const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, patchManifestName]);
             if (!text) return;
             const manifest = JSON.parse(text);
             const hasEnabled =
                 manifest?.overrides && Object.values(manifest.overrides).some((file) => file && typeof file === 'object' && Object.values(file).some(Boolean));
             const hasCustomized = manifest?.customized && Object.keys(manifest.customized).length > 0;
-            if (!hasEnabled && !hasCustomized) return;
+            const hasAdditional = Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file');
+            if (!hasEnabled && !hasCustomized && !hasAdditional) return;
             state.reloadManifest = manifest;
+            state.reloadAdditionalFiles = await readReloadAdditionalFiles(manifest);
             patchReloadBanner.hidden = false;
         } catch {}
     }
 
-    function showReloadSummaryDialog({ applied, showModifiedNote, showAdditionalFilesNote }) {
+    // Load the bytes of the Additional Files recorded in a manifest from the
+    // companion archive, verifying its checksum first. Returns `[{ sourceName,
+    // destination, data }]`, or null when there is no archive, it is missing, its
+    // checksum/size does not match, or it is unreadable — in which case the files
+    // simply are not restored (older manifests predate the archive entirely).
+    async function readReloadAdditionalFiles(manifest) {
+        const archiveRef = manifest?.additionalFilesArchive;
+        if (!archiveRef?.sha256) return null;
+        const fileEntries = (manifest.files || []).filter((f) => f?.type === 'additional-file' && f.path);
+        if (fileEntries.length === 0) return null;
+
+        try {
+            const bytes = await state.device.readFileBytes([AUDIT_LOG_DIRECTORY, additionalFilesArchiveName]);
+            if (!bytes) return null;
+            if (typeof archiveRef.size === 'number' && bytes.length !== archiveRef.size) return null;
+            if ((await sha256Hex(bytes)) !== archiveRef.sha256) return null;
+
+            const archive = await readAdditionalFilesArchive(bytes);
+            const restored = [];
+            for (const entry of fileEntries) {
+                const data = archive.get(entry.path);
+                if (!data) continue;
+                restored.push({
+                    sourceName: entry.sourceName || entry.path.split('/').pop(),
+                    destination: entry.path,
+                    data,
+                });
+            }
+            return restored.length > 0 ? restored : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function showReloadSummaryDialog({ applied, showModifiedNote, restoredCount, additionalFilesUnavailable }) {
         patchReloadDialogIntro.textContent = TL.PATCH.RELOAD_SUMMARY_INTRO;
 
         patchReloadDialogList.innerHTML = '';
@@ -304,10 +350,20 @@ export function initPatchesFlow(state) {
         patchReloadDialogModifiedNote.textContent = showModifiedNote ? TL.PATCH.RELOAD_SUMMARY_MODIFIED_NOTE : '';
         patchReloadDialogModifiedNote.hidden = !showModifiedNote;
 
-        patchReloadDialogAdditionalNote.textContent = showAdditionalFilesNote ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_NOTE : '';
-        patchReloadDialogAdditionalNote.hidden = !showAdditionalFilesNote;
+        // Restored Additional Files are a call to review, shown above the divider
+        // directly under the re-applied patch list.
+        const restoredSummary = restoredCount > 0 ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_RESTORED(restoredCount) : '';
+        patchReloadDialogAdditionalSummary.textContent = restoredSummary;
+        patchReloadDialogAdditionalSummary.hidden = !restoredSummary;
 
-        patchReloadDialogNotes.hidden = !(applied.length > 0 || showModifiedNote || showAdditionalFilesNote);
+        // When the files could not be restored (an older manifest, or a missing /
+        // checksum-mismatched archive that was not trusted), a caveat sits with the
+        // other notes below the divider.
+        const unavailableNote = restoredCount === 0 && additionalFilesUnavailable ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_UNAVAILABLE : '';
+        patchReloadDialogAdditionalNote.textContent = unavailableNote;
+        patchReloadDialogAdditionalNote.hidden = !unavailableNote;
+
+        patchReloadDialogNotes.hidden = !(applied.length > 0 || showModifiedNote || unavailableNote);
 
         patchReloadDialog.showModal();
     }
@@ -322,24 +378,32 @@ export function initPatchesFlow(state) {
         btnPatchReload.disabled = true;
 
         const summary = state.patchUI.applyReloadManifest(state.reloadManifest);
+        const restoredAdditional = state.reloadAdditionalFiles?.length ? state.patchUI.addRestoredAdditionalFiles(state.reloadAdditionalFiles) : 0;
         state.patchUI.render(patchContainer);
         updatePatchCount();
 
+        // Reveal the restored files so the user can review them right away (they
+        // live in the collapsed Advanced section).
+        if (restoredAdditional > 0) patchAdvancedSection.open = true;
+
+        const manifest = state.reloadManifest;
+        const hadAdditional = Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file');
+
         patchReloadBanner.classList.remove('banner--info');
-        if (summary.matched === 0 && summary.edits === 0) {
+        if (summary.matched === 0 && summary.edits === 0 && restoredAdditional === 0) {
             patchReloadBanner.classList.add('banner--warning');
             patchReloadText.textContent = TL.PATCH.RELOAD_NONE_MATCHED;
         } else {
             patchReloadBanner.classList.add('banner--success');
             patchReloadText.textContent = TL.PATCH.RELOAD_APPLIED;
             // Only surface the summary modal when there are re-enabled patches to
-            // list; an edits-only reload just updates the banner.
+            // list; an edits-only or additional-files-only reload just updates the banner.
             if (summary.applied.length > 0) {
-                const manifest = state.reloadManifest;
                 showReloadSummaryDialog({
                     applied: summary.applied,
                     showModifiedNote: summary.edits > 0,
-                    showAdditionalFilesNote: Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file'),
+                    restoredCount: restoredAdditional,
+                    additionalFilesUnavailable: hadAdditional && restoredAdditional === 0,
                 });
             }
         }
@@ -454,6 +518,23 @@ export function initPatchesFlow(state) {
             label: 'Updated .kobo/Kobo/Kobo eReader.conf for selected patch side effects',
         });
         return true;
+    }
+
+    // Build the persisted manifest plus its companion Additional Files archive (when
+    // any files were merged). The archive holds the files' bytes; the manifest
+    // references it with a checksum so a later reload can verify and restore them.
+    // Both the device-write and download paths share this so they stay in lockstep.
+    async function buildManifestArtifacts() {
+        const entries = state.additionalFileEntries || [];
+        let archiveBytes = null;
+        let archiveInfo = null;
+        if (entries.length > 0) {
+            archiveBytes = await buildAdditionalFilesTgz(entries);
+            archiveInfo = { sha256: await sha256Hex(archiveBytes), size: archiveBytes.length };
+        }
+        const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, entries, archiveInfo);
+        const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+        return { archiveBytes, manifestData };
     }
 
     function renderDownloadConfSettings(container, settings) {
@@ -571,14 +652,21 @@ export function initPatchesFlow(state) {
                 label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
             });
             if (!state.isRestore) {
-                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, state.additionalFileEntries || []);
-                const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+                const { archiveBytes, manifestData } = await buildManifestArtifacts();
                 writes.push({
-                    path: [AUDIT_LOG_DIRECTORY, 'custom-patches.json'],
+                    path: [AUDIT_LOG_DIRECTORY, patchManifestName],
                     data: manifestData,
-                    label: 'Wrote .kobopatch-webui/custom-patches.json manifest',
+                    label: `Wrote ${AUDIT_LOG_DIRECTORY}/${patchManifestName} manifest`,
                     optional: true,
                 });
+                if (archiveBytes) {
+                    writes.push({
+                        path: [AUDIT_LOG_DIRECTORY, additionalFilesArchiveName],
+                        data: archiveBytes,
+                        label: `Wrote ${AUDIT_LOG_DIRECTORY}/${additionalFilesArchiveName} (${archiveBytes.length} bytes)`,
+                        optional: true,
+                    });
+                }
             }
         } catch (err) {
             state.showError(TL.STATUS.WRITE_FAILED(err.message));
@@ -615,9 +703,11 @@ export function initPatchesFlow(state) {
             const entries = [{ path: '.kobo/KoboRoot.tgz', data: state.resultTgz }];
             const confSettings = selectedPatchConfSettings();
             if (!state.isRestore) {
-                const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, state.additionalFileEntries || []);
-                const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-                entries.push({ path: `${AUDIT_LOG_DIRECTORY}/custom-patches.json`, data: manifestData });
+                const { archiveBytes, manifestData } = await buildManifestArtifacts();
+                entries.push({ path: `${AUDIT_LOG_DIRECTORY}/${patchManifestName}`, data: manifestData });
+                if (archiveBytes) {
+                    entries.push({ path: `${AUDIT_LOG_DIRECTORY}/${additionalFilesArchiveName}`, data: archiveBytes });
+                }
             }
             const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
             await terminal.download({

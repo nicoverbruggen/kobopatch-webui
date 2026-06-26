@@ -825,6 +825,15 @@ label.patch-pref-row {
     }
 }
 
+/* Restored Additional Files are a call to action (review them), shown directly
+   under the re-applied patch list and above the notes divider, in the primary
+   text color rather than the muted secondary one used for the caveat notes. */
+.patch-reload-dialog-additional-summary {
+    margin: 0.85rem 0 0;
+    font-size: 0.82rem;
+    color: var(--text);
+}
+
 .patch-blacklist-dialog-content {
     position: relative;
     max-width: 620px;

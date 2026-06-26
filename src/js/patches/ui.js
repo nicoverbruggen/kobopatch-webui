@@ -247,6 +247,30 @@ class PatchUI {
         this.onChange?.();
     }
 
+    /**
+     * Re-add Additional Files restored from a saved manifest's companion archive.
+     * Each item carries the original `sourceName`, the chosen `destination`, and the
+     * file `data` (bytes); they are wrapped in `File` objects so they share the exact
+     * same item shape as user-added files and flow through render/validation/build
+     * unchanged. Does not fire `onChange` — the reload handler re-renders explicitly.
+     * Returns the number of files added.
+     */
+    addRestoredAdditionalFiles(items) {
+        let added = 0;
+        for (const item of items || []) {
+            if (!item?.data) continue;
+            const sourceName = item.sourceName || 'file';
+            const file = new File([item.data], sourceName);
+            this.additionalFiles.push({
+                id: this.nextAdditionalFileId++,
+                file,
+                destination: item.destination || defaultAdditionalFileDestination(sourceName),
+            });
+            added++;
+        }
+        return added;
+    }
+
     updateAdditionalFileDestination(id, destination) {
         const item = this.additionalFiles.find((file) => file.id === id);
         if (!item) return;

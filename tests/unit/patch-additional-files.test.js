@@ -2,10 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+    additionalFilesArchiveName,
+    patchManifestBaseName,
+    patchManifestName,
+    buildAdditionalFilesTgz,
     defaultAdditionalFileDestination,
     mergeAdditionalFilesIntoTgz,
     normalizeAdditionalFileDestination,
     readAdditionalFileEntry,
+    readAdditionalFilesArchive,
+    sha256Hex,
     validateAdditionalFileDestination,
 } from '../../src/js/patches/additional-files.js';
 import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
@@ -77,4 +83,41 @@ test('mergeAdditionalFilesIntoTgz appends validated entries and rejects duplicat
     assert.deepEqual(entries[1].data, bytes('font'));
 
     await assert.rejects(() => mergeAdditionalFilesIntoTgz(tgz, [{ path: 'usr/local/Kobo/nickel', data: bytes('dup'), mode: 0o777 }]), /already exists/);
+});
+
+test('the manifest archive name tracks the manifest base name', () => {
+    assert.equal(patchManifestBaseName, 'custom-patches');
+    assert.equal(patchManifestName, 'custom-patches.json');
+    assert.equal(additionalFilesArchiveName, 'custom-patches-files.tgz');
+});
+
+test('readAdditionalFilesArchive round-trips the bytes built by buildAdditionalFilesTgz', async () => {
+    const entries = [
+        { path: 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf', data: bytes('font-bytes'), mode: 0o777, sourceName: 'Georgia.ttf', size: 10 },
+        { path: '.adds/extra.txt', data: bytes('hi!!'), mode: 0o777, sourceName: 'extra.txt', size: 4 },
+    ];
+    const archiveBytes = await buildAdditionalFilesTgz(entries);
+    const archive = await readAdditionalFilesArchive(archiveBytes);
+
+    // The archive is keyed by destination path, so it rejoins with a manifest's
+    // additional-file entries (path → sourceName) to reconstruct each file.
+    const manifestFiles = entries.map((e) => ({ path: e.path, type: 'additional-file', sourceName: e.sourceName, size: e.size }));
+    const restored = manifestFiles.map((f) => ({ sourceName: f.sourceName, destination: f.path, data: archive.get(f.path) }));
+
+    assert.deepEqual(
+        restored.map((r) => [r.sourceName, r.destination]),
+        [
+            ['Georgia.ttf', 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Georgia.ttf'],
+            ['extra.txt', '.adds/extra.txt'],
+        ],
+    );
+    assert.deepEqual(restored[0].data, bytes('font-bytes'));
+    assert.deepEqual(restored[1].data, bytes('hi!!'));
+});
+
+test('sha256Hex is a deterministic lowercase hex digest', async () => {
+    // Known SHA-256 of the ASCII string "abc".
+    assert.equal(await sha256Hex(bytes('abc')), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    assert.equal(await sha256Hex(bytes('abc')), await sha256Hex(bytes('abc')));
+    assert.notEqual(await sha256Hex(bytes('abc')), await sha256Hex(bytes('abd')));
 });
