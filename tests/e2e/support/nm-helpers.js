@@ -1,6 +1,6 @@
 // @ts-check
-// Shared constants and helpers for the NickelMenu E2E specs, which are split
-// across nickelmenu-install / nickelmenu-config / nickelmenu-removal spec files.
+// Shared constants and helpers for the NickelMenu E2E specs under
+// specs/nickelmenu/ (install, customize, features, legacy, config, removal).
 const { expect } = require('@playwright/test');
 
 const EXCLUDE_SYNC_FOLDERS_LINE = String.raw`ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)`;

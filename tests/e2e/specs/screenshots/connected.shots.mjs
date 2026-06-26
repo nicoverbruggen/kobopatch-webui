@@ -1,0 +1,460 @@
+import { test, expect } from '@playwright/test';
+import {
+    shot,
+    SCREENSHOT_DIRS,
+    dismissMobileModal,
+    makeKOReaderAvailable,
+    shotNickelMenuCustomizeModal,
+    connectToDeviceScreen,
+    injectMockDevice,
+} from '../../support/screenshot-helpers.mjs';
+
+test('connected nickelmenu', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.connectedNickelMenu;
+    const isMobile = testInfo.project.name === 'mobile';
+
+    await page.goto('/');
+    if (isMobile) {
+        await expect(page.locator('#mobile-dialog')).toBeVisible();
+        await shot(page, dir, '00-mobile-warning', testInfo);
+        await page.click('#btn-mobile-continue');
+    }
+    await expect(page.locator('#step-connect')).not.toBeHidden();
+    await injectMockDevice(page);
+    await shot(page, dir, '01-connect', testInfo);
+
+    // Connection instructions
+    await page.click('#btn-connect');
+    await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+    await shot(page, dir, '02-connect-instructions', testInfo);
+
+    // Device detected
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await shot(page, dir, '03-device', testInfo);
+
+    // Mode selection — select NickelMenu, screenshot, then proceed
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await shot(page, dir, '04-mode-selection', testInfo);
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await shot(page, dir, '05-nickelmenu-config', testInfo);
+
+    // Preset → features
+    await page.click('input[value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await shot(page, dir, '06-nickelmenu-features', testInfo);
+    await shotNickelMenuCustomizeModal(page, dir, '06a-nickelmenu-customize-modal', testInfo);
+
+    // Features → backup → review
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await shot(page, dir, '07-nickelmenu-backup', testInfo);
+    await page.click('#btn-nm-backup-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await shot(page, dir, '08-nickelmenu-review', testInfo);
+
+    // Write to device → done
+    await page.click('#btn-nm-write');
+    const nmDone = page.locator('#step-nm-done');
+    await expect(nmDone).not.toBeHidden();
+    await shot(page, dir, '09-nickelmenu-done', testInfo);
+});
+
+// ============================================================
+// 5. Connected NickelMenu preset conflict
+// ============================================================
+
+test('connected nickelmenu preset conflict', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.connectedNickelMenu;
+    const isMobile = testInfo.project.name === 'mobile';
+
+    await page.goto('/');
+    if (isMobile) {
+        await page.click('#btn-mobile-continue');
+        await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+    }
+
+    await injectMockDevice(page, {
+        hasNickelDbus: true,
+        hasNickelSeries: true,
+        hasNickelClock: true,
+    });
+
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+    await page.click('input[value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-preset-conflict')).not.toBeHidden();
+    await shot(page, dir, '06a-nickelmenu-preset-conflict', testInfo);
+});
+
+// ============================================================
+// 5b. Connected NickelMenu — older device + KOReader (two review warnings)
+// ============================================================
+
+test('connected nickelmenu review notices — older device + KOReader', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.connectedNickelMenu;
+
+    await makeKOReaderAvailable(page);
+    await page.goto('/');
+    await dismissMobileModal(page);
+
+    // Kobo Aura HD (N204) is an older model with no Dark mode support, so the
+    // preset drops the Dark Mode item and warns about it. Combined with KOReader's
+    // known-issue notice, the review step shows two warnings.
+    await injectMockDevice(page, {
+        serial: 'N204E0000000000',
+        hardwareId: '00000000-0000-0000-0000-000000000350',
+    });
+
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[value="preset"]');
+    await page.click('#btn-nm-next');
+
+    // Enable KOReader so a second warning joins the Dark Mode one at review.
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await page.check('input[name="nm-cfg-koreader"]');
+    await page.click('#btn-nm-features-next');
+
+    // Backup → review
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    if (await page.locator('#nm-backup-options').isVisible()) {
+        await page.click('input[name="nm-backup-option"][value="skip"]');
+    }
+    await page.click('#btn-nm-backup-next');
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-notices')).toContainText('Dark Mode is not supported');
+    await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+    await shot(page, dir, '08b-nickelmenu-review-two-warnings', testInfo);
+});
+
+// ============================================================
+// 5c. Connected NickelMenu removal flow
+//
+// Removal is its own path with phases that don't exist in the install flow:
+// the removal options (which optional features to uninstall alongside
+// NickelMenu), the removal-styled review, and a "removing on reboot" done
+// screen. Captured here as a standalone flow rather than mixed into the
+// install screenshots above.
+// ============================================================
+
+test('connected nickelmenu removal', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.connectedNickelMenuRemoval;
+    const isMobile = testInfo.project.name === 'mobile';
+
+    await page.goto('/');
+    if (isMobile) {
+        await page.click('#btn-mobile-continue');
+        await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+    }
+
+    // NickelMenu already installed, plus optional features that can be removed
+    // alongside it, so the removal options and review list more than one entry.
+    await injectMockDevice(page, {
+        hasNickelMenu: true,
+        hasKOReader: true,
+        hasAdditionalFonts: true,
+    });
+
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    // Removal options — selecting "remove" reveals the optional-feature cleanup
+    // checkboxes (pre-checked for each detected feature).
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[name="nm-option"][value="remove"]');
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await shot(page, dir, '01-removal-options', testInfo);
+
+    // Uncheck the additional fonts so the review shows them under the "kept" card.
+    await page.uncheck('input[name="nm-uninstall-additional-fonts"]');
+    await page.click('#btn-nm-next');
+
+    // Connected remove goes through backup → review (no manual-remove step).
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    if (await page.locator('#nm-backup-options').isVisible()) {
+        await page.click('input[name="nm-backup-option"][value="skip"]');
+    }
+    await page.click('#btn-nm-backup-next');
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await shot(page, dir, '02-removal-review', testInfo);
+
+    // Write to device → done (NickelMenu removed on next reboot).
+    await page.click('#btn-nm-write');
+    const nmDone = page.locator('#step-nm-done');
+    await expect(nmDone).not.toBeHidden();
+    await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
+    await shot(page, dir, '03-removal-done', testInfo);
+});
+
+// Variant: every cleanup checkbox left checked, so the review has no "kept" card.
+
+test('connected nickelmenu removal (no kept features)', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.connectedNickelMenuRemoval;
+    const isMobile = testInfo.project.name === 'mobile';
+
+    await page.goto('/');
+    if (isMobile) {
+        await page.click('#btn-mobile-continue');
+        await expect(page.locator('#mobile-dialog')).not.toBeVisible();
+    }
+
+    await injectMockDevice(page, {
+        hasNickelMenu: true,
+        hasKOReader: true,
+        hasAdditionalFonts: true,
+    });
+
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+
+    await page.click('#btn-device-next');
+    await expect(page.locator('#step-mode')).not.toBeHidden();
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+
+    await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+    await page.click('input[name="nm-option"][value="remove"]');
+    // Leave every cleanup checkbox checked so nothing is kept.
+    await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await page.click('#btn-nm-next');
+
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    if (await page.locator('#nm-backup-options').isVisible()) {
+        await page.click('input[name="nm-backup-option"][value="skip"]');
+    }
+    await page.click('#btn-nm-backup-next');
+
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-kept')).toBeHidden();
+    await shot(page, dir, '02a-removal-review-no-kept', testInfo);
+});
+
+// ============================================================
+// 5d. Busy indicator (install in progress)
+// ============================================================
+
+test('device verified by UUID and serial prefix', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    await connectToDeviceScreen(page);
+    await shot(page, dir, 'device-verified', testInfo);
+
+    await page.locator('#device-model .device-identification-badge--verified').hover();
+    await shot(page, dir, 'device-verified-hint', testInfo);
+});
+
+test('device serial prefix mismatch', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    await connectToDeviceScreen(page, {
+        serial: 'X9990A0000000',
+        firmware: '4.38.23648',
+        hardwareId: '00000000-0000-0000-0000-000000000388',
+    });
+    await shot(page, dir, 'serial-prefix-mismatch', testInfo);
+
+    await page.locator('#device-model .device-identification-badge--mismatch').hover();
+    await shot(page, dir, 'serial-prefix-mismatch-hint', testInfo);
+});
+
+test('refurbished device verified by UUID', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    await connectToDeviceScreen(page, {
+        serial: 'R4180A0000000',
+        firmware: '4.38.23648',
+        hardwareId: '00000000-0000-0000-0000-000000000388',
+    });
+    await shot(page, dir, 'refurbished-device-verified', testInfo);
+
+    await page.locator('#device-model .device-refurbished-marker').hover();
+    await shot(page, dir, 'refurbished-device-marker-hint', testInfo);
+
+    await page.locator('#device-model .device-identification-badge--refurbished').hover();
+    await shot(page, dir, 'refurbished-device-verified-hint', testInfo);
+});
+
+test('unknown model', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    await connectToDeviceScreen(page, {
+        serial: 'X9990A0000000',
+        hardwareId: '00000000-0000-0000-0000-999999999999',
+    });
+    await shot(page, dir, 'unknown-model', testInfo);
+});
+
+test('disclaimer dialog', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeDialogs;
+    await page.goto('/');
+    await dismissMobileModal(page);
+    await page.click('#btn-how-it-works');
+    await expect(page.locator('#how-it-works-dialog')).toBeVisible();
+    await shot(page, dir, 'disclaimer-dialog', testInfo);
+});
+
+test('analytics feedback thumbs', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeAnalytics;
+    await page.addInitScript(() => {
+        window.__ANALYTICS_ENABLED = true;
+        window.umami = { track: () => {} };
+    });
+    await page.goto('/');
+    await dismissMobileModal(page);
+    await page.evaluate(() => {
+        for (const step of document.querySelectorAll('.step')) step.hidden = true;
+        document.getElementById('step-done').hidden = false;
+        document.getElementById('step-nav').hidden = false;
+        document.getElementById('build-status').innerHTML =
+            'Patching complete. <strong>KoboRoot.tgz</strong> (1.2 MB) is ready. Download the file and copy it to your Kobo.';
+        document.getElementById('done-log').textContent = 'Dummy analytics screenshot instance.';
+
+        const feedback = document.querySelector('#step-done .feedback');
+        feedback.hidden = false;
+        feedback.querySelector('.feedback-text').hidden = false;
+        feedback.querySelector('.feedback-thanks').hidden = true;
+        feedback.querySelectorAll('.feedback-btn').forEach((button) => {
+            button.hidden = false;
+            button.disabled = false;
+        });
+    });
+
+    await page.locator('#step-done .feedback-btn--up').hover();
+    await shot(page, dir, 'feedback-thumbs-up', testInfo);
+
+    await page.locator('#step-done .feedback-btn--down').hover();
+    await shot(page, dir, 'feedback-thumbs-down', testInfo);
+});
+
+// Walk a connected device to the preset feature-selection step.
+const goToNmFeaturesForShot = async (page) => {
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
+};
+
+// ============================================================
+// 6a. Backup step with legacy config detected as previously
+//     generated by KoboPatch Web UI (checkbox unchecked).
+// ============================================================
+
+test('connected nickelmenu legacy config detected as ours', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeNickelMenu;
+    await page.goto('/');
+    await dismissMobileModal(page);
+    await injectMockDevice(page, { hasNickelMenu: true });
+
+    // Replace the default items content with one that contains our heuristic
+    // string ("Toggle Typography") so the flow detects it as ours.
+    await page.evaluate(() => {
+        window.__mockFS['.adds']['nm']['items'] = {
+            _type: 'file',
+            content: [
+                'experimental :menu_main_15505_label :Toggle',
+                'experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.cog.png',
+                'menu_item :main :Toggle Typography :cmd_output :7000 :/mnt/onboard/.adds/scripts/toggle_typography.sh',
+            ].join('\n'),
+        };
+    });
+
+    await goToNmFeaturesForShot(page);
+
+    // Features → backup (show the keep-config checkbox, unchecked by default)
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#nm-keep-config-option')).toBeVisible();
+    await expect(page.locator('#nm-keep-items')).not.toBeChecked();
+    await shot(page, dir, 'legacy-config-ours', testInfo);
+});
+
+// ============================================================
+// 6b. Backup step with legacy config detected as NOT generated
+//     by KoboPatch Web UI (checkbox checked).
+// ============================================================
+
+test('connected nickelmenu legacy config detected as manual', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeNickelMenu;
+    await page.goto('/');
+    await dismissMobileModal(page);
+    // Default items content ("menu_item:main:test:skip:") does not contain
+    // any heuristic strings, so the flow treats it as a manual config.
+    await injectMockDevice(page, { hasNickelMenu: true });
+    await goToNmFeaturesForShot(page);
+
+    // Features → backup (show the keep-config checkbox, checked by default)
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await expect(page.locator('#nm-keep-config-option')).toBeVisible();
+    await expect(page.locator('#nm-keep-items')).toBeChecked();
+    await shot(page, dir, 'legacy-config-manual', testInfo);
+});
+
+// Full journey for a factory-reset Kobo that was never signed in: the
+// recommendation, choosing Sideload Mode, the review summary with its warning,
+// and the done screen.
+
+test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.connectedNickelMenuFactory;
+    await page.goto('/');
+    await dismissMobileModal(page);
+    await injectMockDevice(page, { signedIn: false });
+    await goToNmFeaturesForShot(page);
+
+    // Recommendation banner, with the Advanced section auto-expanded so the
+    // Sideload Mode option is visible.
+    await expect(page.locator('#nm-sideloaded-banner')).toBeVisible();
+    await shot(page, dir, '01-recommendation', testInfo);
+
+    // Choose Sideload Mode.
+    await page.check('input[name="nm-cfg-sideloaded-mode"]');
+    await shot(page, dir, '02-sideload-selected', testInfo);
+
+    // Backup → review: the summary lists the selection and warns what it does.
+    await page.click('#btn-nm-features-next');
+    await expect(page.locator('#step-nm-backup')).not.toBeHidden();
+    await page.click('#btn-nm-backup-next');
+    await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#nm-review-notices')).toContainText('Home tab is hidden');
+    await shot(page, dir, '03-review', testInfo);
+
+    // Write to device → done.
+    await page.click('#btn-nm-write');
+    await expect(page.locator('#step-nm-done')).not.toBeHidden();
+    await shot(page, dir, '04-done', testInfo);
+});
+
+// Edge case: Kobo software older than Sideload Mode's 4.31 minimum. The option
+// is shown disabled with a red explanation; no recommendation banner.

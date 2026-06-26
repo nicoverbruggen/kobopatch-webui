@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const JSZip = require('jszip');
 
-const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../support/paths');
-const { hasNickelMenuAssets, hasKOReaderAssets, hasFontAssets, hasFirmwareZip } = require('../support/assets');
+const { FIRMWARE_PATH, getOriginalTgzSha1 } = require('../../support/paths');
+const { hasNickelMenuAssets, hasKOReaderAssets, hasFontAssets, hasFirmwareZip } = require('../../support/assets');
 const {
     injectMockDevice,
     connectMockDevice,
@@ -15,8 +15,8 @@ const {
     readMockFile,
     mockPathExists,
     getWrittenFiles,
-} = require('../support/mock-device');
-const { parseTar } = require('../support/tar');
+} = require('../../support/mock-device');
+const { parseTar } = require('../../support/tar');
 const {
     EXCLUDE_SYNC_FOLDERS_LINE,
     EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE,
@@ -26,7 +26,7 @@ const {
     skipNmBackup,
     openNmSection,
     goToNmFeatures,
-} = require('../support/nm-helpers');
+} = require('../../support/nm-helpers');
 
 test.describe('NickelMenu — configuration', () => {
     test('with device — install with config without exclude-calibre omits calibre from pattern', async ({ page }) => {

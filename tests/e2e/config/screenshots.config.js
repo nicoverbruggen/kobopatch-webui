@@ -3,7 +3,7 @@ const base = require('./playwright.config.js');
 
 module.exports = defineConfig({
     ...base,
-    testMatch: 'screenshots.mjs',
+    testMatch: '**/*.shots.mjs',
     projects: [
         {
             name: 'desktop',

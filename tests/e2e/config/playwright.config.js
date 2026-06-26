@@ -9,7 +9,7 @@ const testResultsDir = path.join(appDir, 'tmp', 'test-results', 'e2e');
 
 module.exports = defineConfig({
     testDir: path.join(e2eDir, 'specs'),
-    testMatch: '*.spec.js',
+    testMatch: '**/*.spec.js',
     outputDir: testResultsDir,
     timeout: 300_000,
     retries: 0,
