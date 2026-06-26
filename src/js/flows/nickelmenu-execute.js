@@ -1,4 +1,12 @@
-import { triggerDownload, setProgressDetail } from '../shell/dom.js';
+/**
+ * nickelmenu-execute.js — Executes the NickelMenu install/remove writes.
+ *
+ * The NickelMenu flow (nickelmenu-flow.js) owns the wizard UI; this module runs
+ * the actual device writes (or builds the download ZIP) once the user commits,
+ * and renders the final "done" screen for each outcome (remove / write / download).
+ */
+
+import { triggerDownload, setProgressDetail, renderDownloadConfSettings } from '../shell/dom.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
@@ -21,7 +29,7 @@ function trackFeatures(features) {
     if (features.some((f) => f.id === 'sideloaded-mode')) track('add-sideloaded-mode');
 }
 
-export async function executeNmInstall({ state, flow, _terminal, dom, showError }) {
+export async function executeNmInstall({ state, flow, dom, showError }) {
     const progressFn = (msg, detail = null, fraction = null) => {
         dom.progress.textContent = msg;
         setProgressDetail(dom.progressDetail, detail, fraction);
@@ -135,30 +143,6 @@ export function renderNmDoneStatus(state, terminal, dom) {
     }
 
     terminal.wireFeedback();
-}
-
-function renderDownloadConfSettings(container, settings) {
-    container.innerHTML = '';
-
-    const sections = new Map();
-    for (const { section, key, value } of settings) {
-        if (!sections.has(section)) sections.set(section, []);
-        sections.get(section).push(`${key}=${value}`);
-    }
-
-    for (const [section, lines] of sections) {
-        const intro = document.createElement('p');
-        const sectionCode = document.createElement('code');
-        sectionCode.textContent = `[${section}]`;
-        intro.append('In the ', sectionCode, ' section (add it if it is missing):');
-        container.appendChild(intro);
-
-        for (const line of lines) {
-            const lineCode = document.createElement('code');
-            lineCode.textContent = line;
-            container.append(lineCode, document.createElement('br'));
-        }
-    }
 }
 
 export function renderReviewNotices(container, notices) {

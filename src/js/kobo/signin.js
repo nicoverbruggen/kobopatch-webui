@@ -1,3 +1,10 @@
+/**
+ * signin.js — Detects whether the Kobo has a signed-in account.
+ *
+ * Counts user rows in `KoboReader.sqlite` so flows can warn before changes that
+ * assume (or that break without) a Kobo account.
+ */
+
 import { countTableRows } from './sqlite-count.js';
 
 const KOBO_READER_DB = ['.kobo', 'KoboReader.sqlite'];

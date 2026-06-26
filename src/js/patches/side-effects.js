@@ -1,10 +1,17 @@
+/**
+ * side-effects.js — Patch side effects applied to `Kobo eReader.conf`.
+ *
+ * Some patches only work with companion conf settings; this module declares those
+ * settings, selects the ones for the enabled patches, and applies/reports them.
+ */
+
 import { parseKoboConfiguration, setConfSetting } from '../kobo/configuration.js';
 
 const applicationPreferencesSection = 'ApplicationPreferences';
 
 export const CLOUD_SYNC_PATCH_NAME = 'Unlock Dropbox and Google Drive support';
 
-export const patchSideEffects = [
+const patchSideEffects = [
     {
         id: 'cloud-sync-account-links',
         patchNames: [CLOUD_SYNC_PATCH_NAME],

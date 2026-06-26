@@ -1,3 +1,11 @@
+/**
+ * patches-execute.js — Firmware download / extract / patch helpers.
+ *
+ * The execution primitives the patches flow calls: download the firmware with
+ * progress, extract its original KoboRoot.tgz, run the WASM patcher, and build
+ * the custom-patches manifest. Reports progress through the passed elements.
+ */
+
 import { formatBytes, fetchWithProgress } from '../shell/dom.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { additionalFilesArchiveName } from '../patches/additional-files.js';

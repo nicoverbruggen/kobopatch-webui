@@ -18,17 +18,6 @@ export default {
     minimumVersion: '4.31',
     hint: 'Sideload Mode lets the Kobo run without a Kobo account. It disables the home screen and opens the device straight to the "My Books" library instead, and it turns off syncing with the Kobo store. Useful after a factory reset when you only read sideloaded books and don\'t want to sign in.',
 
-    // Cleanup only carries the removal presentation here — detection and revert
-    // are derived from the revertable SIDELOADED_MODE conf setting above.
-    // Reverting only removes the line when it still matches what we set, so a
-    // value the user changed afterwards is never overwritten.
-    cleanup: {
-        mode: 'optional',
-        title: 'Sideload Mode',
-        removeLabel: 'Turn off Sideload Mode',
-        description: 'If you did not previously sign in, sign-in may be required again after your device reboots.',
-    },
-
     // Surface what Sideload Mode does at the review step, so the behavior
     // change is hard to miss before writing it. No outbound link — the
     // explanation is self-contained.
@@ -43,6 +32,17 @@ export default {
                 ],
             },
         ];
+    },
+
+    // Cleanup only carries the removal presentation here — detection and revert
+    // are derived from the revertable SIDELOADED_MODE conf setting above.
+    // Reverting only removes the line when it still matches what we set, so a
+    // value the user changed afterwards is never overwritten.
+    cleanup: {
+        mode: 'optional',
+        title: 'Sideload Mode',
+        removeLabel: 'Turn off Sideload Mode',
+        description: 'If you did not previously sign in, sign-in may be required again after your device reboots.',
     },
 
     // Hide the home navigation tab by commenting out its force-enable override.

@@ -1,5 +1,13 @@
+/**
+ * patches-flow.js — The Custom Patches wizard flow.
+ *
+ * Owns the patches → build → done steps: patch selection UI wiring, firmware
+ * download/patch orchestration (via patches-execute.js), and writing or
+ * downloading the resulting KoboRoot.tgz plus its manifest and conf side effects.
+ */
+
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { collect, formatBytes, populateList } from '../shell/dom.js';
+import { collect, formatBytes, populateList, renderDownloadConfSettings } from '../shell/dom.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
@@ -535,30 +543,6 @@ export function initPatchesFlow(state) {
         const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, entries, archiveInfo);
         const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
         return { archiveBytes, manifestData };
-    }
-
-    function renderDownloadConfSettings(container, settings) {
-        container.innerHTML = '';
-
-        const sections = new Map();
-        for (const { section, key, value } of settings) {
-            if (!sections.has(section)) sections.set(section, []);
-            sections.get(section).push(`${key}=${value}`);
-        }
-
-        for (const [section, lines] of sections) {
-            const intro = document.createElement('p');
-            const sectionCode = document.createElement('code');
-            sectionCode.textContent = `[${section}]`;
-            intro.append('In the ', sectionCode, ' section (add it if it is missing):');
-            container.appendChild(intro);
-
-            for (const line of lines) {
-                const lineCode = document.createElement('code');
-                lineCode.textContent = line;
-                container.append(lineCode, document.createElement('br'));
-            }
-        }
     }
 
     function goToBuild() {

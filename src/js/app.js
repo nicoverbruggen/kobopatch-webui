@@ -16,7 +16,7 @@ import { Session } from './shell/session.js';
 import { $ } from './shell/dom.js';
 import { initErrorScreen } from './shell/error-screen.js';
 import { initGlobalUI } from './shell/global-ui.js';
-import { initNickelMenu } from './flows/nickelmenu-flow.js';
+import { initNickelMenuFlow } from './flows/nickelmenu-flow.js';
 import { initPatchesFlow } from './flows/patches-flow.js';
 import { initConnectFlow } from './flows/connect-flow.js';
 import { initManualFlow } from './flows/manual-flow.js';
@@ -40,7 +40,7 @@ state.blacklistReady = state.patchUI.loadBlacklist();
 // Flows and shell screens. Order matters only for the explicit dependency
 // injection below; all cross-flow navigation goes through `state.*` callbacks.
 const patches = initPatchesFlow(state);
-const nm = initNickelMenu(state);
+const nm = initNickelMenuFlow(state);
 initErrorScreen(state);
 const manual = initManualFlow(state, { patches });
 initModeFlow(state, { patches, nm, manual });

@@ -1,3 +1,10 @@
+/**
+ * nickelmenu-backup.js — Collects files for the optional pre-install backup.
+ *
+ * Gathers the NickelMenu-related paths off a connected Kobo into a ZIP the user
+ * can keep before the flow writes any changes.
+ */
+
 export const NM_REVIEW_BACKUP_PATHS = [
     ['.kobo', 'Kobo'],
     ['.kobo', 'markups'],

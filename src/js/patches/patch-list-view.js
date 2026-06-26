@@ -11,6 +11,7 @@
  */
 
 import { CircleHelp, Minus, Pencil } from 'lucide';
+import { $ } from '../shell/dom.js';
 import { TL } from '../shell/strings.js';
 import { getPatchMeta, PATCH_CATEGORIES, OTHER_CATEGORY, PATCH_FILE_LABELS } from './patch-metadata.js';
 import { openPatchEditor } from './patch-editor.js';
@@ -179,7 +180,7 @@ function hideFirmwareMatchTooltip(tooltip) {
 }
 
 function bindFirmwareMatchTooltip(dialog, badge) {
-    const tooltip = document.getElementById('patch-blacklist-version-tooltip');
+    const tooltip = $('patch-blacklist-version-tooltip');
     if (!tooltip) return;
 
     const show = () => showFirmwareMatchTooltip(dialog, tooltip, badge);
@@ -228,16 +229,16 @@ function blacklistGroups(ui, original) {
 }
 
 function renderBlacklistDialog(ui, original) {
-    const dialog = document.getElementById('patch-blacklist-dialog');
+    const dialog = $('patch-blacklist-dialog');
     if (!dialog) return null;
 
     const version = ui.firmwareVersion || ui.currentBlacklistVersion() || TL.PATCH.BLACKLIST_UNKNOWN_VERSION;
     const testedVersion = ui.testedFirmwareVersion || version;
-    const descriptionEl = document.getElementById('patch-blacklist-description');
-    const firmwareEl = document.getElementById('patch-blacklist-current-version');
-    const updatedEl = document.getElementById('patch-blacklist-updated');
-    const listEl = document.getElementById('patch-blacklist-list');
-    const emptyEl = document.getElementById('patch-blacklist-empty');
+    const descriptionEl = $('patch-blacklist-description');
+    const firmwareEl = $('patch-blacklist-current-version');
+    const updatedEl = $('patch-blacklist-updated');
+    const listEl = $('patch-blacklist-list');
+    const emptyEl = $('patch-blacklist-empty');
     if (!descriptionEl || !firmwareEl || !updatedEl || !listEl || !emptyEl) return dialog;
 
     const versionsMatch = version === testedVersion;
@@ -291,7 +292,7 @@ export function openBlacklistDialog(ui, container) {
     const dialog = renderBlacklistDialog(ui, isOriginalFormat(container));
     if (!dialog) return;
     dialog.showModal();
-    document.getElementById('btn-patch-blacklist-close')?.focus();
+    $('btn-patch-blacklist-close')?.focus();
 }
 
 /**

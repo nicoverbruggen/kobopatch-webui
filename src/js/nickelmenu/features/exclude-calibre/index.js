@@ -1,3 +1,7 @@
+// Keeps books in a "calibre" folder out of the Kobo library by adding a
+// `calibre` alternation to the ExcludeSyncFolders regex. Pure config: the only
+// thing it owns is that one Kobo eReader.conf line (see installer.js), so it
+// declares no install/menuItems/cleanup of its own.
 export default {
     id: 'exclude-calibre',
     section: 'Legacy',

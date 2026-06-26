@@ -1,3 +1,11 @@
+/**
+ * device.js — `KoboDevice`, the File System Access wrapper for a connected Kobo.
+ *
+ * Validates the picked directory looks like a Kobo and exposes read/list helpers
+ * over its filesystem. Writes go through DeviceWriter; this class owns connection
+ * and reads. `isSupported()` reports whether the browser exposes the API at all.
+ */
+
 import { assertValidDevicePath, formatDevicePath } from './device-paths.js';
 import { devicePathError, deviceWriteError, deviceWriteProbeError, isNotFoundError, isTypeMismatchError } from './device-errors.js';
 import { parseKoboVersion } from './version.js';

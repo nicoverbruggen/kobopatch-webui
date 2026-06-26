@@ -275,3 +275,32 @@ export function triggerDownload(data, filename, mimeType) {
     a.click();
     URL.revokeObjectURL(url);
 }
+
+/**
+ * Render `Kobo eReader.conf` settings into a container as `[Section]` intros
+ * followed by their `key=value` lines. Shared by the patches and NickelMenu
+ * download steps so both show conf edits identically.
+ */
+export function renderDownloadConfSettings(container, settings) {
+    container.innerHTML = '';
+
+    const sections = new Map();
+    for (const { section, key, value } of settings) {
+        if (!sections.has(section)) sections.set(section, []);
+        sections.get(section).push(`${key}=${value}`);
+    }
+
+    for (const [section, lines] of sections) {
+        const intro = document.createElement('p');
+        const sectionCode = document.createElement('code');
+        sectionCode.textContent = `[${section}]`;
+        intro.append('In the ', sectionCode, ' section (add it if it is missing):');
+        container.appendChild(intro);
+
+        for (const line of lines) {
+            const lineCode = document.createElement('code');
+            lineCode.textContent = line;
+            container.append(lineCode, document.createElement('br'));
+        }
+    }
+}

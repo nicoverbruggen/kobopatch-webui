@@ -7,7 +7,7 @@
  */
 
 import { TL } from './strings.js';
-import { collect, triggerDownload } from './dom.js';
+import { $, collect, triggerDownload } from './dom.js';
 import { showStep, showNav, hideNav, stepHistory } from './navigation.js';
 import { getActiveFlow } from './step-machine.js';
 
@@ -138,7 +138,7 @@ export function initErrorScreen(state) {
             btnErrorDownloadLog.hidden = true;
             errorAuditLog = null;
             btnRetry.classList.remove('danger');
-            const recoveryDomStep = document.getElementById(recoveryDomId);
+            const recoveryDomStep = $(recoveryDomId);
             if (recoveryDomStep) {
                 showStep(recoveryDomStep);
             }

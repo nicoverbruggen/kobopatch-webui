@@ -8,7 +8,7 @@
  */
 
 import yaml from 'js-yaml';
-import { trapFocus } from '../shell/dom.js';
+import { $, trapFocus } from '../shell/dom.js';
 import { parsePatchYAML } from './patch-yaml.js';
 import { getPatchMeta } from './patch-metadata.js';
 
@@ -45,7 +45,7 @@ let editorBound = false;
 let editing = null;
 
 function getEditorDialog() {
-    return document.getElementById('patch-editor-dialog');
+    return $('patch-editor-dialog');
 }
 
 /**

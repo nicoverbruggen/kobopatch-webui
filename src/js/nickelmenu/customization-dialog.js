@@ -1,4 +1,12 @@
-import { trapFocus } from '../shell/dom.js';
+/**
+ * customization-dialog.js — The "Customize NickelMenu preset" dialog.
+ *
+ * Lets the user pick/upload an icon and edit the label for the Toggle tab, and
+ * renders the live preview + summary. Pure image helpers (SVG sizing, raster
+ * resizing, PNG rendering) live here alongside the dialog wiring.
+ */
+
+import { $, trapFocus } from '../shell/dom.js';
 import {
     findPresetIcon,
     NM_MENU_PRESET_ICONS,
@@ -23,14 +31,14 @@ export function loadImage(src) {
     });
 }
 
-export function parseSvgDimension(value) {
+function parseSvgDimension(value) {
     const match = String(value || '')
         .trim()
         .match(/^(\d+(?:\.\d+)?)/);
     return match ? Number(match[1]) : null;
 }
 
-export function inferSvgViewBox(svg) {
+function inferSvgViewBox(svg) {
     const width = parseSvgDimension(svg.getAttribute('width')) || NM_UPLOAD_ICON_SIZE;
     const height = parseSvgDimension(svg.getAttribute('height')) || NM_UPLOAD_ICON_SIZE;
     return `0 0 ${width} ${height}`;
@@ -293,7 +301,7 @@ export function getMenuCustomizationSummaryItem(state) {
 }
 
 export function updateMenuCustomizationSummary(state) {
-    const container = document.getElementById('nm-custom-menu-summary');
+    const container = $('nm-custom-menu-summary');
     if (!container) return;
     const summary = getMenuCustomizationSummary(state.nickelMenuCustomization);
     const icon = container.querySelector('.nm-config-summary-icon');
@@ -395,7 +403,7 @@ function wireFocusReturn(dlg) {
 document.addEventListener(
     'DOMContentLoaded',
     () => {
-        const dlg = document.getElementById('nm-customize-dialog');
+        const dlg = $('nm-customize-dialog');
         if (dlg) {
             wireFocusReturn(dlg);
             trapFocus(dlg);
@@ -405,11 +413,9 @@ document.addEventListener(
 );
 // Also wire if DOM is already ready.
 if (document.readyState !== 'loading') {
-    const dlg = document.getElementById('nm-customize-dialog');
+    const dlg = $('nm-customize-dialog');
     if (dlg) {
         wireFocusReturn(dlg);
         trapFocus(dlg);
     }
 }
-
-export { NM_DEFAULT_ICON_ASSET, NM_PRESET_ICON_PNG_SIZE, NM_UPLOAD_ICON_SIZE };

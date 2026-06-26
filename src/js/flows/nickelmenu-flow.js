@@ -1,3 +1,11 @@
+/**
+ * nickelmenu-flow.js — The NickelMenu wizard flow.
+ *
+ * Owns the configure → backup → review → install/remove steps: preset vs
+ * NickelMenu-only selection, feature configuration, the optional backup, and the
+ * review screen. The actual device writes are delegated to nickelmenu-execute.js.
+ */
+
 import { $, $q, $qa, collect, populateList } from '../shell/dom.js';
 import { setupCardRadios } from '../shell/navigation.js';
 import { renderNmCheckboxList } from '../nickelmenu/checkbox-list.js';
@@ -34,7 +42,7 @@ import { executeNmInstall as executeNmInstallFn, renderNmDoneStatus, renderRevie
 
 const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
 
-export function initNickelMenu(state) {
+export function initNickelMenuFlow(state) {
     const {
         'step-nickelmenu': stepNickelMenu,
         'step-nm-backup': stepNmBackup,
@@ -679,7 +687,6 @@ export function initNickelMenu(state) {
         executeNmInstallFn({
             state,
             flow,
-            terminal,
             dom: {
                 progress: $('nm-progress'),
                 progressDetail: $('nm-progress-detail'),
@@ -694,7 +701,6 @@ export function initNickelMenu(state) {
         executeNmInstallFn({
             state,
             flow,
-            terminal,
             dom: {
                 progress: $('nm-progress'),
                 progressDetail: $('nm-progress-detail'),

@@ -19,12 +19,12 @@ export default {
     title: 'Set up NickelMenu preset',
     description:
         'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation bar. You can customize the icon and label.',
+    default: true,
+    required: true,
     customization: {
         actionLabel: 'Customize',
         actionAriaLabel: 'Customize NickelMenu preset tab',
     },
-    default: true,
-    required: true,
     // No per-feature cleanup: everything this feature ships lives under .adds/nm
     // (including the toggle scripts under .adds/nm/scripts), which NickelMenu
     // removal deletes recursively.

@@ -1,3 +1,10 @@
+/**
+ * software-urls.js — Resolves Kobo firmware (software update) download URLs.
+ *
+ * Maps a device hardware id + version to the official Kobo update package URL the
+ * patches flow downloads and patches.
+ */
+
 import { fetchOrThrow } from '../shell/dom.js';
 import { koboHardwareIds } from './version.js';
 

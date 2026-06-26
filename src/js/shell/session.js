@@ -1,3 +1,11 @@
+/**
+ * session.js — The shared wizard `state` object.
+ *
+ * Creates the single mutable state bag every flow reads from and writes to
+ * (device, selections, build artifacts, the showError hook), with its initial
+ * defaults.
+ */
+
 import { createDefaultMenuCustomization } from '../nickelmenu/customization.js';
 
 export class Session {

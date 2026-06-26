@@ -1,6 +1,7 @@
 import { NICKELMENU_FEATURES } from './features/index.js';
 import { getConfSetting, revertableConfSettings } from '../kobo/configuration.js';
 import { countKoboUsers } from '../kobo/signin.js';
+import { TL } from '../shell/strings.js';
 
 export const NM_PRESET_CONFLICTS = [
     { id: 'nickeldbus', path: ['.adds', 'nickeldbus'], label: 'nickeldbus (.adds/nickeldbus)' },
@@ -84,7 +85,7 @@ export async function checkNickelMenuInstalled(
     removeRadio.disabled = true;
     removeOption.classList.add('selection-card--disabled');
     removeOption.classList.add('selection-card--danger');
-    removeDesc.textContent = 'Removes NickelMenu from your device. Only available when a Kobo with NickelMenu installed is connected.';
+    removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
 }
 
 export async function detectLegacyItemsFile(nmDir, onResult) {

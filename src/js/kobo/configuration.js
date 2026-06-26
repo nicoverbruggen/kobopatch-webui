@@ -1,3 +1,11 @@
+/**
+ * configuration.js — Reading and editing of `Kobo eReader.conf`.
+ *
+ * Parses the INI-like config into sections, and provides get/set/remove helpers
+ * for individual keys and for the ExcludeSyncFolders line, plus the revertable
+ * conf-setting bookkeeping features rely on. Pure string/section logic, no I/O.
+ */
+
 const SECTION_HEADER_PATTERN = /^\s*\[([^\]]+)\]\s*$/;
 const featureSettingsSection = 'FeatureSettings';
 const excludeSyncFoldersKey = 'ExcludeSyncFolders';
@@ -245,7 +253,6 @@ export {
     createExcludeSyncFoldersMatcher,
     getConfSetting,
     parseKoboConfiguration,
-    parseExcludeSyncFoldersLine,
     removeConfSetting,
     removeExcludeSyncFoldersLine,
     revertableConfSettings,

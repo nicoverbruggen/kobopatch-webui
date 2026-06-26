@@ -1,3 +1,10 @@
+/**
+ * step-machine.js — Generic wizard step/flow navigation primitives.
+ *
+ * `createFlow` builds a linear, history-aware sequence of steps; the active flow
+ * is tracked here so shared chrome (back button, error recovery) can drive it.
+ */
+
 import { $ } from './dom.js';
 import { setNavLabels, setNavStep } from './navigation.js';
 

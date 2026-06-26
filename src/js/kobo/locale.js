@@ -56,4 +56,4 @@ function localeDisplayName(locale) {
     return locale;
 }
 
-export { UI_LOCALE_SECTION, UI_LOCALE_KEY, localeLanguage, isEnglishLocale, readUiLocale, localeDisplayName };
+export { localeLanguage, isEnglishLocale, readUiLocale, localeDisplayName };
