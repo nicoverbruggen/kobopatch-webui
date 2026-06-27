@@ -77,6 +77,7 @@ export const PATCH_META = {
     },
     'My 10 line spacing values': {
         category: 'typography',
+        label: 'Fewer line-spacing steps (10)',
         author: 'GeoffR',
         description: 'Replaces the line-spacing slider values, reducing the number of options from 15 to 10 but allowing much narrower spacing.',
         note: 'Very narrow spacing can cause page-break problems in some KePubs depending on the font.',
@@ -84,6 +85,7 @@ export const PATCH_META = {
     },
     'My 24 line spacing values': {
         category: 'typography',
+        label: 'More line-spacing steps (24)',
         author: 'GeoffR',
         description: 'Replaces the line-spacing slider values, increasing the number of options from 15 to 24 and allowing much narrower spacing.',
         note: 'Very narrow spacing can cause page-break problems in some KePubs depending on the font.',
@@ -101,6 +103,7 @@ export const PATCH_META = {
     },
     'Set KePub hyphenation': {
         category: 'typography',
+        label: 'Always hyphenate KePubs',
         author: 'GeoffR',
         description: 'Always turns on hyphenation in KePubs, regardless of the justification button setting (the publisher can still override it).',
     },
@@ -146,6 +149,7 @@ export const PATCH_META = {
     },
     'ePub constant font sharpness': {
         category: 'typography',
+        label: 'Fixed ePub font sharpness',
         author: 'GeoffR',
         description: 'Uses a constant ePub font sharpness of 0.2 instead of the value from the advanced sharpness/weight slider.',
         tips: ['Change `0.2` in the `Replace` value to taste (slider range is −0.4 to 0.2).'],
@@ -158,12 +162,14 @@ export const PATCH_META = {
     },
     'Un-Force user font-family in KePubs': {
         category: 'typography',
+        label: 'Allow publisher fonts in KePubs',
         author: 'GeoffR',
         description: 'Lets a publisher-selected font in the KePub stylesheet coexist with the device font, allowing a mix of fonts.',
         tips: ['The patch ships “Alternative 2”. To use a different preference, comment it out and uncomment Alternative 1 or 3.'],
     },
     'Un-force link decoration in KePubs': {
         category: 'typography',
+        label: 'Keep publisher link styling (KePubs)',
         author: 'GeoffR',
         description: 'Disables the dotted underline and grey colour applied to links in the KePub stylesheet.',
     },
@@ -373,6 +379,7 @@ export const PATCH_META = {
     },
     'Set visible SmartLink': {
         category: 'home',
+        label: 'Choose home-screen SmartLink',
         author: 'pgaskin (geek1011)',
         description: 'Sets which SmartLink is shown on the home screen (does not override priority messages).',
         tips: ['Set the `ReplaceInt` value to a SmartLink id from the table in the patch comments.'],
@@ -394,6 +401,7 @@ export const PATCH_META = {
     },
     'Increase size of kepub/audio chapter progress chart': {
         category: 'home',
+        label: 'Larger chapter progress chart',
         author: 'pgaskin (geek1011)',
         description: 'Increases the size of the KePub and audiobook chapter progress bar charts in the reading menu.',
     },
@@ -455,6 +463,7 @@ export const PATCH_META = {
     },
     "Don't uppercase header/footer text and change page number text": {
         category: 'header-footer',
+        label: 'Lowercase header/footer + custom page numbers',
         author: 'pgaskin (geek1011)',
         description: 'Combines “Don’t uppercase header/footer text” and “Custom header/footer page number text”.',
         note: 'Mutually exclusive with the other header/footer page-number patches.',
