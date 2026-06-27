@@ -342,7 +342,21 @@ createServer((req, res) => {
         return;
     }
 
-    let filePath = join(DIST, decodeURIComponent(url.pathname));
+    // decodeURIComponent throws URIError on a malformed percent-escape (e.g. a
+    // bare "%" or "%zz"). This runs before the try/catch around the file reads, so
+    // an unguarded throw here would be an uncaught exception that takes down the
+    // whole process — a one-request DoS. Send those to the homepage instead (a
+    // temporary redirect, never cached, so a bad URL lands on the app).
+    let decodedPath;
+    try {
+        decodedPath = decodeURIComponent(url.pathname);
+    } catch {
+        res.writeHead(302, { Location: '/', 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+    }
+
+    let filePath = join(DIST, decodedPath);
     if (!filePath.startsWith(DIST + '/') && filePath !== DIST) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');
