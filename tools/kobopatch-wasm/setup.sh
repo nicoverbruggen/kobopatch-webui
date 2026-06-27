@@ -49,6 +49,24 @@ if ! git cat-file -e "${KOBOPATCH_REF}^{commit}" 2>/dev/null; then
 fi
 git checkout --detach "$KOBOPATCH_REF" # update this as updates come out
 
+# Apply this project's local kobopatch extensions on top of the pinned upstream ref.
+# Currently: the `Window` search for ReplaceBytes (offset-independent FindInstBLX/BW),
+# which lets patches locate a call by symbol rather than a hardcoded offset so they
+# survive firmware updates. The patch is the canonical, reviewable diff of those changes.
+DETERMINISM_PATCH="$SCRIPT_DIR/kobopatch-determinism.patch"
+if [ -f "$DETERMINISM_PATCH" ]; then
+    if git apply --reverse --check "$DETERMINISM_PATCH" 2>/dev/null; then
+        echo "Local kobopatch extensions already applied."
+    elif git apply --check "$DETERMINISM_PATCH" 2>/dev/null; then
+        echo "Applying local kobopatch extensions ($(basename "$DETERMINISM_PATCH"))..."
+        git apply "$DETERMINISM_PATCH"
+    else
+        echo "ERROR: $(basename "$DETERMINISM_PATCH") does not apply to ref ${KOBOPATCH_REF}." >&2
+        echo "       Re-generate it after bumping KOBOPATCH_REF (see tools/patches-autofix)." >&2
+        exit 1
+    fi
+fi
+
 echo ""
 echo "Done. kobopatch source is at: $KOBOPATCH_DIR"
 echo ""

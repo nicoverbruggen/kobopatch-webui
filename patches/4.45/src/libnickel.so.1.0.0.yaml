@@ -334,9 +334,15 @@ Set KePub hyphenation:
       will always be turned on, regardless of justification button setting.
 
       (The publisher can still turn hyphenation off/on in the book's stylesheet.)
+    # pageStyleCss has three QString::operator==(QLatin1String) calls: the first two
+    # compare against "default", the third against "justify" (verified by disassembly).
+    # We want the "justify" one, so instead of a hardcoded Offset we search a bounded
+    # window that contains only the third call. This tolerates small offset drift and
+    # fails safely (errors rather than patching a "default" call) if a future firmware
+    # moves the calls.
     # == "justify"
-  - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 2032, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 01 20 01 20} # Alternative 1: Always turn KePub hyphenation on
-# - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 2032, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 00 20 00 20} # Alternative 2: Never turn KePub hyphenation on
+  - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 1750, Window: 450, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 01 20 01 20} # Alternative 1: Always turn KePub hyphenation on
+# - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 1750, Window: 450, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 00 20 00 20} # Alternative 2: Never turn KePub hyphenation on
 
 Force user line spacing in KePubs:
   - Enabled: no
@@ -853,11 +859,11 @@ Replace adobe page numbers toggle with invert screen:
       See https://github.com/pgaskin/NickelMenu/issues/111 for more information.
   # Settings page
   - BaseAddress:  "N3SettingsReadingView::N3SettingsReadingView(QWidget*)"
-  - ReplaceBytes: {Offset: 884, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
+  - ReplaceBytes: {Window: 1400, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
   # Settings page controller
   - BaseAddress:  {Sym: "N3SettingsReadingController::showAdobePageNumbersToggled()"}
-  - ReplaceBytes: {Offset:  74, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
-  - ReplaceBytes: {Offset:  86, FindInstBLX: {SymPLT: "ReadingSettings::setShowAdobePageNumbers(bool)"}, ReplaceInstBLX: {SymPLT: "FeatureSettings::setInvertScreen(bool)"}}
+  - ReplaceBytes: {Window: 300, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
+  - ReplaceBytes: {Window: 300, FindInstBLX: {SymPLT: "ReadingSettings::setShowAdobePageNumbers(bool)"}, ReplaceInstBLX: {SymPLT: "FeatureSettings::setInvertScreen(bool)"}}
   # Settings page text
   - FindReplaceString: {Find: "Show Adobe EPUB page numbers", Replace: "Invert screen"}
 
@@ -892,12 +898,12 @@ Hide browser from beta features:
   - Description: Hides the built-in browser from beta features.
   - ReplaceBytes:
       Base:        "N3SettingsExtrasView::N3SettingsExtrasView(QWidget*)"
-      Offset:      1530
+      Window:      2200
       FindInstBLX: {SymPLT: "Device::isParentalControlEnabled() const"}
       ReplaceH:    4F F0 01 00
   - ReplaceBytes:
       Base:        {Sym: "SelectionMenuController::setupMainOptions()"}
-      Offset:      194
+      Window:      700
       FindInstBLX: {SymPLT: "Device::isParentalControlEnabled() const"}
       ReplaceH:    4F F0 01 00
 
@@ -1118,9 +1124,28 @@ Allow showing info panel on random screensaver:
       for the screensaver to show).
   - ReplaceBytes:
       Base: "PowerViewController::updateCover()"
-      Offset: 252
+      Window: 700
       FindInstBLX: {SymPLT: "BookCoverDragonPowerView::setInfoPanelVisible(bool)"}
       ReplaceInstNOP: true
+
+Remove forgot pin button from lock screen:
+  # The lock-screen "Forgot PIN -> Sign Out" button triggers a factory reset; this hides it.
+  # Earlier versions edited qss/PinCodeInputDialog.qss, but that stylesheet is byte-identical
+  # to qss/ParentalControlPinCodeVerifyView.qss, so it could not be targeted deterministically
+  # (FindZlib errors "not unique"; FindZlibHash would pick the wrong, identical stream). Instead
+  # we patch the code: lblForgotPin and lblSignOut are built in Ui_PinCodeInputDialog::setupUi
+  # (a class distinct from the parental-control view), where their text is set by two
+  # QLabel::setText calls. We replace each with QWidget::hide() (same idiom as "Remove beta
+  # features not supported text"), hiding both labels regardless of parent. Symbol-anchored +
+  # Window search => build-independent (setText calls verified at the same two sites on all
+  # tested 4.45 and 4.38 builds).
+  - Enabled: no
+  - Description: |
+      Removes the Forgot PIN -> Sign Out button from the lock screen.
+      If this is enabled and you forget your pin, you will need to
+      hard reset your Kobo.
+  - ReplaceBytes: {Base: "Ui_PinCodeInputDialog::setupUi(QDialog*)", Offset: 1000, Window: 66, FindInstBLX: {SymPLT: "QLabel::setText(QString const&)"}, ReplaceInstBLX: {SymPLT: "QWidget::hide()"}}
+  - ReplaceBytes: {Base: "Ui_PinCodeInputDialog::setupUi(QDialog*)", Offset: 1066, Window: 66, FindInstBLX: {SymPLT: "QLabel::setText(QString const&)"}, ReplaceInstBLX: {SymPLT: "QWidget::hide()"}}
 
 Remove title from reading header/footer:
   - Enabled: no
@@ -1202,13 +1227,13 @@ Allow rotation on all devices:
       Unlike only the DeveloperSettings ForceAllowLandscape option, this patch
       also makes the rotation icon show on the new reader as well.
   # Always return true for ForceAllowLandscape:
-  - ReplaceBytes: {Base: "DevSettings::forceAllowLandscape()", Offset: 54, FindInstBLX: {SymPLT: "QVariant::toBool() const"}, ReplaceH: 4F F0 01 00}
+  - ReplaceBytes: {Base: "DevSettings::forceAllowLandscape()", Window: 150, FindInstBLX: {SymPLT: "QVariant::toBool() const"}, ReplaceH: 4F F0 01 00}
   # In ReadingMenuView::ReadingMenuView, replace the value of Device::hasOrientationSensor,
   # which is passed to a function to hide/show the rotate icon:
-  - ReplaceBytes: {Base: "ReadingMenuView::updateReadingMenu()", Offset: 238, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
+  - ReplaceBytes: {Base: "ReadingMenuView::updateReadingMenu()", Window: 700, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
   # Also fix sizing of popup by doing the same in RotatePopup::RotatePopup, but
   # note that this will make the Automatic option show too (and do nothing):
-  - ReplaceBytes: {Base: "RotatePopup::RotatePopup(QWidget*)", Offset: 190, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
+  - ReplaceBytes: {Base: "RotatePopup::RotatePopup(QWidget*)", Window: 700, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
 
 Don't uppercase header/footer text:
   - Enabled: no
@@ -1457,11 +1482,11 @@ Disable forward/backward swipe Gestures:
   # NOP the page-turn calls. Matched by symbol (not raw BLX bytes) so the find
   # survives PLT layout changes between firmware revisions.
   - ReplaceBytes:
-      Offset: 0xE8
+      Window: 400
       FindInstBLX: {SymPLT: "ReadingView::nextPageWithTimer()"}
       ReplaceH: 00 BF 00 BF
   - ReplaceBytes:
-      Offset: 0xF6
+      Window: 400
       FindInstBLX: {SymPLT: "ReadingView::prevPageWithTimer()"}
       ReplaceH: 00 BF 00 BF
 
@@ -1470,10 +1495,10 @@ Disable menu swipe gesture:
   - Enabled: no
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
   - ReplaceBytes:
-      Offset: 0x134
+      Window: 400
       FindInstBLX: {SymPLT: "ReadingView::openQuickAccess()"}
       ReplaceH: 00 BF 00 BF
   - ReplaceBytes:
-      Offset: 0x13c
+      Window: 400
       FindInstBLX: {SymPLT: "ReadingView::openFooterMenuOnSwipe()"}
       ReplaceH: 00 BF 00 BF

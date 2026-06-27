@@ -1,0 +1,164 @@
+diff --git a/patchfile/kobopatch/patch.go b/patchfile/kobopatch/patch.go
+index a1b148a..f0645c8 100644
+--- a/patchfile/kobopatch/patch.go
++++ b/patchfile/kobopatch/patch.go
+@@ -278,8 +278,9 @@ type ReplaceFloat struct {
+ }
+ 
+ type ReplaceBytes struct {
+-	Base    *FlexAbsOffset `yaml:"Base,omitempty,flow"` // if specified, Offset is based on this rather than the current offset
+-	Offset  int32          `yaml:"Offset,omitempty"`
++	Base    *FlexAbsOffset `yaml:"Base,omitempty,flow"`   // if specified, Offset is based on this rather than the current offset
++	Offset  int32          `yaml:"Offset,omitempty"`      // exact position; or, with Window, the start of the search window
++	Window  *int32         `yaml:"Window,omitempty,flow"` // if specified (with FindInstBLX/FindInstBW), search [Offset, Offset+Window) for the unique call to the target rather than requiring an exact Offset
+ 	Find    []byte         `yaml:"Find,omitempty"`
+ 	Replace []byte         `yaml:"Replace,omitempty"`
+ 	// generators
+@@ -406,6 +407,39 @@ func (r ReplaceBytes) ApplyTo(pt *patchlib.Patcher, log func(string, ...interfac
+ 		log("  -> FindInstBLX = FindBLX = 0x%X", *r.FindBLX)
+ 	}
+ 
++	if r.Window != nil {
++		// Locate the call by searching the window for the unique PC-relative branch
++		// to the target symbol, then pin Offset to it. This keeps a patch valid when
++		// a firmware update shifts the call's position within its function. The find
++		// must be a position-dependent instruction branch (FindInstBLX or FindInstBW),
++		// since only those can be recomputed per candidate position; a zero-or-many
++		// result is an error so the patch can never land on the wrong call.
++		log("Window.Search(%#v)", *r.Window)
++		if (r.FindInstBLX == nil) == (r.FindInstBW == nil) {
++			return fmt.Errorf("ReplaceBytes: Window requires exactly one of FindInstBLX or FindInstBW")
++		}
++		var pos int32
++		var err error
++		if r.FindInstBLX != nil {
++			tgt, rerr := r.FindInstBLX.Resolve(pt)
++			if rerr != nil {
++				return fmt.Errorf("ReplaceBytes: Window/FindInstBLX resolve: %w", rerr)
++			}
++			pos, err = pt.FindInstBLXOffset(cur+r.Offset, *r.Window, uint32(tgt))
++		} else {
++			tgt, rerr := r.FindInstBW.Resolve(pt)
++			if rerr != nil {
++				return fmt.Errorf("ReplaceBytes: Window/FindInstBW resolve: %w", rerr)
++			}
++			pos, err = pt.FindInstBWOffset(cur+r.Offset, *r.Window, uint32(tgt))
++		}
++		if err != nil {
++			return fmt.Errorf("ReplaceBytes: Window search: %w", err)
++		}
++		log("  -> matched at 0x%X (Offset %d -> %d)", pos, r.Offset, pos-cur)
++		r.Offset = pos - cur
++	}
++
+ 	if r.FindInstBLX != nil {
+ 		log("FindInstBLX.Expand(%#v)", *r.FindInstBLX)
+ 
+diff --git a/patchlib/patcher.go b/patchlib/patcher.go
+index 40657e8..279f53f 100644
+--- a/patchlib/patcher.go
++++ b/patchlib/patcher.go
+@@ -83,6 +83,53 @@ func (p *Patcher) FindBaseAddressString(find string) error {
+ 	return nil
+ }
+ 
++// findInstUnique scans [base, base+window) in 2-byte (Thumb) steps for the single
++// position whose 4 bytes equal asm(pos), where asm encodes a PC-relative branch
++// (BLX/B.W) to a fixed target. Because the encoding is position-dependent, the
++// expected bytes are recomputed for every candidate position. It returns that
++// position, or an error if there are zero or more than one matches — so a patch
++// that searches for a call can never silently land on the wrong one.
++func (p *Patcher) findInstUnique(base, window int32, asm func(pos uint32) []byte) (int32, error) {
++	if window < 0 {
++		return 0, errors.New("window is less than 0")
++	}
++	if base < 0 || base >= int32(len(p.buf)) {
++		return 0, errors.New("base is out of range")
++	}
++	found := int32(-1)
++	count := 0
++	for off := int32(0); off < window; off += 2 {
++		pos := base + off
++		if int(pos)+4 > len(p.buf) {
++			break
++		}
++		want := asm(uint32(pos))
++		if p.buf[pos] == want[0] && p.buf[pos+1] == want[1] && p.buf[pos+2] == want[2] && p.buf[pos+3] == want[3] {
++			found = pos
++			count++
++		}
++	}
++	if count == 0 {
++		return 0, errors.New("no matching instruction found in window")
++	}
++	if count > 1 {
++		return 0, fmt.Errorf("found %d matching instructions in window (expected exactly 1)", count)
++	}
++	return found, nil
++}
++
++// FindInstBLXOffset returns the absolute position of the single BLX-to-tgt within
++// [base, base+window), or an error if there is not exactly one.
++func (p *Patcher) FindInstBLXOffset(base, window int32, tgt uint32) (int32, error) {
++	return p.findInstUnique(base, window, func(pos uint32) []byte { return AsmBLX(pos, tgt) })
++}
++
++// FindInstBWOffset returns the absolute position of the single B.W-to-tgt within
++// [base, base+window), or an error if there is not exactly one.
++func (p *Patcher) FindInstBWOffset(base, window int32, tgt uint32) (int32, error) {
++	return p.findInstUnique(base, window, func(pos uint32) []byte { return AsmBW(pos, tgt) })
++}
++
+ // ReplaceBytes replaces the first occurrence of a sequence of bytes with another of the same length.
+ func (p *Patcher) ReplaceBytes(offset int32, find, replace []byte) error {
+ 	if err := p.replaceValue(offset, find, replace, true); err != nil {
+diff --git a/patchlib/patcher_test.go b/patchlib/patcher_test.go
+index a30ee7e..d43ba44 100644
+--- a/patchlib/patcher_test.go
++++ b/patchlib/patcher_test.go
+@@ -47,6 +47,45 @@ func TestFindBaseAddressString(t *testing.T) {
+ 	eq(t, p.cur, int32(8), "unexpected base address")
+ }
+ 
++func TestFindInstBLXOffset(t *testing.T) {
++	const tgt = uint32(0x1000)
++	buf := make([]byte, 64) // zeroed; AsmBLX never encodes to 0x0000, so no spurious matches
++	copy(buf[20:], AsmBLX(20, tgt))
++	p := NewPatcher(buf)
++
++	// exactly one match -> returns its position
++	pos, e := p.FindInstBLXOffset(0, 64, tgt)
++	nerr(t, e)
++	eq(t, pos, int32(20), "should locate the BLX at 20")
++
++	// window that does not reach the call -> zero matches is an error
++	_, e = p.FindInstBLXOffset(0, 10, tgt)
++	err(t, e)
++
++	// a second identical call in range -> ambiguous is an error (never silently picks one)
++	copy(buf[40:], AsmBLX(40, tgt))
++	_, e = NewPatcher(buf).FindInstBLXOffset(0, 64, tgt)
++	err(t, e)
++}
++
++func TestFindInstBWOffset(t *testing.T) {
++	const tgt = uint32(0x2000)
++	buf := make([]byte, 64)
++	copy(buf[12:], AsmBW(12, tgt))
++	p := NewPatcher(buf)
++
++	pos, e := p.FindInstBWOffset(0, 64, tgt)
++	nerr(t, e)
++	eq(t, pos, int32(12), "should locate the B.W at 12")
++
++	_, e = p.FindInstBWOffset(0, 8, tgt)
++	err(t, e)
++
++	copy(buf[30:], AsmBW(30, tgt))
++	_, e = NewPatcher(buf).FindInstBWOffset(0, 64, tgt)
++	err(t, e)
++}
++
+ func TestReplaceString(t *testing.T) {
+ 	p := NewPatcher([]byte(`this is a test`))
+ 	nerr(t, p.ReplaceString(10, `test`, `n`))
