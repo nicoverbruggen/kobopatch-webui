@@ -21,6 +21,113 @@ if (analyticsEnabled) {
         `    <script defer src="${UMAMI_SCRIPT_URL}" data-website-id="${UMAMI_WEBSITE_ID}"></script>\n`;
 }
 
+// Parse an operator-facing boolean env var. Unlike a bare `!!process.env.X`, an
+// explicit falsy value (`0`, `false`, `no`, `off`, empty) reads as off — so an
+// operator can disable the flag by setting it to "0" instead of having to delete
+// the variable entirely, which is the intuitive thing to reach for.
+function envFlag(name) {
+    const value = process.env[name];
+    if (value === undefined) return false;
+    return !['', '0', 'false', 'no', 'off'].includes(value.trim().toLowerCase());
+}
+
+// Content-Security-Policy. Deployed behind a TLS-terminating proxy; this is the
+// app's own defence-in-depth layer (see also the inline-hash strategy below).
+// Set CSP_REPORT_ONLY=1 to ship it as `…-Report-Only` first — the browser logs
+// violations without blocking, so a new third-party source can be caught before
+// it breaks anything. Set it to 0 (or delete it) to enforce.
+const cspReportOnly = envFlag('CSP_REPORT_ONLY');
+
+function originOf(url) {
+    try {
+        return new URL(url).origin;
+    } catch {
+        return null;
+    }
+}
+
+// The analytics host (script + beacon) is only part of the policy when analytics
+// is actually wired up, derived from the same env var that injects the snippet.
+const umamiOrigin = analyticsEnabled ? originOf(UMAMI_SCRIPT_URL) : null;
+
+// connect-src for the firmware downloads is read straight from downloads.json, so
+// adding a new Kobo/mirror host there updates the policy with no code change.
+function firmwareConnectOrigins() {
+    try {
+        const raw = readFileSync(join(DIST, 'patches', 'downloads.json'), 'utf-8');
+        const origins = new Set();
+        for (const match of raw.matchAll(/"(https?:\/\/[^"]+)"/g)) {
+            const origin = originOf(match[1]);
+            if (origin) origins.add(origin);
+        }
+        return [...origins];
+    } catch {
+        return [];
+    }
+}
+
+// Hash every *bare* inline <script>/<style> block (no attributes) in the served
+// HTML — the pre-paint theme bootstrap, the inlined critical CSS, and the
+// runtime-injected analytics/live-reload snippets. Hashing the actual bytes means
+// script-src/style-src never need 'unsafe-inline' and the hashes can never drift
+// from the markup. JSON-LD (type="application/ld+json") and the module/analytics
+// <script src> tags carry attributes, so they don't match and don't need hashing.
+function inlineHashes(html, tag) {
+    const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'g');
+    const hashes = [];
+    for (const match of html.matchAll(re)) {
+        const digest = createHash('sha256').update(match[1], 'utf-8').digest('base64');
+        hashes.push(`'sha256-${digest}'`);
+    }
+    return hashes;
+}
+
+let cspCache = null;
+function getCsp() {
+    if (!noCache && cspCache) return cspCache;
+    const html = getIndexHtml() || '';
+
+    const scriptSrc = ["'self'", "'wasm-unsafe-eval'", ...inlineHashes(html, 'script')];
+    const styleSrc = ["'self'", 'https://fonts.googleapis.com', ...inlineHashes(html, 'style')];
+    const connectSrc = ["'self'", ...firmwareConnectOrigins()];
+    if (umamiOrigin) {
+        scriptSrc.push(umamiOrigin);
+        connectSrc.push(umamiOrigin);
+    }
+
+    const csp = [
+        `default-src 'self'`,
+        `script-src ${scriptSrc.join(' ')}`,
+        `style-src ${styleSrc.join(' ')}`,
+        `font-src 'self' https://fonts.gstatic.com`,
+        // blob: is needed for the NickelMenu custom-icon flow, which loads the
+        // uploaded file and the canvas-resized PNG/SVG previews from object URLs.
+        `img-src 'self' data: blob:`,
+        `connect-src ${connectSrc.join(' ')}`,
+        `worker-src 'self'`,
+        `object-src 'none'`,
+        `base-uri 'self'`,
+        `form-action 'self'`,
+        `frame-ancestors 'none'`,
+        `manifest-src 'self'`,
+        `upgrade-insecure-requests`,
+    ].join('; ');
+
+    if (!noCache) cspCache = csp;
+    return csp;
+}
+
+// CSP plus the companion hardening headers, applied to every response.
+function securityHeaders() {
+    return {
+        [cspReportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy']: getCsp(),
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    };
+}
+
 // CSS live-reload, enabled by the dev server (LIVE_RELOAD=1). When the watch build
 // regenerates css/style.css, the server pushes a Server-Sent Event to connected
 // browsers, which swap the stylesheet's href (cache-busted) in place. CSS-only — no
@@ -256,6 +363,7 @@ createServer((req, res) => {
                 'Cache-Control': 'no-cache',
                 Vary: 'Accept-Encoding',
                 ETag: v.etag,
+                ...securityHeaders(),
             };
             if (notModified(req, v.etag)) {
                 res.writeHead(304, headers);
@@ -292,6 +400,7 @@ createServer((req, res) => {
             'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
             'Cache-Control': cacheControl(url.search, compressible),
             ETag: etag,
+            ...securityHeaders(),
         };
         if (compressible) headers['Vary'] = 'Accept-Encoding';
 
