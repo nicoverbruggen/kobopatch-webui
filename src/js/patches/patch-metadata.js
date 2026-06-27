@@ -399,15 +399,15 @@ export const PATCH_META = {
     },
     'Remove line from bottom tab bar via CSS': {
         category: 'home',
-        label: 'Remove bottom tab-bar divider',
+        label: 'Remove line from bottom tab bar via CSS',
         author: 'pgaskin (geek1011)',
-        description: 'Removes the line along the top of the bottom navigation tab bar (CSS-based).',
+        description: 'Removes the line along the top of the bottom navigation tab bar (CSS-based). This variant only works on newer devices and uses CSS.',
     },
     'Remove line from bottom tab bar': {
         category: 'home',
-        label: 'Remove bottom tab-bar divider',
+        label: 'Remove line from bottom tab bar',
         author: 'pgaskin (geek1011)',
-        description: 'Removes the line along the top of the bottom navigation tab bar.',
+        description: 'Removes the line along the top of the bottom navigation tab bar. This variant only works on older devices and hides the QWidget.',
     },
     'beta Increase width available for book Title in Booklists - Storm only': {
         category: 'home',
