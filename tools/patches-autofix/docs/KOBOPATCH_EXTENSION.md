@@ -5,6 +5,9 @@ This documents the local change to kobopatch carried by
 `setup.sh`). It is written so the upstream author can assess correctness and
 decide whether it's worth upstreaming.
 
+For what each patch in this repo actually does with this feature (and every other
+patch change made on this branch), see **`PATCH_CHANGES.md`**.
+
 ## Problem
 
 Many patches locate a call site as `Base` (a symbol) **plus a fixed `Offset`** to
