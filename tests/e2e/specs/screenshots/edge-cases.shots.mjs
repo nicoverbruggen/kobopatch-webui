@@ -272,7 +272,15 @@ test('Sideload Mode too old os', async ({ page }, testInfo) => {
     await page.goto('/');
     await dismissMobileModal(page);
     await injectMockDevice(page, { firmware: '4.28.17820', signedIn: false });
-    await goToNmFeaturesForShot(page);
+    await page.click('#btn-connect');
+    await page.click('#btn-connect-ready');
+    await expect(page.locator('#step-device')).not.toBeHidden();
+    await page.click('#btn-device-next');
+    await page.click('input[name="mode"][value="nickelmenu"]');
+    await page.click('#btn-mode-next');
+    await page.click('input[value="preset"]');
+    await page.click('#btn-nm-next');
+    await expect(page.locator('#step-nm-features')).not.toBeHidden();
     // Open the (collapsed) Advanced section so the disabled option is visible.
     await page.locator('summary.nm-config-section-heading').filter({ hasText: 'Advanced' }).click();
     await expect(page.locator('.nm-config-disabled-reason')).toBeVisible();
