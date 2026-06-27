@@ -43,7 +43,7 @@ tests/
   e2e/                          # Playwright integration tests
     config/                     # Playwright config, global setup, firmware metadata
     scripts/                    # E2E shell entrypoints
-    specs/                      # Browser test specs and screenshot capture spec
+    specs/                      # Browser test specs (nickelmenu/, patches/) and screenshot capture (screenshots/*.shots.mjs)
     support/                    # E2E helpers and mock device utilities
     cached_assets/              # Cached firmware test assets
 
@@ -216,9 +216,9 @@ bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 
 ### Screenshots
 
-`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run verify` and `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
+`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run verify` and `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs the `specs/screenshots/*.shots.mjs` specs (`testMatch: '**/*.shots.mjs'`) against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
 
-Each test in `screenshots.mjs` walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus grouped edge cases. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read). Add-on availability comes from the baked installables manifest, and firmware-dependent flows skip when the firmware zip is absent.
+Each test in `specs/screenshots/` (one `.shots.mjs` file per journey — `connected`, `manual`, `patches`, `edge-cases`) walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus grouped edge cases. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read). Add-on availability comes from the baked installables manifest, and firmware-dependent flows skip when the firmware zip is absent.
 
 Output lands under `tests/e2e/screenshots/{mobile,desktop}/` and is gitignored; the directory is wiped at the start of each run. Top-level groups are `manual/`, `connected/`, and `edge-cases/`. Edge cases are split by concern (`connection/`, `device-write/`, `download/`, `compatibility/`, `dialogs/`, `nickelmenu/`) so unusual recovery states do not pile into one folder. File names are prefixed with an order number (`05-…`, `08b-…`) so they sort in flow order. To capture a new state, add or extend a test and drop a `shot(...)` call where you want the frame.
 
@@ -285,6 +285,24 @@ injection, so the server is kept but made production-grade. The behaviour and *w
 - **Stale-sibling guard** (`pickEncoding`): a `.br`/`.gz` sibling is only served when at least as new
   as its source file, so a compressible asset replaced live without regenerating siblings falls back
   to serving the fresh identity bytes rather than a stale compressed copy.
+- **Security headers + a self-deriving CSP** (`securityHeaders`/`getCsp`): every response carries
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a
+  `Permissions-Policy`, and a `Content-Security-Policy`. The CSP is **assembled from the app itself at
+  startup**, so there is no hand-maintained allowlist to drift: the inline `<script>`/`<style>` blocks
+  (pre-paint theme bootstrap, inlined critical CSS, and the injected analytics snippet) are authorized by
+  SHA-256 **hashes** computed from the served HTML — never `'unsafe-inline'`; the firmware `connect-src`
+  hosts are read from `patches/downloads.json`; and the Umami script/beacon origin is added from
+  `UMAMI_SCRIPT_URL` only when analytics is enabled. `'wasm-unsafe-eval'` is required for the patcher;
+  `img-src` allows `data:`/`blob:` for the NickelMenu icon-resize previews. Hashes cover `<style>`
+  *elements* but **not** style *attributes*, so inline `style="…"` is effectively forbidden — use a CSS
+  class. Set `CSP_REPORT_ONLY=1` to emit `Content-Security-Policy-Report-Only` instead (a safe rollout:
+  violations are logged, nothing is blocked); an explicit falsy value (`0`/`false`/`off`) or unsetting it
+  enforces (`envFlag`). The var is read once at startup, so flipping it needs a restart/redeploy.
+- **Malformed URLs redirect to `/`**: `decodeURIComponent(url.pathname)` throws on a bad percent-escape
+  (e.g. `/%`). That runs before the file-read `try`, so an unguarded throw would be an uncaught exception
+  that crashes the process — a one-request DoS. It is caught and answered with a non-cached `302` to the
+  homepage instead. (In production a TLS-terminating proxy typically rejects such URLs first; this closes
+  the latent crash for any request that reaches Node directly.)
 
 `scripts/serve-dist.mjs` is the single server for production, `npm run serve`, and the screenshot
 runner — so this behaviour is exercised by the E2E suite, not just in production. `npm run dev`
