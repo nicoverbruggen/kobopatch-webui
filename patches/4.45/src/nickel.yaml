@@ -645,13 +645,22 @@ Show all games:
   - ReplaceZlib: {Find: "qproperty-visible: false;", Replace: "qproperty-visible: true;"}
 
 Remove forgot pin button from lock screen:
+  # NOT self-maintaining, and it cannot be: the #lblForgotPin styling is duplicated
+  # byte-for-byte in TWO qss streams — qss/PinCodeInputDialog.qss (the device lock
+  # screen, what we want) and qss/ParentalControlPinCodeVerifyView.qss. Their CSS is
+  # identical (so FindZlib errors "not unique" and FindZlibHash would match the wrong
+  # one), and because the bytes are identical a mis-target would SILENTLY patch the
+  # wrong screen rather than failing. So we anchor by hardcoded address, verified by
+  # parsing the Qt resource tree. The address moves every firmware build; the value
+  # below is correct for 4.45.23697 and 4.45.23684, and fails safely on others.
+  # Per-build PinCodeInputDialog.qss offsets: 23697/23684=0x1CF3531, 23646=0x1CF2E51.
+  # See tools/patches-autofix/report for the derivation. # autofix: last verified 4.45.23697 on 2026-06-27
   - Enabled: no
   - Description: |
       Removes the Forgot PIN -> Sign Out button from the lock screen.
       If this is enabled and you forget your pin, you will need to
       hard reset your Kobo.
-  #- BaseAddress: 0x1CD7A93 # qss/ParentalControlPinCodeVerifyView.qss
-  - BaseAddress: 0x1CF3531 # qss/PinCodeInputDialog.qss
+  - BaseAddress: 0x1CF3531 # qss/PinCodeInputDialog.qss (verified PinCodeInputDialog, not ParentalControl)
   - ReplaceZlib:
       Find: "#lblForgotPin[qApp_deviceIsDragon=true],\n#lblSignOut[qApp_deviceIsDragon=true] {\n  font-size: 26px;\n}"
       Replace: "#lblForgotPin,#lblSignOut{qproperty-visible:false;}"

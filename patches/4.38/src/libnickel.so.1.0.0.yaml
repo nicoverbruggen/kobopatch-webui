@@ -1320,6 +1320,7 @@ Swap reading header/footer:
 # necessary since the advanced font settings are now available for all fonts.
 
 Customize ComfortLight settings:
+  # autofix: self-maintaining — anchored by prologue signature; last verified against 4.38.23697 on 2026-06-27
   - Enabled: no
   - Description: |
       Change the times available in the ComfortLight bedtime dropdown and the
@@ -1334,7 +1335,14 @@ Customize ComfortLight settings:
   # In an unnamed subroutine two layers into FrontLightPopupController::loadView
   # (find it by going back from QTime::addSecs), the times for the dropdown are
   # generated into a QVector<QPair<QString, QTime>> with a simple loop.
-  - BaseAddress: 0xE9C9B4 # find the base of the unnamed subroutine with the x-ref to _ZN5QTimeC1Eiiii
+  #
+  # The subroutine is local (no symbol), so instead of a hardcoded address we
+  # match its prologue: push.w {r4-r11,lr}; sub sp,#0x94; add r7,sp,#0x18;
+  # movs r4,#0; add.w r6,r7,#0x10; mov r3,r4; mov r2,r4. This 16-byte sequence
+  # is unique in the binary, so the patch re-locates itself across firmware
+  # updates. (All replacements below are Find-guarded, so a missed match fails
+  # safely instead of corrupting code.)
+  - FindBaseAddressHex: 2DE9F04F A5B006AF 0024 07F1 1006 2346
   #
   # Change the initial hour / first bedtime dropdown item passed to the QTime
   # constructor (mov r1, #21):
@@ -1453,25 +1461,29 @@ Unify font sizes:
       ReplaceH:    B3 EE 00 0B # vmov.f64 d0, #16.0
 
 Disable forward/backward swipe Gestures:
+  # autofix: self-maintaining (symbolic) — last verified against 4.38.23697 on 2026-06-27
   - Enabled: no
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
+  # NOP the page-turn calls. Matched by symbol (not raw BLX bytes) so the find
+  # survives PLT layout changes between firmware revisions.
   - ReplaceBytes:
       Offset: 0xE8
-      FindH: 1D F7 28 CC 
+      FindInstBLX: {SymPLT: "ReadingView::nextPageWithTimer()"}
       ReplaceH: 00 BF 00 BF
   - ReplaceBytes:
       Offset: 0xF6
-      FindH: 1A F7 F0 C8 
+      FindInstBLX: {SymPLT: "ReadingView::prevPageWithTimer()"}
       ReplaceH: 00 BF 00 BF
 
 Disable menu swipe gesture:
+  # autofix: self-maintaining (symbolic) — last verified against 4.38.23697 on 2026-06-27
   - Enabled: no
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
   - ReplaceBytes:
       Offset: 0x134
-      FindH: 3F F7 E6 CA 
+      FindInstBLX: {SymPLT: "ReadingView::openQuickAccess()"}
       ReplaceH: 00 BF 00 BF
   - ReplaceBytes:
       Offset: 0x13c
-      FindH: 12 F7 A2 CB 
+      FindInstBLX: {SymPLT: "ReadingView::openFooterMenuOnSwipe()"}
       ReplaceH: 00 BF 00 BF

@@ -1,11 +1,13 @@
 # The following patch(es) were fixed and are updated by pgaskin (geek1011)
 
 Remove PDF map widget shown during panning:
+  # autofix: self-maintaining (symbolic) — last verified against 4.38.23697 on 2026-06-27
   - Enabled: no
   - Description: Removes the PDF map widget shown during panning and zooming.
   - BaseAddress:  {Sym: "N3AdobeReader::showMapWidget()"}
-  # tail: N3AdobeReader::updatePanningMap() -> N3AdobeReader::hideMapWidget()
-  # TODO: figure out what broke the plt parsing in kobopatch for libadobe in 18730+
-  - ReplaceBytes: {Offset:  80, FindInstBW: 0x1C224, ReplaceInstBW: 0x1B51C}
-  - ReplaceBytes: {Offset: 192, FindInstBW: 0x1C224, ReplaceInstBW: 0x1B51C}
-
+  # Redirect showMapWidget's tail-call from updatePanningMap() (which shows/updates
+  # the map) to hideMapWidget(). These are Thumb->Thumb B.W tail calls, so they
+  # target the PLT *tail stub* (the Thumb veneer at plt-4), which is what SymPLTTail
+  # resolves to. Using symbols keeps this patch valid across firmware updates.
+  - ReplaceBytes: {Offset:  80, FindInstBW: {SymPLTTail: "N3AdobeReader::updatePanningMap()"}, ReplaceInstBW: {SymPLTTail: "N3AdobeReader::hideMapWidget()"}}
+  - ReplaceBytes: {Offset: 192, FindInstBW: {SymPLTTail: "N3AdobeReader::updatePanningMap()"}, ReplaceInstBW: {SymPLTTail: "N3AdobeReader::hideMapWidget()"}}

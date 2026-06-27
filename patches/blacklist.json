@@ -1,24 +1,4 @@
 {
-  "4.45": {
-    "src/libadobe.so.yaml": [
-      "Remove PDF map widget shown during panning"
-    ],
-    "src/libnickel.so.1.0.0.yaml": [
-      "Allow rotation on all devices",
-      "Allow showing info panel on random screensaver",
-      "Customize ComfortLight settings",
-      "Hide browser from beta features",
-      "My 24 line spacing values",
-      "Replace adobe page numbers toggle with invert screen",
-      "Set KePub hyphenation"
-    ]
-  },
-  "4.38": {
-    "src/libadobe.so.yaml": [
-      "Remove PDF map widget shown during panning"
-    ],
-    "src/libnickel.so.1.0.0.yaml": [
-      "Customize ComfortLight settings"
-    ]
-  }
+  "4.45": {},
+  "4.38": {}
 }

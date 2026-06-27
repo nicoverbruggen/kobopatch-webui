@@ -62,7 +62,7 @@ My 24 line spacing values:
   - ReplaceBytes: {Offset: 20, FindInstBLX: {SymPLT: "QList<double>::append(double const&)"}, ReplaceH: 00 00 00 00} # clear out the BLX
   - ReplaceBytes: {Offset:  0, FindH: 00 00, ReplaceH: A9 46} # mov  sb, r5
   - ReplaceBytes: {Offset:  2, FindH: 00 00, ReplaceH: 00 25} # mov  r5, #0
-  - ReplaceBytes: {Offset:  4, FindH: 6D A3, ReplaceH: ED 00} # lsls r5, r5, #3
+  - ReplaceBytes: {Offset:  4, FindH: 6C A3, ReplaceH: ED 00} # lsls r5, r5, #3
     # loop to load 14 vals from new table
   - ReplaceBytes: {Offset:  6, FindH: D3 E9, ReplaceH: 20 46} # mov  r0, r4
   - ReplaceBytes: {Offset:  8, FindH: 00 23, ReplaceH: 04 A1} # adr  r1, #0x10
@@ -73,7 +73,7 @@ My 24 line spacing values:
   - ReplaceBytes: {Offset: 20, FindH: 00 00, ReplaceH: F7 D1} # bne  #-10
     # jump to the rest of the new code
   - ReplaceBytes: {Offset: 22, FindH: 00 00, ReplaceH: 7B E0} # b #250 (356 − (84 + 22))
-  - ReplaceBytes: {Offset: 24, FindH: 6A A3 D3 E9, ReplaceInstNOP: true} # unused
+  - ReplaceBytes: {Offset: 24, FindH: 69 A3 D3 E9, ReplaceInstNOP: true} # unused
     # new table: 14 8-aligned doubles
   - BaseAddress:  {Sym: "ReadingSettings::lineHeightScalars() const", Rel: 112} # right after previous instruction (84 + 24 + 4)
   - ReplaceBytes: {Offset:  12, FindInstBLX: {SymPLT: "QList<double>::append(double const&)"}, ReplaceH: 00 00 00 00} # first, clear out the BLXs in the way
@@ -83,18 +83,18 @@ My 24 line spacing values:
   - ReplaceBytes: {Offset: 100, FindInstBLX: {SymPLT: "QList<double>::append(double const&)"}, ReplaceH: 00 00 00 00}
   - ReplaceBytes: {Offset:   0, FindH: 00 23 07 f1 80 01 20 46, ReplaceH: 00 00 00 00 00 00 F0 3F} # table of 1.0f values, to be replaced later
   - ReplaceBytes: {Offset:   8, FindH: 61 E9 1A 23 00 00 00 00, ReplaceH: 00 00 00 00 00 00 F0 3F}
-  - ReplaceBytes: {Offset:  16, FindH: 67 A3 D3 E9 00 23 07 F1, ReplaceH: 00 00 00 00 00 00 F0 3F}
+  - ReplaceBytes: {Offset:  16, FindH: 66 A3 D3 E9 00 23 07 F1, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  24, FindH: 80 01 20 46 61 E9 18 23, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  32, FindH: 00 00 00 00 43 F2 33 33, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  40, FindH: 4F F0 33 32 C3 F6 F3 73, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  48, FindH: 07 F1 80 01 20 46 61 E9, ReplaceH: 00 00 00 00 00 00 F0 3F}
-  - ReplaceBytes: {Offset:  56, FindH: 16 23 00 00 00 00 5E A3, ReplaceH: 00 00 00 00 00 00 F0 3F}
+  - ReplaceBytes: {Offset:  56, FindH: 16 23 00 00 00 00 5D A3, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  64, FindH: D3 E9 00 23 07 F1 80 01, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  72, FindH: 20 46 61 E9 14 23 00 00, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  80, FindH: 00 00 00 23 00 22 C3 F6, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  88, FindH: F8 73 07 F1 80 01 20 46, ReplaceH: 00 00 00 00 00 00 F0 3F}
   - ReplaceBytes: {Offset:  96, FindH: 61 E9 12 23 00 00 00 00, ReplaceH: 00 00 00 00 00 00 F0 3F}
-  - ReplaceBytes: {Offset: 104, FindH: 55 A3 D3 E9 00 23 07 F1, ReplaceH: 00 00 00 00 00 00 F0 3F}
+  - ReplaceBytes: {Offset: 104, FindH: 54 A3 D3 E9 00 23 07 F1, ReplaceH: 00 00 00 00 00 00 F0 3F}
     # jump target after table
   - BaseAddress:  {Sym: "ReadingSettings::lineHeightScalars() const", Rel: 356} # starting right after the second-last QList<double>::append(double const&)
   - ReplaceBytes: {Offset: 18, FindInstBLX: {SymPLT: "QList<double>::append(double const&)"}, ReplaceH: 00 00 00 00} # clear the BLX in the way of the last two replacements
@@ -335,8 +335,8 @@ Set KePub hyphenation:
 
       (The publisher can still turn hyphenation off/on in the book's stylesheet.)
     # == "justify"
-  - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 1904, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 01 20 01 20} # Alternative 1: Always turn KePub hyphenation on
-# - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 1904, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 00 20 00 20} # Alternative 2: Never turn KePub hyphenation on
+  - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 2032, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 01 20 01 20} # Alternative 1: Always turn KePub hyphenation on
+# - ReplaceBytes: {Base: "KepubBookReader::pageStyleCss(bool)", Offset: 2032, FindInstBLX: {SymPLT: "QString::operator==(QLatin1String) const"}, ReplaceH: 00 20 00 20} # Alternative 2: Never turn KePub hyphenation on
 
 Force user line spacing in KePubs:
   - Enabled: no
@@ -853,7 +853,7 @@ Replace adobe page numbers toggle with invert screen:
       See https://github.com/pgaskin/NickelMenu/issues/111 for more information.
   # Settings page
   - BaseAddress:  "N3SettingsReadingView::N3SettingsReadingView(QWidget*)"
-  - ReplaceBytes: {Offset: 890, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
+  - ReplaceBytes: {Offset: 884, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
   # Settings page controller
   - BaseAddress:  {Sym: "N3SettingsReadingController::showAdobePageNumbersToggled()"}
   - ReplaceBytes: {Offset:  74, FindInstBLX: {SymPLT: "ReadingSettings::getShowAdobePageNumbers()"},     ReplaceInstBLX: {SymPLT: "FeatureSettings::invertScreen()"}}
@@ -892,12 +892,12 @@ Hide browser from beta features:
   - Description: Hides the built-in browser from beta features.
   - ReplaceBytes:
       Base:        "N3SettingsExtrasView::N3SettingsExtrasView(QWidget*)"
-      Offset:      1524
+      Offset:      1530
       FindInstBLX: {SymPLT: "Device::isParentalControlEnabled() const"}
       ReplaceH:    4F F0 01 00
   - ReplaceBytes:
       Base:        {Sym: "SelectionMenuController::setupMainOptions()"}
-      Offset:      308
+      Offset:      194
       FindInstBLX: {SymPLT: "Device::isParentalControlEnabled() const"}
       ReplaceH:    4F F0 01 00
 
@@ -1119,7 +1119,7 @@ Allow showing info panel on random screensaver:
   - ReplaceBytes:
       Base: "PowerViewController::updateCover()"
       Offset: 252
-      FindInstBLX: {SymPLT: "FullScreenDragonPowerView::setInfoPanelVisible(bool)"}
+      FindInstBLX: {SymPLT: "BookCoverDragonPowerView::setInfoPanelVisible(bool)"}
       ReplaceInstNOP: true
 
 Remove title from reading header/footer:
@@ -1205,7 +1205,7 @@ Allow rotation on all devices:
   - ReplaceBytes: {Base: "DevSettings::forceAllowLandscape()", Offset: 54, FindInstBLX: {SymPLT: "QVariant::toBool() const"}, ReplaceH: 4F F0 01 00}
   # In ReadingMenuView::ReadingMenuView, replace the value of Device::hasOrientationSensor,
   # which is passed to a function to hide/show the rotate icon:
-  - ReplaceBytes: {Base: "ReadingMenuView::updateReadingMenu()", Offset: 236, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
+  - ReplaceBytes: {Base: "ReadingMenuView::updateReadingMenu()", Offset: 238, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
   # Also fix sizing of popup by doing the same in RotatePopup::RotatePopup, but
   # note that this will make the Automatic option show too (and do nothing):
   - ReplaceBytes: {Base: "RotatePopup::RotatePopup(QWidget*)", Offset: 190, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
@@ -1310,6 +1310,7 @@ Swap reading header/footer:
 # necessary since the advanced font settings are now available for all fonts.
 
 Customize ComfortLight settings:
+  # autofix: self-maintaining — anchored by prologue signature; last verified against 4.45.23697 on 2026-06-27
   - Enabled: no
   - Description: |
       Change the times available in the ComfortLight bedtime dropdown and the
@@ -1324,7 +1325,14 @@ Customize ComfortLight settings:
   # In an unnamed subroutine two layers into FrontLightPopupController::loadView
   # (find it by going back from QTime::addSecs), the times for the dropdown are
   # generated into a QVector<QPair<QString, QTime>> with a simple loop.
-  - BaseAddress: 0xE9C9B4 # find the base of the unnamed subroutine with the x-ref to _ZN5QTimeC1Eiiii
+  #
+  # The subroutine is local (no symbol), so instead of a hardcoded address we
+  # match its prologue: push.w {r4-r11,lr}; sub sp,#0x94; add r7,sp,#0x18;
+  # movs r4,#0; add.w r6,r7,#0x10; mov r3,r4; mov r2,r4. This 16-byte sequence
+  # is unique in the binary, so the patch re-locates itself across firmware
+  # updates. (All replacements below are Find-guarded, so a missed match fails
+  # safely instead of corrupting code.)
+  - FindBaseAddressHex: 2DE9F04F A5B006AF 0024 07F1 1006 2346
   #
   # Change the initial hour / first bedtime dropdown item passed to the QTime
   # constructor (mov r1, #21):
@@ -1443,25 +1451,29 @@ Unify font sizes:
       ReplaceH:    B3 EE 00 0B # vmov.f64 d0, #16.0
 
 Disable forward/backward swipe Gestures:
+  # autofix: self-maintaining (symbolic) — last verified against 4.45.23697 on 2026-06-27
   - Enabled: no
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
+  # NOP the page-turn calls. Matched by symbol (not raw BLX bytes) so the find
+  # survives PLT layout changes between firmware revisions.
   - ReplaceBytes:
       Offset: 0xE8
-      FindH: FA F6 3C CE 
+      FindInstBLX: {SymPLT: "ReadingView::nextPageWithTimer()"}
       ReplaceH: 00 BF 00 BF
   - ReplaceBytes:
       Offset: 0xF6
-      FindH: F7 F6 A8 CA 
+      FindInstBLX: {SymPLT: "ReadingView::prevPageWithTimer()"}
       ReplaceH: 00 BF 00 BF
 
 Disable menu swipe gesture:
+  # autofix: self-maintaining (symbolic) — last verified against 4.45.23697 on 2026-06-27
   - Enabled: no
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
   - ReplaceBytes:
       Offset: 0x134
-      FindH: 1D F7 D2 C8 
+      FindInstBLX: {SymPLT: "ReadingView::openQuickAccess()"}
       ReplaceH: 00 BF 00 BF
   - ReplaceBytes:
       Offset: 0x13c
-      FindH: EF F6 68 CC 
+      FindInstBLX: {SymPLT: "ReadingView::openFooterMenuOnSwipe()"}
       ReplaceH: 00 BF 00 BF
