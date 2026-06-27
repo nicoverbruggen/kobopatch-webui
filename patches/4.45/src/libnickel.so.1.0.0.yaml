@@ -1218,23 +1218,6 @@ Larger Sleep/Power-off timeouts:
   - ReplaceInt: {Offset: 300, Find: 45, Replace:  83}
   - ReplaceInt: {Offset: 360, Find: 60, Replace: 165}
 
-Allow rotation on all devices:
-  - Enabled: no
-  - Description: |
-      Enables rotation on all devices. This shows a rotation icon in the status
-      bar, which shows a menu allowing you to choose between portrait and landscape
-      when pressed. This icon is only shown on rotatable views (like the reader).
-      Unlike only the DeveloperSettings ForceAllowLandscape option, this patch
-      also makes the rotation icon show on the new reader as well.
-  # Always return true for ForceAllowLandscape:
-  - ReplaceBytes: {Base: "DevSettings::forceAllowLandscape()", Window: 150, FindInstBLX: {SymPLT: "QVariant::toBool() const"}, ReplaceH: 4F F0 01 00}
-  # In ReadingMenuView::ReadingMenuView, replace the value of Device::hasOrientationSensor,
-  # which is passed to a function to hide/show the rotate icon:
-  - ReplaceBytes: {Base: "ReadingMenuView::updateReadingMenu()", Window: 700, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
-  # Also fix sizing of popup by doing the same in RotatePopup::RotatePopup, but
-  # note that this will make the Automatic option show too (and do nothing):
-  - ReplaceBytes: {Base: "RotatePopup::RotatePopup(QWidget*)", Window: 700, FindInstBLX: {SymPLT: "Device::hasOrientationSensor() const"}, ReplaceH: 4F F0 01 00}
-
 Don't uppercase header/footer text:
   - Enabled: no
   - Description: Prevents the text in the reader header/footer from being uppercased.

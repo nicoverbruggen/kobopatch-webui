@@ -581,11 +581,6 @@ export const PATCH_META = {
         author: 'shermp',
         description: 'Disables the swipe-to-open-menu gesture in the reader.',
     },
-    'Allow rotation on all devices': {
-        category: 'input',
-        author: 'pgaskin (geek1011)',
-        description: 'Enables screen rotation on all devices, adding a rotation icon to the status bar on rotatable views.',
-    },
 
     // ── Power & Sleep ─────────────────────────────────────────────────────
     'Custom Sleep/Power-off timeouts': {
