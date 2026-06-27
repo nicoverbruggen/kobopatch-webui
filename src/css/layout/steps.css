@@ -50,6 +50,10 @@
     }
 }
 
+.step-actions--spaced {
+    margin-top: 25px;
+}
+
 .step-actions-right {
     display: flex;
     gap: 0.75rem;
