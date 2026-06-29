@@ -1,8 +1,21 @@
 diff --git a/patchfile/kobopatch/patch.go b/patchfile/kobopatch/patch.go
-index a1b148a..f0645c8 100644
+index a1b148a..5e166c4 100644
 --- a/patchfile/kobopatch/patch.go
 +++ b/patchfile/kobopatch/patch.go
-@@ -278,8 +278,9 @@ type ReplaceFloat struct {
+@@ -192,6 +192,12 @@ func (f FlexAbsOffset) validate() error {
+ 	return nil
+ }
+ 
++// isSymbolic reports whether the offset is resolved from a symbol (Sym, SymPLT,
++// or SymPLTTail) rather than a hardcoded numeric Offset.
++func (f FlexAbsOffset) isSymbolic() bool {
++	return f.Sym != nil || f.SymPLT != nil || f.SymPLTTail != nil
++}
++
+ type Enabled bool
+ type Description string
+ type PatchGroup string
+@@ -278,8 +284,9 @@ type ReplaceFloat struct {
  }
  
  type ReplaceBytes struct {
@@ -14,7 +27,7 @@ index a1b148a..f0645c8 100644
  	Find    []byte         `yaml:"Find,omitempty"`
  	Replace []byte         `yaml:"Replace,omitempty"`
  	// generators
-@@ -406,6 +407,39 @@ func (r ReplaceBytes) ApplyTo(pt *patchlib.Patcher, log func(string, ...interfac
+@@ -406,6 +413,47 @@ func (r ReplaceBytes) ApplyTo(pt *patchlib.Patcher, log func(string, ...interfac
  		log("  -> FindInstBLX = FindBLX = 0x%X", *r.FindBLX)
  	}
  
@@ -24,7 +37,9 @@ index a1b148a..f0645c8 100644
 +		// a firmware update shifts the call's position within its function. The find
 +		// must be a position-dependent instruction branch (FindInstBLX or FindInstBW),
 +		// since only those can be recomputed per candidate position; a zero-or-many
-+		// result is an error so the patch can never land on the wrong call.
++		// result is an error so the patch can never land on the wrong call. The target
++		// must also be symbolic (it re-resolves per build); a hardcoded numeric target
++		// is itself offset-sensitive and must be checked by hand instead.
 +		log("Window.Search(%#v)", *r.Window)
 +		if (r.FindInstBLX == nil) == (r.FindInstBW == nil) {
 +			return fmt.Errorf("ReplaceBytes: Window requires exactly one of FindInstBLX or FindInstBW")
@@ -32,12 +47,18 @@ index a1b148a..f0645c8 100644
 +		var pos int32
 +		var err error
 +		if r.FindInstBLX != nil {
++			if !r.FindInstBLX.isSymbolic() {
++				return fmt.Errorf("ReplaceBytes: Window requires FindInstBLX to use a symbolic target (Sym/SymPLT/SymPLTTail), not a hardcoded Offset")
++			}
 +			tgt, rerr := r.FindInstBLX.Resolve(pt)
 +			if rerr != nil {
 +				return fmt.Errorf("ReplaceBytes: Window/FindInstBLX resolve: %w", rerr)
 +			}
 +			pos, err = pt.FindInstBLXOffset(cur+r.Offset, *r.Window, uint32(tgt))
 +		} else {
++			if !r.FindInstBW.isSymbolic() {
++				return fmt.Errorf("ReplaceBytes: Window requires FindInstBW to use a symbolic target (Sym/SymPLT/SymPLTTail), not a hardcoded Offset")
++			}
 +			tgt, rerr := r.FindInstBW.Resolve(pt)
 +			if rerr != nil {
 +				return fmt.Errorf("ReplaceBytes: Window/FindInstBW resolve: %w", rerr)
@@ -54,6 +75,55 @@ index a1b148a..f0645c8 100644
  	if r.FindInstBLX != nil {
  		log("FindInstBLX.Expand(%#v)", *r.FindInstBLX)
  
+diff --git a/patchfile/kobopatch/patch_test.go b/patchfile/kobopatch/patch_test.go
+index 5c04b22..11864a8 100644
+--- a/patchfile/kobopatch/patch_test.go
++++ b/patchfile/kobopatch/patch_test.go
+@@ -6,8 +6,10 @@ import (
+ 	"errors"
+ 	"fmt"
+ 	"reflect"
++	"strings"
+ 	"testing"
+ 
++	"github.com/pgaskin/kobopatch/patchlib"
+ 	"gopkg.in/yaml.v3"
+ )
+ 
+@@ -69,3 +71,33 @@ func TestInstructionNodeToInstruction(t *testing.T) {
+ 	tc("FlexAbsOffset/SymPLTTail/ReplaceBytesBase", `ReplaceBytes: {Base: {SymPLTTail: Test}}`, &Instruction{ReplaceBytes: &ReplaceBytes{Base: &FlexAbsOffset{SymPLTTail: &e}}}, true, nil, false)
+ 	// TODO: more FlexAbsOffset tests?
+ }
++
++// A Window search is only allowed when the FindInstBLX/FindInstBW target is
++// symbolic; a hardcoded numeric Offset target is offset-sensitive and rejected.
++func TestReplaceBytesWindowRequiresSymbolicTarget(t *testing.T) {
++	nolog := func(string, ...interface{}) {}
++	window := int32(64)
++	off := int32(0x10)
++	sym := "Some::symbol()"
++
++	newPatcher := func() *patchlib.Patcher { return patchlib.NewPatcher(make([]byte, 256)) }
++
++	// FindInstBLX with a numeric Offset target -> rejected.
++	err := ReplaceBytes{Window: &window, FindInstBLX: &FlexAbsOffset{Offset: &off}}.ApplyTo(newPatcher(), nolog)
++	if err == nil || !strings.Contains(err.Error(), "symbolic target") {
++		t.Errorf("Window+FindInstBLX{Offset} should be rejected for non-symbolic target, got %v", err)
++	}
++
++	// FindInstBW with a numeric Offset target -> rejected.
++	err = ReplaceBytes{Window: &window, FindInstBW: &FlexAbsOffset{Offset: &off}}.ApplyTo(newPatcher(), nolog)
++	if err == nil || !strings.Contains(err.Error(), "symbolic target") {
++		t.Errorf("Window+FindInstBW{Offset} should be rejected for non-symbolic target, got %v", err)
++	}
++
++	// A symbolic target passes the restriction (it then fails later trying to
++	// resolve an absent symbol, not on the symbolic check itself).
++	err = ReplaceBytes{Window: &window, FindInstBLX: &FlexAbsOffset{SymPLT: &sym}}.ApplyTo(newPatcher(), nolog)
++	if err != nil && strings.Contains(err.Error(), "symbolic target") {
++		t.Errorf("Window+FindInstBLX{SymPLT} should pass the symbolic check, got %v", err)
++	}
++}
 diff --git a/patchlib/patcher.go b/patchlib/patcher.go
 index 40657e8..279f53f 100644
 --- a/patchlib/patcher.go

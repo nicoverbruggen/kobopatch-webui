@@ -46,6 +46,14 @@ one match is an error, so a patch can never silently land on the wrong call.
 identical calls (e.g. "the third `operator==`" by starting the window past the
 first two).
 
+The find's target must additionally be **symbolic** — `Sym`, `SymPLT`, or
+`SymPLTTail` — and a hardcoded numeric `Offset` target is rejected. A symbol
+re-resolves per firmware build, so searching for the call to it is safe; a raw
+numeric target is itself offset-sensitive and would reintroduce exactly the
+breakage `Window` exists to avoid. This restriction (suggested by the kobopatch
+author) removes the temptation to use `Window` on offset-sensitive replacements
+that should instead be checked by hand when firmware changes.
+
 ## Implementation
 
 Two small pieces, both additive:
@@ -69,14 +77,18 @@ target, calls the matching `*Offset` finder, and sets `r.Offset = pos - cur`
 **before** the existing find/replace expansion runs. Everything downstream
 (including the PC-relative `ReplaceInstBLX`/`ReplaceInstBW` re-encoding) then uses
 the located offset unchanged. It requires exactly one of `FindInstBLX`/
-`FindInstBW` (the only position-dependent finds).
+`FindInstBW` (the only position-dependent finds), and that find's target must be
+symbolic — `FlexAbsOffset.isSymbolic()` (true for `Sym`/`SymPLT`/`SymPLTTail`)
+gates it, returning an error for a hardcoded numeric `Offset` target.
 
 ## Backward compatibility
 
 `Window` is optional; patches that don't set it behave exactly as before. No
 existing field changed meaning. The full upstream `patchlib`/`patchfile` test
-suites pass unmodified, plus two new tests (`TestFindInstBLXOffset`,
-`TestFindInstBWOffset`) covering the found / zero-match / ambiguous cases.
+suites pass unmodified, plus three new tests: `TestFindInstBLXOffset` and
+`TestFindInstBWOffset` (the found / zero-match / ambiguous cases) and
+`TestReplaceBytesWindowRequiresSymbolicTarget` (a numeric-`Offset` find target is
+rejected; a symbolic one passes the restriction).
 
 ## Why it's safe (and how it was validated)
 
