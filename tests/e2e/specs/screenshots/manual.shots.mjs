@@ -10,6 +10,7 @@ import {
     poseRestoreDoneScreen,
     injectMockDevice,
     overrideFirmwareURLs,
+    mockPatchBlacklist,
     hasFirmwareZip,
 } from '../../support/screenshot-helpers.mjs';
 
@@ -118,6 +119,7 @@ test('manual patches', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.manualPatches;
     const isMobile = testInfo.project.name === 'mobile';
 
+    await mockPatchBlacklist(page);
     await page.goto('/');
     await injectMockDevice(page);
     await page.waitForFunction(() => !!window.FIRMWARE_DOWNLOADS);
@@ -323,6 +325,7 @@ test('manual patches blacklist matching firmware tooltip', async ({ page }, test
     const dir = SCREENSHOT_DIRS.manualPatches;
     const isMobile = testInfo.project.name === 'mobile';
 
+    await mockPatchBlacklist(page);
     await page.goto('/');
     await injectMockDevice(page);
     await page.waitForFunction(() => !!window.FIRMWARE_DOWNLOADS);

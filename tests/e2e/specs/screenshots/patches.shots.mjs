@@ -7,6 +7,7 @@ import {
     poseRestoreDoneScreen,
     injectMockDevice,
     overrideFirmwareURLs,
+    mockPatchBlacklist,
     hasFirmwareZip,
     buildAdditionalFilesTgz,
     sha256Hex,
@@ -176,8 +177,9 @@ test('restore summary — compatible patch', async ({ page }, testInfo) => {
 // Variant 2: a patch blacklisted for this firmware is re-applied.
 
 test('restore summary — incompatible patch', async ({ page }, testInfo) => {
+    await mockPatchBlacklist(page);
     await openRestoreSummary(page, {
-        overrides: { 'src/libnickel.so.1.0.0.yaml': { 'Allow rotation on all devices': true } },
+        overrides: { 'src/libnickel.so.1.0.0.yaml': { 'Hide browser from beta features': true } },
         customized: {},
         files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
         meta: restoreMeta('4.45.23646'),
@@ -246,9 +248,10 @@ test('restore summary — additional files restored', async ({ page }, testInfo)
 // a different firmware, and recorded additional files.
 
 test('restore summary — all notices', async ({ page }, testInfo) => {
+    await mockPatchBlacklist(page);
     await openRestoreSummary(page, {
         overrides: {
-            'src/libnickel.so.1.0.0.yaml': { 'Allow rotation on all devices': true },
+            'src/libnickel.so.1.0.0.yaml': { 'Hide browser from beta features': true },
             'src/nickel.yaml': { 'Increase library cover size': true },
         },
         customized: { 'src/nickel.yaml': { 'Increase library cover size': RESTORE_EDIT } },

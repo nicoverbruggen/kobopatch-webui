@@ -373,56 +373,6 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#step-patches')).not.toBeHidden();
     });
 
-    test('with device — real patch failure with Go Back (Allow rotation)', async ({ page }) => {
-        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
-
-        await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
-
-        // Select Custom Patches
-        await page.click('#btn-device-next');
-        await page.click('input[name="mode"][value="patches"]');
-        await page.click('#btn-mode-next');
-
-        // "Allow rotation on all devices" is marked "known to fail" but can still
-        // be enabled. Verify the build correctly fails (or skips) when an
-        // incompatible patch is enabled, exercising the Go Back flow.
-        const patchName = page.locator('.patch-name', { hasText: 'Allow rotation on all devices' }).first();
-        const patchSection = patchName.locator('xpath=ancestor::details');
-        await patchSection.locator('summary').click();
-        await expect(patchName).toBeVisible();
-
-        const input = patchName.locator('xpath=ancestor::label').locator('input');
-        await input.check();
-
-        await page.click('#btn-patches-next');
-
-        // Build
-        await page.click('#btn-build');
-
-        const doneOrError = await Promise.race([
-            page
-                .locator('#step-done')
-                .waitFor({ state: 'visible', timeout: 240_000 })
-                .then(() => 'done'),
-            page
-                .locator('#step-error')
-                .waitFor({ state: 'visible', timeout: 240_000 })
-                .then(() => 'error'),
-        ]);
-
-        if (doneOrError === 'error') {
-            // Build failed — "Select different patches" should return to patches step
-            await page.click('#btn-error-back');
-            await expect(page.locator('#step-patches')).not.toBeHidden();
-        } else {
-            // Build succeeded — check if the patch was skipped
-            const logText = await page.locator('#build-log').textContent();
-            console.log('Build log:', logText);
-            const hasSkip = logText.includes('SKIP') && logText.includes('Allow rotation on all devices');
-            expect(hasSkip, 'Expected "Allow rotation" to be skipped or fail').toBe(true);
-        }
-    });
-
     test('with device — back navigation through auto mode flow', async ({ page }) => {
         await page.goto('/');
         await injectMockDevice(page);

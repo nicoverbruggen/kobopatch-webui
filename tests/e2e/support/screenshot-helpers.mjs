@@ -8,7 +8,7 @@
  * Run: ./run-screenshots.sh
  */
 import { expect } from '@playwright/test';
-import { injectMockDevice, overrideFirmwareURLs } from './mock-device.js';
+import { injectMockDevice, overrideFirmwareURLs, mockPatchBlacklist, TEST_BLACKLIST } from './mock-device.js';
 import { hasFirmwareZip } from './assets.js';
 import { buildAdditionalFilesTgz, sha256Hex } from '../../../src/js/patches/additional-files.js';
 
@@ -151,4 +151,4 @@ export const poseRestoreDoneScreen = async (page, { manual = false, written = fa
     await expect(page.locator('#step-done')).not.toBeHidden();
 };
 
-export { injectMockDevice, overrideFirmwareURLs, hasFirmwareZip, buildAdditionalFilesTgz, sha256Hex };
+export { injectMockDevice, overrideFirmwareURLs, mockPatchBlacklist, TEST_BLACKLIST, hasFirmwareZip, buildAdditionalFilesTgz, sha256Hex };

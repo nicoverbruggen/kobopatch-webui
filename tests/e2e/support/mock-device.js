@@ -405,6 +405,35 @@ async function getRemovedEntries(page) {
     return page.evaluate(() => window.__mockRemovedEntries);
 }
 
+// A fixture blacklist of real catalog patches, used to exercise the
+// incompatible-patches UI (the "known to fail" badge, the Patch History modal,
+// and the reload-summary footnote) now that the live patches/blacklist.json
+// ships empty. Every name here must exist in the served 4.45 catalog so it can
+// be located in the patch list; the two categories chosen render as the "PDF"
+// and "Privacy & Features" themed sections.
+const TEST_BLACKLIST = {
+    4.45: {
+        'src/libadobe.so.yaml': ['Remove PDF map widget shown during panning'],
+        'src/libnickel.so.1.0.0.yaml': ['Hide browser from beta features', 'Customize ComfortLight settings'],
+    },
+};
+
+/**
+ * Replace the served blacklist (`patches/blacklist.json`) with a fixture so the
+ * incompatible-patches UI can be tested even though the shipped blacklist is
+ * empty. Must be called before the page navigates, since the blacklist is
+ * fetched once at boot (`app.js` → `PatchUI.loadBlacklist`).
+ */
+async function mockPatchBlacklist(page, blacklist = TEST_BLACKLIST) {
+    await page.route('**/patches/blacklist.json', (route) =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(blacklist),
+        }),
+    );
+}
+
 module.exports = {
     injectMockDevice,
     connectMockDevice,
@@ -414,4 +443,6 @@ module.exports = {
     mockPathExists,
     getWrittenFiles,
     getRemovedEntries,
+    mockPatchBlacklist,
+    TEST_BLACKLIST,
 };

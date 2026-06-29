@@ -7,7 +7,16 @@ const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, paths, getOriginalTgzSha1 } = require('../../support/paths');
 const { hasFirmwareZip } = require('../../support/assets');
-const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../../support/mock-device');
+const {
+    injectMockDevice,
+    connectMockDevice,
+    overrideFirmwareURLs,
+    goToManualMode,
+    readMockFile,
+    getWrittenFiles,
+    mockPatchBlacklist,
+    TEST_BLACKLIST,
+} = require('../../support/mock-device');
 const { parseTar } = require('../../support/tar');
 
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
@@ -202,14 +211,15 @@ test.describe('Custom patches', () => {
     test('blacklisted patches are marked "known to fail" but remain enableable', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-        const blacklist = JSON.parse(fs.readFileSync(paths.repo('patches', 'blacklist.json'), 'utf-8'));
-        const version45 = blacklist['4.45'];
-        test.skip(!version45, 'No 4.45 blacklist entries found');
+        // The shipped blacklist is empty (patches are kept current), so drive the
+        // incompatible-patches UI with a fixture of real catalog patches.
+        const version45 = TEST_BLACKLIST['4.45'];
 
         // Patches show their metadata display label, not the raw YAML name.
         const { getPatchMeta } = await import(paths.src('js/patches/patch-metadata.js'));
         const displayName = (name) => getPatchMeta(name).label || name;
 
+        await mockPatchBlacklist(page);
         await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
 
         // Navigate to Custom Patches
@@ -264,6 +274,34 @@ test.describe('Custom patches', () => {
                 await expect(blacklistDialog).toContainText(displayName(name));
             }
         }
+
+        await blacklistDialog.locator('#btn-patch-blacklist-close').click();
+        await expect(blacklistDialog).toBeHidden();
+    });
+
+    test('with an empty blacklist no patch is flagged and the dialog shows the empty state', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        // The shipped blacklist has no entries for any firmware, so nothing should
+        // be marked "known to fail" and the Patch History dialog shows its empty
+        // state. (No mockPatchBlacklist here — exercise the real served file.)
+        await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+
+        // No "known to fail" badges anywhere in the list.
+        await expect(page.locator('.patch-incompatible')).toHaveCount(0);
+
+        await page.locator('#patch-about-patches-section > summary').click();
+        await page.getByRole('button', { name: 'View incompatible patches for this firmware' }).click();
+        const blacklistDialog = page.locator('#patch-blacklist-dialog');
+        await expect(blacklistDialog).toBeVisible();
+        await expect(blacklistDialog.locator('#patch-blacklist-empty')).toBeVisible();
+        await expect(blacklistDialog.locator('#patch-blacklist-empty')).toHaveText('No known incompatible patches for this version.');
+        await expect(blacklistDialog.locator('#patch-blacklist-list')).toBeHidden();
 
         await blacklistDialog.locator('#btn-patch-blacklist-close').click();
         await expect(blacklistDialog).toBeHidden();
