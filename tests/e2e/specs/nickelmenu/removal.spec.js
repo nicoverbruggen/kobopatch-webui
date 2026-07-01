@@ -347,10 +347,12 @@ test.describe('NickelMenu — removal', () => {
     test('with device — better typography is detected by its conf setting and reverts only the WebKit tweak', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
-        // NickelMenu installed, with the better-typography settings already applied.
+        // NickelMenu installed, with the better-typography settings already applied
+        // and the NickelTypeFix mod on device.
         await connectMockDevice(page, {
             hasNickelMenu: true,
             eReaderConf: '[General]\nsome=setting\n[Reading]\nwebkitTextRendering=optimizeLegibility\nreadingAlignment=Left\nreadingFontFamily=KF Libron\n',
+            extraAddsFiles: [{ path: ['nickel-type-fix', 'uninstall'], content: 'Delete this file...' }],
         });
 
         await page.click('#btn-device-next');
@@ -375,6 +377,39 @@ test.describe('NickelMenu — removal', () => {
         expect(conf).not.toContain('webkitTextRendering');
         expect(conf).toContain('readingAlignment=Left');
         expect(conf).toContain('readingFontFamily=KF Libron');
+
+        // NickelTypeFix uninstalls via uninstall_xflag (like NickelClock): deleting
+        // .adds/nickel-type-fix clears the onboard footprint, and the now-missing
+        // marker triggers the mod's self-uninstall on the next reboot.
+        expect(await mockPathExists(page, '.adds', 'nickel-type-fix')).toBe(false);
+    });
+
+    test('with device — better typography is detected by the NickelTypeFix directory alone', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        // No webkitTextRendering in the conf (e.g. the user toggled it off on
+        // device), but the mod is installed — the directory alone must surface
+        // the better-typography removal option.
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            eReaderConf: '[General]\nsome=setting\n',
+            extraAddsFiles: [{ path: ['nickel-type-fix', 'uninstall'], content: 'Delete this file...' }],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="remove"]');
+
+        await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+        await expect(page.locator('input[name="nm-uninstall-better-typography"]')).toBeChecked();
+
+        await page.click('#btn-nm-next');
+        await skipNmBackup(page);
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+
+        expect(await mockPathExists(page, '.adds', 'nickel-type-fix')).toBe(false);
     });
 
     test('with device — better typography is left alone when its removal is unchecked', async ({ page }) => {

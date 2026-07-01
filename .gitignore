@@ -24,6 +24,7 @@ src/assets/koreader-kobo.zip
 src/assets/cadmus-kobo.tar.gz
 src/assets/NickelMenu.zip
 src/assets/NickelClock.zip
+src/assets/NickelTypeFix.tgz
 # Asset size index, regenerated from the lock by setup:installables (CI/prod)
 src/assets/index.json
 

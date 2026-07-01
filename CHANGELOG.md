@@ -2,6 +2,7 @@
 
 > This changelog is for the upcoming release. When a release is tagged, the list can be emptied.
 
+- The "Enable better typography" option now also installs [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) on devices running Kobo software 4.21 or newer. This mod repairs the text-rendering quirks the optimized renderer would otherwise expose (uneven justification and vertical CJK text) and fixes glyph "wobble" on unhinted fonts. Turning off better typography during removal also removes the mod.
 - The first screen has been updated to provide you with some more information on how to get started.
 - Your device is now identified more reliably. Detection is now based on hardware UUIDs, with support for refurbished devices.
 - The language of your device is now taken into account for the "Simplify Tabs" functionality. The custom menu remains in English.

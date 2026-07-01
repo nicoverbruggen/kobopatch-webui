@@ -44,6 +44,14 @@ const INSTALLABLES = [
         match: (n) => /^NickelClock-.*\.zip$/.test(n),
     },
     {
+        // Upstream publishes a bare KoboRoot.tgz; stored under a distinct local
+        // name so it can't be confused with the generated .kobo/KoboRoot.tgz.
+        name: 'nickeltypefix',
+        asset: 'NickelTypeFix.tgz',
+        repo: 'nicoverbruggen/NickelTypeFix',
+        match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
         name: 'koreader',
         asset: 'koreader-kobo.zip',
         repo: 'koreader/koreader',

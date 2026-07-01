@@ -49,6 +49,13 @@
       "url": "https://github.com/nicoverbruggen/cartisse/releases/download/v2.2/KF_Cartisse.zip",
       "sha256": "9bd98b1e9412c0a792f7aa20267d03741dd77937122c572834010ceb3b147179",
       "size": 402243
+    },
+    "nickeltypefix": {
+      "asset": "NickelTypeFix.tgz",
+      "version": "v0.3",
+      "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.3/KoboRoot.tgz",
+      "sha256": "e3475bb0e81243a77d735a7705cff1896a797ef65835b740f2714328ac34ddfb",
+      "size": 16844
     }
   }
 }

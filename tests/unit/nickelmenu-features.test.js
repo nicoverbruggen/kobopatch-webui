@@ -242,14 +242,16 @@ test('Cadmus contributes its launcher entry at the top of the menu', () => {
     ]);
 });
 
-test('Better Typography cleanup removes the toggle script and the WebKit setting', () => {
+test('Better Typography cleanup removes the toggle script, NickelTypeFix, and the WebKit setting', () => {
     const { cleanup } = betterTypography;
 
     assert.equal(cleanup.mode, 'optional');
     // The toggle script is cleaned up by explicit path (alongside NM recursive
-    // .adds/nm deletion) for robustness. Detection is from the revertable conf.
-    assert.deepEqual(cleanup.paths, [{ path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] }]);
-    assert.equal(cleanup.detect, undefined);
+    // .adds/nm deletion) for robustness; NickelTypeFix is removed by deleting
+    // its directory (its uninstall_xflag makes the mod self-remove on reboot).
+    // Detection is the revertable conf setting or the mod's directory.
+    assert.deepEqual(cleanup.paths, [{ path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] }, { path: ['.adds', 'nickel-type-fix'], recursive: true }]);
+    assert.deepEqual(cleanup.detect, [['.adds', 'nickel-type-fix']]);
     assert.equal(cleanup.detectConf, undefined);
     assert.equal(cleanup.revertConf, undefined);
     assert.deepEqual(revertableConfSettings(betterTypography), [

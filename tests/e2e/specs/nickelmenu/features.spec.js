@@ -7,7 +7,15 @@ const crypto = require('crypto');
 const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, WEBROOT, getOriginalTgzSha1 } = require('../../support/paths');
-const { hasNickelMenuAssets, hasNickelClockAssets, hasKOReaderAssets, hasCadmusAssets, hasFontAssets, hasFirmwareZip } = require('../../support/assets');
+const {
+    hasNickelMenuAssets,
+    hasNickelClockAssets,
+    hasNickelTypeFixAssets,
+    hasKOReaderAssets,
+    hasCadmusAssets,
+    hasFontAssets,
+    hasFirmwareZip,
+} = require('../../support/assets');
 const {
     injectMockDevice,
     connectMockDevice,
@@ -46,6 +54,9 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('input[name="nm-cfg-cadmus"]')).not.toBeChecked();
 
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        // Better typography would add its NickelTypeFix notice; deselect it so
+        // this test can assert the review step shows no notices at all.
+        await page.uncheck('input[name="nm-cfg-better-typography"]');
         await page.check('input[name="nm-cfg-cadmus"]');
 
         await page.click('#btn-nm-features-next');
@@ -114,6 +125,9 @@ test.describe('NickelMenu — install', () => {
         expect(versionBox.x - titleBox.x).toBeLessThan(helpBox.x - versionBox.x);
 
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        // Better typography would merge NickelTypeFix into the archive too;
+        // deselect it so the merge is exactly NickelMenu + NickelClock.
+        await page.uncheck('input[name="nm-cfg-better-typography"]');
         await page.check('input[name="nm-cfg-nickelclock"]');
 
         await page.click('#btn-nm-features-next');
@@ -150,6 +164,61 @@ test.describe('NickelMenu — install', () => {
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
         expect(itemsContent).toContain('menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh');
         expect(Object.keys(zip.files)).toContainEqual('.adds/nm/scripts/toggle_nickelclock.sh');
+    });
+
+    test('no device — better typography merges NickelTypeFix into KoboRoot.tgz preserving original files', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
+
+        // NickelMenu ships as a zip wrapping a KoboRoot.tgz; NickelTypeFix's
+        // release asset is a bare KoboRoot.tgz.
+        const nmZip = await JSZip.loadAsync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelMenu.zip')));
+        const nmEntries = parseTar(zlib.gunzipSync(await nmZip.file('KoboRoot.tgz').async('nodebuffer')));
+        const ntfEntries = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelTypeFix.tgz'))));
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        // Better typography (which folds in NickelTypeFix) is selected by
+        // default; only skip the large font download.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await expect(page.locator('input[name="nm-cfg-better-typography"]')).toBeChecked();
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        // The review step announces the bundled NickelTypeFix mod.
+        await expect(page.locator('#step-nm-review')).not.toBeHidden();
+        await expect(page.locator('#nm-review-notices')).toBeVisible();
+        await expect(page.locator('#nm-review-notices')).toContainText('NickelTypeFix');
+
+        const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+
+        // Unarchive the generated KoboRoot.tgz from the download package.
+        const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+        const mergedTgz = await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer');
+        const mergedEntries = parseTar(zlib.gunzipSync(mergedTgz));
+
+        // The merged archive is exactly the union of both sources — no more, no less.
+        const expectedNames = [...Object.keys(nmEntries), ...Object.keys(ntfEntries)].sort();
+        expect(Object.keys(mergedEntries).sort()).toEqual(expectedNames);
+
+        // Both plugins travel, along with NickelTypeFix's uninstall_xflag marker
+        // (whose absence later triggers the mod's self-uninstall)...
+        expect(mergedEntries['usr/local/Kobo/imageformats/libnm.so']).toBeDefined();
+        expect(mergedEntries['usr/local/Kobo/imageformats/libnickeltypefix.so']).toBeDefined();
+        expect(mergedEntries['mnt/onboard/.adds/nickel-type-fix/uninstall']).toBeDefined();
+
+        // ...and every file's bytes are byte-for-byte identical to the original.
+        for (const [name, data] of Object.entries({ ...nmEntries, ...ntfEntries })) {
+            expect(mergedEntries[name], `missing ${name} in merged tgz`).toBeDefined();
+            expect(Buffer.compare(mergedEntries[name], data), `${name} bytes differ after merge`).toBe(0);
+        }
     });
 
     test('no device — install with KOReader via manual download', async ({ page }) => {
@@ -308,9 +377,11 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-next');
 
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
-        // NickelClock is an Advanced feature; open the section and select only it.
+        // NickelClock is an Advanced feature; open the section and select only it
+        // (and keep better typography's NickelTypeFix merge out of this test).
         await openNmSection(page, 'Advanced');
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.uncheck('input[name="nm-cfg-better-typography"]');
         await page.check('input[name="nm-cfg-nickelclock"]');
 
         await page.click('#btn-nm-features-next');
@@ -331,6 +402,70 @@ test.describe('NickelMenu — install', () => {
         // ...and contributes its Toggle item to the preset written to the device.
         const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
         expect(items).toContain('menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh');
+    });
+
+    test('with device — better typography announces and installs NickelTypeFix on supported firmware', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
+
+        // The default mock firmware (4.45) is above NickelTypeFix's 4.21 floor.
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await expect(page.locator('input[name="nm-cfg-better-typography"]')).toBeChecked();
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-notices')).toContainText('NickelTypeFix');
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        // NickelTypeFix rides inside the single merged .kobo/KoboRoot.tgz (the
+        // merge contents are verified in the manual-download test).
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles.some((f) => f.includes('KoboRoot.tgz'))).toBe(true);
+    });
+
+    test('with device — firmware below 4.21 keeps better typography but skips NickelTypeFix', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
+
+        // 4.20 runs NickelMenu fine (the app's 4.6 floor) but predates
+        // NickelTypeFix's 4.21 requirement, so the mod must sit this one out.
+        await connectMockDevice(page, { hasNickelMenu: false, firmware: '4.20.14622' });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await expect(page.locator('input[name="nm-cfg-better-typography"]')).toBeChecked();
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#step-nm-review')).not.toBeHidden();
+        await expect(page.locator('#nm-review-notices')).not.toContainText('NickelTypeFix');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        // The conf-based typography settings still apply on old firmware.
+        const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
+        expect(conf).toContain('webkitTextRendering=optimizeLegibility');
     });
 
     test('with device — preset warns about Dark Mode on unsupported devices', async ({ page }) => {

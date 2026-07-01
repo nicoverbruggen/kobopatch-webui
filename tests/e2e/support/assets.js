@@ -18,6 +18,10 @@ function hasNickelClockAssets() {
     return fs.existsSync(path.join(WEBROOT, 'assets', 'NickelClock.zip'));
 }
 
+function hasNickelTypeFixAssets() {
+    return fs.existsSync(path.join(WEBROOT, 'assets', 'NickelTypeFix.tgz'));
+}
+
 function hasFontAssets() {
     return (
         fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Readerly.zip')) &&
@@ -48,6 +52,7 @@ module.exports = {
     hasKOReaderAssets,
     hasCadmusAssets,
     hasNickelClockAssets,
+    hasNickelTypeFixAssets,
     hasFontAssets,
     hasFirmwareZip,
     setupFirmwareSymlink,

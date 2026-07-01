@@ -119,11 +119,12 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#nm-manual-backup-instructions')).toContainText('.kobo');
         await page.click('#btn-nm-backup-next');
 
-        // Review step
+        // Review step. The default preset keeps better typography selected, so
+        // its NickelTypeFix notice is the one notice shown.
         await expect(page.locator('#step-nm-review')).not.toBeHidden();
         await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
         await expect(page.locator('#nm-review-list')).toContainText('additional fonts', { ignoreCase: true });
-        await expect(page.locator('#nm-review-notices')).toBeHidden();
+        await expect(page.locator('#nm-review-notices')).toContainText('NickelTypeFix');
 
         // Write button should be hidden in manual mode
         await expect(page.locator('#btn-nm-write')).toBeHidden();
