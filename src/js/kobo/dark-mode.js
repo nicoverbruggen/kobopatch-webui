@@ -13,7 +13,7 @@
  *
  * Note: a few pre-Dark-mode models (Kobo Original/Touch/Wireless) have no UUID
  * mapping in version.js and are intentionally omitted — their firmware is below
- * the app's 4.6 minimum, so they never reach the NickelMenu feature selection.
+ * the app's 4.23 minimum, so they never reach the NickelMenu feature selection.
  */
 const darkModeUnsupportedHardwareIds = new Set([
     '00000000-0000-0000-0000-000000000310', // N905 Kobo Touch A/B

@@ -8,7 +8,7 @@ import { installableAssetUrl, installableSize } from '../../installables.js';
 // individual .ttf files again.
 export default {
     id: 'additional-fonts',
-    section: 'Text and typography',
+    section: 'Reading Experience',
     title: 'Install additional fonts',
     description:
         'Adds a few custom fonts, including Readerly, Libron and Cartisse. When reading a book, these new entries will be visible in the font dropdown menu.',

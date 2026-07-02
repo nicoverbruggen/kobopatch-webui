@@ -99,7 +99,7 @@ test.describe('Custom patches', () => {
 
         // Status message should show incompatibility warning
         await expect(page.locator('#device-status')).toContainText('incompatible');
-        await expect(page.locator('#device-status')).toContainText('NickelMenu does not support it');
+        await expect(page.locator('#device-status')).toContainText('Kobo software 4.23 or newer is required for NickelMenu');
         await expect(page.locator('#device-status')).toHaveClass(/error/);
 
         // Continue and restore buttons should be hidden, but Back should be visible
@@ -110,6 +110,20 @@ test.describe('Custom patches', () => {
         // Back should return to connect step
         await page.click('#btn-device-back');
         await expect(page.locator('#step-connect')).not.toBeHidden();
+    });
+
+    test('with device — firmware below 4.23 shows error', async ({ page }) => {
+        await page.goto('/');
+        await injectMockDevice(page, { firmware: '4.22.99999' });
+        await page.click('#btn-connect');
+        await page.click('#btn-connect-ready');
+
+        await expect(page.locator('#step-device')).not.toBeHidden();
+        await expect(page.locator('#device-firmware')).toHaveText('4.22.99999');
+        await expect(page.locator('#device-status')).toContainText('Kobo software 4.23 or newer is required for NickelMenu');
+        await expect(page.locator('#device-status')).toHaveClass(/error/);
+        await expect(page.locator('#btn-device-next')).toBeHidden();
+        await expect(page.locator('#btn-device-restore')).toBeHidden();
     });
 
     test('Android mobile disables direct Kobo connection even when folder picker is available', async ({ browser }) => {

@@ -13,8 +13,8 @@ const SIGNIN_FIXTURES = {
 };
 
 // A real Kobo eReader.conf ships a [Reading] section with these keys present but
-// empty. Including them lets tests verify that better-typography updates them in
-// place (and leaves them untouched when the option isn't selected).
+// empty. Including them lets tests verify that Better typography and fixes and Additional
+// Fonts update only the settings they own.
 const READING_DEFAULTS = '[Reading]\nreadingAlignment=\nreadingFontFamily=\n';
 
 /**

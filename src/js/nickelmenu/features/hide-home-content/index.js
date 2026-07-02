@@ -15,7 +15,7 @@ export const TOGGLE_HIDDEN_HOME_SCRIPT_URL = new URL('./scripts/toggle_hidden_ho
 function makeHider({ id, title, description, flag }) {
     return {
         id,
-        section: 'Interface tweaks',
+        section: 'Interface Tweaks',
         title,
         description,
         default: false,

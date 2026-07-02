@@ -31,17 +31,17 @@
     },
     "readerly": {
       "asset": "KF_Readerly.zip",
-      "version": "v1.9",
-      "url": "https://github.com/nicoverbruggen/readerly/releases/download/v1.9/KF_Readerly.zip",
-      "sha256": "993e2676d298d4079ada74a273081c809d89052cb3614925df2f8d614dbddfca",
-      "size": 681160
+      "version": "v1.10",
+      "url": "https://github.com/nicoverbruggen/readerly/releases/download/v1.10/KF_Readerly.zip",
+      "sha256": "83619d1804b9948184588cfc2d452a527eca3707766040e7f64b194ad74a1c26",
+      "size": 494860
     },
     "libron": {
       "asset": "KF_Libron.zip",
-      "version": "v0.10",
-      "url": "https://github.com/nicoverbruggen/libron/releases/download/v0.10/KF_Libron.zip",
-      "sha256": "9260344598394a118cbb73e61df6247327a8c95948e311c101756d3cde53bfec",
-      "size": 677606
+      "version": "v0.11",
+      "url": "https://github.com/nicoverbruggen/libron/releases/download/v0.11/KF_Libron.zip",
+      "sha256": "7413c94e0628f148621609fd6c38712ce99f23587e0b5ef943b2580535a5b599",
+      "size": 493692
     },
     "cartisse": {
       "asset": "KF_Cartisse.zip",

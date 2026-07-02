@@ -59,7 +59,7 @@ If you choose to apply custom patches, **patching happens fully client-side** â€
 
 If you want to install **NickelMenu**:
 
-- Any Kobo released in 2025 or earlier, running software version >=4.6 and <5.0.
+- Any Kobo released in 2025 or earlier, running software version >=4.23 and <5.0.
 
 If you want to apply **custom patches**:
 

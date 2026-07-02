@@ -54,7 +54,7 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('input[name="nm-cfg-cadmus"]')).not.toBeChecked();
 
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
-        // Better typography would add its NickelTypeFix notice; deselect it so
+        // Better typography and fixes would add the NickelTypeFix notice; deselect it so
         // this test can assert the review step shows no notices at all.
         await page.uncheck('input[name="nm-cfg-better-typography"]');
         await page.check('input[name="nm-cfg-cadmus"]');
@@ -103,29 +103,25 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-next');
 
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
-        // NickelClock is an Advanced feature; open the section and select only it.
-        await openNmSection(page, 'Advanced');
-
         // Its row shows the asset version (right-aligned, separate from the title)
         // alongside a "learn more" link to the project.
         const nickelClockRow = page.locator('.nm-config-item', {
             has: page.locator('input[name="nm-cfg-nickelclock"]'),
         });
+        await expect(nickelClockRow.locator('.nm-config-title')).toContainText('Display clock when reading');
         await expect(nickelClockRow.locator('.nm-config-version')).toHaveText(/^v?\d/);
         await expect(nickelClockRow.locator('a.nm-config-help')).toHaveAttribute('href', 'https://github.com/shermp/NickelClock');
 
-        // Layout: the version sits inline next to the title on the left, with the "?"
-        // badge off on the right — so the version is much closer to the title than to
-        // the badge.
+        // Layout: the version sits inline after the title, before the "?" badge.
         const titleBox = await nickelClockRow.locator('.nm-config-title').boundingBox();
         const versionBox = await nickelClockRow.locator('.nm-config-version').boundingBox();
         const helpBox = await nickelClockRow.locator('.nm-config-help').boundingBox();
         expect(versionBox.x).toBeGreaterThanOrEqual(titleBox.x);
         expect(versionBox.x).toBeLessThan(helpBox.x);
-        expect(versionBox.x - titleBox.x).toBeLessThan(helpBox.x - versionBox.x);
+        expect(versionBox.x + versionBox.width).toBeLessThan(helpBox.x);
 
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
-        // Better typography would merge NickelTypeFix into the archive too;
+        // Better typography and fixes would merge NickelTypeFix into the archive too;
         // deselect it so the merge is exactly NickelMenu + NickelClock.
         await page.uncheck('input[name="nm-cfg-better-typography"]');
         await page.check('input[name="nm-cfg-nickelclock"]');
@@ -134,7 +130,7 @@ test.describe('NickelMenu — install', () => {
         await skipNmBackup(page);
 
         await expect(page.locator('#step-nm-review')).not.toBeHidden();
-        await expect(page.locator('#nm-review-list')).toContainText('Install NickelClock');
+        await expect(page.locator('#nm-review-list')).toContainText('Display clock when reading');
 
         const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
@@ -166,7 +162,7 @@ test.describe('NickelMenu — install', () => {
         expect(Object.keys(zip.files)).toContainEqual('.adds/nm/scripts/toggle_nickelclock.sh');
     });
 
-    test('no device — better typography merges NickelTypeFix into KoboRoot.tgz preserving original files', async ({ page }) => {
+    test('no device — Better typography and fixes merges NickelTypeFix into KoboRoot.tgz preserving original files', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
 
@@ -183,10 +179,15 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-next');
 
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
-        // Better typography (which folds in NickelTypeFix) is selected by
+        // Better typography and fixes (which folds in NickelTypeFix) is selected by
         // default; only skip the large font download.
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
         await expect(page.locator('input[name="nm-cfg-better-typography"]')).toBeChecked();
+        const typographyRow = page.locator('.nm-config-item', {
+            has: page.locator('input[name="nm-cfg-better-typography"]'),
+        });
+        await expect(typographyRow.locator('.nm-config-title')).toContainText('Better typography and fixes');
+        await expect(typographyRow.locator('.nm-config-version')).toHaveText(/^v?\d/);
 
         await page.click('#btn-nm-features-next');
         await skipNmBackup(page);
@@ -377,9 +378,8 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-next');
 
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
-        // NickelClock is an Advanced feature; open the section and select only it
-        // (and keep better typography's NickelTypeFix merge out of this test).
-        await openNmSection(page, 'Advanced');
+        // NickelClock lives in Interface Tweaks; select only it
+        // (and keep Better typography and fixes's merge out of this test).
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
         await page.uncheck('input[name="nm-cfg-better-typography"]');
         await page.check('input[name="nm-cfg-nickelclock"]');
@@ -387,7 +387,7 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-features-next');
         await skipNmBackup(page);
 
-        await expect(page.locator('#nm-review-list')).toContainText('Install NickelClock');
+        await expect(page.locator('#nm-review-list')).toContainText('Display clock when reading');
         await page.click('#btn-nm-write');
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
         await expect(page.locator('#nm-done-status')).toContainText('installed');
@@ -404,11 +404,11 @@ test.describe('NickelMenu — install', () => {
         expect(items).toContain('menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh');
     });
 
-    test('with device — better typography announces and installs NickelTypeFix on supported firmware', async ({ page }) => {
+    test('with device — Better typography and fixes announces and installs NickelTypeFix on supported firmware', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
 
-        // The default mock firmware (4.45) is above NickelTypeFix's 4.21 floor.
+        // The default mock firmware (4.45) is above the app's NickelMenu floor.
         await connectMockDevice(page, { hasNickelMenu: false });
 
         await page.click('#btn-device-next');
@@ -435,13 +435,11 @@ test.describe('NickelMenu — install', () => {
         expect(writtenFiles.some((f) => f.includes('KoboRoot.tgz'))).toBe(true);
     });
 
-    test('with device — firmware below 4.21 keeps better typography but skips NickelTypeFix', async ({ page }) => {
+    test('with device — firmware at the 4.23 floor installs NickelTypeFix', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
 
-        // 4.20 runs NickelMenu fine (the app's 4.6 floor) but predates
-        // NickelTypeFix's 4.21 requirement, so the mod must sit this one out.
-        await connectMockDevice(page, { hasNickelMenu: false, firmware: '4.20.14622' });
+        await connectMockDevice(page, { hasNickelMenu: false, firmware: '4.23.15505' });
 
         await page.click('#btn-device-next');
         await page.click('input[name="mode"][value="nickelmenu"]');
@@ -457,13 +455,12 @@ test.describe('NickelMenu — install', () => {
         await skipNmBackup(page);
 
         await expect(page.locator('#step-nm-review')).not.toBeHidden();
-        await expect(page.locator('#nm-review-notices')).not.toContainText('NickelTypeFix');
+        await expect(page.locator('#nm-review-notices')).toContainText('NickelTypeFix');
 
         await page.click('#btn-nm-write');
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
         await expect(page.locator('#nm-done-status')).toContainText('installed');
 
-        // The conf-based typography settings still apply on old firmware.
         const conf = await readMockFile(page, '.kobo', 'Kobo', 'Kobo eReader.conf');
         expect(conf).toContain('webkitTextRendering=optimizeLegibility');
     });
@@ -543,7 +540,7 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#nm-preset-conflict-summary')).toContainText('This Kobo seems to have been modded before');
         await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickeldbus (.adds/nickeldbus)');
         await expect(page.locator('#nm-preset-conflict-list')).toContainText('nickelseries (.adds/nickelseries)');
-        // NickelClock coexists with NickelMenu (it's an installable Advanced feature),
+        // NickelClock coexists with NickelMenu (it's an installable Interface Tweaks feature),
         // so an existing install is no longer treated as a conflict.
         await expect(page.locator('#nm-preset-conflict-list')).not.toContainText('nickelclock');
         await expect(page.locator('#btn-nm-preset-conflict-next')).toBeDisabled();
@@ -633,7 +630,7 @@ test.describe('NickelMenu — install', () => {
         expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
     });
 
-    test('with device — reading defaults are untouched when Better Typography is not selected', async ({ page }) => {
+    test('with device — reading defaults are untouched when Better typography and fixes is not selected', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
 
@@ -650,7 +647,7 @@ test.describe('NickelMenu — install', () => {
         await page.click('input[name="nm-option"][value="preset"]');
         await page.click('#btn-nm-next');
 
-        // Turn off Better Typography (on by default); leave the fonts installing.
+        // Turn off Better typography and fixes (on by default); leave the fonts installing.
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
         await expect(page.locator('input[name="nm-cfg-better-typography"]')).toBeChecked();
         await page.uncheck('input[name="nm-cfg-better-typography"]');

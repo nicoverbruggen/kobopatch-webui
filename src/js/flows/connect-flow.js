@@ -11,6 +11,7 @@
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { localeDisplayName } from '../kobo/locale.js';
+import { minimumSupportedFirmware } from '../kobo/version.js';
 import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
@@ -237,7 +238,7 @@ export function initConnectFlow(state, { patches }) {
             if (info.isIncompatible) {
                 deviceStatus.textContent =
                     'You seem to have an incompatible Kobo software version installed. ' +
-                    'NickelMenu does not support it, and the custom patches are incompatible with this version.';
+                    `Kobo software ${minimumSupportedFirmware} or newer is required for NickelMenu, and the custom patches are incompatible with this version.`;
                 deviceStatus.classList.add('banner', 'banner--error');
                 btnDeviceNext.hidden = true;
                 btnDeviceRestore.hidden = true;

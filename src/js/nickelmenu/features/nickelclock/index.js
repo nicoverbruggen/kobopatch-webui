@@ -29,8 +29,8 @@ export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclo
 // shape as every other add-on cleanup here — so no KoboRoot.tgz is needed.
 export default {
     id: 'nickelclock',
-    section: 'Advanced',
-    title: 'Install NickelClock',
+    section: 'Reading Experience',
+    title: 'Display clock when reading',
     description:
         'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',
     default: false,

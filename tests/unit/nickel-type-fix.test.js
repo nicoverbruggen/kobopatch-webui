@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import betterTypography, { includesNickelTypeFix, nickelTypeFixMinimumFirmware } from '../../src/js/nickelmenu/features/better-typography/index.js';
+import betterTypography, { includesNickelTypeFix } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
 import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
 import { RecordingDevice, bytes, createInstaller, createProgressRecorder } from './test-helpers.js';
@@ -47,21 +47,21 @@ function useNickelTypeFixAssetFetch() {
     return restore;
 }
 
-test('includesNickelTypeFix requires the shipped asset and the 4.21 firmware floor', () => {
+test('includesNickelTypeFix requires the shipped asset only', () => {
     const originalManifest = globalThis.__INSTALLABLES__;
     try {
         globalThis.__INSTALLABLES__ = { nickeltypefix: { version: 'v0.3', available: true } };
-        assert.equal(nickelTypeFixMinimumFirmware, '4.21');
         assert.equal(includesNickelTypeFix({ firmware: '4.45.23646' }), true);
-        assert.equal(includesNickelTypeFix({ firmware: '4.21' }), true);
-        assert.equal(includesNickelTypeFix({ firmware: '4.20.14622' }), false);
-        // Manual mode (no firmware) stays optimistic — the mod is fail-safe and
-        // sits out on firmware it doesn't support.
+        assert.equal(includesNickelTypeFix({ firmware: '4.20.14622' }), true);
         assert.equal(includesNickelTypeFix(null), true);
         assert.equal(includesNickelTypeFix({ firmware: null }), true);
 
         // A deployment without the asset never contributes the mod.
         globalThis.__INSTALLABLES__ = {};
+        assert.equal(includesNickelTypeFix({ firmware: '4.45.23646' }), false);
+
+        // Vite emits locked-but-missing assets with a version and available:false.
+        globalThis.__INSTALLABLES__ = { nickeltypefix: { version: 'v0.3', available: false } };
         assert.equal(includesNickelTypeFix({ firmware: '4.45.23646' }), false);
     } finally {
         globalThis.__INSTALLABLES__ = originalManifest;
@@ -82,12 +82,15 @@ test('koboRootEntries downloads NickelTypeFix and returns its KoboRoot.tgz entri
     }
 });
 
-test('koboRootEntries contributes nothing below the firmware floor (and never fetches)', async () => {
+test('koboRootEntries downloads NickelTypeFix regardless of the feature-local firmware', async () => {
     const restore = useNickelTypeFixAssetFetch();
     try {
         const entries = await betterTypography.koboRootEntries({ progress() {}, deviceInfo: { firmware: '4.20.14622' } });
-        assert.deepEqual(entries, []);
-        assert.deepEqual(restore.fetched, []);
+        assert.deepEqual(
+            entries.map((e) => e.path),
+            nickelTypeFixEntries.map((e) => e.path),
+        );
+        assert.deepEqual(restore.fetched, ['/assets/NickelTypeFix.tgz?v=v0.3']);
     } finally {
         restore();
     }
@@ -95,10 +98,14 @@ test('koboRootEntries contributes nothing below the firmware floor (and never fe
 
 test('koboRootEntries contributes nothing when the deployment lacks the asset', async () => {
     const originalManifest = globalThis.__INSTALLABLES__;
-    globalThis.__INSTALLABLES__ = {};
     try {
+        globalThis.__INSTALLABLES__ = {};
         const entries = await betterTypography.koboRootEntries({ progress() {}, deviceInfo: { firmware: '4.45.23646' } });
         assert.deepEqual(entries, []);
+
+        globalThis.__INSTALLABLES__ = { nickeltypefix: { version: 'v0.3', available: false } };
+        const unavailableEntries = await betterTypography.koboRootEntries({ progress() {}, deviceInfo: { firmware: '4.45.23646' } });
+        assert.deepEqual(unavailableEntries, []);
     } finally {
         globalThis.__INSTALLABLES__ = originalManifest;
     }
@@ -113,9 +120,12 @@ test('reviewNotices mentions NickelTypeFix exactly when the mod will be included
         assert.equal(notices[0].title, 'NickelTypeFix');
         assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelTypeFix');
 
-        assert.deepEqual(betterTypography.reviewNotices({ deviceInfo: { firmware: '4.20.14622' } }), []);
+        assert.equal(betterTypography.reviewNotices({ deviceInfo: { firmware: '4.20.14622' } }).length, 1);
 
         globalThis.__INSTALLABLES__ = {};
+        assert.deepEqual(betterTypography.reviewNotices({ deviceInfo: { firmware: '4.45.23646' } }), []);
+
+        globalThis.__INSTALLABLES__ = { nickeltypefix: { version: 'v0.3', available: false } };
         assert.deepEqual(betterTypography.reviewNotices({ deviceInfo: { firmware: '4.45.23646' } }), []);
     } finally {
         globalThis.__INSTALLABLES__ = originalManifest;
@@ -147,4 +157,27 @@ test('optional cleanup removes the .adds/nickel-type-fix directory during Nickel
     // The whole footprint is gone; the mod self-removes its root-filesystem
     // plugin on the next reboot once the uninstall marker is missing.
     assert.equal(await device.pathExists(['.adds', 'nickel-type-fix', 'config']), false);
+});
+
+test('optional cleanup tolerates NickelTypeFix already being absent', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({
+        textFiles: {
+            '.kobo/Kobo/Kobo eReader.conf': '[Reading]\nwebkitTextRendering=optimizeLegibility\nreadingAlignment=Left\n',
+        },
+        existingEntries: ['.adds/nm'],
+    });
+
+    await executeNickelMenuRemoval({
+        device,
+        installer,
+        cleanupFeatures: [betterTypography],
+        shouldRemoveSyncExclusions: async () => false,
+        onProgress: createProgressRecorder(),
+    });
+
+    assert.equal(device.removalFor('.adds/nickel-type-fix'), undefined);
+    const conf = new TextDecoder().decode(device.writeFor('.kobo/Kobo/Kobo eReader.conf').data);
+    assert.equal(conf.includes('webkitTextRendering'), false);
+    assert.equal(conf.includes('readingAlignment=Left'), true);
 });

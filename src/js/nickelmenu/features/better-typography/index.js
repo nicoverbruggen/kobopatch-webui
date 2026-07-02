@@ -1,35 +1,27 @@
 import { loadBundledAsset } from '../assets.js';
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
-import { meetsMinimumVersion } from '../../../kobo/version.js';
+import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
 
 export const TOGGLE_TYPOGRAPHY_SCRIPT_URL = new URL('./scripts/toggle_typography.sh', import.meta.url).href;
 
-// NickelTypeFix (https://github.com/nicoverbruggen/NickelTypeFix) needs Kobo
-// software 4.21 or newer. The app's connect flow already rejects non-4.x
-// firmware outright, so this floor is the only gate needed here.
-export const nickelTypeFixMinimumFirmware = '4.21';
-
 /**
  * Whether this install will fold in the NickelTypeFix mod: its asset must be
- * shipped by this deployment (the feature itself stays available without it —
- * the conf settings and toggle work on their own) and the device firmware must
- * meet the mod's floor. An unknown firmware (manual mode) is treated as meeting
- * it — safe to be optimistic, since the mod verifies its patch sites and sits
- * out (with a boot failsafe) on firmware it doesn't support.
+ * shipped by this deployment. The feature itself stays available without it —
+ * the conf settings and toggle work on their own.
  */
-export function includesNickelTypeFix(deviceInfo = null) {
-    if (!installableVersion('nickeltypefix')) return false;
-    return meetsMinimumVersion(deviceInfo?.firmware, nickelTypeFixMinimumFirmware);
+export function includesNickelTypeFix() {
+    return installableAvailable('nickeltypefix');
+}
+
+export function nickelTypeFixVersion() {
+    return includesNickelTypeFix() ? installableVersion('nickeltypefix') : null;
 }
 
 // Reading-experience tweaks applied to Kobo eReader.conf. These mirror what the
 // "Typography Toggle" menu script does, but are set up front:
 //   - webkitTextRendering=optimizeLegibility enables ligatures/GPOS kerning in
 //     kepub books (the WebKit font feature the toggle script flips).
-//   - readingAlignment=Left avoids the justified-text wrapping issues that the
-//     optimized renderer can introduce.
 //   - readingFontFamily=KF Libron is only applied when the additional fonts
 //     are part of the install, so we don't point at a font that isn't there.
 //
@@ -39,21 +31,21 @@ export function includesNickelTypeFix(deviceInfo = null) {
 // reconnect. Modelled on the screensaver feature, which likewise owns both an
 // asset and its menu item.
 //
-// Finally, on firmware that supports it, the feature installs NickelTypeFix —
-// a NickelHook mod that fixes the text-rendering defects optimizeLegibility
-// otherwise exposes (justification gaps, vertical CJK text) plus glyph
-// "wobble" on unhinted fonts. Like NickelClock it ships inside its own
-// KoboRoot.tgz, so it is merged into the single archive the installer writes
-// via the generic `koboRootEntries` hook. It is also removed the same way:
-// NickelHook's `uninstall_xflag` means the mod self-uninstalls on the boot
-// after its .adds/nickel-type-fix/uninstall marker disappears, so cleanup just
-// deletes the whole directory.
+// Finally, the feature installs NickelTypeFix — a NickelHook mod that fixes the
+// text-rendering defects optimizeLegibility otherwise exposes (justification
+// gaps, vertical CJK text) plus glyph "wobble" on unhinted fonts. Like
+// NickelClock it ships inside its own KoboRoot.tgz, so it is merged into the
+// single archive the installer writes via the generic `koboRootEntries` hook. It
+// is also removed the same way: NickelHook's `uninstall_xflag` means the mod
+// self-uninstalls on the boot after its .adds/nickel-type-fix/uninstall marker
+// disappears, so cleanup just deletes the whole directory.
 export default {
     id: 'better-typography',
-    section: 'Text and typography',
-    title: 'Enable better typography',
+    section: 'Reading Experience',
+    title: 'Better typography and fixes',
+    version: nickelTypeFixVersion,
     description:
-        "Turns on Kobo's optimized WebKit text rendering for proper ligatures and kerning, and switches reading to left-aligned text to avoid justification wrapping issues. Also adds an item to the Toggle menu so you can switch this rendering on or off later, and installs the NickelTypeFix mod to repair the text-rendering quirks the optimized renderer has (the mod requires Kobo software 4.21 or newer).",
+        "Turns on Kobo's optimized WebKit text rendering for proper ligatures, tracking, kerning, and bundles a mod that fixes some text rendering quirks, resulting in more correct text rendering.",
     default: true,
     hint: 'https://github.com/nicoverbruggen/NickelTypeFix',
 
@@ -65,10 +57,10 @@ export default {
     // ordering changes.
     cleanup: {
         mode: 'optional',
-        title: 'Better typography',
-        removeLabel: 'Turn off better typography',
+        title: 'Better typography and fixes (recommended)',
+        removeLabel: 'Remove better typography and fixes',
         description:
-            'Removes the setting that enables correct kerning and ligatures in certain books, the Typography menu script, and the NickelTypeFix rendering fixes (the mod finishes removing itself on the next reboot). Your default font and reading settings are not changed.',
+            'Removes the setting that improves text rendering, the typography menu script, and uninstalls my mod that fixes text rendering (NickelTypeFix) if it is installed.',
         detect: [['.adds', 'nickel-type-fix']],
         paths: [{ path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] }, { path: ['.adds', 'nickel-type-fix'], recursive: true }],
     },
@@ -80,7 +72,7 @@ export default {
                 type: 'info',
                 title: 'NickelTypeFix',
                 paragraphs: [
-                    'Better typography includes NickelTypeFix, a mod that fixes the rendering quirks of the optimized text renderer: uneven justification, vertical CJK text, and glyph "wobble" on unhinted fonts. It is applied on the reboot after install; every fix is fail-safe and can be configured in the .adds/nickel-type-fix folder.',
+                    'NickelTypeFix is part of the "Better typography" feature, and it repairs the rendering quirks of Kobo\'s optimized text renderer: uneven justification, vertical CJK text, and glyph "wobble" on unhinted fonts. It is applied on the reboot after install. Learn more about this mod on GitHub.',
                 ],
                 link: {
                     label: 'NickelTypeFix on GitHub',
@@ -101,8 +93,8 @@ export default {
      * Contribute NickelTypeFix's KoboRoot.tgz payload (its plugin + marker file)
      * as tar entries the installer merges into the combined KoboRoot.tgz. The
      * asset is the mod's release KoboRoot.tgz verbatim. Contributes nothing when
-     * the deployment doesn't ship the asset or the firmware is below the mod's
-     * floor — the feature's conf settings and toggle still apply on their own.
+     * the deployment doesn't ship the asset — the feature's conf settings and
+     * toggle still apply on their own.
      */
     async koboRootEntries(ctx) {
         if (!includesNickelTypeFix(ctx.deviceInfo)) return [];
@@ -141,8 +133,8 @@ export default {
     //
     // `revertable` marks webkitTextRendering as a setting the feature owns for
     // removal: the flow/uninstaller derive detection and revert from it
-    // (revertTo: null removes the line). The alignment/font settings carry no
-    // such marker — they are general preferences we apply once but never claw back.
+    // (revertTo: null removes the line). The font setting carries no such marker
+    // — it is a general preference we apply once but never claw back.
     confSettings(ctx = {}) {
         const settings = [
             {
@@ -152,7 +144,6 @@ export default {
                 revertable: true,
                 revertTo: null,
             },
-            { section: 'Reading', key: 'readingAlignment', value: 'Left' },
         ];
 
         const additionalFontsInstalled = (ctx.features || []).some((f) => f.id === 'additional-fonts');

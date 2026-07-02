@@ -20,6 +20,11 @@ export function installableVersion(id) {
     return entry ? entry.version : null;
 }
 
+/** Whether this deployment actually bundled the installable's archive. */
+export function installableAvailable(id) {
+    return manifest()[id]?.available === true;
+}
+
 /** The full manifest object (used by app.js to mark features available at startup). */
 export function installablesManifest() {
     return manifest();

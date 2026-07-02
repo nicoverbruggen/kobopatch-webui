@@ -130,10 +130,20 @@ test('Additional Fonts install bundles all three families, strips ZIP dirs and i
     );
 });
 
-test('Better Typography sets reading rendering and alignment; default font only when fonts are installed', () => {
+test('Better typography and fixes exposes label and version', async () => {
+    assert.equal(betterTypography.title, 'Better typography and fixes');
+
+    await withManifest({ nickeltypefix: { version: 'v0.3', available: true } }, () => {
+        assert.equal(betterTypography.version(), 'v0.3');
+    });
+    await withManifest({ nickeltypefix: { version: 'v0.3', available: false } }, () => {
+        assert.equal(betterTypography.version(), null);
+    });
+});
+
+test('Better typography and fixes sets reading rendering; default font only when fonts are installed', () => {
     const readingDefaults = [
-        // webkitTextRendering is revertable (owned for removal); the others are
-        // general preferences applied once and never reverted.
+        // webkitTextRendering is revertable (owned for removal).
         {
             section: 'Reading',
             key: 'webkitTextRendering',
@@ -141,7 +151,6 @@ test('Better Typography sets reading rendering and alignment; default font only 
             revertable: true,
             revertTo: null,
         },
-        { section: 'Reading', key: 'readingAlignment', value: 'Left' },
     ];
 
     // Without the additional fonts, the default reading font is left untouched.
@@ -155,7 +164,7 @@ test('Better Typography sets reading rendering and alignment; default font only 
     ]);
 });
 
-test('Better Typography ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {
+test('Better typography and fixes ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {
     const requested = [];
     const ctx = {
         async bundledAsset(url) {
@@ -242,7 +251,7 @@ test('Cadmus contributes its launcher entry at the top of the menu', () => {
     ]);
 });
 
-test('Better Typography cleanup removes the toggle script, NickelTypeFix, and the WebKit setting', () => {
+test('Better typography and fixes cleanup removes the toggle script, NickelTypeFix, and the WebKit setting', () => {
     const { cleanup } = betterTypography;
 
     assert.equal(cleanup.mode, 'optional');

@@ -66,9 +66,10 @@ async function baseNickelMenuTgz() {
     return buildTarGz([{ path: 'usr/local/Kobo/imageformats/libnm.so', data: bytes('nm plugin'), mode: 0o755 }]);
 }
 
-test('nickelclock is an Advanced feature registered in the NickelMenu feature list', () => {
+test('nickelclock is a Reading Experience feature registered in the NickelMenu feature list', () => {
     assert.ok(NICKELMENU_FEATURES.includes(nickelclock));
-    assert.equal(nickelclock.section, 'Advanced');
+    assert.equal(nickelclock.section, 'Reading Experience');
+    assert.equal(nickelclock.title, 'Display clock when reading');
     assert.equal(nickelclock.default, false);
 });
 

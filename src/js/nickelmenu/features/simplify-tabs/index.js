@@ -67,7 +67,7 @@ export function tabOverrideLines(uiLocale) {
 // so NickelMenu removal's recursive delete cleans it up.
 export default {
     id: 'simplify-tabs',
-    section: 'Interface tweaks',
+    section: 'Interface Tweaks',
     title: 'Simplify navigation tabs',
     description:
         'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar, and this also makes your reading stats available as a separate "Stats" tab.',

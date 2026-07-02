@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { koboHardwareIds, parseKoboVersion, compareFirmware, meetsMinimumVersion } from '../../src/js/kobo/version.js';
+import { koboHardwareIds, minimumSupportedFirmware, parseKoboVersion, compareFirmware, meetsMinimumVersion } from '../../src/js/kobo/version.js';
 
 const HARDWARE_ID = '00000000-0000-0000-0000-000000000390';
 const UNKNOWN_HARDWARE_ID = '00000000-0000-0000-0000-999999999999';
@@ -174,12 +174,13 @@ test('parseKoboVersion rejects malformed version files', () => {
     assert.throws(() => parseKoboVersion('N428000000000,4.9.77,4.45.23646'), /Expected 6 comma-separated fields/);
 });
 
-test('parseKoboVersion marks firmware before 4.6 as incompatible', () => {
-    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.5.99999')).isIncompatible, true);
+test('parseKoboVersion marks firmware before 4.23 as incompatible', () => {
+    assert.equal(minimumSupportedFirmware, '4.23');
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.22.99999')).isIncompatible, true);
 });
 
-test('parseKoboVersion marks firmware 4.6 and later 4.x versions as compatible', () => {
-    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.6.99999')).isIncompatible, false);
+test('parseKoboVersion marks firmware 4.23 and later 4.x versions as compatible', () => {
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.23')).isIncompatible, false);
     assert.equal(parseKoboVersion(versionLine('N428000000000', '4.45.23646')).isIncompatible, false);
 });
 

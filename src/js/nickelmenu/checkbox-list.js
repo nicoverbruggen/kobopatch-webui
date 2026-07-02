@@ -13,7 +13,7 @@ import { showHint } from '../shell/dom.js';
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';

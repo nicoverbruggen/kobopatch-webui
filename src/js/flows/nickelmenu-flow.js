@@ -349,7 +349,7 @@ export function initNickelMenuFlow(state) {
             return {
                 name: 'nm-cfg-' + f.id,
                 title: f.title + (f.required ? ' (required)' : ''),
-                version: f.version,
+                version: typeof f.version === 'function' ? f.version() : f.version,
                 description: f.description,
                 hint: f.hint,
                 sectionTitle: f.section,

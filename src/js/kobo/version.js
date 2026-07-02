@@ -36,6 +36,8 @@ const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', channel: 'kobo14', model: 'Kobo Clara BW' },
 };
 
+const minimumSupportedFirmware = '4.23';
+
 function serialPrefixMatch(expectedPrefix, rawPrefix) {
     const expected = String(expectedPrefix || '').substring(0, 4);
     const actual = String(rawPrefix || '').substring(0, 4);
@@ -102,8 +104,7 @@ function parseKoboVersion(content) {
     const identifiedBy = hardwareInfo ? 'uuid' : null;
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
-    const fwMinor = parseInt(fwParts[1], 10) || 0;
-    const isIncompatible = !(fwMajor === 4 && fwMinor >= 6);
+    const isIncompatible = fwMajor !== 4 || compareFirmware(firmware, minimumSupportedFirmware) < 0;
 
     return {
         serial,
@@ -153,4 +154,4 @@ function meetsMinimumVersion(firmware, minimum) {
     return compareFirmware(firmware, minimum) >= 0;
 }
 
-export { koboHardwareIds, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };
+export { koboHardwareIds, minimumSupportedFirmware, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };

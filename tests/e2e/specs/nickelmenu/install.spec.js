@@ -61,8 +61,8 @@ test.describe('NickelMenu — install', () => {
 
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
-        await expect(page.locator('#nm-config-options')).toContainText('Interface tweaks');
-        await expect(page.locator('#nm-config-options')).toContainText('Text and typography');
+        await expect(page.locator('#nm-config-options')).toContainText('Interface Tweaks');
+        await expect(page.locator('#nm-config-options')).toContainText('Reading Experience');
         await expect(page.getByRole('button', { name: 'Customize NickelMenu preset tab' })).toBeVisible();
 
         // Advanced and Legacy both start collapsed; a normal section stays open. And
@@ -71,7 +71,7 @@ test.describe('NickelMenu — install', () => {
             page.locator('details.nm-config-section', {
                 has: page.locator('.nm-config-section-title', { hasText: title }),
             });
-        await expect(sectionByTitle('Interface tweaks')).toHaveJSProperty('open', true);
+        await expect(sectionByTitle('Interface Tweaks')).toHaveJSProperty('open', true);
         await expect(sectionByTitle('Advanced')).toHaveJSProperty('open', false);
         await expect(sectionByTitle('Legacy')).toHaveJSProperty('open', false);
         const advancedBox = await sectionByTitle('Advanced').boundingBox();
@@ -119,7 +119,7 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#nm-manual-backup-instructions')).toContainText('.kobo');
         await page.click('#btn-nm-backup-next');
 
-        // Review step. The default preset keeps better typography selected, so
+        // Review step. The default preset keeps Better typography and fixes selected, so
         // its NickelTypeFix notice is the one notice shown.
         await expect(page.locator('#step-nm-review')).not.toBeHidden();
         await expect(page.locator('#nm-review-list')).toContainText('NickelMenu');
@@ -339,10 +339,11 @@ test.describe('NickelMenu — install', () => {
         expect(conf).toContain(EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE);
         expect(conf).not.toContain(QUADRUPLE_BACKSLASH_DOT);
 
-        // better-typography (on by default) applies its reading settings; with the
+        // Better typography and fixes (on by default) applies the rendering setting; with the
         // additional fonts also installed, KF Libron becomes the default font.
         expect(conf).toContain('webkitTextRendering=optimizeLegibility');
-        expect(conf).toContain('readingAlignment=Left');
+        expect(conf).toContain('readingAlignment=\n');
+        expect(conf).not.toContain('readingAlignment=Left');
         expect(conf).toContain('readingFontFamily=KF Libron');
 
         // Verify NickelMenu items file exists and has expected modifications

@@ -15,7 +15,7 @@ export const CUSTOM_MENU_ICON_URL = new URL('./.cog.png', import.meta.url).href;
 // simplify-tabs); custom-menu only owns the base Toggle menu.
 export default {
     id: 'custom-menu',
-    section: 'Interface tweaks',
+    section: 'Interface Tweaks',
     title: 'Set up NickelMenu preset',
     description:
         'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation bar. You can customize the icon and label.',

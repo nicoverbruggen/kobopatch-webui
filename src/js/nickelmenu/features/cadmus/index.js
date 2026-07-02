@@ -10,7 +10,7 @@ export default {
     section: 'Reading Apps',
     title: 'Install Cadmus',
     description:
-        'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean reading experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
+        'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean Reading Experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
     default: false,
     available: false, // set to true at runtime if Cadmus assets exist
     directories: ['.adds/cadmus'],
