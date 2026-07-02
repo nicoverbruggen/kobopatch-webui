@@ -344,7 +344,7 @@ test.describe('NickelMenu — removal', () => {
         expect(await mockPathExists(page, '.adds', 'nickelclock')).toBe(false);
     });
 
-    test('with device — Better typography and fixes is detected by the conf setting and reverts only the WebKit tweak', async ({ page }) => {
+    test('with device — Better typography is detected by the conf setting and reverts only the WebKit tweak', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
         // NickelMenu installed, with the typography-fixes settings already applied
@@ -363,7 +363,7 @@ test.describe('NickelMenu — removal', () => {
         // Detected via its conf setting, offered for removal with its own label.
         await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
         await expect(page.locator('input[name="nm-uninstall-better-typography"]')).toBeChecked();
-        await expect(page.locator('#nm-uninstall-options')).toContainText('Turn off Better typography and fixes');
+        await expect(page.locator('#nm-uninstall-options')).toContainText('Remove better typography and fixes');
 
         await page.click('#btn-nm-next');
         await skipNmBackup(page);
@@ -384,7 +384,7 @@ test.describe('NickelMenu — removal', () => {
         expect(await mockPathExists(page, '.adds', 'nickel-type-fix')).toBe(false);
     });
 
-    test('with device — Better typography and fixes is detected by the NickelTypeFix directory alone', async ({ page }) => {
+    test('with device — Better typography is detected by the NickelTypeFix directory alone', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
         // No webkitTextRendering in the conf (e.g. the user toggled it off on
