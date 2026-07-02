@@ -5,6 +5,7 @@ import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 
 import { handleAdminBackendRoute, errorLoggingEnabledFromEnv } from './admin/routes/index.js';
+import { startWeeklyReportScheduler } from './admin/ntfy-report.mjs';
 import { storageDir } from './storage.mjs';
 
 // Served directory. Defaults to dist/; the dev server points it (via DIST_DIR)
@@ -450,4 +451,6 @@ createServer((req, res) => {
 }).listen(PORT, () => {
     console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
     if (liveReload) setupCssWatch();
+    // Weekly ntfy error digest — no-op unless NTFY_URL is set.
+    startWeeklyReportScheduler({ storageDir: storageDir() });
 });

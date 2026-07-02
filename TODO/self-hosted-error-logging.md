@@ -119,7 +119,10 @@ Kobo hardware UUID/serial (those must never be logged).
   table of errors when `ADMIN_USERNAME` + `ADMIN_PASSWORD` are set and the visitor
   passes Basic Auth. `GET /admin/errors.sqlite` streams the raw SQLite file as a
   browser download. If either env var is missing, both endpoints are disabled
-  (404).
+  (404). The page is styled after the app's design tokens (light/dark via
+  `prefers-color-scheme`), adds summary stat tiles (total / last 7 days /
+  sessions / device-write failures) and kind badges, and carries its own strict
+  CSP as a second layer behind the HTML escaping.
 - **Client reporting — DONE.** `src/js/shell/error-report.js` sends unexpected
   errors from `shell/error-screen.js` and device-write failures surfaced through
   the shared error screen. It mints/reuses a random per-session ID, includes app
@@ -135,10 +138,14 @@ Kobo hardware UUID/serial (those must never be logged).
 - **Growth/retention.** A single DB file, so no file-count problem; watch row
   count instead. Optionally prune rows older than N days on startup (a single
   `DELETE FROM errors WHERE ts < ?`). `VACUUM` only if the file actually bloats.
-- **Optional live alerting: `ERROR_WEBHOOK_URL`.** If set, the server also POSTs a
-  compact summary to a Discord/Telegram/ntfy webhook for a push notification.
-  Best-effort — a webhook failure must never break the `/api/error` response or
-  the DB insert.
+- **Alerting — DONE as a weekly ntfy digest** (supersedes the per-error
+  `ERROR_WEBHOOK_URL` idea; a weekly aggregate beats a push per error for this
+  traffic level). `scripts/admin/ntfy-report.mjs`, enabled by `NTFY_URL`
+  (optional `NTFY_TOKEN` for protected topics): an hourly check sends one digest
+  per 7 days — counts by kind/version, sessions affected, top messages, plus a
+  zero-error heartbeat — with the last send time tracked in
+  `<STORAGE_DIR>/ntfy-report.json` so the cadence survives redeploys. Best-effort;
+  a failed push leaves the state untouched and retries on the next check.
 - **Client-side rate-limit + dedupe — required, see open question.** A looping
   error (e.g. a render error that re-throws every frame) must not flood the DB. At
   minimum: collapse identical `message+stack` within a session and cap reports per
@@ -216,11 +223,13 @@ Deploy logging is done (see Status). Remaining work is the error half:
 - [x] ~~Admin error log route: `GET /admin` protected by browser Basic Auth from
       `ADMIN_USERNAME` / `ADMIN_PASSWORD`, showing a paginated error table, plus
       `GET /admin/errors.sqlite` for raw DB download.~~
-- [ ] Optional `ERROR_WEBHOOK_URL` mirror (best-effort, non-blocking).
+- [x] ~~Alerting: weekly ntfy digest via `NTFY_URL`/`NTFY_TOKEN`
+      (`scripts/admin/ntfy-report.mjs`, hourly due-check, state in
+      `<STORAGE_DIR>/ntfy-report.json`) — supersedes the per-error
+      `ERROR_WEBHOOK_URL` mirror.~~
 - [x] ~~Docs: PROJECT.md "Deploy Logging" — Coolify persistent volume mount +
-      `STORAGE_DIR` + the deploy half are documented.~~ Remaining: extend it with
-      the `errors.sqlite` schema, the `ERROR_WEBHOOK_URL` env, and the no-PII
-      contract once error logging lands.
+      `STORAGE_DIR`, the error half (`errors.sqlite`, `/admin`, no-PII contract),
+      and the ntfy weekly digest are documented.~~
 
 ## Tests
 
@@ -239,7 +248,11 @@ Deploy logging is done (see Status). Remaining work is the error half:
 - [x] ~~Unit (admin route): no env vars disables the endpoint, missing/wrong Basic
       Auth challenges, a missing DB gets an empty page, valid credentials download
       `errors.sqlite` as an attachment, and `/admin` paginates/escapes the
-      newest-first table.~~
+      newest-first table (plus stat tiles, kind badges, and the page CSP).~~
+- [x] ~~Unit (ntfy digest): `tests/unit/ntfy-report.test.js` covers env parsing,
+      the windowed SQLite aggregation, digest formatting (incl. the zero-error
+      heartbeat), the 7-day due-check against the state file, the Bearer token
+      header, and that a failed push leaves the state untouched for retry.~~
 - [ ] E2E (optional): force an unexpected error in the app and assert a beacon to
       `/api/error` is issued (point the test server's `STORAGE_DIR` at a temp dir
       and assert a row landed in the DB).

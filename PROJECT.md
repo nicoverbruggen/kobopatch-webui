@@ -363,6 +363,7 @@ client error reports are stored in a SQLite database at `<STORAGE_DIR>/errors.sq
 /app/storage/
   logs/deploy-<version>.log   # deploy/boot records (one file per version)
   errors.sqlite               # error reports
+  ntfy-report.json            # last weekly-digest send time (only with NTFY_URL set)
 ```
 
 The client reports unexpected/global errors and device-write failures through
@@ -385,9 +386,22 @@ schema changes can be added without replacing existing databases.
 
 The error log can be viewed at `GET /admin` when both `ADMIN_USERNAME` and `ADMIN_PASSWORD` are
 set. The endpoint uses browser Basic Auth, returns a native login prompt for missing or wrong
-credentials, and shows a paginated newest-first table of reports. `GET /admin/errors.sqlite`
-streams the raw database as an attachment. If either admin env var is missing, both endpoints are
-disabled and return 404.
+credentials, and shows a paginated newest-first table of reports plus summary stat tiles (total,
+last 7 days, sessions affected, device-write failures). The page is standalone server-rendered
+HTML that mirrors the app's design tokens (light/dark follows the OS via `prefers-color-scheme`)
+and ships its own strict CSP (`default-src 'none'`) as a second layer behind the HTML-escaping of
+report content. `GET /admin/errors.sqlite` streams the raw database as an attachment. If either
+admin env var is missing, both endpoints are disabled and return 404.
+
+**Weekly ntfy digest.** Setting `NTFY_URL` to a full [ntfy](https://ntfy.sh) topic URL makes the
+production server push a weekly error summary (`scripts/admin/ntfy-report.mjs`): counts by kind
+and app version, sessions affected, and the top messages for the trailing 7 days — a zero-error
+week still sends, as a heartbeat that the pipeline is alive. `NTFY_TOKEN` optionally adds a
+`Bearer` token for protected topics. The server checks hourly whether seven days have passed since
+the last digest; the send time is tracked in `<STORAGE_DIR>/ntfy-report.json` so the cadence
+survives restarts and redeploys, and the state only advances after a successful push (a failed
+send retries on the next check). Like the rest of the logging stack it is best-effort and contains
+only aggregate counts and error messages — no IPs, no Kobo serials/UUIDs.
 
 **Coolify persistent storage (one-time setup).** The app deploys via Nixpacks, so Coolify cannot
 infer a volume from the repo — add it once in the UI and it persists across every redeploy (a

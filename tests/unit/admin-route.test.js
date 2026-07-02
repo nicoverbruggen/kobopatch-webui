@@ -202,6 +202,37 @@ test('authorized /admin page lists errors newest first and escapes error content
     }
 });
 
+test('authorized /admin page renders stat tiles and kind badges', async () => {
+    const dir = tmp();
+    try {
+        // Default meta.ts is "now", so both rows land inside the 7-day window.
+        recordError(dir, { sessionId: 's-a', kind: 'deviceWrite', message: 'write failed', flowStep: 'step-writing' });
+        recordError(dir, { sessionId: 's-b', kind: 'unexpected', message: 'boom' });
+        recordError(dir, { sessionId: 's-b', kind: 'unexpected', message: 'boom again' });
+        closeErrorStores();
+
+        const credentials = { username: 'admin', password: 'secret' };
+        const res = await run(handleAdminErrorsPage, mockReq({ authorization: basic('admin', 'secret') }), {
+            storageDir: dir,
+            credentials,
+            url: new URL('http://localhost/admin'),
+        });
+        const body = res.body.toString('utf-8');
+
+        assert.equal(res.statusCode, 200);
+        assert.match(body, /Total errors<\/p><p class="value">3</);
+        assert.match(body, /Last 7 days<\/p><p class="value">3</);
+        assert.match(body, /Sessions affected<\/p><p class="value">2</);
+        assert.match(body, /Device-write failures<\/p><p class="value">1</);
+        assert.match(body, /class="badge warn">deviceWrite</);
+        assert.match(body, /class="badge alert">unexpected</);
+        assert.match(res.headers['Content-Security-Policy'], /default-src 'none'/);
+    } finally {
+        closeErrorStores();
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
 test('authorized /admin page paginates errors with newest rows first', async () => {
     const dir = tmp();
     try {
