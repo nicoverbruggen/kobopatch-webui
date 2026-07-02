@@ -19,7 +19,7 @@ The project itself currently has a few operational modes, depending on what it i
 
 **This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) [fork](https://github.com/nicoverbruggen/NickelMenu) with an optional [curated configuration](https://github.com/nicoverbruggen/kobo-config).** 
 
-This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, NickelClock (which displays the clock while you're reading), and alternative reading apps like KOReader or Cadmus if you'd like. (You can pick and choose which specific tweaks to apply.)
+This includes custom home screen changes, a preconfigured NickelMenu, some extra fonts, screensavers, NickelClock (which displays the clock while you're reading), NickelTypeFix (which repairs typesetting issues like justification and vertical text rendering), and alternative reading apps like KOReader or Cadmus if you'd like. (You can pick and choose which specific tweaks to apply.)
 
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
@@ -104,6 +104,7 @@ Some dependencies (see `installables.lock`) are bundled as part of the webapp, a
 **Optional add-ons**
 
 - [NickelClock](https://github.com/shermp/NickelClock) — a clock on the reading screen. _(MIT)_
+- [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) — fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of "Better typography and fixes". _(MIT)_
 - [KOReader](https://github.com/koreader/koreader) — a feature-rich document and e-book reader. _(AGPL-3.0)_
 - [Cadmus](https://github.com/OGKevin/cadmus) — a reading companion app for Kobo, based on [Plato](https://github.com/baskerville/plato). _(AGPL-3.0)_
 - The optional curated fonts — [Readerly](https://github.com/nicoverbruggen/readerly) _(OFL-1.1)_, [Libron](https://github.com/nicoverbruggen/libron) _(OFL-1.1)_, and [Cartisse](https://github.com/nicoverbruggen/cartisse) _(Bitstream Charter license)_ — part of the [ebook-fonts](https://github.com/nicoverbruggen/ebook-fonts) collection ([website](https://ebook-fonts.nicoverbruggen.be)), repackaged for Kobo.
