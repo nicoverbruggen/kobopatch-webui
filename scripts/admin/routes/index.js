@@ -1,5 +1,5 @@
 import { handleAdminErrorsDownload, handleAdminErrorsPage } from './admin.js';
-import { handleErrorReport } from './error-report.js';
+import { handleErrorReport, trustProxyFromEnv } from './error-report.js';
 
 export * from './admin.js';
 export * from './error-report.js';
@@ -11,10 +11,15 @@ export function errorLoggingEnabledFromEnv(env = process.env) {
 export function handleAdminBackendRoute(
     req,
     res,
-    { storageDir, url = new URL(req.url || '/', 'http://localhost'), errorLoggingEnabled = errorLoggingEnabledFromEnv() } = {},
+    {
+        storageDir,
+        url = new URL(req.url || '/', 'http://localhost'),
+        errorLoggingEnabled = errorLoggingEnabledFromEnv(),
+        trustProxy = trustProxyFromEnv(),
+    } = {},
 ) {
     if (req.method === 'POST' && url.pathname === '/api/error') {
-        handleErrorReport(req, res, { storageDir, enabled: errorLoggingEnabled });
+        handleErrorReport(req, res, { storageDir, enabled: errorLoggingEnabled, trustProxy });
         return true;
     }
 

@@ -22,6 +22,7 @@ export const ERROR_REPORT_RATE_LIMIT = {
 };
 
 const rateWindows = new Map(); // ip -> { count, resetAt }
+let nextRateSweepAt = 0;
 
 function headerValue(headers, name) {
     const value = headers?.[name];
@@ -37,19 +38,50 @@ function normalizeIp(value) {
     return ip.startsWith('::ffff:') ? ip.slice(7) : ip;
 }
 
-export function clientIpFromRequest(req) {
-    return (
-        normalizeIp(headerValue(req.headers, 'cf-connecting-ip')) ||
-        normalizeIp(headerValue(req.headers, 'x-real-ip')) ||
-        normalizeIp(headerValue(req.headers, 'x-forwarded-for')) ||
-        normalizeIp(req.socket?.remoteAddress || req.connection?.remoteAddress)
-    );
+// Headers a fronting proxy can set with the real client IP. These are trusted
+// only when TRUST_PROXY says so: with no proxy in front, anyone can forge them
+// (11 requests with `cf-connecting-ip: <victim>` would ban an arbitrary IP).
+export const DEFAULT_PROXY_IP_HEADERS = ['cf-connecting-ip', 'x-real-ip', 'x-forwarded-for'];
+
+/**
+ * Which proxy IP headers to trust, from `TRUST_PROXY`: unset/`0`/`false`/`off`/
+ * `no` → none (socket address only), `1`/`true`/`on`/`yes` → the default header
+ * chain, any other value → exactly that header name (e.g. `TRUST_PROXY=x-real-ip`
+ * behind Traefik ignores a forged `cf-connecting-ip` passed through it).
+ */
+export function trustProxyFromEnv(env = process.env) {
+    const raw = String(env.TRUST_PROXY ?? '')
+        .trim()
+        .toLowerCase();
+    if (!raw || /^(0|false|off|no)$/.test(raw)) return null;
+    if (/^(1|true|on|yes)$/.test(raw)) return DEFAULT_PROXY_IP_HEADERS;
+    return [raw];
+}
+
+export function clientIpFromRequest(req, trustedHeaders = null) {
+    for (const name of trustedHeaders || []) {
+        const ip = normalizeIp(headerValue(req.headers, name));
+        if (ip) return ip;
+    }
+    return normalizeIp(req.socket?.remoteAddress || req.connection?.remoteAddress);
+}
+
+// Drop expired buckets at most once per window, so one-off IPs don't accumulate
+// in memory until the process restarts.
+function sweepRateWindows(now, windowMs) {
+    if (now < nextRateSweepAt) return;
+    nextRateSweepAt = now + windowMs;
+    for (const [ip, bucket] of rateWindows) {
+        if (now >= bucket.resetAt) rateWindows.delete(ip);
+    }
 }
 
 function rateLimitStatus(ip, now, { maxRequests, windowMs }) {
     if (!ip || !Number.isFinite(maxRequests) || maxRequests < 1 || !Number.isFinite(windowMs) || windowMs < 1) {
         return { limited: false, count: 0 };
     }
+
+    sweepRateWindows(now, windowMs);
 
     let bucket = rateWindows.get(ip);
     if (!bucket || now >= bucket.resetAt) {
@@ -67,9 +99,14 @@ function rateLimitStatus(ip, now, { maxRequests, windowMs }) {
 
 export function resetErrorRateLimitsForTests() {
     rateWindows.clear();
+    nextRateSweepAt = 0;
 }
 
-export function handleErrorReport(req, res, { storageDir, enabled = true, rateLimit = ERROR_REPORT_RATE_LIMIT, now = Date.now } = {}) {
+export function rateWindowCountForTests() {
+    return rateWindows.size;
+}
+
+export function handleErrorReport(req, res, { storageDir, enabled = true, rateLimit = ERROR_REPORT_RATE_LIMIT, now = Date.now, trustProxy = null } = {}) {
     let done = false;
     const finish = () => {
         if (done) return;
@@ -82,18 +119,20 @@ export function handleErrorReport(req, res, { storageDir, enabled = true, rateLi
     // can't tell logging is off.
     if (!enabled) {
         finish();
+        req.destroy?.();
         return;
     }
 
-    const ip = clientIpFromRequest(req);
-    if (isErrorIpBanned(storageDir, ip)) {
+    const nowMs = typeof now === 'function' ? now() : now;
+    const ip = clientIpFromRequest(req, trustProxy);
+    if (isErrorIpBanned(storageDir, ip, { now: nowMs })) {
         finish();
         req.destroy?.();
         return;
     }
 
     const ts = new Date().toISOString();
-    const rate = rateLimitStatus(ip, typeof now === 'function' ? now() : now, rateLimit);
+    const rate = rateLimitStatus(ip, nowMs, rateLimit);
     if (rate.limited) {
         recordErrorIpBan(storageDir, {
             ip,

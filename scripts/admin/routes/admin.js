@@ -8,9 +8,12 @@ import { timingSafeEqual } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
+import { IP_BAN_DURATION_MS } from '../error-store.mjs';
+
 const require = createRequire(import.meta.url);
 const REALM = 'KoboPatch Web UI admin';
 const PAGE_SIZE = 50;
+const BAN_LIST_LIMIT = 50;
 
 let DatabaseSync;
 
@@ -143,7 +146,7 @@ const EMPTY_STATS = { last7d: 0, sessions: 0, deviceWrites: 0 };
 function readErrorPage(storageDir, page, now = Date.now()) {
     const file = errorsDbPath(storageDir);
     if (!existsSync(file)) {
-        return { rows: [], total: 0, page: 1, pageCount: 1, stats: EMPTY_STATS, dbMissing: true };
+        return { rows: [], total: 0, page: 1, pageCount: 1, stats: EMPTY_STATS, bans: [], banCount: 0, dbMissing: true };
     }
 
     if (!DatabaseSync) ({ DatabaseSync } = require('node:sqlite'));
@@ -169,7 +172,21 @@ function readErrorPage(storageDir, page, now = Date.now()) {
                  LIMIT ? OFFSET ?`,
             )
             .all(PAGE_SIZE, offset);
-        return { rows, total, page: normalizedPage, pageCount, stats, dbMissing: false };
+        const banCount = db.prepare('SELECT COUNT(*) AS count FROM ip_blacklist').get().count;
+        const bans = db
+            .prepare(
+                `SELECT ip, banned_at, reason, request_count, window_seconds
+                 FROM ip_blacklist
+                 ORDER BY banned_at DESC
+                 LIMIT ?`,
+            )
+            .all(BAN_LIST_LIMIT)
+            .map((ban) => {
+                // Same expiry rule as the enforcement in error-store.mjs.
+                const bannedAt = Date.parse(ban.banned_at);
+                return { ...ban, active: Number.isFinite(bannedAt) && now - bannedAt < IP_BAN_DURATION_MS };
+            });
+        return { rows, total, page: normalizedPage, pageCount, stats, bans, banCount, dbMissing: false };
     } finally {
         db.close();
     }
@@ -224,6 +241,37 @@ function renderErrorRow(row) {
     </tr>`;
 }
 
+function renderBanRow(ban) {
+    const status = ban.active ? '<span class="badge alert">active</span>' : '<span class="badge">expired</span>';
+    return `<tr>
+        <td class="mono">${escapeHtml(ban.ip)}</td>
+        <td><time datetime="${escapeHtml(ban.banned_at)}" title="${escapeHtml(ban.banned_at)}">${escapeHtml(shortTime(ban.banned_at))}</time></td>
+        <td>${status}</td>
+        ${cell(ban.reason, 'mono')}
+        ${cell(ban.request_count, 'num')}
+        ${cell(ban.window_seconds, 'num')}
+    </tr>`;
+}
+
+function renderBansSection(bans, banCount) {
+    const heading = `<h2>Banned IPs${banCount ? ` (${banCount})` : ''}</h2>`;
+    if (!bans.length) return `${heading}<p class="empty">No banned IPs.</p>`;
+    const overflow = banCount > bans.length ? `<p class="meta section-note">Showing the ${bans.length} most recent of ${banCount} bans.</p>` : '';
+    return `${heading}${overflow}<div class="card"><div class="table-scroll"><table>
+        <thead>
+            <tr>
+                <th>IP</th>
+                <th>Banned (UTC)</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Requests</th>
+                <th>Window (s)</th>
+            </tr>
+        </thead>
+        <tbody>${bans.map(renderBanRow).join('')}</tbody>
+    </table></div></div>`;
+}
+
 function renderStatTiles(total, stats) {
     const tiles = [
         ['Total errors', total],
@@ -236,7 +284,7 @@ function renderStatTiles(total, stats) {
         .join('')}</section>`;
 }
 
-function renderAdminPage({ rows, total, page, pageCount, stats = EMPTY_STATS, dbMissing = false }) {
+function renderAdminPage({ rows, total, page, pageCount, stats = EMPTY_STATS, bans = [], banCount = 0, dbMissing = false }) {
     const prev = page > 1 ? `<a class="btn" href="/admin?page=${page - 1}">&larr; Previous</a>` : '<span class="btn disabled">&larr; Previous</span>';
     const next = page < pageCount ? `<a class="btn" href="/admin?page=${page + 1}">Next &rarr;</a>` : '<span class="btn disabled">Next &rarr;</span>';
     const body = dbMissing
@@ -298,6 +346,8 @@ function renderAdminPage({ rows, total, page, pageCount, stats = EMPTY_STATS, db
         }
         .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 48px; }
         header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+        h2 { margin: 32px 0 12px; font-size: 1.05rem; }
+        .section-note { margin: -6px 0 12px; font-size: 0.85rem; }
         .eyebrow { margin: 0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--primary); }
         h1 { margin: 2px 0 4px; font-size: 1.55rem; line-height: 1.2; }
         .meta { margin: 0; color: var(--text-secondary); font-size: 0.9rem; }
@@ -368,8 +418,10 @@ function renderAdminPage({ rows, total, page, pageCount, stats = EMPTY_STATS, db
             <a class="btn" href="/admin/errors.sqlite">Download SQLite</a>
         </header>
         ${renderStatTiles(total, stats)}
+        <h2>Error reports</h2>
         ${body}
         <nav>${prev}<span class="page" aria-current="page">Page ${page} of ${pageCount}</span>${next}</nav>
+        ${renderBansSection(bans, banCount)}
     </div>
 </body>
 </html>

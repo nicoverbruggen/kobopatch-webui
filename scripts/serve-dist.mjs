@@ -5,6 +5,7 @@ import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 
 import { handleAdminBackendRoute, errorLoggingEnabledFromEnv } from './admin/routes/index.js';
+import { pruneErrorStore, retentionDaysFromEnv } from './admin/error-store.mjs';
 import { startWeeklyReportScheduler } from './admin/ntfy-report.mjs';
 import { storageDir } from './storage.mjs';
 
@@ -451,6 +452,9 @@ createServer((req, res) => {
 }).listen(PORT, () => {
     console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
     if (liveReload) setupCssWatch();
+    // Startup housekeeping: drop error rows past retention and expired IP bans.
+    const pruned = pruneErrorStore(storageDir(), { retentionDays: retentionDaysFromEnv() });
+    if (pruned.errors || pruned.bans) console.log(`Pruned ${pruned.errors} error report(s) past retention and ${pruned.bans} expired IP ban(s)`);
     // Weekly ntfy error digest — no-op unless NTFY_URL is set.
     startWeeklyReportScheduler({ storageDir: storageDir() });
 });

@@ -9,7 +9,7 @@ import { PassThrough } from 'node:stream';
 
 import { handleAdminBackendRoute } from '../../scripts/admin/routes/index.js';
 import { adminCredentialsFromEnv, handleAdminErrorsDownload, handleAdminErrorsPage, parseBasicAuth } from '../../scripts/admin/routes/admin.js';
-import { closeErrorStores, recordError } from '../../scripts/admin/error-store.mjs';
+import { closeErrorStores, recordError, recordErrorIpBan } from '../../scripts/admin/error-store.mjs';
 
 function tmp() {
     return mkdtempSync(join(tmpdir(), 'admin-route-'));
@@ -227,6 +227,66 @@ test('authorized /admin page renders stat tiles and kind badges', async () => {
         assert.match(body, /class="badge warn">deviceWrite</);
         assert.match(body, /class="badge alert">unexpected</);
         assert.match(res.headers['Content-Security-Policy'], /default-src 'none'/);
+    } finally {
+        closeErrorStores();
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test('authorized /admin page lists banned IPs with active/expired status', async () => {
+    const dir = tmp();
+    try {
+        recordErrorIpBan(dir, {
+            ip: '203.0.113.66',
+            bannedAt: new Date().toISOString(),
+            reason: 'error_report_rate_limit',
+            requestCount: 11,
+            windowSeconds: 900,
+        });
+        recordErrorIpBan(dir, {
+            ip: '198.51.100.7',
+            bannedAt: '2026-01-01T00:00:00.000Z',
+            reason: 'error_report_rate_limit',
+            requestCount: 42,
+            windowSeconds: 900,
+        });
+        closeErrorStores();
+
+        const credentials = { username: 'admin', password: 'secret' };
+        const res = await run(handleAdminErrorsPage, mockReq({ authorization: basic('admin', 'secret') }), {
+            storageDir: dir,
+            credentials,
+            url: new URL('http://localhost/admin'),
+        });
+        const body = res.body.toString('utf-8');
+
+        assert.equal(res.statusCode, 200);
+        assert.match(body, /Banned IPs \(2\)/);
+        assert.match(body, /203\.0\.113\.66[\s\S]*?class="badge alert">active</);
+        assert.match(body, /198\.51\.100\.7[\s\S]*?class="badge">expired</);
+        assert.match(body, /No errors recorded yet\./);
+    } finally {
+        closeErrorStores();
+        rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test('authorized /admin page shows an empty banned-IPs state when none exist', async () => {
+    const dir = tmp();
+    try {
+        recordError(dir, { kind: 'unexpected', message: 'boom' });
+        closeErrorStores();
+
+        const credentials = { username: 'admin', password: 'secret' };
+        const res = await run(handleAdminErrorsPage, mockReq({ authorization: basic('admin', 'secret') }), {
+            storageDir: dir,
+            credentials,
+            url: new URL('http://localhost/admin'),
+        });
+        const body = res.body.toString('utf-8');
+
+        assert.match(body, /Banned IPs<\/h2>/);
+        assert.match(body, /No banned IPs\./);
     } finally {
         closeErrorStores();
         rmSync(dir, { recursive: true, force: true });

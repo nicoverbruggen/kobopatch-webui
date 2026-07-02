@@ -113,7 +113,12 @@ Kobo hardware UUID/serial (those must never be logged).
   one row into `errors.sqlite` (parameterised — never string-build SQL). Respond
   `204` always (even on a bad body) so a malformed beacon can't surface as a client
   error. Rate-limit by client IP before reading the body (10 requests per 15
-  minutes); only IPs that exceed the threshold are written to `ip_blacklist`. Keep
+  minutes); only IPs that exceed the threshold are written to `ip_blacklist`, bans
+  expire after 24 h, and expired ban rows are pruned at startup. The client IP is
+  the socket address unless `TRUST_PROXY` names the proxy header(s) to trust
+  (forgeable otherwise — production behind Coolify sets `TRUST_PROXY=x-real-ip`).
+  Error rows past `ERROR_RETENTION_DAYS` (default 9999 — effectively keep
+  everything for now) are pruned at startup. Keep
   it best-effort: a DB-open/insert failure is swallowed, mirroring the deploy logger.
 - **Admin error log route — DONE.** `GET /admin` shows a paginated newest-first
   table of errors when `ADMIN_USERNAME` + `ADMIN_PASSWORD` are set and the visitor
@@ -121,7 +126,8 @@ Kobo hardware UUID/serial (those must never be logged).
   browser download. If either env var is missing, both endpoints are disabled
   (404). The page is styled after the app's design tokens (light/dark via
   `prefers-color-scheme`), adds summary stat tiles (total / last 7 days /
-  sessions / device-write failures) and kind badges, and carries its own strict
+  sessions / device-write failures) and kind badges, lists the current
+  `ip_blacklist` contents with active/expired status, and carries its own strict
   CSP as a second layer behind the HTML escaping.
 - **Client reporting — DONE.** `src/js/shell/error-report.js` sends unexpected
   errors from `shell/error-screen.js` and device-write failures surfaced through
@@ -135,9 +141,11 @@ Kobo hardware UUID/serial (those must never be logged).
   `STORAGE_DIR=/app/storage`; locally fall back to `./tmp/storage` (gitignored) the
   same way `log-deploy.mjs` does — consider factoring that `process.env.STORAGE_DIR
   || ./tmp/storage` resolution into a shared helper the error route reuses.
-- **Growth/retention.** A single DB file, so no file-count problem; watch row
-  count instead. Optionally prune rows older than N days on startup (a single
-  `DELETE FROM errors WHERE ts < ?`). `VACUUM` only if the file actually bloats.
+- **Growth/retention — DONE.** A single DB file, so no file-count problem; rows
+  older than `ERROR_RETENTION_DAYS` (default 9999, effectively forever for now)
+  and expired IP bans are pruned
+  on startup (`pruneErrorStore` in `error-store.mjs`). `VACUUM` only if the file
+  actually bloats.
 - **Alerting — DONE as a weekly ntfy digest** (supersedes the per-error
   `ERROR_WEBHOOK_URL` idea; a weekly aggregate beats a push per error for this
   traffic level). `scripts/admin/ntfy-report.mjs`, enabled by `NTFY_URL`
@@ -274,5 +282,6 @@ Deploy logging is done (see Status). Remaining work is the error half:
 - **Consent/operator gating.** Current implementation sends reports from the
   client whenever an unexpected/device-write failure occurs; the operator can
   disable storage with `ERROR_LOGGING=off`, and the endpoint still returns 204.
-- **Retention.** Decide whether/when to prune old rows (e.g. `DELETE` rows older
-  than N days on startup).
+- ~~**Retention.**~~ Resolved: rows older than `ERROR_RETENTION_DAYS` (default 9999 —
+  effectively keep everything until report volume is known;
+  `0`/`off` disables) are deleted at server startup, alongside expired IP bans.

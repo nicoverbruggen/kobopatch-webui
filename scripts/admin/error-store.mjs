@@ -14,12 +14,21 @@
  */
 
 import { join } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 import { runErrorStoreMigrations } from './migrations/index.js';
 
 const require = createRequire(import.meta.url);
+
+/** How long a rate-limit ban lasts. Shared IPs (NAT, campus networks) recover
+ * after this window instead of losing error reporting forever. */
+export const IP_BAN_DURATION_MS = 24 * 60 * 60 * 1000;
+
+/** Error rows older than this many days are pruned on server startup. The
+ * default is deliberately effectively-forever (~27 years) while report volume
+ * is still unknown; tighten via ERROR_RETENTION_DAYS once real data exists. */
+export const ERROR_RETENTION_DAYS = 9999;
 
 // Per-column length caps, applied before insert so a runaway stack or hostile
 // payload can't bloat the row.
@@ -52,7 +61,7 @@ function getConn(dir) {
         `INSERT INTO errors (ts, session_id, app_version, kind, message, stack, user_agent, flow_step)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
-    const selectBan = db.prepare('SELECT 1 FROM ip_blacklist WHERE ip = ? LIMIT 1');
+    const selectBan = db.prepare('SELECT banned_at FROM ip_blacklist WHERE ip = ? LIMIT 1');
     const upsertBan = db.prepare(
         `INSERT INTO ip_blacklist (ip, banned_at, reason, request_count, window_seconds)
          VALUES (?, ?, ?, ?, ?)
@@ -101,11 +110,16 @@ export function recordError(dir, report = {}, meta = {}) {
     }
 }
 
-export function isErrorIpBanned(dir, ip) {
+export function isErrorIpBanned(dir, ip, { now = Date.now() } = {}) {
     if (!dir || !ip) return false;
     try {
         const { selectBan } = getConn(dir);
-        return !!selectBan.get(clip(ip, MAX.ip));
+        const ban = selectBan.get(clip(ip, MAX.ip));
+        if (!ban) return false;
+        // Bans expire after IP_BAN_DURATION_MS rather than lasting forever; an
+        // unparseable banned_at counts as expired, not as a permanent ban.
+        const bannedAt = Date.parse(ban.banned_at);
+        return Number.isFinite(bannedAt) && now - bannedAt < IP_BAN_DURATION_MS;
     } catch (err) {
         console.warn(`error-store: failed to check IP ban: ${err.message}`);
         return false;
@@ -127,6 +141,42 @@ export function recordErrorIpBan(dir, ban = {}) {
     } catch (err) {
         console.warn(`error-store: failed to record IP ban: ${err.message}`);
         return false;
+    }
+}
+
+/**
+ * Retention from `ERROR_RETENTION_DAYS`: unset → the 90-day default, a positive
+ * integer → that many days, `0`/`off`/`false`/`no` → null (keep forever).
+ */
+export function retentionDaysFromEnv(env = process.env) {
+    const raw = String(env.ERROR_RETENTION_DAYS ?? '').trim();
+    if (!raw) return ERROR_RETENTION_DAYS;
+    if (/^(0|off|false|no)$/i.test(raw)) return null;
+    const days = Number.parseInt(raw, 10);
+    return Number.isFinite(days) && days > 0 ? days : ERROR_RETENTION_DAYS;
+}
+
+/**
+ * Startup housekeeping: delete error rows past retention (skipped when
+ * `retentionDays` is null) and IP-ban rows whose ban has expired — expired bans
+ * carry no state worth keeping, and dropping them keeps stored IPs short-lived.
+ * Never creates the database, never throws; returns `{ errors, bans }` counts.
+ */
+export function pruneErrorStore(dir, { retentionDays = ERROR_RETENTION_DAYS, now = Date.now() } = {}) {
+    const pruned = { errors: 0, bans: 0 };
+    if (!dir || !existsSync(join(dir, 'errors.sqlite'))) return pruned;
+    try {
+        const { db } = getConn(dir);
+        if (retentionDays > 0) {
+            const cutoff = new Date(now - retentionDays * 24 * 60 * 60 * 1000).toISOString();
+            pruned.errors = db.prepare('DELETE FROM errors WHERE ts < ?').run(cutoff).changes;
+        }
+        const banCutoff = new Date(now - IP_BAN_DURATION_MS).toISOString();
+        pruned.bans = db.prepare('DELETE FROM ip_blacklist WHERE banned_at < ?').run(banCutoff).changes;
+        return pruned;
+    } catch (err) {
+        console.warn(`error-store: failed to prune: ${err.message}`);
+        return pruned;
     }
 }
 

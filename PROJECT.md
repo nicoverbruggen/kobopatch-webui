@@ -378,7 +378,19 @@ user-visible failure. Reports are best-effort, capped before insertion, server-s
 current time, stored without client IPs, and written through parameterised SQLite statements. Abuse
 protection rate-limits `POST /api/error` to 10 requests per 15 minutes per client IP; when an IP
 exceeds that threshold it is stored in the separate `ip_blacklist` table and later requests from
-that IP are dropped with the same quiet `204` response. The admin backend code lives under
+that IP are dropped with the same quiet `204` response. Bans expire after 24 hours (a shared
+NAT/campus IP recovers instead of losing error reporting forever), and expired ban rows are
+deleted on startup so stored IPs stay short-lived. The client IP is the socket address unless
+`TRUST_PROXY` says otherwise — proxy headers are client-forgeable, so trusting them blindly would
+let anyone ban an arbitrary IP by forging `cf-connecting-ip`. Set `TRUST_PROXY=1` to trust the
+default header chain (`cf-connecting-ip`, `x-real-ip`, `x-forwarded-for`), or name one exact
+header to trust only what your proxy actually sets (e.g. `TRUST_PROXY=x-real-ip` behind
+Traefik/Coolify, which ignores a forged `cf-connecting-ip` passed through it). **In production
+behind Coolify this must be set** — otherwise every request appears to come from the proxy's
+address and one abuser rate-limits error reporting for everyone (self-healing after the 24 h ban
+expiry, but still a day of lost reports). Retention: error rows older than `ERROR_RETENTION_DAYS`
+(default 9999, i.e. effectively never while report volume is still unknown; `0`/`off` keeps
+forever) are pruned at server startup. The admin backend code lives under
 `scripts/admin/`. The database schema is maintained by timestamped migration files in
 `scripts/admin/migrations/`, with an ordered registry/runner in `scripts/admin/migrations/index.js`;
 applied migrations are recorded in a `migrations` table with a Laravel-style `batch` number so future
@@ -387,7 +399,8 @@ schema changes can be added without replacing existing databases.
 The error log can be viewed at `GET /admin` when both `ADMIN_USERNAME` and `ADMIN_PASSWORD` are
 set. The endpoint uses browser Basic Auth, returns a native login prompt for missing or wrong
 credentials, and shows a paginated newest-first table of reports plus summary stat tiles (total,
-last 7 days, sessions affected, device-write failures). The page is standalone server-rendered
+last 7 days, sessions affected, device-write failures) and the current `ip_blacklist` contents
+(the 50 most recent bans, each marked active or expired against the 24 h ban duration). The page is standalone server-rendered
 HTML that mirrors the app's design tokens (light/dark follows the OS via `prefers-color-scheme`)
 and ships its own strict CSP (`default-src 'none'`) as a second layer behind the HTML-escaping of
 report content. `GET /admin/errors.sqlite` streams the raw database as an attachment. If either
@@ -414,10 +427,34 @@ redeploy replaces the container, never the volume):
      turns it into a host bind mount instead.
    - **Destination Path:** `/app/storage` (the path inside the container).
 2. Resource → **Environment Variables** → `STORAGE_DIR=/app/storage` (must match the Destination
-   Path).
+   Path) and `TRUST_PROXY=x-real-ip` (Coolify's Traefik sets it; see the abuse-protection notes
+   above — without it the rate limiter sees only the proxy's address).
 
 The named volume is deleted only when you delete it or the whole resource — back it up before
 tearing the resource down. One volume holds all persisted state: deploy logs and `errors.sqlite`.
+
+### Backend environment variables
+
+Everything the logging/admin backend reads, in one place. The prose above explains the behavior;
+this is the checklist. **Production minimum: `STORAGE_DIR` and `TRUST_PROXY`** — without the first,
+all persisted state lands inside the container and is lost on redeploy; without the second, the
+rate limiter sees every visitor as the proxy's address, so one abuser blocks error reporting for
+everyone. Everything else is optional and defaults to something sensible.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `STORAGE_DIR` | `./tmp/storage` | Persistent data root (deploy logs, `errors.sqlite`, `ntfy-report.json`). In production set it to the Coolify volume's Destination Path (`/app/storage`); the default is fine locally but **ephemeral in a container**. |
+| `TRUST_PROXY` | unset (socket only) | Which proxy header carries the real client IP. Unset/`0`/`off`: only the socket address (correct with no proxy in front). `1`/`true`: the default chain (`cf-connecting-ip`, `x-real-ip`, `x-forwarded-for`). A header name: trust exactly that header — use `x-real-ip` behind Coolify/Traefik, since Traefik sets it itself but passes forged headers through. |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | unset (disabled) | Basic Auth credentials for `GET /admin` and `GET /admin/errors.sqlite`. Both must be set; with either missing, the endpoints return 404. |
+| `ERROR_LOGGING` | on | Operator kill switch for storing error reports. `0`/`false`/`off`/`no` disables storage; `POST /api/error` still answers `204` so clients can't tell. |
+| `ERROR_RETENTION_DAYS` | `9999` | Error rows older than this many days are pruned at server startup (expired IP bans are always pruned). The default is effectively "keep everything" — set a lower value once report volume warrants it. `0`/`off` also keeps error rows forever. |
+| `NTFY_URL` | unset (disabled) | Full ntfy topic URL (e.g. `https://ntfy.sh/my-topic`) for the weekly error digest. |
+| `NTFY_TOKEN` | unset | Optional Bearer token for a protected ntfy topic. Only read when `NTFY_URL` is set. |
+
+The server also reads a few serving variables that are not backend-specific: `PORT` (default
+`8888`), `DIST_DIR` (the served directory, used by the dev tooling), `UMAMI_WEBSITE_ID` +
+`UMAMI_SCRIPT_URL` (both set → the analytics snippet is injected; see "Analytics"), and
+`CSP_REPORT_ONLY` (see "Production Serving").
 
 ## Analytics
 
