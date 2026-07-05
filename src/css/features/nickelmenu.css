@@ -477,6 +477,15 @@
 
 /* "Customize simplified tabs" dialog: live preview, tab visibility toggles,
    and label fields. */
+.nm-tabs-body {
+    gap: 0.85rem;
+}
+
+/* The status line only carries the transient "Defaults restored." message, so
+   collapse it while empty instead of reserving a blank row under the inputs. */
+#nm-tabs-status:empty {
+    display: none;
+}
 
 /* Preview of the resulting bottom navigation bar. Kept white with dark marks in
    every theme, mirroring the icon summary chip, so it matches the Kobo's white

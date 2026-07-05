@@ -38,10 +38,19 @@ const svgIcon = (inner) =>
 // label); Books/Stats/Notes fall back to their default label when left blank.
 const PREVIEW_TABS = [
     { key: 'home', always: true, fixedLabel: 'Home', icon: svgIcon('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/>') },
-    { key: 'books', always: true, icon: svgIcon('<path d="M6 4h11a1 1 0 0 1 1 1v15H7a1 1 0 0 1-1-1Z"/><path d="M6 17h12"/>') },
+    {
+        key: 'books',
+        always: true,
+        icon: svgIcon('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>'),
+    },
     { key: 'stats', visKey: 'stats', icon: svgIcon('<path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M3 20h18"/>') },
     { key: 'notes', visKey: 'notes', icon: svgIcon('<rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M10 3v18"/>') },
-    { key: 'store', visKey: 'store', fixedLabel: 'Discover', icon: svgIcon('<path d="M6.5 8h11l-1 12h-9Z"/><path d="M9 8a3 3 0 0 1 6 0"/>') },
+    {
+        key: 'store',
+        visKey: 'store',
+        fixedLabel: 'Discover',
+        icon: svgIcon('<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
+    },
     {
         key: 'more',
         always: true,
