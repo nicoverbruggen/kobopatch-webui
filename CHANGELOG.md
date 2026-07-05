@@ -7,6 +7,7 @@
 - The first screen has been updated to provide you with some more information on how to get started.
 - Your device is now identified more reliably. Detection is now based on hardware UUIDs, with support for refurbished devices.
 - The language of your device is now taken into account for the "Simplify Tabs" functionality. The custom menu remains in English.
+- The "Simplify Tabs" option now has a Customize button. It opens a dialog with a live preview of the bottom navigation bar where you can choose which tabs are shown (Stats, My Notebooks, Discover) and rename the Books, Stats, and Notes tabs.
 - Added safety checks throughout: everything is prepared before anything is written to your device, write failures are handled more gracefully, and NickelMenu removal got an extra safety pass.
 - The reboot warning is now part of the review summary when removing mods, so you'll see it before you commit to any changes.
 - You can now see download progress for individual components. Useful if you're downloading KOReader on a slow internet connection.
