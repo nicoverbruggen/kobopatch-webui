@@ -34,6 +34,15 @@ import {
     updateMenuCustomizationDialog,
     handleNmIconUpload,
 } from '../nickelmenu/customization-dialog.js';
+import {
+    cloneTabsCustomization,
+    createDefaultTabsCustomization,
+    getTabsCustomizationSummaryItem,
+    updateTabsCustomizationSummary,
+    openTabsCustomizeDialog,
+    seedTabsCustomizeDialog,
+    updateTabsCustomizationDialog,
+} from '../nickelmenu/features/simplify-tabs/customization-dialog.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
@@ -79,6 +88,19 @@ export function initNickelMenuFlow(state) {
         'btn-nm-customize-cancel': btnNmCustomizeCancel,
         'btn-nm-customize-reset': btnNmCustomizeReset,
         'btn-nm-customize-save': btnNmCustomizeSave,
+        'nm-tabs-dialog': nmTabsDialog,
+        'nm-tabs-status': nmTabsStatus,
+        'nm-tabs-preview': nmTabsPreview,
+        'nm-tabs-vis-stats': nmTabsVisStats,
+        'nm-tabs-vis-notes': nmTabsVisNotes,
+        'nm-tabs-vis-store': nmTabsVisStore,
+        'nm-tabs-label-books': nmTabsLabelBooks,
+        'nm-tabs-label-stats': nmTabsLabelStats,
+        'nm-tabs-label-notes': nmTabsLabelNotes,
+        'btn-nm-tabs-close': btnNmTabsClose,
+        'btn-nm-tabs-cancel': btnNmTabsCancel,
+        'btn-nm-tabs-reset': btnNmTabsReset,
+        'btn-nm-tabs-save': btnNmTabsSave,
         'nm-option-preset-title': nmOptionPresetTitle,
     } = collect([
         'step-nickelmenu',
@@ -116,6 +138,19 @@ export function initNickelMenuFlow(state) {
         'btn-nm-customize-cancel',
         'btn-nm-customize-reset',
         'btn-nm-customize-save',
+        'nm-tabs-dialog',
+        'nm-tabs-status',
+        'nm-tabs-preview',
+        'nm-tabs-vis-stats',
+        'nm-tabs-vis-notes',
+        'nm-tabs-vis-store',
+        'nm-tabs-label-books',
+        'nm-tabs-label-stats',
+        'nm-tabs-label-notes',
+        'btn-nm-tabs-close',
+        'btn-nm-tabs-cancel',
+        'btn-nm-tabs-reset',
+        'btn-nm-tabs-save',
         'nm-option-preset-title',
     ]);
 
@@ -140,6 +175,7 @@ export function initNickelMenuFlow(state) {
     let legacyItemsWasOurs = false;
     let nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
     let nmCustomizationSession = 0;
+    let nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
 
     function resolveNavLabels(ctx) {
         const option = ctx.nickelMenuOption;
@@ -361,10 +397,14 @@ export function initNickelMenuFlow(state) {
                 actionAriaLabel: f.customization?.actionAriaLabel,
                 onAction: f.customization
                     ? (triggerEl) => {
-                          nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl);
+                          if (f.customization.type === 'tabs') {
+                              nmTabsDraft = openTabsCustomizeDialog(state, tabsDialogDom, triggerEl);
+                          } else {
+                              nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl);
+                          }
                       }
                     : undefined,
-                ...(f.customization ? getMenuCustomizationSummaryItem(state) : {}),
+                ...(f.customization ? (f.customization.type === 'tabs' ? getTabsCustomizationSummaryItem(state) : getMenuCustomizationSummaryItem(state)) : {}),
             };
         });
         renderNmCheckboxList(nmConfigOptions, items);
@@ -397,6 +437,22 @@ export function initNickelMenuFlow(state) {
         reset: btnNmCustomizeReset,
         save: btnNmCustomizeSave,
         status: nmCustomizeStatus,
+    };
+
+    const tabsDialogDom = {
+        dialog: nmTabsDialog,
+        status: nmTabsStatus,
+        preview: nmTabsPreview,
+        visibility: {
+            stats: nmTabsVisStats,
+            notes: nmTabsVisNotes,
+            store: nmTabsVisStore,
+        },
+        labels: {
+            books: nmTabsLabelBooks,
+            stats: nmTabsLabelStats,
+            notes: nmTabsLabelNotes,
+        },
     };
 
     function renderCleanupCheckboxes() {
@@ -451,8 +507,11 @@ export function initNickelMenuFlow(state) {
         state.nickelMenuCustomization = createDefaultMenuCustomization();
         nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
         nmCustomizationSession++;
+        state.nickelMenuTabsCustomization = createDefaultTabsCustomization();
+        nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
         nmConfigOptions.innerHTML = '';
         updateMenuCustomizationSummary(state);
+        updateTabsCustomizationSummary(state);
         btnNmBackupNext.disabled = true;
         btnNmBackupNext.textContent = 'Continue \u203A';
         btnNmBackupBack.disabled = false;
@@ -621,6 +680,26 @@ export function initNickelMenuFlow(state) {
         nmCustomizationSession++;
         updateMenuCustomizationSummary(state);
         nmCustomizeDialog.close();
+    });
+
+    // "Customize simplified tabs" dialog wiring.
+    for (const input of [nmTabsVisStats, nmTabsVisNotes, nmTabsVisStore, nmTabsLabelBooks, nmTabsLabelStats, nmTabsLabelNotes]) {
+        input.addEventListener('input', () => updateTabsCustomizationDialog(nmTabsDraft, tabsDialogDom));
+    }
+    btnNmTabsClose.addEventListener('click', () => nmTabsDialog.close());
+    btnNmTabsCancel.addEventListener('click', () => nmTabsDialog.close());
+    btnNmTabsReset.addEventListener('click', () => {
+        nmTabsDraft = seedTabsCustomizeDialog(state, tabsDialogDom, createDefaultTabsCustomization());
+        nmTabsStatus.textContent = 'Defaults restored.';
+    });
+    btnNmTabsSave.addEventListener('click', () => {
+        updateTabsCustomizationDialog(nmTabsDraft, tabsDialogDom);
+        state.nickelMenuTabsCustomization = {
+            labels: { ...nmTabsDraft.labels },
+            visibility: { ...nmTabsDraft.visibility },
+        };
+        updateTabsCustomizationSummary(state);
+        nmTabsDialog.close();
     });
 
     for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {

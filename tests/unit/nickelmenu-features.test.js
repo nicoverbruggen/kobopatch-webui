@@ -12,6 +12,13 @@ import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/i
 import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 import simplifyTabs, { TOGGLE_TABS_SCRIPT_URL, tabLabelsFor, tabOverrideLines } from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
+import {
+    createDefaultTabsCustomization,
+    isDefaultTabsCustomization,
+    normalizeTabLabel,
+    sanitizeTabLabel,
+    visibleTabCount,
+} from '../../src/js/nickelmenu/features/simplify-tabs/customization.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
 import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
@@ -381,6 +388,64 @@ test('simplify-tabs omits the label lines when the locale is unknown (manual con
     assert.doesNotMatch(noCtx, /_label:/);
     assert.doesNotMatch(nullLocale, /_label:/);
     assert.match(noCtx, /^experimental :menu_main_15505_0_enabled: 1$/m);
+});
+
+test('simplify-tabs visibility customization toggles the optional tab _enabled lines', () => {
+    // Default customization matches the historical behaviour: show Stats, hide
+    // Notes and the store.
+    const def = tabOverrideLines('en', createDefaultTabsCustomization());
+    assert.ok(def.includes('experimental :menu_main_15505_2_enabled: 1'));
+    assert.ok(def.includes('experimental :menu_main_15505_3_enabled: 0'));
+    assert.ok(def.includes('experimental :menu_main_15505_4_enabled: 0'));
+
+    // Flip every optional tab: hide Stats, show Notes and the store.
+    const custom = tabOverrideLines('en', { visibility: { stats: false, notes: true, store: true } });
+    assert.ok(custom.includes('experimental :menu_main_15505_2_enabled: 0'));
+    assert.ok(custom.includes('experimental :menu_main_15505_3_enabled: 1'));
+    assert.ok(custom.includes('experimental :menu_main_15505_4_enabled: 1'));
+    // Home / More / default / enabled remain structural.
+    assert.ok(custom.includes('experimental :menu_main_15505_0_enabled: 1'));
+    assert.ok(custom.includes('experimental :menu_main_15505_5_enabled: 1'));
+    assert.ok(custom.includes('experimental :menu_main_15505_default: 1'));
+});
+
+test('simplify-tabs explicit labels win over the locale defaults, and a blank label omits its line', () => {
+    // Explicit labels override even the localized defaults.
+    const custom = { labels: { books: 'Library', stats: 'Activity', notes: 'Ideas' }, visibility: { stats: true, notes: false, store: false } };
+    const lines = tabOverrideLines('de', custom);
+    assert.ok(lines.includes('experimental :menu_main_15505_1_label: Library'));
+    assert.ok(lines.includes('experimental :menu_main_15505_2_label: Activity'));
+    assert.ok(lines.includes('experimental :menu_main_15505_3_label: Ideas'));
+    assert.ok(!lines.some((l) => /_label:.*Bücher/.test(l)));
+
+    // A blank (or whitespace-only) label omits just that tab's _label line while
+    // keeping the others.
+    const partial = tabOverrideLines('en', { labels: { books: 'Reads', stats: '', notes: '  ' } });
+    assert.ok(partial.includes('experimental :menu_main_15505_1_label: Reads'));
+    assert.ok(!partial.some((l) => l.startsWith('experimental :menu_main_15505_2_label:')));
+    assert.ok(!partial.some((l) => l.startsWith('experimental :menu_main_15505_3_label:')));
+});
+
+test('simplify-tabs postProcess threads a tabsCustomization from the install context', () => {
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
+    const items = simplifyTabs.postProcess(files, {
+        deviceInfo: { uiLocale: 'en' },
+        tabsCustomization: { labels: { books: 'Books', stats: 'Stats', notes: 'Notes' }, visibility: { stats: false, notes: true, store: true } },
+    })[0].data;
+    assert.match(items, /^experimental :menu_main_15505_2_enabled: 0$/m);
+    assert.match(items, /^experimental :menu_main_15505_3_enabled: 1$/m);
+    assert.match(items, /^experimental :menu_main_15505_4_enabled: 1$/m);
+});
+
+test('simplify-tabs label sanitizer strips config-breaking characters and caps length', () => {
+    assert.equal(sanitizeTabLabel('My: Books\n'), 'My Books');
+    assert.equal(sanitizeTabLabel('ThisIsAReallyLongLabel'), 'ThisIsAReall'); // 12 chars
+    assert.equal(normalizeTabLabel('  spaced  '), 'spaced');
+    assert.equal(visibleTabCount(createDefaultTabsCustomization()), 4);
+    assert.equal(visibleTabCount({ visibility: { stats: true, notes: true, store: true } }), 6);
+    assert.equal(isDefaultTabsCustomization(createDefaultTabsCustomization()), true);
+    assert.equal(isDefaultTabsCustomization({ visibility: { stats: false } }), false);
+    assert.equal(isDefaultTabsCustomization({ labels: { books: 'X' } }), false);
 });
 
 test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab override can be commented out', () => {

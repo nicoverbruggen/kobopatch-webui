@@ -49,7 +49,7 @@ function loadAssetCached(assetCache, url) {
  * per-run cache (`assetCache`), so an asset used by several features is fetched
  * only once.
  */
-function createContext(progressFn, deviceInfo = null, features = [], menuCustomization = null, assetCache = new Map()) {
+function createContext(progressFn, deviceInfo = null, features = [], menuCustomization = null, assetCache = new Map(), tabsCustomization = null) {
     return {
         bundledAsset(url) {
             return loadAssetCached(assetCache, url);
@@ -60,6 +60,7 @@ function createContext(progressFn, deviceInfo = null, features = [], menuCustomi
         deviceInfo,
         features,
         menuCustomization,
+        tabsCustomization,
     };
 }
 
@@ -164,7 +165,7 @@ export class NickelMenuInstaller {
      * @param {function} progressFn
      * @returns {{ path: string, data: Uint8Array|string }[]}
      */
-    async collectFiles(features, progressFn, deviceInfo = null, { menuCustomization = null } = {}) {
+    async collectFiles(features, progressFn, deviceInfo = null, { menuCustomization = null, tabsCustomization = null } = {}) {
         let files = [];
         const featureFiles = {};
 
@@ -175,7 +176,7 @@ export class NickelMenuInstaller {
         // Run install() for features that have it
         for (const feature of features) {
             if (!feature.install) continue;
-            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache);
+            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache, tabsCustomization);
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
@@ -201,7 +202,7 @@ export class NickelMenuInstaller {
         const itemsFile = files.find((f) => f.path === NM_ITEMS_FILE);
         for (const feature of features) {
             if (!feature.postProcess) continue;
-            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache);
+            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache, tabsCustomization);
             files = feature.postProcess(files, ctx);
         }
 
@@ -216,7 +217,7 @@ export class NickelMenuInstaller {
     /**
      * Install to a connected Kobo device via File System Access API.
      */
-    async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null } = {}) {
+    async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null, tabsCustomization = null } = {}) {
         await this.loadNickelMenu(progressFn);
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
@@ -228,7 +229,7 @@ export class NickelMenuInstaller {
             progressFn('Preparing Kobo eReader.conf...');
             const eReaderConfData = await this.buildEReaderConfData(device, features);
 
-            const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization });
+            const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization, tabsCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
 
@@ -263,7 +264,12 @@ export class NickelMenuInstaller {
     /**
      * Build a zip for manual download.
      */
-    async buildDownloadZip(features, progressFn, deviceInfo = null, { menuCustomization = null, isPreset = features.length > 0 } = {}) {
+    async buildDownloadZip(
+        features,
+        progressFn,
+        deviceInfo = null,
+        { menuCustomization = null, tabsCustomization = null, isPreset = features.length > 0 } = {},
+    ) {
         await this.loadNickelMenu(progressFn);
 
         progressFn('Building download package...');
@@ -276,7 +282,7 @@ export class NickelMenuInstaller {
         let featureFiles = {};
 
         if (features.length > 0) {
-            const result = await this.collectFiles(features, progressFn, deviceInfo, { menuCustomization });
+            const result = await this.collectFiles(features, progressFn, deviceInfo, { menuCustomization, tabsCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
             for (const { path, data } of collectedFiles) {

@@ -79,12 +79,14 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
                 menuCustomization: state.nickelMenuCustomization,
+                tabsCustomization: state.nickelMenuTabsCustomization,
             });
             state._nmDoneMode = 'written';
             await flow.go('done', state);
         } else {
             state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
                 menuCustomization: state.nickelMenuCustomization,
+                tabsCustomization: state.nickelMenuTabsCustomization,
                 isPreset: state.nickelMenuOption === 'preset',
             });
             state._nmDoneMode = 'download';

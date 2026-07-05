@@ -1,6 +1,7 @@
 import { prependToNmConfig } from '../helpers.js';
 import { loadBundledAsset } from '../assets.js';
 import { localeLanguage } from '../../../kobo/locale.js';
+import { normalizeTabLabel, resolveTabVisibility } from './customization.js';
 
 export const TOGGLE_TABS_SCRIPT_URL = new URL('./scripts/toggle_tabs.sh', import.meta.url).href;
 
@@ -37,20 +38,41 @@ export function tabLabelsFor(uiLocale) {
 }
 
 /**
- * Build the navigation-tab override block. The `_enabled`/`_default` lines are
- * language-neutral (they hide/show/reorder tabs) and always included; the three
- * `_label` lines are only added when we have labels for the device language.
+ * Resolve the three editable tab labels for the config. When the user has saved
+ * explicit labels (via the customize dialog) they win, per-tab, with an empty
+ * value meaning "omit this label line". Otherwise we fall back to the locale
+ * defaults (or none for a language/locale we don't translate).
  */
-export function tabOverrideLines(uiLocale) {
-    const labels = tabLabelsFor(uiLocale);
+export function resolveTabLabels(uiLocale, customization = null) {
+    if (customization?.labels) {
+        return {
+            books: normalizeTabLabel(customization.labels.books),
+            stats: normalizeTabLabel(customization.labels.stats),
+            notes: normalizeTabLabel(customization.labels.notes),
+        };
+    }
+    const auto = tabLabelsFor(uiLocale);
+    return auto ? { ...auto } : { books: '', stats: '', notes: '' };
+}
+
+/**
+ * Build the navigation-tab override block. The `_enabled`/`_default` lines are
+ * language-neutral (they hide/show/reorder tabs); which of the three optional
+ * tabs are shown comes from the customization's visibility (defaults: show
+ * Stats, hide Notes and the store). The three `_label` lines are only added
+ * when a (locale-default or user-set) label is available for that tab.
+ */
+export function tabOverrideLines(uiLocale, customization = null) {
+    const labels = resolveTabLabels(uiLocale, customization);
+    const visibility = resolveTabVisibility(customization);
     const lines = ['experimental :menu_main_15505_0_enabled: 1'];
-    if (labels) lines.push(`experimental :menu_main_15505_1_label: ${labels.books}`);
-    lines.push('experimental :menu_main_15505_2_enabled: 1');
-    if (labels) lines.push(`experimental :menu_main_15505_2_label: ${labels.stats}`);
-    lines.push('experimental :menu_main_15505_3_enabled: 0');
-    if (labels) lines.push(`experimental :menu_main_15505_3_label: ${labels.notes}`);
+    if (labels.books) lines.push(`experimental :menu_main_15505_1_label: ${labels.books}`);
+    lines.push(`experimental :menu_main_15505_2_enabled: ${visibility.stats ? 1 : 0}`);
+    if (labels.stats) lines.push(`experimental :menu_main_15505_2_label: ${labels.stats}`);
+    lines.push(`experimental :menu_main_15505_3_enabled: ${visibility.notes ? 1 : 0}`);
+    if (labels.notes) lines.push(`experimental :menu_main_15505_3_label: ${labels.notes}`);
     lines.push(
-        'experimental :menu_main_15505_4_enabled: 0',
+        `experimental :menu_main_15505_4_enabled: ${visibility.store ? 1 : 0}`,
         'experimental :menu_main_15505_5_enabled: 1',
         'experimental :menu_main_15505_default: 1',
         'experimental :menu_main_15505_enabled: 1',
@@ -58,9 +80,11 @@ export function tabOverrideLines(uiLocale) {
     return lines;
 }
 
-// Simplifies the bottom navigation tab bar: hides the "My Notebooks" and
-// "Discover" tabs and surfaces reading stats as a separate "Stats" tab. This
-// feature alone owns the navigation-tab override, so it also owns the Toggle-menu
+// Simplifies the bottom navigation tab bar. By default it surfaces reading
+// stats as a separate "Stats" tab and hides the "My Notebooks" and "Discover"
+// tabs, but the user can customize which optional tabs are shown and rename them
+// via the "Customize" dialog (see ./customization.js and ./customization-dialog.js).
+// This feature alone owns the navigation-tab override, so it also owns the Toggle-menu
 // item and script that toggle it on the device — no capability flag or
 // custom-menu coordination needed. The script comments or uncomments the tab
 // override lines in the items file and reboots; it lives under .adds/nm/scripts
@@ -70,8 +94,13 @@ export default {
     section: 'Interface Tweaks',
     title: 'Simplify navigation tabs',
     description:
-        'Hides the "My Notebooks" and "Discover" tabs from the bottom navigation tab bar, and this also makes your reading stats available as a separate "Stats" tab.',
+        'Streamlines the bottom navigation tab bar. By default it surfaces your reading stats as a separate "Stats" tab and hides the "My Notebooks" and "Discover" tabs. Use Customize to choose which tabs are shown and rename them.',
     default: false,
+    customization: {
+        type: 'tabs',
+        actionLabel: 'Customize',
+        actionAriaLabel: 'Customize simplified navigation tabs',
+    },
 
     // Ship the on-device toggle script.
     async install(ctx = {}) {
@@ -90,11 +119,13 @@ export default {
         ];
     },
 
-    // Prepend the navigation-tab override to the assembled items file. The tab
-    // labels are localized to the connected device's UI language; on a language
-    // we don't translate (or an unknown locale) the `_label` lines are omitted so
-    // the device keeps its own tab names.
+    // Prepend the navigation-tab override to the assembled items file. Which
+    // optional tabs are shown and (optionally) their labels come from the user's
+    // customization (ctx.tabsCustomization); without one, the tab labels are
+    // localized to the connected device's UI language, and on a language we don't
+    // translate (or an unknown locale) the `_label` lines are omitted so the
+    // device keeps its own tab names.
     postProcess(files, ctx = {}) {
-        return prependToNmConfig(tabOverrideLines(ctx.deviceInfo?.uiLocale).join('\n'))(files);
+        return prependToNmConfig(tabOverrideLines(ctx.deviceInfo?.uiLocale, ctx.tabsCustomization).join('\n'))(files);
     },
 };

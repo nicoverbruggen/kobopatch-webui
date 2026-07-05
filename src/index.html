@@ -1,430 +1,607 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KoboPatch Web UI</title>
-    <meta name="description" content="Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser.">
-    <meta name="keywords" content="Kobo, KoboPatch, NickelMenu, kobopatch, Kobo customization, Kobo patches, Kobo e-reader, Kobo tweaks, Kobo Libra Color, Kobo Clara Color, Kobo Clara BW, KOReader, Cadmus, Kobo firmware, Kobo mod, e-reader customization">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://kp.nicoverbruggen.be">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>KoboPatch Web UI</title>
+        <meta
+            name="description"
+            content="Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser."
+        />
+        <meta
+            name="keywords"
+            content="Kobo, KoboPatch, NickelMenu, kobopatch, Kobo customization, Kobo patches, Kobo e-reader, Kobo tweaks, Kobo Libra Color, Kobo Clara Color, Kobo Clara BW, KOReader, Cadmus, Kobo firmware, Kobo mod, e-reader customization"
+        />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://kp.nicoverbruggen.be" />
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://kp.nicoverbruggen.be">
-    <meta property="og:title" content="KoboPatch Web UI — Customize Your Kobo E-Reader">
-    <meta property="og:description" content="Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser.">
-    <meta property="og:site_name" content="KoboPatch Web UI">
+        <!-- Open Graph -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://kp.nicoverbruggen.be" />
+        <meta property="og:title" content="KoboPatch Web UI — Customize Your Kobo E-Reader" />
+        <meta
+            property="og:description"
+            content="Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser."
+        />
+        <meta property="og:site_name" content="KoboPatch Web UI" />
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:url" content="https://kp.nicoverbruggen.be">
-    <meta name="twitter:title" content="KoboPatch Web UI — Customize Your Kobo E-Reader">
-    <meta name="twitter:description" content="Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser.">
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:url" content="https://kp.nicoverbruggen.be" />
+        <meta name="twitter:title" content="KoboPatch Web UI — Customize Your Kobo E-Reader" />
+        <meta
+            name="twitter:description"
+            content="Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser."
+        />
 
-    <!-- Mastodon / Fediverse -->
-    <meta name="fediverse:creator" content="@nicoverbruggen@phpc.social">
-    <link rel="me" href="https://phpc.social/@nicoverbruggen">
+        <!-- Mastodon / Fediverse -->
+        <meta name="fediverse:creator" content="@nicoverbruggen@phpc.social" />
+        <link rel="me" href="https://phpc.social/@nicoverbruggen" />
 
-    <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "KoboPatch Web UI",
-        "url": "https://kp.nicoverbruggen.be",
-        "description": "Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser.",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Any (browser-based)",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-        },
-        "author": {
-            "@type": "Person",
-            "name": "Nico Verbruggen",
-            "url": "https://nicoverbruggen.be"
-        }
-    }
-    </script>
+        <!-- Structured Data -->
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "WebApplication",
+                "name": "KoboPatch Web UI",
+                "url": "https://kp.nicoverbruggen.be",
+                "description": "Free, privacy-friendly Kobo customization wizard. Install NickelMenu or KOReader, add specialized fonts, or build kobopatch patches locally from your browser.",
+                "applicationCategory": "UtilitiesApplication",
+                "operatingSystem": "Any (browser-based)",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "USD"
+                },
+                "author": {
+                    "@type": "Person",
+                    "name": "Nico Verbruggen",
+                    "url": "https://nicoverbruggen.be"
+                }
+            }
+        </script>
 
-    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg">
-    <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png">
-    <link rel="manifest" href="/favicon/site.webmanifest">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="preload" href="/patches/downloads.json" as="fetch" crossorigin>
-    <link rel="preload" href="/patches/index.json" as="fetch" crossorigin>
+        <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+        <link rel="manifest" href="/favicon/site.webmanifest" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Roboto+Mono:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="preload" href="/patches/downloads.json" as="fetch" crossorigin />
+        <link rel="preload" href="/patches/index.json" as="fetch" crossorigin />
 
-    <!-- The theme follows the OS. Resolve it before first paint (onto data-theme,
+        <!-- The theme follows the OS. Resolve it before first paint (onto data-theme,
          which the stylesheet keys off) so there's no flash of the wrong theme. -->
-    <script>
-        (function () {
-            try {
-                var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-            } catch (e) { /* matchMedia unavailable — stay on default light theme */ }
-        })();
-    </script>
+        <script>
+            (function () {
+                try {
+                    var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+                } catch (e) {
+                    /* matchMedia unavailable — stay on default light theme */
+                }
+            })();
+        </script>
 
-    <!-- Inlined at build time from css/critical.css so the hero + loader render before style.css arrives -->
-    <!-- @critical-css -->
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <a href="#main-content" class="skip-link">Skip to content</a>
-    <main id="main-content" tabindex="-1">
-        <header class="hero">
-            <h1>KoboPatch <span class="hero-accent">Web UI</span> <span id="env-pill" class="beta-pill" hidden></span></h1>
-            <p class="subtitle">Customize your Kobo e-reader with various mods and community patches.</p>
-        </header>
+        <!-- Inlined at build time from css/critical.css so the hero + loader render before style.css arrives -->
+        <!-- @critical-css -->
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <a href="#main-content" class="skip-link">Skip to content</a>
+        <main id="main-content" tabindex="-1">
+            <header class="hero">
+                <h1>KoboPatch <span class="hero-accent">Web UI</span> <span id="env-pill" class="beta-pill" hidden></span></h1>
+                <p class="subtitle">Customize your Kobo e-reader with various mods and community patches.</p>
+            </header>
 
-        <!-- Shown until JS initialises -->
-        <div id="initial-loader" class="initial-loader" role="status" aria-label="Loading">
-            <div class="spinner" aria-hidden="true"></div>
-            <p>Loading&hellip;</p>
-        </div>
-
-        <!-- Step indicator (populated dynamically by app.js) -->
-        <nav id="step-nav" class="step-nav" aria-label="Progress" hidden>
-            <ol></ol>
-        </nav>
-
-        <!-- Step 1: Choose connection method -->
-        <!-- include: steps/step-connect.html -->
-
-        <!-- Step 1a (auto): Connection instructions -->
-        <!-- include: steps/step-connect-instructions.html -->
-
-        <!-- Step 1b (manual): Select device model + firmware for custom patches -->
-        <!-- include: steps/step-manual-version.html -->
-
-        <!-- Step 1c: Device detected (auto mode info card) -->
-        <!-- include: steps/step-device.html -->
-
-        <!-- Step 2: Mode selection -->
-        <!-- include: steps/step-mode.html -->
-
-        <!-- Step 2b: NickelMenu configuration -->
-        <!-- include: steps/step-nickelmenu.html -->
-
-        <!-- Step 2b-1: NickelMenu manual removal instructions -->
-        <!-- include: steps/step-nm-manual-remove.html -->
-
-        <!-- Step 2b-1: NickelMenu preset conflict -->
-        <!-- include: steps/step-nm-preset-conflict.html -->
-
-        <!-- Step 2b-2: NickelMenu feature selection (preset only) -->
-        <!-- include: steps/step-nm-features.html -->
-
-        <!-- Step 2c: NickelMenu backup -->
-        <!-- include: steps/step-nm-backup.html -->
-
-        <!-- Step 2d: NickelMenu review -->
-        <!-- include: steps/step-nm-review.html -->
-
-        <!-- NickelMenu installing -->
-        <!-- include: steps/step-nm-installing.html -->
-
-        <!-- NickelMenu done -->
-        <!-- include: steps/step-nm-done.html -->
-
-        <!-- Step 2 (patches path): Configure patches -->
-        <!-- include: steps/step-patches.html -->
-
-        <!-- Step 3: Review & Build -->
-        <!-- include: steps/step-firmware.html -->
-
-        <!-- Step 4: Building -->
-        <!-- include: steps/step-building.html -->
-
-        <!-- Step 5: Install -->
-        <!-- include: steps/step-done.html -->
-
-        <!-- Error state -->
-        <!-- include: steps/step-error.html -->
-    </main>
-
-    <footer class="site-footer">
-        <p>
-            This project is not affiliated with Rakuten Kobo Inc.
-        </p>
-        <p>
-            <a href="#" id="btn-how-it-works" class="site-footer-link">Disclaimer</a>
-            <span id="privacy-link-separator" hidden>&nbsp;&middot;&nbsp;</span>
-            <a href="#" id="btn-privacy" class="site-footer-link" hidden>Privacy</a>
-            &nbsp;&middot;&nbsp;
-            <a href="#" id="btn-credits" class="site-footer-link">Credits</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://github.com/nicoverbruggen/kobopatch-webui" class="site-footer-link" target="_blank">GitHub</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://nicoverbruggen.be/blog/kobopatch-webui" class="site-footer-link" target="_blank">About</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://nicoverbruggen.be/donate" class="site-footer-link" target="_blank">Donate</a>
-            &nbsp;&middot;&nbsp;
-            <a id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank"><span id="commit-hash"></span></a>
-        </p>
-        <p class="site-footer-attribution">
-            Created by <a href="https://nicoverbruggen.be" target="_blank">Nico Verbruggen</a>.
-            The additional fonts are part of my <a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">curated font collection</a>.
-            <br/>
-            Built on <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> and <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> by Patrick Gaskin.
-        </p>
-    </footer>
-
-    <dialog id="how-it-works-dialog" class="modal" aria-labelledby="how-it-works-title">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="how-it-works-title">Disclaimer</h2>
-                <button id="btn-close-dialog" class="modal-close" aria-label="Close">&times;</button>
+            <!-- Shown until JS initialises -->
+            <div id="initial-loader" class="initial-loader" role="status" aria-label="Loading">
+                <div class="spinner" aria-hidden="true"></div>
+                <p>Loading&hellip;</p>
             </div>
-            <div class="modal-body">
-                <p>
-                    KoboPatch Web UI is a fully client-side web application for customising
-                    Kobo e-readers. The actual patching and archive creation (or transfer to your device) runs in your browser.
-                </p>
 
-                <h3>NickelMenu</h3>
-                <p><a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> is a custom menu that hooks into the existing operating system to add extra features.</p>
-                <ul>
-                    <li>NickelMenu adds custom menu items and tweaks to your Kobo, depending on the configuration file on your device.</li>
-                    <li>This tool can install NickelMenu with an optional curated configuration (custom menus, fonts, screensavers) or remove it.</li>
-                    <li>Works with most Kobo devices, and is generally considered to be safer than custom patches.</li>
-                    <li>Includes a failsafe that ensures NickelMenu automatically uninstalls itself if something goes wrong. This makes it so that future versions of the software that are incompatible with NickelMenu cannot cause problems.</li>
-                </ul>
+            <!-- Step indicator (populated dynamically by app.js) -->
+            <nav id="step-nav" class="step-nav" aria-label="Progress" hidden>
+                <ol></ol>
+            </nav>
 
-                <h3>Custom Patches</h3>
-                <p>The practice of taking the operating system and applying specific known modifications to the prebuilt binaries.</p>
-                <ul>
-                    <li><strong>Device selection</strong> &mdash; auto-detected via the File System Access API on Chromium (Chrome, Edge), or manually selected on other browsers.</li>
-                    <li><strong>Patch configuration</strong> &mdash; enable or disable community-contributed <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> patches from the <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.</li>
-                    <li><strong>Build</strong> &mdash; the software update is downloaded from Kobo's servers and patched client-side using WebAssembly. Patched binaries are validated (ELF headers, file sizes, archive integrity) before output.</li>
-                    <li><strong>Install</strong> &mdash; written directly to the device on Chromium, or downloaded as a file for manual installation on other browsers.</li>
-                    <li><strong>Restore</strong> &mdash; you can also restore the original unpatched software. No patches are applied &mdash; the original <code>KoboRoot.tgz</code> is used as-is.</li>
-                </ul>
+            <!-- Step 1: Choose connection method -->
+            <!-- include: steps/step-connect.html -->
 
-                <h3>Safety</h3>
-                <ul>
-                    <li>NickelMenu is a very small modification. It also includes a built-in failsafe mechanism, as noted in the section above.</li>
-                    <li>Custom patches are validated in various ways before being included in the output, and patching must succeed before the patch can be downloaded or transferred to your device.</li>
-                    <li>Both methods modify system files. While as many possible precautions are taken to avoid anything goes wrong, you should still know how to <a href="https://help.kobo.com/hc/en-us/articles/360017605314" target="_blank">manually reset your Kobo</a> if needed, as there are always risks involved with these types of modifications. You apply them at your own risk.</li>
-                </ul>
-                <p>If you would like to better understand how these various components work, I recommend reading through the README files of this project, NickelMenu and kobopatch, all of which are linked in the footer.</p>
-            </div>
-        </div>
-    </dialog>
+            <!-- Step 1a (auto): Connection instructions -->
+            <!-- include: steps/step-connect-instructions.html -->
 
-    <dialog id="privacy-dialog" class="modal" aria-labelledby="privacy-title">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="privacy-title">Privacy</h2>
-                <button id="btn-close-privacy" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>
-                    This hosted version of the website uses <a href="https://umami.is" target="_blank">Umami</a>, a privacy-focused
-                    analytics tool, to help improve the experience. Data is only used to further improve this website, and no personal information is collected.
-                </p>
+            <!-- Step 1b (manual): Select device model + firmware for custom patches -->
+            <!-- include: steps/step-manual-version.html -->
 
-                <h3>What is tracked</h3>
-                <p>
-                    A small number of anonymous events are collected to understand how the tool is used:
-                </p>
-                <ul>
-                    <li><strong>How the flow was started</strong> &mdash; whether you connected a Kobo
-                        directly or chose the manual download option. This helps the author decide whether to keep the manual download option, or remove it (if it is barely used).</li>
-                    <li><strong>Which NickelMenu option was selected</strong> &mdash; preset installation,
-                        NickelMenu only, or removal. This helps the author understand which options to improve first.</li>
-                    <li><strong>Which NickelMenu add-ons were installed</strong> &mdash; reading apps
-                        (KOReader, Cadmus), NickelClock, additional fonts, a custom screensaver, the minimal
-                        home screen, the basic tab bar, or <span class="nowrap">sideloaded</span> mode. Each is
-                        only recorded when that add-on is actually part of the install, never when it is left
-                        unselected. This helps the author understand which features are popular and worth maintaining.</li>
-                    <li><strong>How the flow ended</strong> &mdash; whether files were written to the
-                        device or downloaded as a ZIP. This helps the author understand how many people have actually used the complete flow successfully.</li>
-                </ul>
+            <!-- Step 1c: Device detected (auto mode info card) -->
+            <!-- include: steps/step-device.html -->
 
-                <h3>What is not tracked</h3>
-                <p>
-                    No personal identifiers are collected. No cookies are used. Your device model, serial
-                    number, firmware version, IP address, and browsing behaviour are never recorded by the
-                    analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
-                </p>
-            </div>
-        </div>
-    </dialog>
+            <!-- Step 2: Mode selection -->
+            <!-- include: steps/step-mode.html -->
 
-    <dialog id="credits-dialog" class="modal" aria-labelledby="credits-title">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="credits-title">Credits</h2>
-                <button id="btn-close-credits" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>
-                    This project stands on the work of many others. It bundles, builds on, or installs the
-                    following third-party projects, all of which remain the property of their respective authors
-                    and are used under their own licenses. My sincere thanks to everyone who maintains them.
-                </p>
+            <!-- Step 2b: NickelMenu configuration -->
+            <!-- include: steps/step-nickelmenu.html -->
 
-                <h3>Patching &amp; menu</h3>
-                <ul>
-                    <li><a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> &mdash; the patching engine, compiled to WebAssembly to patch firmware in the browser. <em>(MIT)</em></li>
-                    <li><a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> &mdash; the custom menu framework. Installed from a <a href="https://github.com/nicoverbruggen/NickelMenu" target="_blank">fork</a> with a <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank">curated configuration</a>. <em>(MIT)</em></li>
-                </ul>
+            <!-- Step 2b-1: NickelMenu manual removal instructions -->
+            <!-- include: steps/step-nm-manual-remove.html -->
 
-                <h3>Optional add-ons</h3>
-                <ul>
-                    <li><a href="https://github.com/shermp/NickelClock" target="_blank">NickelClock</a> &mdash; a clock on the reading screen. <em>(MIT)</em></li>
-                    <li><a href="https://github.com/koreader/koreader" target="_blank">KOReader</a> &mdash; a feature-rich document and e-book reader. <em>(AGPL-3.0)</em></li>
-                    <li><a href="https://github.com/OGKevin/cadmus" target="_blank">Cadmus</a> &mdash; a reading companion app for Kobo, based on <a href="https://github.com/baskerville/plato" target="_blank">Plato</a>. <em>(AGPL-3.0)</em></li>
-                </ul>
+            <!-- Step 2b-1: NickelMenu preset conflict -->
+            <!-- include: steps/step-nm-preset-conflict.html -->
 
-                <h3>Fonts</h3>
-                <ul>
-                    <li>The optional curated fonts &mdash; <a href="https://github.com/nicoverbruggen/readerly" target="_blank">Readerly</a> <em>(OFL-1.1)</em>, <a href="https://github.com/nicoverbruggen/libron" target="_blank">Libron</a> <em>(OFL-1.1)</em>, and <a href="https://github.com/nicoverbruggen/cartisse" target="_blank">Cartisse</a> <em>(Bitstream Charter license)</em> &mdash; part of the <a href="https://github.com/nicoverbruggen/ebook-fonts" target="_blank">ebook-fonts</a> collection (<a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">website</a>), repackaged for Kobo.</li>
-                </ul>
+            <!-- Step 2b-2: NickelMenu feature selection (preset only) -->
+            <!-- include: steps/step-nm-features.html -->
 
-                <h3>Libraries &amp; tooling</h3>
-                <ul>
-                    <li><a href="https://stuk.github.io/jszip/" target="_blank">JSZip</a> &mdash; client-side ZIP reading and writing. <em>(MIT or GPL-3.0)</em></li>
-                    <li><a href="https://github.com/nodeca/js-yaml" target="_blank">js-yaml</a> &mdash; parsing kobopatch patch files. <em>(MIT)</em></li>
-                    <li><a href="https://vite.dev/" target="_blank">Vite</a> &mdash; JavaScript bundling and local development. <em>(MIT)</em></li>
-                    <li><a href="https://go.dev/" target="_blank">Go</a> &mdash; compiles kobopatch to the WebAssembly module used by this tool. <em>(BSD-3-Clause)</em></li>
-                    <li><a href="https://eslint.org/" target="_blank">ESLint</a> <em>(MIT)</em> and <a href="https://playwright.dev/" target="_blank">Playwright</a> <em>(Apache-2.0)</em> &mdash; linting and end-to-end testing.</li>
-                </ul>
+            <!-- Step 2c: NickelMenu backup -->
+            <!-- include: steps/step-nm-backup.html -->
 
-                <p>Patches and discussion come from the <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a> community.</p>
-            </div>
-        </div>
-    </dialog>
+            <!-- Step 2d: NickelMenu review -->
+            <!-- include: steps/step-nm-review.html -->
 
-    <dialog id="hint-dialog" class="modal" aria-labelledby="hint-dialog-title">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="hint-dialog-title">Good to know</h2>
-                <button id="btn-hint-close" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="hint-dialog-text"></p>
-            </div>
-        </div>
-    </dialog>
+            <!-- NickelMenu installing -->
+            <!-- include: steps/step-nm-installing.html -->
 
-    <dialog id="patch-reload-dialog" class="modal" aria-labelledby="patch-reload-dialog-title">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="patch-reload-dialog-title">Patches re-applied</h2>
-                <button id="btn-patch-reload-dialog-close" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="patch-reload-dialog-intro"></p>
-                <ul id="patch-reload-dialog-list" class="patch-reload-dialog-list"></ul>
-                <p id="patch-reload-dialog-additional-summary" class="patch-reload-dialog-additional-summary" hidden></p>
-                <div id="patch-reload-dialog-notes" class="patch-reload-dialog-notes" hidden>
-                    <p id="patch-reload-dialog-footnote" class="patch-reload-dialog-note" hidden></p>
-                    <p id="patch-reload-dialog-modified-note" class="patch-reload-dialog-note" hidden></p>
-                    <p id="patch-reload-dialog-additional-note" class="patch-reload-dialog-note" hidden></p>
+            <!-- NickelMenu done -->
+            <!-- include: steps/step-nm-done.html -->
+
+            <!-- Step 2 (patches path): Configure patches -->
+            <!-- include: steps/step-patches.html -->
+
+            <!-- Step 3: Review & Build -->
+            <!-- include: steps/step-firmware.html -->
+
+            <!-- Step 4: Building -->
+            <!-- include: steps/step-building.html -->
+
+            <!-- Step 5: Install -->
+            <!-- include: steps/step-done.html -->
+
+            <!-- Error state -->
+            <!-- include: steps/step-error.html -->
+        </main>
+
+        <footer class="site-footer">
+            <p>This project is not affiliated with Rakuten Kobo Inc.</p>
+            <p>
+                <a href="#" id="btn-how-it-works" class="site-footer-link">Disclaimer</a>
+                <span id="privacy-link-separator" hidden>&nbsp;&middot;&nbsp;</span>
+                <a href="#" id="btn-privacy" class="site-footer-link" hidden>Privacy</a>
+                &nbsp;&middot;&nbsp;
+                <a href="#" id="btn-credits" class="site-footer-link">Credits</a>
+                &nbsp;&middot;&nbsp;
+                <a href="https://github.com/nicoverbruggen/kobopatch-webui" class="site-footer-link" target="_blank">GitHub</a>
+                &nbsp;&middot;&nbsp;
+                <a href="https://nicoverbruggen.be/blog/kobopatch-webui" class="site-footer-link" target="_blank">About</a>
+                &nbsp;&middot;&nbsp;
+                <a href="https://nicoverbruggen.be/donate" class="site-footer-link" target="_blank">Donate</a>
+                &nbsp;&middot;&nbsp;
+                <a id="commit-link" class="site-footer-link" href="https://github.com/nicoverbruggen/kobopatch-webui" target="_blank"
+                    ><span id="commit-hash"></span
+                ></a>
+            </p>
+            <p class="site-footer-attribution">
+                Created by <a href="https://nicoverbruggen.be" target="_blank">Nico Verbruggen</a>. The additional fonts are part of my
+                <a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">curated font collection</a>.
+                <br />
+                Built on <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> and
+                <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> by Patrick Gaskin.
+            </p>
+        </footer>
+
+        <dialog id="how-it-works-dialog" class="modal" aria-labelledby="how-it-works-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="how-it-works-title">Disclaimer</h2>
+                    <button id="btn-close-dialog" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        KoboPatch Web UI is a fully client-side web application for customising Kobo e-readers. The actual patching and archive creation (or
+                        transfer to your device) runs in your browser.
+                    </p>
+
+                    <h3>NickelMenu</h3>
+                    <p>
+                        <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> is a custom menu that hooks into the existing operating system
+                        to add extra features.
+                    </p>
+                    <ul>
+                        <li>NickelMenu adds custom menu items and tweaks to your Kobo, depending on the configuration file on your device.</li>
+                        <li>This tool can install NickelMenu with an optional curated configuration (custom menus, fonts, screensavers) or remove it.</li>
+                        <li>Works with most Kobo devices, and is generally considered to be safer than custom patches.</li>
+                        <li>
+                            Includes a failsafe that ensures NickelMenu automatically uninstalls itself if something goes wrong. This makes it so that future
+                            versions of the software that are incompatible with NickelMenu cannot cause problems.
+                        </li>
+                    </ul>
+
+                    <h3>Custom Patches</h3>
+                    <p>The practice of taking the operating system and applying specific known modifications to the prebuilt binaries.</p>
+                    <ul>
+                        <li>
+                            <strong>Device selection</strong> &mdash; auto-detected via the File System Access API on Chromium (Chrome, Edge), or manually
+                            selected on other browsers.
+                        </li>
+                        <li>
+                            <strong>Patch configuration</strong> &mdash; enable or disable community-contributed
+                            <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> patches from the
+                            <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a>.
+                        </li>
+                        <li>
+                            <strong>Build</strong> &mdash; the software update is downloaded from Kobo's servers and patched client-side using WebAssembly.
+                            Patched binaries are validated (ELF headers, file sizes, archive integrity) before output.
+                        </li>
+                        <li>
+                            <strong>Install</strong> &mdash; written directly to the device on Chromium, or downloaded as a file for manual installation on
+                            other browsers.
+                        </li>
+                        <li>
+                            <strong>Restore</strong> &mdash; you can also restore the original unpatched software. No patches are applied &mdash; the original
+                            <code>KoboRoot.tgz</code> is used as-is.
+                        </li>
+                    </ul>
+
+                    <h3>Safety</h3>
+                    <ul>
+                        <li>NickelMenu is a very small modification. It also includes a built-in failsafe mechanism, as noted in the section above.</li>
+                        <li>
+                            Custom patches are validated in various ways before being included in the output, and patching must succeed before the patch can be
+                            downloaded or transferred to your device.
+                        </li>
+                        <li>
+                            Both methods modify system files. While as many possible precautions are taken to avoid anything goes wrong, you should still know
+                            how to <a href="https://help.kobo.com/hc/en-us/articles/360017605314" target="_blank">manually reset your Kobo</a> if needed, as
+                            there are always risks involved with these types of modifications. You apply them at your own risk.
+                        </li>
+                    </ul>
+                    <p>
+                        If you would like to better understand how these various components work, I recommend reading through the README files of this project,
+                        NickelMenu and kobopatch, all of which are linked in the footer.
+                    </p>
                 </div>
             </div>
-        </div>
-    </dialog>
+        </dialog>
 
-    <dialog id="patch-blacklist-dialog" class="modal" aria-labelledby="patch-blacklist-dialog-title">
-        <div class="modal-content patch-blacklist-dialog-content">
-            <div class="modal-header">
-                <h2 id="patch-blacklist-dialog-title">Known incompatible patches</h2>
-                <button id="btn-patch-blacklist-close" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p id="patch-blacklist-updated" class="patch-blacklist-meta"></p>
-                <p id="patch-blacklist-description" class="patch-blacklist-description"></p>
-                <p id="patch-blacklist-current-version" class="patch-blacklist-meta patch-blacklist-current-version"></p>
-                <p id="patch-blacklist-empty" class="fallback-hint" hidden></p>
-                <div id="patch-blacklist-list" class="patch-blacklist-list"></div>
-            </div>
-            <div id="patch-blacklist-version-tooltip" class="patch-blacklist-version-tooltip" role="tooltip" hidden></div>
-        </div>
-    </dialog>
+        <dialog id="privacy-dialog" class="modal" aria-labelledby="privacy-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="privacy-title">Privacy</h2>
+                    <button id="btn-close-privacy" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        This hosted version of the website uses <a href="https://umami.is" target="_blank">Umami</a>, a privacy-focused analytics tool, to help
+                        improve the experience. Data is only used to further improve this website, and no personal information is collected.
+                    </p>
 
-    <dialog id="nm-customize-dialog" class="modal nm-customize-dialog" aria-labelledby="nm-customize-title">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="nm-customize-title">Customize NickelMenu tab</h2>
-                <button id="btn-nm-customize-close" class="modal-close" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body nm-customize-body">
-                <label class="nm-customize-field">
-                    <span class="nm-customize-label-row">
-                        <span>Tab label</span>
-                        <span id="nm-customize-counter">6/10</span>
-                    </span>
-                    <input id="nm-customize-label" type="text" value="Toggle" maxlength="10" autocomplete="off" spellcheck="false" inputmode="text">
-                </label>
+                    <h3>What is tracked</h3>
+                    <p>A small number of anonymous events are collected to understand how the tool is used:</p>
+                    <ul>
+                        <li>
+                            <strong>How the flow was started</strong> &mdash; whether you connected a Kobo directly or chose the manual download option. This
+                            helps the author decide whether to keep the manual download option, or remove it (if it is barely used).
+                        </li>
+                        <li>
+                            <strong>Which NickelMenu option was selected</strong> &mdash; preset installation, NickelMenu only, or removal. This helps the
+                            author understand which options to improve first.
+                        </li>
+                        <li>
+                            <strong>Which NickelMenu add-ons were installed</strong> &mdash; reading apps (KOReader, Cadmus), NickelClock, additional fonts, a
+                            custom screensaver, the minimal home screen, the basic tab bar, or <span class="nowrap">sideloaded</span> mode. Each is only
+                            recorded when that add-on is actually part of the install, never when it is left unselected. This helps the author understand which
+                            features are popular and worth maintaining.
+                        </li>
+                        <li>
+                            <strong>How the flow ended</strong> &mdash; whether files were written to the device or downloaded as a ZIP. This helps the author
+                            understand how many people have actually used the complete flow successfully.
+                        </li>
+                    </ul>
 
-                <div class="nm-customize-field">
-                    <div class="nm-customize-label-row">
-                        <span>Preset icon</span>
-                        <span>12 choices</span>
+                    <h3>What is not tracked</h3>
+                    <p>
+                        No personal identifiers are collected. No cookies are used. Your device model, serial number, firmware version, IP address, and browsing
+                        behaviour are never recorded by the analytics tool. Umami does not use cookies and is compliant with GDPR, CCPA, and PECR.
+                    </p>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog id="credits-dialog" class="modal" aria-labelledby="credits-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="credits-title">Credits</h2>
+                    <button id="btn-close-credits" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        This project stands on the work of many others. It bundles, builds on, or installs the following third-party projects, all of which
+                        remain the property of their respective authors and are used under their own licenses. My sincere thanks to everyone who maintains them.
+                    </p>
+
+                    <h3>Patching &amp; menu</h3>
+                    <ul>
+                        <li>
+                            <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> &mdash; the patching engine, compiled to WebAssembly to
+                            patch firmware in the browser. <em>(MIT)</em>
+                        </li>
+                        <li>
+                            <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> &mdash; the custom menu framework. Installed from a
+                            <a href="https://github.com/nicoverbruggen/NickelMenu" target="_blank">fork</a> with a
+                            <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank">curated configuration</a>. <em>(MIT)</em>
+                        </li>
+                    </ul>
+
+                    <h3>Optional add-ons</h3>
+                    <ul>
+                        <li>
+                            <a href="https://github.com/shermp/NickelClock" target="_blank">NickelClock</a> &mdash; a clock on the reading screen.
+                            <em>(MIT)</em>
+                        </li>
+                        <li>
+                            <a href="https://github.com/koreader/koreader" target="_blank">KOReader</a> &mdash; a feature-rich document and e-book reader.
+                            <em>(AGPL-3.0)</em>
+                        </li>
+                        <li>
+                            <a href="https://github.com/OGKevin/cadmus" target="_blank">Cadmus</a> &mdash; a reading companion app for Kobo, based on
+                            <a href="https://github.com/baskerville/plato" target="_blank">Plato</a>. <em>(AGPL-3.0)</em>
+                        </li>
+                    </ul>
+
+                    <h3>Fonts</h3>
+                    <ul>
+                        <li>
+                            The optional curated fonts &mdash; <a href="https://github.com/nicoverbruggen/readerly" target="_blank">Readerly</a>
+                            <em>(OFL-1.1)</em>, <a href="https://github.com/nicoverbruggen/libron" target="_blank">Libron</a> <em>(OFL-1.1)</em>, and
+                            <a href="https://github.com/nicoverbruggen/cartisse" target="_blank">Cartisse</a> <em>(Bitstream Charter license)</em> &mdash; part
+                            of the <a href="https://github.com/nicoverbruggen/ebook-fonts" target="_blank">ebook-fonts</a> collection (<a
+                                href="https://ebook-fonts.nicoverbruggen.be"
+                                target="_blank"
+                                >website</a
+                            >), repackaged for Kobo.
+                        </li>
+                    </ul>
+
+                    <h3>Libraries &amp; tooling</h3>
+                    <ul>
+                        <li>
+                            <a href="https://stuk.github.io/jszip/" target="_blank">JSZip</a> &mdash; client-side ZIP reading and writing.
+                            <em>(MIT or GPL-3.0)</em>
+                        </li>
+                        <li><a href="https://github.com/nodeca/js-yaml" target="_blank">js-yaml</a> &mdash; parsing kobopatch patch files. <em>(MIT)</em></li>
+                        <li><a href="https://vite.dev/" target="_blank">Vite</a> &mdash; JavaScript bundling and local development. <em>(MIT)</em></li>
+                        <li>
+                            <a href="https://go.dev/" target="_blank">Go</a> &mdash; compiles kobopatch to the WebAssembly module used by this tool.
+                            <em>(BSD-3-Clause)</em>
+                        </li>
+                        <li>
+                            <a href="https://eslint.org/" target="_blank">ESLint</a> <em>(MIT)</em> and
+                            <a href="https://playwright.dev/" target="_blank">Playwright</a> <em>(Apache-2.0)</em> &mdash; linting and end-to-end testing.
+                        </li>
+                    </ul>
+
+                    <p>
+                        Patches and discussion come from the
+                        <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a> community.
+                    </p>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog id="hint-dialog" class="modal" aria-labelledby="hint-dialog-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="hint-dialog-title">Good to know</h2>
+                    <button id="btn-hint-close" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="hint-dialog-text"></p>
+                </div>
+            </div>
+        </dialog>
+
+        <dialog id="patch-reload-dialog" class="modal" aria-labelledby="patch-reload-dialog-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="patch-reload-dialog-title">Patches re-applied</h2>
+                    <button id="btn-patch-reload-dialog-close" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p id="patch-reload-dialog-intro"></p>
+                    <ul id="patch-reload-dialog-list" class="patch-reload-dialog-list"></ul>
+                    <p id="patch-reload-dialog-additional-summary" class="patch-reload-dialog-additional-summary" hidden></p>
+                    <div id="patch-reload-dialog-notes" class="patch-reload-dialog-notes" hidden>
+                        <p id="patch-reload-dialog-footnote" class="patch-reload-dialog-note" hidden></p>
+                        <p id="patch-reload-dialog-modified-note" class="patch-reload-dialog-note" hidden></p>
+                        <p id="patch-reload-dialog-additional-note" class="patch-reload-dialog-note" hidden></p>
                     </div>
-                    <div id="nm-customize-presets" class="nm-icon-grid"></div>
                 </div>
+            </div>
+        </dialog>
 
-                <div class="nm-customize-upload">
-                    <label class="secondary nm-upload-button" for="nm-customize-upload">Upload image</label>
-                    <input id="nm-customize-upload" class="sr-only" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif">
-                    <span id="nm-customize-upload-preview" class="nm-upload-preview" aria-hidden="true"></span>
-                    <span id="nm-customize-upload-name" class="nm-upload-name">No uploaded image selected</span>
+        <dialog id="patch-blacklist-dialog" class="modal" aria-labelledby="patch-blacklist-dialog-title">
+            <div class="modal-content patch-blacklist-dialog-content">
+                <div class="modal-header">
+                    <h2 id="patch-blacklist-dialog-title">Known incompatible patches</h2>
+                    <button id="btn-patch-blacklist-close" class="modal-close" aria-label="Close">&times;</button>
                 </div>
-                <p class="nm-upload-help">SVG files are resized to 64x64 and kept as SVG. PNG, JPEG, WebP, and GIF files are resized into a transparent 64x64 PNG.</p>
-                <p id="nm-customize-status" class="nm-customize-status" role="status" aria-live="polite"></p>
+                <div class="modal-body">
+                    <p id="patch-blacklist-updated" class="patch-blacklist-meta"></p>
+                    <p id="patch-blacklist-description" class="patch-blacklist-description"></p>
+                    <p id="patch-blacklist-current-version" class="patch-blacklist-meta patch-blacklist-current-version"></p>
+                    <p id="patch-blacklist-empty" class="fallback-hint" hidden></p>
+                    <div id="patch-blacklist-list" class="patch-blacklist-list"></div>
+                </div>
+                <div id="patch-blacklist-version-tooltip" class="patch-blacklist-version-tooltip" role="tooltip" hidden></div>
             </div>
-            <div class="modal-footer nm-customize-footer">
-                <button id="btn-nm-customize-reset" class="secondary">Reset defaults</button>
-                <span class="nm-customize-footer-spacer"></span>
-                <button id="btn-nm-customize-cancel" class="secondary">Cancel</button>
-                <button id="btn-nm-customize-save" class="primary">Save</button>
-            </div>
-        </div>
-    </dialog>
+        </dialog>
 
-    <dialog id="patch-editor-dialog" class="modal" aria-labelledby="patch-editor-title">
-        <div class="modal-content patch-editor-content">
-            <div class="modal-header">
-                <h2 id="patch-editor-title" class="patch-editor-title"></h2>
-                <button id="patch-editor-close" class="modal-close patch-editor-cancel" aria-label="Close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p class="patch-editor-hint">Edit this patch's definition below. Typically you'll only change values on the <strong>Replace</strong> lines &mdash; be careful not to break the YAML structure.</p>
-                <div class="patch-editor-tips" hidden></div>
-                <textarea class="patch-editor-textarea" spellcheck="false" wrap="off"></textarea>
-                <div class="patch-editor-status"></div>
-            </div>
-            <div class="modal-footer patch-editor-footer">
-                <button class="secondary patch-editor-cancel">Cancel</button>
-                <button class="secondary patch-editor-validate">Validate</button>
-                <button class="primary patch-editor-save">Save Changes</button>
-            </div>
-        </div>
-    </dialog>
+        <dialog id="nm-customize-dialog" class="modal nm-customize-dialog" aria-labelledby="nm-customize-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="nm-customize-title">Customize NickelMenu tab</h2>
+                    <button id="btn-nm-customize-close" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body nm-customize-body">
+                    <label class="nm-customize-field">
+                        <span class="nm-customize-label-row">
+                            <span>Tab label</span>
+                            <span id="nm-customize-counter">6/10</span>
+                        </span>
+                        <input id="nm-customize-label" type="text" value="Toggle" maxlength="10" autocomplete="off" spellcheck="false" inputmode="text" />
+                    </label>
 
-    <dialog id="mobile-dialog" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="mobile-dialog-title">Heads up!</h2>
+                    <div class="nm-customize-field">
+                        <div class="nm-customize-label-row">
+                            <span>Preset icon</span>
+                            <span>12 choices</span>
+                        </div>
+                        <div id="nm-customize-presets" class="nm-icon-grid"></div>
+                    </div>
+
+                    <div class="nm-customize-upload">
+                        <label class="secondary nm-upload-button" for="nm-customize-upload">Upload image</label>
+                        <input id="nm-customize-upload" class="sr-only" type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp,image/gif" />
+                        <span id="nm-customize-upload-preview" class="nm-upload-preview" aria-hidden="true"></span>
+                        <span id="nm-customize-upload-name" class="nm-upload-name">No uploaded image selected</span>
+                    </div>
+                    <p class="nm-upload-help">
+                        SVG files are resized to 64x64 and kept as SVG. PNG, JPEG, WebP, and GIF files are resized into a transparent 64x64 PNG.
+                    </p>
+                    <p id="nm-customize-status" class="nm-customize-status" role="status" aria-live="polite"></p>
+                </div>
+                <div class="modal-footer nm-customize-footer">
+                    <button id="btn-nm-customize-reset" class="secondary">Reset defaults</button>
+                    <span class="nm-customize-footer-spacer"></span>
+                    <button id="btn-nm-customize-cancel" class="secondary">Cancel</button>
+                    <button id="btn-nm-customize-save" class="primary">Save</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <p>This tool works best on a <b>desktop or laptop computer</b>. The interface is optimized for larger screens, and connecting your Kobo via USB is more straightforward from a computer.</p>
-                <p>For the best experience, open this page on a computer using <b>Google Chrome</b>. It supports copying directly to your Kobo device, which is not supported on mobile.</p>
+        </dialog>
+
+        <dialog id="nm-tabs-dialog" class="modal nm-customize-dialog nm-tabs-dialog" aria-labelledby="nm-tabs-title">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="nm-tabs-title">Customize simplified tabs</h2>
+                    <button id="btn-nm-tabs-close" class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body nm-customize-body">
+                    <div class="nm-customize-field">
+                        <div class="nm-customize-label-row">
+                            <span>Preview</span>
+                            <span>Approximate</span>
+                        </div>
+                        <div id="nm-tabs-preview" class="nm-tabs-preview" aria-hidden="true"></div>
+                    </div>
+
+                    <div class="nm-customize-field">
+                        <div class="nm-customize-label-row">
+                            <span>Visible tabs</span>
+                            <span>Home &amp; Books always shown</span>
+                        </div>
+                        <div class="nm-tabs-toggles">
+                            <label class="nm-tabs-toggle">
+                                <span class="nm-tabs-toggle-head">
+                                    <input type="checkbox" id="nm-tabs-vis-stats" />
+                                    <span class="nm-tabs-toggle-title">Stats</span>
+                                </span>
+                                <span class="nm-tabs-toggle-desc">Reading activity as its own tab.</span>
+                            </label>
+                            <label class="nm-tabs-toggle">
+                                <span class="nm-tabs-toggle-head">
+                                    <input type="checkbox" id="nm-tabs-vis-notes" />
+                                    <span class="nm-tabs-toggle-title">My Notebooks</span>
+                                </span>
+                                <span class="nm-tabs-toggle-desc">The notebooks tab.</span>
+                            </label>
+                            <label class="nm-tabs-toggle">
+                                <span class="nm-tabs-toggle-head">
+                                    <input type="checkbox" id="nm-tabs-vis-store" />
+                                    <span class="nm-tabs-toggle-title">Discover</span>
+                                </span>
+                                <span class="nm-tabs-toggle-desc">The Kobo store tab.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="nm-customize-field">
+                        <div class="nm-customize-label-row">
+                            <span>Tab labels</span>
+                            <span>Blank keeps device names</span>
+                        </div>
+                        <div class="nm-tabs-labels">
+                            <label class="nm-tabs-label-field">
+                                <span>Books</span>
+                                <input type="text" id="nm-tabs-label-books" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Books" />
+                            </label>
+                            <label class="nm-tabs-label-field">
+                                <span>Stats</span>
+                                <input type="text" id="nm-tabs-label-stats" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Stats" />
+                            </label>
+                            <label class="nm-tabs-label-field">
+                                <span>Notes</span>
+                                <input type="text" id="nm-tabs-label-notes" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Notes" />
+                            </label>
+                        </div>
+                    </div>
+                    <p id="nm-tabs-status" class="nm-customize-status" role="status" aria-live="polite"></p>
+                </div>
+                <div class="modal-footer nm-customize-footer">
+                    <button id="btn-nm-tabs-reset" class="secondary">Reset defaults</button>
+                    <span class="nm-customize-footer-spacer"></span>
+                    <button id="btn-nm-tabs-cancel" class="secondary">Cancel</button>
+                    <button id="btn-nm-tabs-save" class="primary">Save</button>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button id="btn-mobile-continue" class="secondary">Continue anyway</button>
+        </dialog>
+
+        <dialog id="patch-editor-dialog" class="modal" aria-labelledby="patch-editor-title">
+            <div class="modal-content patch-editor-content">
+                <div class="modal-header">
+                    <h2 id="patch-editor-title" class="patch-editor-title"></h2>
+                    <button id="patch-editor-close" class="modal-close patch-editor-cancel" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="patch-editor-hint">
+                        Edit this patch's definition below. Typically you'll only change values on the <strong>Replace</strong> lines &mdash; be careful not to
+                        break the YAML structure.
+                    </p>
+                    <div class="patch-editor-tips" hidden></div>
+                    <textarea class="patch-editor-textarea" spellcheck="false" wrap="off"></textarea>
+                    <div class="patch-editor-status"></div>
+                </div>
+                <div class="modal-footer patch-editor-footer">
+                    <button class="secondary patch-editor-cancel">Cancel</button>
+                    <button class="secondary patch-editor-validate">Validate</button>
+                    <button class="primary patch-editor-save">Save Changes</button>
+                </div>
             </div>
-        </div>
-    </dialog>
-    <script type="module" src="/js/app.js"></script>
-</body>
+        </dialog>
+
+        <dialog id="mobile-dialog" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="mobile-dialog-title">Heads up!</h2>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        This tool works best on a <b>desktop or laptop computer</b>. The interface is optimized for larger screens, and connecting your Kobo via
+                        USB is more straightforward from a computer.
+                    </p>
+                    <p>
+                        For the best experience, open this page on a computer using <b>Google Chrome</b>. It supports copying directly to your Kobo device,
+                        which is not supported on mobile.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-mobile-continue" class="secondary">Continue anyway</button>
+                </div>
+            </div>
+        </dialog>
+        <script type="module" src="/js/app.js"></script>
+    </body>
 </html>
