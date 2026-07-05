@@ -74,12 +74,16 @@ test.describe('NickelMenu — simplified tabs customization', () => {
         await expect(page.locator('#nm-tabs-dialog')).toBeHidden();
 
         const items = await downloadItems(page);
-        // Defaults: Stats shown, Notes + store hidden, and no forced Books label
-        // (manual mode has an unknown locale, so the device keeps its own names).
+        // Defaults: Stats shown, Notes + store hidden, and no saved "Reads" label.
+        // Manual mode has an unknown locale, so the labels fall back to the English
+        // defaults (Books / Stats / Notes) — matching the dialog placeholders — rather
+        // than leaving the device's own "My Books" names.
         expect(items).toContain('experimental :menu_main_15505_2_enabled: 1');
         expect(items).toContain('experimental :menu_main_15505_3_enabled: 0');
         expect(items).toContain('experimental :menu_main_15505_4_enabled: 0');
         expect(items).not.toContain('Reads');
-        expect(items).not.toMatch(/_label:/);
+        expect(items).toContain('experimental :menu_main_15505_1_label: Books');
+        expect(items).toContain('experimental :menu_main_15505_2_label: Stats');
+        expect(items).toContain('experimental :menu_main_15505_3_label: Notes');
     });
 });

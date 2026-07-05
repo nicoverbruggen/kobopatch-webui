@@ -19,7 +19,7 @@ import {
     TAB_LABEL_KEYS,
     TAB_VISIBILITY_KEYS,
 } from './customization.js';
-import { tabLabelsFor } from './index.js';
+import { defaultTabLabels } from './index.js';
 
 // A minimal bottom-navigation glyph for the summary chip. Uses currentColor so
 // it follows the chip's text colour in both light and dark themes.
@@ -63,12 +63,13 @@ const PREVIEW_TABS = [
 
 /**
  * The labels to seed the dialog's inputs with: the user's saved labels when
- * present, otherwise the device locale's default labels (empty for a locale we
- * don't translate, so the fields start blank and keep the device's own names).
+ * present, otherwise the device locale's default labels — English for an unknown
+ * locale (manual/download flow), and empty for a known language we don't
+ * translate, so those fields start blank and keep the device's own names.
  */
 function seedLabels(state, customization) {
     if (customization.labels) return { ...customization.labels };
-    const auto = tabLabelsFor(state.device?.deviceInfo?.uiLocale);
+    const auto = defaultTabLabels(state.device?.deviceInfo?.uiLocale);
     return auto ? { ...auto } : { books: '', stats: '', notes: '' };
 }
 

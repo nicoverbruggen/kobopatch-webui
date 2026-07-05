@@ -26,10 +26,10 @@ export const TAB_LABELS = {
 };
 
 /**
- * The tab labels to apply for a device locale, or null when none should be set
- * (a non-English language we have no translation for, or an unknown locale). A
- * null result means the structural tab overrides are still written but the
- * `_label` lines are omitted, so the device keeps its localized tab names.
+ * The strict per-language translation of the three tab labels, or null when we
+ * have none for that language (a non-English language we don't translate) or the
+ * locale is unknown. This is the raw translation lookup; the default the app
+ * actually applies when the user hasn't customized comes from defaultTabLabels().
  */
 export function tabLabelsFor(uiLocale) {
     const lang = localeLanguage(uiLocale);
@@ -38,10 +38,26 @@ export function tabLabelsFor(uiLocale) {
 }
 
 /**
+ * The labels applied by default (no explicit customization) for a device locale.
+ * A translated language uses its localized labels. An *unknown* locale — the
+ * manual-connection / download flow, where we can't read the device language and
+ * the app UI (and the dialog placeholders) are English — falls back to the
+ * English defaults so the tabs are still renamed to "Books / Stats / Notes". A
+ * *known* language we don't translate (e.g. Japanese) returns null, so the
+ * `_label` lines are omitted and the device keeps its own native tab names.
+ */
+export function defaultTabLabels(uiLocale) {
+    const lang = localeLanguage(uiLocale);
+    if (!lang) return { ...TAB_LABELS.en };
+    return TAB_LABELS[lang] ? { ...TAB_LABELS[lang] } : null;
+}
+
+/**
  * Resolve the three editable tab labels for the config. When the user has saved
  * explicit labels (via the customize dialog) they win, per-tab, with an empty
  * value meaning "omit this label line". Otherwise we fall back to the locale
- * defaults (or none for a language/locale we don't translate).
+ * defaults (English for an unknown locale, none for a known language we don't
+ * translate — see defaultTabLabels()).
  */
 export function resolveTabLabels(uiLocale, customization = null) {
     if (customization?.labels) {
@@ -51,7 +67,7 @@ export function resolveTabLabels(uiLocale, customization = null) {
             notes: normalizeTabLabel(customization.labels.notes),
         };
     }
-    const auto = tabLabelsFor(uiLocale);
+    const auto = defaultTabLabels(uiLocale);
     return auto ? { ...auto } : { books: '', stats: '', notes: '' };
 }
 
@@ -121,10 +137,10 @@ export default {
 
     // Prepend the navigation-tab override to the assembled items file. Which
     // optional tabs are shown and (optionally) their labels come from the user's
-    // customization (ctx.tabsCustomization); without one, the tab labels are
-    // localized to the connected device's UI language, and on a language we don't
-    // translate (or an unknown locale) the `_label` lines are omitted so the
-    // device keeps its own tab names.
+    // customization (ctx.tabsCustomization); without one, the tab labels default
+    // to the connected device's UI language (English for an unknown locale — the
+    // manual/download flow), while a known language we don't translate omits the
+    // `_label` lines so the device keeps its own tab names (see defaultTabLabels).
     postProcess(files, ctx = {}) {
         return prependToNmConfig(tabOverrideLines(ctx.deviceInfo?.uiLocale, ctx.tabsCustomization).join('\n'))(files);
     },

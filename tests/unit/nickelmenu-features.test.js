@@ -11,7 +11,12 @@ import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
 import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
-import simplifyTabs, { TOGGLE_TABS_SCRIPT_URL, tabLabelsFor, tabOverrideLines } from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
+import simplifyTabs, {
+    TOGGLE_TABS_SCRIPT_URL,
+    tabLabelsFor,
+    defaultTabLabels,
+    tabOverrideLines,
+} from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import {
     createDefaultTabsCustomization,
     isDefaultTabsCustomization,
@@ -378,15 +383,25 @@ test('simplify-tabs omits the label lines for an untranslated language so the de
     assert.match(items, /^experimental :menu_main_15505_enabled: 1$/m);
 });
 
-test('simplify-tabs omits the label lines when the locale is unknown (manual connection / download)', () => {
+test('simplify-tabs falls back to the English defaults when the locale is unknown (manual connection / download)', () => {
+    // The raw translation lookup has nothing for an unknown locale...
     assert.equal(tabLabelsFor(null), null);
     assert.equal(tabLabelsFor(undefined), null);
+    // ...but the applied default falls back to English so the tabs are still
+    // renamed (matching the dialog placeholders and the pre-customization
+    // behaviour), rather than leaving the device's own "My Books" names.
+    assert.deepEqual(defaultTabLabels(null), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+    assert.deepEqual(defaultTabLabels(undefined), { books: 'Books', stats: 'Stats', notes: 'Notes' });
 
-    // No ctx at all (download flow) and an explicit null locale both skip labels.
+    // No ctx at all (download flow) and an explicit null locale both apply the
+    // English default labels.
     const noCtx = simplifyTabs.postProcess([{ path: NM_ITEMS_FILE, data: 'base' }])[0].data;
     const nullLocale = simplifyTabs.postProcess([{ path: NM_ITEMS_FILE, data: 'base' }], { deviceInfo: { uiLocale: null } })[0].data;
-    assert.doesNotMatch(noCtx, /_label:/);
-    assert.doesNotMatch(nullLocale, /_label:/);
+    for (const items of [noCtx, nullLocale]) {
+        assert.match(items, /^experimental :menu_main_15505_1_label: Books$/m);
+        assert.match(items, /^experimental :menu_main_15505_2_label: Stats$/m);
+        assert.match(items, /^experimental :menu_main_15505_3_label: Notes$/m);
+    }
     assert.match(noCtx, /^experimental :menu_main_15505_0_enabled: 1$/m);
 });
 

@@ -5,6 +5,7 @@ import {
     dismissMobileModal,
     makeKOReaderAvailable,
     shotNickelMenuCustomizeModal,
+    shotNickelMenuTabsModal,
     connectToDeviceScreen,
     injectMockDevice,
 } from '../../support/screenshot-helpers.mjs';
@@ -48,6 +49,7 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await shot(page, dir, '06-nickelmenu-features', testInfo);
     await shotNickelMenuCustomizeModal(page, dir, '06a-nickelmenu-customize-modal', testInfo);
+    await shotNickelMenuTabsModal(page, dir, '06b-nickelmenu-tabs-modal', testInfo);
 
     // Features → backup → review
     await page.click('#btn-nm-features-next');

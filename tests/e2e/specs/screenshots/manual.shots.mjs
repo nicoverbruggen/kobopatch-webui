@@ -5,6 +5,7 @@ import {
     dismissMobileModal,
     makeKOReaderAvailable,
     shotNickelMenuCustomizeModal,
+    shotNickelMenuTabsModal,
     selectManualPatchesModel,
     capturePatchesBuildingScreen,
     poseRestoreDoneScreen,
@@ -40,6 +41,7 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await shot(page, dir, '03-nickelmenu-features', testInfo);
     await shotNickelMenuCustomizeModal(page, dir, '03a-nickelmenu-customize-modal', testInfo);
+    await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
 
     // Features → backup → review (only download button in manual mode)
     await page.click('#btn-nm-features-next');

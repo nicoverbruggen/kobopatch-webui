@@ -11,10 +11,12 @@
  *    so they are not offered here.
  *  - `labels`: the text for the Books / Stats / Notes tabs. `null` means "not
  *    customized" — the feature keeps its locale-aware default behaviour (see
- *    tabLabelsFor() in index.js), which omits labels entirely on languages we
- *    don't translate so the device keeps its own tab names. Once the user saves
- *    the dialog, `labels` becomes an explicit `{ books, stats, notes }` object
- *    (each value may be an empty string, meaning "keep the device's own name").
+ *    defaultTabLabels() in index.js): a translated language uses its localized
+ *    labels, an unknown locale (manual/download flow) falls back to the English
+ *    defaults, and a known language we don't translate omits labels entirely so
+ *    the device keeps its own tab names. Once the user saves the dialog, `labels`
+ *    becomes an explicit `{ books, stats, notes }` object (each value may be an
+ *    empty string, meaning "keep the device's own name").
  */
 
 export const TAB_LABEL_MAX_LENGTH = 12;

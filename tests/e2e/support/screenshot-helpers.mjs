@@ -78,6 +78,17 @@ export const shotNickelMenuCustomizeModal = async (page, folder, name, testInfo)
     await expect(dialog).not.toBeVisible();
 };
 
+export const shotNickelMenuTabsModal = async (page, folder, name, testInfo) => {
+    await page.getByRole('button', { name: 'Customize simplified navigation tabs' }).click();
+    const dialog = page.locator('#nm-tabs-dialog');
+    await expect(dialog).toBeVisible();
+    // The live preview reflects the seeded default labels/visibility.
+    await expect(dialog.locator('#nm-tabs-preview .nm-tabs-preview-tab').first()).toBeVisible();
+    await shot(page, folder, name, testInfo);
+    await page.click('#btn-nm-tabs-close');
+    await expect(dialog).not.toBeVisible();
+};
+
 export const selectManualPatchesModel = async (page) => {
     await page.selectOption('#manual-version', { index: 1 });
     await expect(page.locator('#manual-model')).not.toBeHidden();
