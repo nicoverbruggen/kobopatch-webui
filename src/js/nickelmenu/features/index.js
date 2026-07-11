@@ -19,6 +19,8 @@ import { homeHiders } from './hide-home-content/index.js';
 import screensaver from './screensaver/index.js';
 import excludeCalibre from './exclude-calibre/index.js';
 import sideloadedMode from './sideloaded-mode/index.js';
+import nickelCoverFix from './nickel-cover-fix/index.js';
+import nickelDissolve from './nickel-dissolve/index.js';
 
 /**
  * All available NickelMenu features in display order.
@@ -37,6 +39,8 @@ export const NICKELMENU_FEATURES = [
     // in the feature selection step.
     nickelclock, // merges its own KoboRoot.tgz payload via koboRootEntries
     sideloadedMode, // postProcess comments out the home-tab override added by simplifyTabs
+    nickelCoverFix, // merges its own KoboRoot.tgz payload via koboRootEntries
+    nickelDissolve, // merges its own KoboRoot.tgz payload via koboRootEntries
     // "Legacy" section — older tweaks, rendered last and collapsed by default.
     screensaver,
     excludeCalibre,

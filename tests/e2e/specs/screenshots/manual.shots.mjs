@@ -6,6 +6,7 @@ import {
     makeKOReaderAvailable,
     shotNickelMenuCustomizeModal,
     shotNickelMenuTabsModal,
+    openNmFeatureSection,
     selectManualPatchesModel,
     capturePatchesBuildingScreen,
     poseRestoreDoneScreen,
@@ -42,6 +43,12 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await shot(page, dir, '03-nickelmenu-features', testInfo);
     await shotNickelMenuCustomizeModal(page, dir, '03a-nickelmenu-customize-modal', testInfo);
     await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
+
+    // The Advanced section (collapsed by default) holds the power-user mods —
+    // NickelCoverFix, NickelDissolve (shown as temporarily unavailable while it
+    // has no locked release), and Sideload Mode.
+    await openNmFeatureSection(page, 'Advanced');
+    await shot(page, dir, '03c-nickelmenu-features-advanced', testInfo);
 
     // Features → backup → review (only download button in manual mode)
     await page.click('#btn-nm-features-next');

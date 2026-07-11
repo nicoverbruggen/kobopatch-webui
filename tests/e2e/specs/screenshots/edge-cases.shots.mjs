@@ -282,7 +282,10 @@ test('Sideload Mode too old os', async ({ page }, testInfo) => {
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     // Open the (collapsed) Advanced section so the disabled option is visible.
+    // The section can hold several disabled reasons (e.g. an unavailable mod's
+    // "Temporarily unavailable." note), so target Sideload Mode's row.
     await page.locator('summary.nm-config-section-heading').filter({ hasText: 'Advanced' }).click();
-    await expect(page.locator('.nm-config-disabled-reason')).toBeVisible();
+    const sideloadRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-sideloaded-mode"]') });
+    await expect(sideloadRow.locator('.nm-config-disabled-reason')).toBeVisible();
     await shot(page, dir, 'sideloaded-mode-too-old-os', testInfo);
 });

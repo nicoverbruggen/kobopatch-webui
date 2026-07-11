@@ -155,7 +155,8 @@ export function initNickelMenuFlow(state) {
     ]);
 
     // Gate runtime-available installables (reading apps, NickelClock, ...) on the
-    // baked-in manifest so unavailable add-ons stay hidden from the feature list.
+    // baked-in manifest; add-ons whose asset is not bundled stay `available: false`
+    // and are listed as "Temporarily unavailable" in the feature list.
     for (const [id, info] of Object.entries(installablesManifest())) {
         const feature = NICKELMENU_FEATURES.find((f) => f.id === id);
         if (feature && info.available) {
@@ -373,15 +374,31 @@ export function initNickelMenuFlow(state) {
     });
 
     function renderFeatureCheckboxes() {
-        const firmware = state.device?.deviceInfo?.firmware;
-        const features = NICKELMENU_FEATURES.filter((f) => f.available !== false);
+        const deviceInfo = state.device?.deviceInfo;
+        const firmware = deviceInfo?.firmware;
+        // Unavailable add-ons (their asset is not bundled, e.g. no published
+        // release yet or the release was pulled) stay listed but are disabled
+        // with a "temporarily unavailable" note instead of silently vanishing.
+        const features = NICKELMENU_FEATURES;
 
         if (state.selectedFeatureIds.length === 0) {
-            state.selectedFeatureIds = features.filter((f) => meetsMinimumVersion(firmware, f.minimumVersion) && (f.required || f.default)).map((f) => f.id);
+            state.selectedFeatureIds = features
+                .filter(
+                    (f) =>
+                        f.available !== false &&
+                        meetsMinimumVersion(firmware, f.minimumVersion) &&
+                        !f.unsupportedDeviceReason?.(deviceInfo) &&
+                        (f.required || f.default),
+                )
+                .map((f) => f.id);
         }
 
         const items = features.map((f) => {
+            const unavailable = f.available === false;
             const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
+            // A feature-owned device gate (e.g. NickelDissolve's allowlist):
+            // a returned string disables the checkbox and is shown as the reason.
+            const unsupportedReason = f.unsupportedDeviceReason?.(deviceInfo) || undefined;
             return {
                 name: 'nm-cfg-' + f.id,
                 title: f.title + (f.required ? ' (required)' : ''),
@@ -390,9 +407,11 @@ export function initNickelMenuFlow(state) {
                 hint: f.hint,
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
-                checked: state.selectedFeatureIds.includes(f.id),
-                disabled: f.required || !meetsMinimum,
-                disabledReason: meetsMinimum ? undefined : `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`,
+                checked: state.selectedFeatureIds.includes(f.id) && !unavailable,
+                disabled: f.required || !meetsMinimum || Boolean(unsupportedReason) || unavailable,
+                disabledReason: !meetsMinimum
+                    ? `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`
+                    : unsupportedReason || (unavailable ? 'Temporarily unavailable.' : undefined),
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
                 onAction: f.customization

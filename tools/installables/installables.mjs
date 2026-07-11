@@ -52,6 +52,20 @@ const INSTALLABLES = [
         match: (n) => n === 'KoboRoot.tgz',
     },
     {
+        // Same shape as NickelTypeFix: a bare KoboRoot.tgz under a distinct local name.
+        name: 'nickelcoverfix',
+        asset: 'NickelCoverFix.tgz',
+        repo: 'nicoverbruggen/NickelCoverFix',
+        match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
+        // Same shape as NickelTypeFix: a bare KoboRoot.tgz under a distinct local name.
+        name: 'nickeldissolve',
+        asset: 'NickelDissolve.tgz',
+        repo: 'nicoverbruggen/NickelDissolve',
+        match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
         name: 'koreader',
         asset: 'koreader-kobo.zip',
         repo: 'koreader/koreader',
@@ -200,7 +214,15 @@ async function writeLock(lock) {
 // already matches. Never touches "latest" — reproducible across CI and deploys.
 async function setupInstallable(item, target, lock) {
     const entry = lock.installables[item.name];
-    if (!entry) throw new Error(`[${item.name}] missing from installables.lock — run \`npm run update:installables\``);
+    if (!entry) {
+        // A tracked installable whose upstream has not published a release yet
+        // (so there is nothing to pin). Skip with a warning — the matching
+        // feature stays unavailable in the app until the lock gains an entry.
+        console.warn(
+            `[${item.name}] not in installables.lock (no published release yet?) — skipping. Run \`npm run update:installables -- --only=${item.name}\` once a release exists.`,
+        );
+        return;
+    }
 
     const dir = TARGETS[target];
     await mkdir(dir, { recursive: true });
@@ -376,8 +398,20 @@ if (opts.check) {
 }
 
 if (opts.update) {
-    for (const item of items) await updateInstallable(item, opts.targets, lock);
+    // One unresolvable installable (e.g. a repo with no release yet) must not
+    // abort the whole update run: warn, keep its existing lock entry (if any),
+    // and still write the lock for the items that did resolve.
+    const failed = [];
+    for (const item of items) {
+        try {
+            await updateInstallable(item, opts.targets, lock);
+        } catch (err) {
+            failed.push(item.name);
+            console.warn(`[${item.name}] update failed: ${err.message}`);
+        }
+    }
     await writeLock(lock);
+    if (failed.length) console.warn(`\n⚠ Not updated: ${failed.join(', ')}`);
     for (const target of opts.targets) await writeIndex(target, lock);
     console.log(`Done. Updated installables.lock and assets in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
 } else {

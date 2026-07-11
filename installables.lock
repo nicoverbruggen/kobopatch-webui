@@ -56,6 +56,13 @@
       "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.3/KoboRoot.tgz",
       "sha256": "e3475bb0e81243a77d735a7705cff1896a797ef65835b740f2714328ac34ddfb",
       "size": 16844
+    },
+    "nickelcoverfix": {
+      "asset": "NickelCoverFix.tgz",
+      "version": "v0.1",
+      "url": "https://github.com/nicoverbruggen/NickelCoverFix/releases/download/v0.1/KoboRoot.tgz",
+      "sha256": "360276b8229411f87a2740c7141eecd74a25fa818c0508f1ee47316f7e2be233",
+      "size": 39722
     }
   }
 }

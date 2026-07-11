@@ -10,13 +10,15 @@ import { meetsMinimumVersion } from '../kobo/version.js';
 /**
  * The features that will actually be installed for the current session: the
  * required ones always, plus the user's selected ids, minus anything that is
- * unavailable or needs a newer firmware than the connected device runs.
+ * unavailable, needs a newer firmware than the connected device runs, or does
+ * not support the connected device (a feature's `unsupportedDeviceReason`).
  */
 export function featuresToInstall(session, deviceInfo) {
     const firmware = deviceInfo?.firmware;
     return NICKELMENU_FEATURES.filter((f) => {
         if (f.available === false) return false;
         if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
+        if (f.unsupportedDeviceReason?.(deviceInfo)) return false;
         if (f.required) return true;
         return session.selectedFeatureIds.includes(f.id);
     });

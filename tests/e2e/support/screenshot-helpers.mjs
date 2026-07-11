@@ -53,6 +53,20 @@ export const SCREENSHOT_DIRS = {
     edgeRestore: 'edge-cases/restore',
 };
 
+/**
+ * Open a collapsed section on the NickelMenu feature-selection step (e.g. the
+ * "Advanced" section, which starts collapsed) so its options are visible in
+ * the shot. Mirrors openNmSection in support/nm-helpers.js.
+ */
+export const openNmFeatureSection = async (page, title) => {
+    const section = page.locator('details.nm-config-section', {
+        has: page.locator('.nm-config-section-title', { hasText: title }),
+    });
+    if (!(await section.evaluate((el) => el.open))) {
+        await section.locator('summary').click();
+    }
+};
+
 /** Dismiss the mobile warning modal if it's open. */
 export const dismissMobileModal = async (page) => {
     const dialog = page.locator('#mobile-dialog');
