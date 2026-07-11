@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { featuresToInstall, optionalCleanupToRemove, optionalCleanupKept, featureReviewNotices, nmReviewModel } from '../../src/js/nickelmenu/selection.js';
+import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 
 // `featuresToInstall` reads the real NICKELMENU_FEATURES catalog (per the
 // "test real feature modules" rule); the rest are pure over their arguments, so
@@ -49,6 +50,41 @@ test('featuresToInstall does not gate when firmware is unknown (manual mode)', (
         result.some((f) => f.id === 'sideloaded-mode'),
         'no firmware floor blindly applied',
     );
+});
+
+test('featuresToInstall drops a feature marked disabled, even when selected', () => {
+    // `disabled: true` is a maintainer's temporary kill switch, independent of
+    // asset availability (screensaver has no `available` flag at all).
+    const screensaver = NICKELMENU_FEATURES.find((f) => f.id === 'screensaver');
+    const sess = session({ selectedFeatureIds: ['screensaver'] });
+    assert.ok(featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'screensaver'));
+
+    screensaver.disabled = true;
+    try {
+        const ids = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
+        assert.ok(!ids.includes('screensaver'), 'a disabled feature is never installed');
+    } finally {
+        delete screensaver.disabled;
+    }
+});
+
+test('featuresToInstall drops a disabled feature even when its asset is available', () => {
+    // An installable-backed feature stays uninstallable while disabled, no
+    // matter what the availability manifest says.
+    const nickelCoverFix = NICKELMENU_FEATURES.find((f) => f.id === 'nickelcoverfix');
+    const originalAvailable = nickelCoverFix.available;
+    const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
+
+    nickelCoverFix.available = true;
+    try {
+        assert.ok(featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'nickelcoverfix'));
+        nickelCoverFix.disabled = true;
+        const ids = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
+        assert.ok(!ids.includes('nickelcoverfix'), 'disabled wins over available');
+    } finally {
+        delete nickelCoverFix.disabled;
+        nickelCoverFix.available = originalAvailable;
+    }
 });
 
 test('optionalCleanupToRemove / optionalCleanupKept partition detected by the checked ids', () => {

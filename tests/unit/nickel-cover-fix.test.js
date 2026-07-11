@@ -140,6 +140,30 @@ test('optional cleanup removes the .adds/nickel-cover-fix directory during Nicke
     assert.equal(await device.pathExists(['.adds', 'nickel-cover-fix', 'config']), false);
 });
 
+test('optional cleanup still removes the mod while the feature is temporarily disabled', async () => {
+    // `disabled: true` only blocks installation; a mod already on the device
+    // must stay detectable and removable.
+    nickelCoverFix.disabled = true;
+    try {
+        const device = new RecordingDevice({
+            existingEntries: ['.adds/nm', '.adds/nickel-cover-fix', { path: '.adds/nickel-cover-fix/uninstall', kind: 'file' }],
+        });
+        assert.equal(await isOptionalCleanupPresent({ device }, nickelCoverFix, ''), true);
+
+        await executeNickelMenuRemoval({
+            device,
+            installer: createInstaller(),
+            cleanupFeatures: [nickelCoverFix],
+            shouldRemoveSyncExclusions: async () => false,
+            onProgress: createProgressRecorder(),
+        });
+
+        assert.deepEqual(device.removalFor('.adds/nickel-cover-fix').options, { recursive: true });
+    } finally {
+        delete nickelCoverFix.disabled;
+    }
+});
+
 test('optional cleanup tolerates NickelCoverFix already being absent', async () => {
     const installer = createInstaller();
     const device = new RecordingDevice({ existingEntries: ['.adds/nm'] });

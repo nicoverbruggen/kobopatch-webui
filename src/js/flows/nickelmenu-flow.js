@@ -377,8 +377,10 @@ export function initNickelMenuFlow(state) {
         const deviceInfo = state.device?.deviceInfo;
         const firmware = deviceInfo?.firmware;
         // Unavailable add-ons (their asset is not bundled, e.g. no published
-        // release yet or the release was pulled) stay listed but are disabled
-        // with a "temporarily unavailable" note instead of silently vanishing.
+        // release yet or the release was pulled) and add-ons a maintainer has
+        // temporarily switched off (`disabled: true` on the feature module)
+        // stay listed but are disabled with a "temporarily unavailable" note
+        // instead of silently vanishing.
         const features = NICKELMENU_FEATURES;
 
         if (state.selectedFeatureIds.length === 0) {
@@ -386,6 +388,7 @@ export function initNickelMenuFlow(state) {
                 .filter(
                     (f) =>
                         f.available !== false &&
+                        f.disabled !== true &&
                         meetsMinimumVersion(firmware, f.minimumVersion) &&
                         !f.unsupportedDeviceReason?.(deviceInfo) &&
                         (f.required || f.default),
@@ -394,7 +397,7 @@ export function initNickelMenuFlow(state) {
         }
 
         const items = features.map((f) => {
-            const unavailable = f.available === false;
+            const unavailable = f.available === false || f.disabled === true;
             const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
             // A feature-owned device gate (e.g. NickelDissolve's allowlist):
             // a returned string disables the checkbox and is shown as the reason.
