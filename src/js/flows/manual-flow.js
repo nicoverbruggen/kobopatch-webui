@@ -71,13 +71,13 @@ export function initManualFlow(state, { patches }) {
         try {
             const loaded = await loadPatchesForVersion(version, state.availablePatches);
             if (!loaded) {
-                state.showError(TL.ERROR.LOAD_PATCHES_FAILED(version));
+                state.showError(TL.ERROR.LOAD_PATCHES_FAILED(version), null, { expected: true });
                 return;
             }
             patches.configureFirmwareStep(version, state.selectedChannel, selectedManualChannelLabel());
             patches.goToPatches();
         } catch (err) {
-            state.showError(err.message);
+            state.showError(err.message, null, { expected: true });
         }
     });
 

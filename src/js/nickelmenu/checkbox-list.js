@@ -10,10 +10,37 @@
 
 import { showHint } from '../shell/dom.js';
 
+// Hover/focus explanation shown on the "Experimental" badge (same text for every
+// experimental mod).
+const EXPERIMENTAL_TOOLTIP =
+    "Experimental mods are generally safe, but haven't been tested extensively on more than the author's own devices. If you encounter any issues, please consider filing a bug report.";
+
+// Wrap inner SVG markup in a consistent line-icon frame (inherits the heading
+// colour via currentColor, so it follows the theme and the muted Legacy style).
+const svgIcon = (inner) =>
+    `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${inner}</svg>`;
+
+// Per-section heading icons, keyed by the exact section title a feature declares
+// in its module. Presentational only — a section without an entry simply renders
+// no icon, so adding a new section never breaks the list.
+const SECTION_ICONS = {
+    'Interface Tweaks': svgIcon(
+        '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+    ),
+    'Reading Experience': svgIcon('<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'),
+    'Alternative reading apps': svgIcon(
+        '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+    ),
+    Advanced: svgIcon(
+        '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    ),
+    Legacy: svgIcon('<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/>'),
+};
+
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, hint?: string, experimental?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -31,10 +58,26 @@ export function renderNmCheckboxList(container, items) {
                 // "Legacy" options are tucked away by default).
                 const section = document.createElement('details');
                 section.className = 'nm-config-section';
+                // Expose the section as a slug modifier so CSS can restyle a
+                // specific section (e.g. muting "Legacy" grey) without this
+                // renderer special-casing any section by name.
+                const sectionSlug = item.sectionTitle
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-|-$/g, '');
+                if (sectionSlug) section.classList.add('nm-config-section--' + sectionSlug);
                 section.open = !item.sectionCollapsed;
 
                 const heading = document.createElement('summary');
                 heading.className = 'nm-config-section-heading';
+
+                const iconMarkup = SECTION_ICONS[item.sectionTitle];
+                if (iconMarkup) {
+                    const icon = document.createElement('span');
+                    icon.className = 'nm-config-section-icon';
+                    icon.innerHTML = iconMarkup;
+                    heading.appendChild(icon);
+                }
 
                 const title = document.createElement('h3');
                 title.className = 'nm-config-section-title';
@@ -160,6 +203,17 @@ export function renderNmCheckboxList(container, items) {
                 side.appendChild(action);
             }
             label.appendChild(side);
+        }
+
+        // Right-aligned "Experimental" pill for features still considered
+        // unstable. Sits just before the "?" hint badge.
+        if (item.experimental) {
+            const badge = document.createElement('span');
+            badge.className = 'nm-config-experimental';
+            badge.textContent = 'Experimental';
+            badge.setAttribute('data-tooltip', EXPERIMENTAL_TOOLTIP);
+            badge.tabIndex = 0; // focusable so the tooltip is reachable by keyboard
+            label.appendChild(badge);
         }
 
         // Optional right-aligned "learn more" badge. A hint that looks like a URL

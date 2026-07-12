@@ -73,17 +73,20 @@ test('featuresToInstall drops a disabled feature even when its asset is availabl
     // matter what the availability manifest says.
     const nickelCoverFix = NICKELMENU_FEATURES.find((f) => f.id === 'nickelcoverfix');
     const originalAvailable = nickelCoverFix.available;
+    const originalDisabled = nickelCoverFix.disabled;
     const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
 
     nickelCoverFix.available = true;
+    delete nickelCoverFix.disabled; // establish an enabled baseline (it may ship disabled)
     try {
         assert.ok(featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'nickelcoverfix'));
         nickelCoverFix.disabled = true;
         const ids = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
         assert.ok(!ids.includes('nickelcoverfix'), 'disabled wins over available');
     } finally {
-        delete nickelCoverFix.disabled;
         nickelCoverFix.available = originalAvailable;
+        if (originalDisabled === undefined) delete nickelCoverFix.disabled;
+        else nickelCoverFix.disabled = originalDisabled;
     }
 });
 

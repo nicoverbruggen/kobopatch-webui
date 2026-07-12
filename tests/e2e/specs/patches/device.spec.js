@@ -19,6 +19,16 @@ async function buildPatchFilesArchive(entries) {
     return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };
 }
 
+// Install the analytics mock so the `error` event can be asserted. Must run
+// before the page navigates so the app sees it on boot.
+async function trackEvents(page) {
+    await page.addInitScript(() => {
+        window.__ANALYTICS_ENABLED = true;
+        window.__trackedEvents = [];
+        window.umami = { track: (eventName, data) => window.__trackedEvents.push({ eventName, data }) };
+    });
+}
+
 const VERIFIED_IDENTIFICATION_HINT = 'The hardware UUID and serial prefix match this device.';
 const REFURBISHED_IDENTIFICATION_HINT =
     'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.';
@@ -155,6 +165,7 @@ test.describe('Custom patches', () => {
     });
 
     test('with device — write probe failure shows direct-write recovery guidance', async ({ page }) => {
+        await trackEvents(page);
         await page.goto('/');
         await injectMockDevice(page, {
             failWritePaths: ['KOBOeReader/.kobopatch-webui-probe'],
@@ -169,9 +180,14 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#error-device-write-help')).toBeVisible();
         // Connection tips are shown inline now, not behind a disclosure panel.
         await expect(page.locator('#error-device-write-help')).toContainText('Copy the files yourself');
+
+        // The error is reported to analytics as a coarse category (write probe),
+        // never the message or stack.
+        await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({ eventName: 'error', data: { value: 'probe' } });
     });
 
     test('connect — blocked drive permission shows a friendly error screen', async ({ page }) => {
+        await trackEvents(page);
         // Simulate the browser denying read/write access to the picked folder.
         await page.addInitScript(() => {
             window.showDirectoryPicker = async () => {
@@ -190,9 +206,14 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#error-message')).toContainText('did not get permission');
         // Not a device-write failure, so the write-recovery steps stay hidden.
         await expect(page.locator('#error-device-write-help')).toBeHidden();
+
+        // A denied device-access prompt is an expected outcome, so no error event
+        // is reported to analytics.
+        expect(await page.evaluate(() => window.__trackedEvents.filter((e) => e.eventName === 'error'))).toEqual([]);
     });
 
     test('unexpected errors are caught by the global safety net', async ({ page }) => {
+        await trackEvents(page);
         await page.goto('/');
         // An exception escaping every explicit handler should still surface a screen
         // rather than leaving the UI stranded.
@@ -210,6 +231,10 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#error-message')).toContainText('unexpected error occurred');
         // The thrown detail is shown in the log area for reporting.
         await expect(page.locator('#error-log')).toContainText('boom');
+
+        // Reported to analytics as the 'unknown' category — the 'boom' detail is
+        // shown on screen for the user but never sent to analytics.
+        await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({ eventName: 'error', data: { value: 'unknown' } });
     });
 
     test('with device — serial number is masked until revealed', async ({ page }) => {

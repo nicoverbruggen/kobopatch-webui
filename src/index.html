@@ -169,9 +169,9 @@
         </p>
         <p class="site-footer-attribution">
             Created by <a href="https://nicoverbruggen.be" target="_blank">Nico Verbruggen</a>.
-            The additional fonts are part of my <a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">curated font collection</a>.
+            Cartisse, Libron and Readerly are part of my <a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">curated font collection</a>.
             <br/>
-            Built on <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> and <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> by Patrick Gaskin.
+            Built on <a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> and <a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> by Patrick Gaskin. Various mods belong to their original authors.
         </p>
     </footer>
 
@@ -245,6 +245,11 @@
                         unselected. This helps the author understand which features are popular and worth maintaining.</li>
                     <li><strong>How the flow ended</strong> &mdash; whether files were written to the
                         device or downloaded as a ZIP. This helps the author understand how many people have actually used the complete flow successfully.</li>
+                    <li><strong>When something unexpected goes wrong</strong> &mdash; a broad category for a
+                        failure (for example a device write, a download, or an unknown error), so the author can
+                        see which steps fail most often. Only the category is recorded &mdash; never the error
+                        message, any technical details, or a file path. Expected outcomes (such as choosing
+                        incompatible patches or an unsupported firmware version) are not recorded.</li>
                 </ul>
 
                 <h3>What is not tracked</h3>
@@ -266,14 +271,18 @@
             <div class="modal-body">
                 <p>
                     This project stands on the work of many others. It bundles, builds on, or installs the
-                    following third-party projects, all of which remain the property of their respective authors
-                    and are used under their own licenses. My sincere thanks to everyone who maintains them.
+                    projects listed below &mdash; each remains the property of its respective authors and is used
+                    under its own license, and my sincere thanks go to everyone who maintains them.
+                </p>
+                <p>
+                    Some of these are bundled with the app (see <code>installables.lock</code>) rather than
+                    downloaded at runtime, to avoid CORS issues when fetching release assets from GitHub.
                 </p>
 
                 <h3>Patching &amp; menu</h3>
                 <ul>
                     <li><a href="https://github.com/pgaskin/kobopatch" target="_blank">kobopatch</a> &mdash; the patching engine, compiled to WebAssembly to patch firmware in the browser. <em>(MIT)</em></li>
-                    <li><a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> &mdash; the custom menu framework. Installed from a <a href="https://github.com/nicoverbruggen/NickelMenu" target="_blank">fork</a> with a <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank">curated configuration</a>. <em>(MIT)</em></li>
+                    <li><a href="https://pgaskin.net/NickelMenu/" target="_blank">NickelMenu</a> &mdash; the custom menu framework. <em>(MIT)</em></li>
                 </ul>
 
                 <h3>Optional add-ons</h3>
@@ -283,11 +292,6 @@
                     <li><a href="https://github.com/OGKevin/cadmus" target="_blank">Cadmus</a> &mdash; a reading companion app for Kobo, based on <a href="https://github.com/baskerville/plato" target="_blank">Plato</a>. <em>(AGPL-3.0)</em></li>
                 </ul>
 
-                <h3>Fonts</h3>
-                <ul>
-                    <li>The optional curated fonts &mdash; <a href="https://github.com/nicoverbruggen/readerly" target="_blank">Readerly</a> <em>(OFL-1.1)</em>, <a href="https://github.com/nicoverbruggen/libron" target="_blank">Libron</a> <em>(OFL-1.1)</em>, and <a href="https://github.com/nicoverbruggen/cartisse" target="_blank">Cartisse</a> <em>(Bitstream Charter license)</em> &mdash; part of the <a href="https://github.com/nicoverbruggen/ebook-fonts" target="_blank">ebook-fonts</a> collection (<a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">website</a>), repackaged for Kobo.</li>
-                </ul>
-
                 <h3>Libraries &amp; tooling</h3>
                 <ul>
                     <li><a href="https://stuk.github.io/jszip/" target="_blank">JSZip</a> &mdash; client-side ZIP reading and writing. <em>(MIT or GPL-3.0)</em></li>
@@ -295,6 +299,16 @@
                     <li><a href="https://vite.dev/" target="_blank">Vite</a> &mdash; JavaScript bundling and local development. <em>(MIT)</em></li>
                     <li><a href="https://go.dev/" target="_blank">Go</a> &mdash; compiles kobopatch to the WebAssembly module used by this tool. <em>(BSD-3-Clause)</em></li>
                     <li><a href="https://eslint.org/" target="_blank">ESLint</a> <em>(MIT)</em> and <a href="https://playwright.dev/" target="_blank">Playwright</a> <em>(Apache-2.0)</em> &mdash; linting and end-to-end testing.</li>
+                </ul>
+
+                <h3>By the author</h3>
+                <p>Mods and fonts I maintain myself, installed or bundled by this tool:</p>
+                <ul>
+                    <li><a href="https://github.com/nicoverbruggen/NickelMenu" target="_blank">NickelMenu fork</a> with a <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank">curated configuration</a> &mdash; the fork and preset this tool installs NickelMenu from. <em>(MIT)</em></li>
+                    <li><a href="https://github.com/nicoverbruggen/NickelTypeFix" target="_blank">NickelTypeFix</a> &mdash; fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of &ldquo;Better typography and fixes&rdquo;. <em>(MIT)</em></li>
+                    <li><a href="https://github.com/nicoverbruggen/NickelCoverFix" target="_blank">NickelCoverFix</a> &mdash; keeps book covers from blanking to the title/author placeholder, and supports custom covers. <em>(MIT)</em></li>
+                    <li><a href="https://github.com/nicoverbruggen/NickelDissolve" target="_blank">NickelDissolve</a> &mdash; adds a Kindle-style directional page-turn animation (experimental). <em>(MIT)</em></li>
+                    <li>The curated fonts &mdash; <a href="https://github.com/nicoverbruggen/readerly" target="_blank">Readerly</a> <em>(OFL-1.1)</em>, <a href="https://github.com/nicoverbruggen/libron" target="_blank">Libron</a> <em>(OFL-1.1)</em>, and <a href="https://github.com/nicoverbruggen/cartisse" target="_blank">Cartisse</a> <em>(Bitstream Charter license)</em> &mdash; part of the <a href="https://github.com/nicoverbruggen/ebook-fonts" target="_blank">ebook-fonts</a> collection (<a href="https://ebook-fonts.nicoverbruggen.be" target="_blank">website</a>), repackaged for Kobo.</li>
                 </ul>
 
                 <p>Patches and discussion come from the <a href="https://www.mobileread.com/forums/forumdisplay.php?f=247" target="_blank">MobileRead forums</a> community.</p>

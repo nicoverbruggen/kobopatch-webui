@@ -20,7 +20,7 @@
 /* Collapsible section header (the <summary> of the section's <details>). */
 .nm-config-section-heading {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 0.45rem;
     margin-bottom: 0.15rem;
     cursor: pointer;
@@ -45,8 +45,23 @@
     transform: rotate(90deg);
 }
 
+/* Line icon shown before each section title; follows the heading colour.
+   line-height:0 keeps the span's box exactly the icon's height so it centers
+   cleanly against the (tightened) title line box. */
+.nm-config-section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+    color: var(--primary);
+}
+
 .nm-config-section-title {
     margin: 0;
+    /* Tight line-height so the uppercase caps sit centred in their box; with the
+       default ~1.5 the empty descender space pushes the icon visually low. */
+    line-height: 1;
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -63,6 +78,15 @@
 
 .nm-config-section-items {
     margin-top: 0.3rem;
+}
+
+/* The Legacy section holds superseded options. Render its heading in muted grey
+   instead of the theme accent so it reads as an archive and is less enticing to
+   open than the accent-coloured sections above it. */
+.nm-config-section--legacy .nm-config-section-title,
+.nm-config-section--legacy .nm-config-section-icon,
+.nm-config-section--legacy > .nm-config-section-heading::before {
+    color: var(--text-secondary);
 }
 
 .nm-config-item {
@@ -193,6 +217,64 @@
     font-size: 0.8rem;
     font-weight: 500;
     white-space: nowrap;
+}
+
+/* "Experimental" pill for features still considered unstable. Right-aligned so
+   it sits just before the "?" hint badge, in muted amber to read as a caution
+   without the alarm of red. */
+.nm-config-experimental {
+    position: relative;
+    flex-shrink: 0;
+    margin-left: auto;
+    margin-top: 0.1rem;
+    align-self: flex-start;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--warning-border);
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: help;
+}
+
+/* Hover/focus popover explaining what "experimental" means. Anchored to the
+   badge's right edge so it grows leftward and stays inside the feature card. */
+.nm-config-experimental[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.5rem);
+    z-index: 20;
+    width: max-content;
+    max-width: min(300px, 80vw);
+    padding: 0.55rem 0.65rem;
+    border-radius: 6px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    box-shadow: var(--shadow);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0;
+    text-transform: none;
+    text-align: left;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+    transition:
+        opacity 0.12s ease,
+        transform 0.12s ease;
+}
+
+.nm-config-experimental[data-tooltip]:hover::after,
+.nm-config-experimental[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* "Learn more" badge shown for features that declare a hint (url or text). */

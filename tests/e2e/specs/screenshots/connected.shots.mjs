@@ -8,6 +8,7 @@ import {
     shotNickelMenuTabsModal,
     connectToDeviceScreen,
     injectMockDevice,
+    openNmFeatureSection,
 } from '../../support/screenshot-helpers.mjs';
 
 test('connected nickelmenu', async ({ page }, testInfo) => {
@@ -136,6 +137,7 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 
     // Enable KOReader so a second warning joins the Dark Mode one at review.
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await openNmFeatureSection(page, 'Alternative reading apps');
     await page.check('input[name="nm-cfg-koreader"]');
     await page.click('#btn-nm-features-next');
 

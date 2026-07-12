@@ -44,11 +44,24 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await shotNickelMenuCustomizeModal(page, dir, '03a-nickelmenu-customize-modal', testInfo);
     await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
 
+    // Hover the "Experimental" badge (on Page turn animations) to show its popover.
+    await page
+        .locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickeldissolve"]') })
+        .locator('.nm-config-experimental')
+        .hover();
+    await expect(page.locator('.nm-config-experimental[data-tooltip]').first()).toBeVisible();
+    await shot(page, dir, '03b1-nickelmenu-experimental-tooltip', testInfo);
+
+    // The "Alternative reading apps" section (collapsed by default) holds KOReader
+    // and Cadmus.
+    await openNmFeatureSection(page, 'Alternative reading apps');
+    await shot(page, dir, '03c-nickelmenu-features-reading-apps', testInfo);
+
     // The Advanced section (collapsed by default) holds the power-user mods —
-    // NickelCoverFix, NickelDissolve (shown as temporarily unavailable while it
-    // has no locked release), and Sideload Mode.
+    // Sideload Mode and NickelCoverFix (experimental; currently temporarily
+    // disabled via its maintainer kill switch).
     await openNmFeatureSection(page, 'Advanced');
-    await shot(page, dir, '03c-nickelmenu-features-advanced', testInfo);
+    await shot(page, dir, '03d-nickelmenu-features-advanced', testInfo);
 
     // Features → backup → review (only download button in manual mode)
     await page.click('#btn-nm-features-next');
@@ -107,6 +120,7 @@ test('manual nickelmenu review notices', async ({ page }, testInfo) => {
     await page.click('#btn-nm-next');
 
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
+    await openNmFeatureSection(page, 'Alternative reading apps');
     await page.check('input[name="nm-cfg-koreader"]');
     await page.click('#btn-nm-features-next');
 

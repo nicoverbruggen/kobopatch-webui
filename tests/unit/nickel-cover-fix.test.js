@@ -52,6 +52,7 @@ function useNickelCoverFixAssetFetch() {
 test('nickelcoverfix is an Advanced feature registered in the NickelMenu feature list', () => {
     assert.ok(NICKELMENU_FEATURES.includes(nickelCoverFix));
     assert.equal(nickelCoverFix.section, 'Advanced');
+    assert.equal(nickelCoverFix.experimental, true);
     assert.equal(nickelCoverFix.default, false);
     // Hidden until the runtime manifest marks the shipped asset available.
     assert.equal(nickelCoverFix.available, false);
@@ -93,7 +94,7 @@ test('koboRootEntries throws a helpful error when the deployment lacks the asset
 test('reviewNotices links to the NickelCoverFix repository', () => {
     const notices = nickelCoverFix.reviewNotices();
     assert.equal(notices.length, 1);
-    assert.equal(notices[0].type, 'info');
+    assert.equal(notices[0].type, 'warning');
     assert.equal(notices[0].title, 'NickelCoverFix');
     assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelCoverFix');
 });
@@ -143,6 +144,7 @@ test('optional cleanup removes the .adds/nickel-cover-fix directory during Nicke
 test('optional cleanup still removes the mod while the feature is temporarily disabled', async () => {
     // `disabled: true` only blocks installation; a mod already on the device
     // must stay detectable and removable.
+    const originalDisabled = nickelCoverFix.disabled;
     nickelCoverFix.disabled = true;
     try {
         const device = new RecordingDevice({
@@ -160,7 +162,8 @@ test('optional cleanup still removes the mod while the feature is temporarily di
 
         assert.deepEqual(device.removalFor('.adds/nickel-cover-fix').options, { recursive: true });
     } finally {
-        delete nickelCoverFix.disabled;
+        if (originalDisabled === undefined) delete nickelCoverFix.disabled;
+        else nickelCoverFix.disabled = originalDisabled;
     }
 });
 

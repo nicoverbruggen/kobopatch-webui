@@ -31,16 +31,18 @@ export const NICKELMENU_FEATURES = [
     customMenu,
     simplifyTabs, // postProcess must run before sideloadedMode (home-tab override)
     ...homeHiders,
+    // "Reading Experience" section.
     additionalFonts,
     betterTypography,
+    nickelclock, // merges its own KoboRoot.tgz payload via koboRootEntries
+    nickelDissolve, // sits below NickelClock in Reading Experience; merges its own KoboRoot.tgz payload
+    // "Alternative reading apps" section — collapsed by default.
     koreader,
     cadmus,
     // "Advanced" section — less common power-user options, collapsed by default
     // in the feature selection step.
-    nickelclock, // merges its own KoboRoot.tgz payload via koboRootEntries
     sideloadedMode, // postProcess comments out the home-tab override added by simplifyTabs
     nickelCoverFix, // merges its own KoboRoot.tgz payload via koboRootEntries
-    nickelDissolve, // merges its own KoboRoot.tgz payload via koboRootEntries
     // "Legacy" section — older tweaks, rendered last and collapsed by default.
     screensaver,
     excludeCalibre,

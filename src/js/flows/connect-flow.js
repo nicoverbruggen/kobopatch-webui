@@ -309,6 +309,7 @@ export function initConnectFlow(state, { patches }) {
             if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
                 state.showError(TL.ERROR.PERMISSION_DENIED_MESSAGE, null, {
                     title: TL.ERROR.PERMISSION_DENIED_TITLE,
+                    expected: true, // user declined the device-access prompt
                 });
                 return;
             }

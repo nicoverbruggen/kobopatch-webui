@@ -42,11 +42,12 @@ export function nickelDissolveSupport(deviceInfo) {
 
 export default {
     id: 'nickeldissolve',
-    section: 'Advanced',
+    section: 'Reading Experience',
     title: 'Page turn animations',
     description:
         'Adds a Kindle-style directional wipe animation to page turns while reading. Experimental, and only supported on the Kobo Libra Colour, Clara Colour, Clara BW, and Libra 2.',
     default: false,
+    experimental: true,
     available: false, // set to true at runtime if NickelDissolve assets exist
     directories: ['.adds/nickel-dissolve'],
     hint: 'https://github.com/nicoverbruggen/NickelDissolve',
@@ -64,9 +65,9 @@ export default {
         return [
             {
                 type: 'warning',
-                title: 'NickelDissolve is experimental',
+                title: 'NickelDissolve',
                 paragraphs: [
-                    'NickelDissolve is a work in progress: only some devices are verified, and its behavior may still change. On an unsupported device the mod stays inert (no animation, no risk). It is applied on the reboot after install, and it can be configured or turned off via its config file in .adds/nickel-dissolve. Check the device support table and configuration guide on GitHub before enabling it.',
+                    'Only some devices are verified, and its behavior may still change. On an unsupported device the mod stays inert (no animation, no risk).',
                 ],
                 link: {
                     label: 'NickelDissolve on GitHub',

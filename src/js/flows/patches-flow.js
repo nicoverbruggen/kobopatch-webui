@@ -590,7 +590,7 @@ export function initPatchesFlow(state) {
             }
 
             if (!state.firmwareURL) {
-                state.showError(TL.STATUS.NO_FIRMWARE_URL);
+                state.showError(TL.STATUS.NO_FIRMWARE_URL, null, { expected: true }); // no firmware mapping for this version
                 return;
             }
 
@@ -612,7 +612,9 @@ export function initPatchesFlow(state) {
 
             await flow.go('done', state);
         } catch (err) {
-            state.showError('Build failed: ' + err.message, buildLog.textContent);
+            // A build failure is usually a user-selected incompatible patch set —
+            // an expected outcome, not a tool malfunction, so it is not reported.
+            state.showError('Build failed: ' + err.message, buildLog.textContent, { expected: true });
         }
     });
 
@@ -653,7 +655,7 @@ export function initPatchesFlow(state) {
                 }
             }
         } catch (err) {
-            state.showError(TL.STATUS.WRITE_FAILED(err.message));
+            state.showError(TL.STATUS.WRITE_FAILED(err.message), null, { category: 'write' });
             btnWrite.disabled = false;
             btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
             return;
@@ -708,6 +710,7 @@ export function initPatchesFlow(state) {
         } catch (err) {
             state.showError(TL.ERROR.DOWNLOAD_FAILED_MESSAGE, err.message, {
                 title: TL.ERROR.DOWNLOAD_FAILED_TITLE,
+                category: 'download',
             });
             return;
         } finally {

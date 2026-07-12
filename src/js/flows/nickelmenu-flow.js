@@ -49,7 +49,7 @@ import { track } from '../shell/analytics.js';
 import { shouldOfferNmBackup, prepareNmBackup } from './nickelmenu-backup.js';
 import { executeNmInstall as executeNmInstallFn, renderNmDoneStatus, renderReviewNotices } from './nickelmenu-execute.js';
 
-const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
+const NM_COLLAPSED_SECTIONS = new Set(['Alternative reading apps', 'Advanced', 'Legacy']);
 
 export function initNickelMenuFlow(state) {
     const {
@@ -408,6 +408,7 @@ export function initNickelMenuFlow(state) {
                 version: typeof f.version === 'function' ? f.version() : f.version,
                 description: f.description,
                 hint: f.hint,
+                experimental: f.experimental === true,
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
                 checked: state.selectedFeatureIds.includes(f.id) && !unavailable,

@@ -7,7 +7,7 @@ import { installableVersion, installableAssetUrl, installableSize } from '../../
 // written under .adds/cadmus/ and launched from Cadmus' own cadmus.sh script.
 export default {
     id: 'cadmus',
-    section: 'Reading Apps',
+    section: 'Alternative reading apps',
     title: 'Install Cadmus',
     description:
         'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean Reading Experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',

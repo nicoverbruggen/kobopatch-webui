@@ -331,6 +331,7 @@ Events currently emitted:
 | `add-sideloaded-mode` | — | Only when sideloaded mode is installed. |
 | `flow-end` | `{ result }` | When a flow completes (write / download / remove). |
 | `feedback` | `{ vote }` | When the user submits the thumbs feedback. |
+| `error` | `{ value }` | When the error screen is shown for an *unexpected* failure. `value` is a coarse category (`write`, `probe`, `config-read`, `download`, `unknown`) — never the message or stack. Derived from `showError` options in `error-screen.js` (or an explicit `options.category`). Errors flagged `expected: true` — a normal outcome of user input or unsupported data, e.g. building incompatible patches, an unsupported firmware version, or a denied device-access prompt — are **not** reported. |
 
 The `add-*` events fire only when that add-on is actually included in the install (in
 `executeNmInstall`, for both write-to-device and download paths, never on removal), so each event

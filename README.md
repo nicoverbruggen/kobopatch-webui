@@ -92,30 +92,40 @@ More relevant notes on architecture, file structure, build internals, and detail
 
 ## Credits
 
-This project stands on the work of many others. Each remains the property of its respective authors and is used under its own license — my sincere thanks to everyone who maintains them.
+This project stands on the work of many others. It bundles, builds on, or installs the projects listed below — each remains the property of its respective authors and is used under its own license, and my sincere thanks go to everyone who maintains them.
 
-Some dependencies (see `installables.lock`) are bundled as part of the webapp, as otherwise there'd be issues with CORS and downloading assets from GitHub releases.
+Some of these are bundled with the app (see `installables.lock`) rather than downloaded at runtime, to avoid CORS issues when fetching release assets from GitHub.
 
 **Patching & menu**
 
 - [kobopatch](https://github.com/pgaskin/kobopatch) — the patching engine, compiled to WebAssembly to patch firmware in the browser. _(MIT)_
-- [NickelMenu](https://pgaskin.net/NickelMenu/) — the custom menu framework, installed from a [fork](https://github.com/nicoverbruggen/NickelMenu) with a [curated configuration](https://github.com/nicoverbruggen/kobo-config). _(MIT)_
+- [NickelMenu](https://pgaskin.net/NickelMenu/) — the custom menu framework. _(MIT)_
 
 **Optional add-ons**
 
 - [NickelClock](https://github.com/shermp/NickelClock) — a clock on the reading screen. _(MIT)_
-- [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) — fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of "Better typography and fixes". _(MIT)_
 - [KOReader](https://github.com/koreader/koreader) — a feature-rich document and e-book reader. _(AGPL-3.0)_
 - [Cadmus](https://github.com/OGKevin/cadmus) — a reading companion app for Kobo, based on [Plato](https://github.com/baskerville/plato). _(AGPL-3.0)_
-- The optional curated fonts — [Readerly](https://github.com/nicoverbruggen/readerly) _(OFL-1.1)_, [Libron](https://github.com/nicoverbruggen/libron) _(OFL-1.1)_, and [Cartisse](https://github.com/nicoverbruggen/cartisse) _(Bitstream Charter license)_ — part of the [ebook-fonts](https://github.com/nicoverbruggen/ebook-fonts) collection ([website](https://ebook-fonts.nicoverbruggen.be)), repackaged for Kobo.
 
 **Libraries & tooling**
 
-- [JSZip](https://stuk.github.io/jszip/) for client-side ZIP handling _(MIT or GPL-3.0)_ and [js-yaml](https://github.com/nodeca/js-yaml) for parsing patch files _(MIT)_.
-- [Vite](https://vite.dev/) for bundling and local development _(MIT)_ and [Go](https://go.dev/) for compiling kobopatch to WebAssembly _(BSD-3-Clause)_.
-- [ESLint](https://eslint.org/) _(MIT)_ and [Playwright](https://playwright.dev/) _(Apache-2.0)_ for linting and end-to-end testing.
+- [JSZip](https://stuk.github.io/jszip/) — client-side ZIP reading and writing. _(MIT or GPL-3.0)_
+- [js-yaml](https://github.com/nodeca/js-yaml) — parsing kobopatch patch files. _(MIT)_
+- [Vite](https://vite.dev/) — JavaScript bundling and local development. _(MIT)_
+- [Go](https://go.dev/) — compiles kobopatch to the WebAssembly module used by this tool. _(BSD-3-Clause)_
+- [ESLint](https://eslint.org/) _(MIT)_ and [Playwright](https://playwright.dev/) _(Apache-2.0)_ — linting and end-to-end testing.
 
-Software patches and discussion come from the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) community.
+**By the author**
+
+Mods and fonts I maintain myself, installed or bundled by this tool:
+
+- [NickelMenu fork](https://github.com/nicoverbruggen/NickelMenu) with a [curated configuration](https://github.com/nicoverbruggen/kobo-config) — the fork and preset this tool installs NickelMenu from. _(MIT)_
+- [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) — fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of "Better typography and fixes". _(MIT)_
+- [NickelCoverFix](https://github.com/nicoverbruggen/NickelCoverFix) — keeps book covers from blanking to the title/author placeholder, and supports custom covers. _(MIT)_
+- [NickelDissolve](https://github.com/nicoverbruggen/NickelDissolve) — adds a Kindle-style directional page-turn animation (experimental). _(MIT)_
+- The curated fonts — [Readerly](https://github.com/nicoverbruggen/readerly) _(OFL-1.1)_, [Libron](https://github.com/nicoverbruggen/libron) _(OFL-1.1)_, and [Cartisse](https://github.com/nicoverbruggen/cartisse) _(Bitstream Charter license)_ — part of the [ebook-fonts](https://github.com/nicoverbruggen/ebook-fonts) collection ([website](https://ebook-fonts.nicoverbruggen.be)), repackaged for Kobo.
+
+Patches and discussion come from the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) community.
 
 ## License
 

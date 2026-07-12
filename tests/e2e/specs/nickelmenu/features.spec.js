@@ -50,13 +50,14 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-next');
 
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
-        await expect(page.locator('#nm-config-options')).toContainText('Reading Apps');
+        await expect(page.locator('#nm-config-options')).toContainText('Alternative reading apps');
         await expect(page.locator('input[name="nm-cfg-cadmus"]')).not.toBeChecked();
 
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
         // Better typography and fixes would add the NickelTypeFix notice; deselect it so
         // this test can assert the review step shows no notices at all.
         await page.uncheck('input[name="nm-cfg-better-typography"]');
+        await openNmSection(page, 'Alternative reading apps');
         await page.check('input[name="nm-cfg-cadmus"]');
 
         await page.click('#btn-nm-features-next');
@@ -241,7 +242,8 @@ test.describe('NickelMenu — install', () => {
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-        // KOReader checkbox should be visible and unchecked by default
+        // KOReader lives in the collapsed "Alternative reading apps" section.
+        await openNmSection(page, 'Alternative reading apps');
         await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
 
         // Enable KOReader
@@ -300,7 +302,8 @@ test.describe('NickelMenu — install', () => {
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-        // Enable KOReader
+        // Enable KOReader (in the collapsed "Alternative reading apps" section)
+        await openNmSection(page, 'Alternative reading apps');
         await page.check('input[name="nm-cfg-koreader"]');
 
         await page.click('#btn-nm-features-next');
@@ -340,6 +343,7 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-next');
 
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
         await expect(page.locator('input[name="nm-cfg-cadmus"]')).not.toBeChecked();
         // Drop the additional fonts so this run only depends on the Cadmus assets.
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');

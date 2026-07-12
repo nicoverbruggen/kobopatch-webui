@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import nickelDissolve, { nickelDissolveSupport } from '../../src/js/nickelmenu/features/nickel-dissolve/index.js';
+import nickelclock from '../../src/js/nickelmenu/features/nickelclock/index.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
 import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
@@ -50,13 +51,22 @@ function useNickelDissolveAssetFetch() {
     return restore;
 }
 
-test('nickeldissolve is an Advanced feature registered in the NickelMenu feature list', () => {
+test('nickeldissolve is a Reading Experience feature registered in the NickelMenu feature list', () => {
     assert.ok(NICKELMENU_FEATURES.includes(nickelDissolve));
-    assert.equal(nickelDissolve.section, 'Advanced');
+    assert.equal(nickelDissolve.section, 'Reading Experience');
+    assert.equal(nickelDissolve.experimental, true);
     assert.equal(nickelDissolve.default, false);
     // Hidden until the runtime manifest marks the shipped asset available.
     assert.equal(nickelDissolve.available, false);
     assert.deepEqual(nickelDissolve.directories, ['.adds/nickel-dissolve']);
+});
+
+test('nickeldissolve is listed immediately below NickelClock in Reading Experience', () => {
+    const clockIndex = NICKELMENU_FEATURES.indexOf(nickelclock);
+    const dissolveIndex = NICKELMENU_FEATURES.indexOf(nickelDissolve);
+    assert.ok(clockIndex >= 0 && dissolveIndex >= 0);
+    assert.equal(dissolveIndex, clockIndex + 1);
+    assert.equal(nickelclock.section, 'Reading Experience');
 });
 
 // Hardware UUIDs from koboHardwareIds in kobo/version.js.
@@ -146,11 +156,14 @@ test('koboRootEntries throws a helpful error when the deployment lacks the asset
     }
 });
 
-test('reviewNotices warns that NickelDissolve is experimental and links to the repository', () => {
+test('reviewNotices warns about NickelDissolve and links to the repository', () => {
     const notices = nickelDissolve.reviewNotices();
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'warning');
-    assert.match(notices[0].paragraphs[0], /experimental|work in progress/i);
+    assert.match(notices[0].title, /NickelDissolve/);
+    // The mod's not-fully-verified caveat (the "experimental" signal itself now
+    // lives on the feature's Experimental badge).
+    assert.match(notices[0].paragraphs[0], /verified|may still change|inert/i);
     assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelDissolve');
 });
 

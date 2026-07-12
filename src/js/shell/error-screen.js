@@ -10,6 +10,18 @@ import { TL } from './strings.js';
 import { $, collect, triggerDownload } from './dom.js';
 import { showStep, showNav, hideNav, stepHistory } from './navigation.js';
 import { getActiveFlow } from './step-machine.js';
+import { track } from './analytics.js';
+
+// Map an error's showError options to a coarse analytics category. Only this
+// controlled label is ever reported — never the error message, stack trace, or
+// any device path. Callers can pass an explicit `options.category`; otherwise it
+// is derived from the same signals that pick the error screen's copy.
+function errorCategory(options) {
+    if (options.category) return options.category;
+    if (options.deviceWrite) return options.writeProbe ? 'probe' : 'write';
+    if (options.configReadFailed) return 'config-read';
+    return 'unknown';
+}
 
 export function initErrorScreen(state) {
     const {
@@ -39,6 +51,12 @@ export function initErrorScreen(state) {
     let errorAuditLog = null;
 
     function showError(message, log, options = {}) {
+        // Report only *unexpected* failures for analytics, as a coarse category
+        // (no message text or stack). Expected errors — ones that are a normal
+        // outcome of user input or unsupported data, e.g. building incompatible
+        // patches, an unsupported firmware version, or a denied device-access
+        // prompt — pass `options.expected` and are never reported.
+        if (!options.expected) track('error', { value: errorCategory(options) });
         errorAuditLog = options.auditLog || null;
         errorMessage.textContent = message;
         btnErrorDownloadLog.hidden = !errorAuditLog;

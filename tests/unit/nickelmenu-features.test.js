@@ -254,7 +254,7 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
 });
 
 test('Cadmus contributes its launcher entry at the top of the menu', () => {
-    assert.equal(cadmus.section, 'Reading Apps');
+    assert.equal(cadmus.section, 'Alternative reading apps');
     assert.deepEqual(cadmus.menuItems(), [
         {
             id: 'cadmus',
