@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { featuresToInstall, optionalCleanupToRemove, optionalCleanupKept, featureReviewNotices, nmReviewModel } from '../../src/js/nickelmenu/selection.js';
+import {
+    featuresToInstall,
+    featureDisabledReason,
+    optionalCleanupToRemove,
+    optionalCleanupKept,
+    featureReviewNotices,
+    nmReviewModel,
+} from '../../src/js/nickelmenu/selection.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 
 // `featuresToInstall` reads the real NICKELMENU_FEATURES catalog (per the
@@ -88,6 +95,41 @@ test('featuresToInstall drops a disabled feature even when its asset is availabl
         if (originalDisabled === undefined) delete nickelCoverFix.disabled;
         else nickelCoverFix.disabled = originalDisabled;
     }
+});
+
+test('featuresToInstall also drops a feature disabled with a string reason', () => {
+    const nickelCoverFix = NICKELMENU_FEATURES.find((f) => f.id === 'nickelcoverfix');
+    const originalAvailable = nickelCoverFix.available;
+    const originalDisabled = nickelCoverFix.disabled;
+    const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
+
+    nickelCoverFix.available = true;
+    nickelCoverFix.disabled = 'Off while a fix is prepared.';
+    try {
+        assert.ok(!featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'nickelcoverfix'), 'a string reason still disables install');
+    } finally {
+        nickelCoverFix.available = originalAvailable;
+        if (originalDisabled === undefined) delete nickelCoverFix.disabled;
+        else nickelCoverFix.disabled = originalDisabled;
+    }
+});
+
+test('featureDisabledReason surfaces the right message for each disabled cause', () => {
+    // A string kill switch is shown verbatim; `true` uses the generic text.
+    assert.equal(featureDisabledReason({ disabled: 'Being reworked.' }, { firmware: '4.40.0' }), 'Being reworked.');
+    assert.equal(featureDisabledReason({ disabled: true }, { firmware: '4.40.0' }), 'Temporarily unavailable.');
+    // An unbundled asset also reads as temporarily unavailable.
+    assert.equal(featureDisabledReason({ available: false }, { firmware: '4.40.0' }), 'Temporarily unavailable.');
+    // Device-specific reasons when not globally disabled.
+    assert.match(featureDisabledReason({ minimumVersion: '4.41' }, { firmware: '4.30.0' }), /Requires Kobo software 4\.41/);
+    assert.equal(featureDisabledReason({ unsupportedDeviceReason: () => 'No good here.' }, { firmware: '4.40.0' }), 'No good here.');
+    // A selectable feature has no reason.
+    assert.equal(featureDisabledReason({}, { firmware: '4.40.0' }), undefined);
+    // The global kill switch wins over device-specific reasons.
+    assert.equal(
+        featureDisabledReason({ disabled: 'Off for now.', minimumVersion: '9.99', unsupportedDeviceReason: () => 'nope' }, { firmware: '4.30.0' }),
+        'Off for now.',
+    );
 });
 
 test('optionalCleanupToRemove / optionalCleanupKept partition detected by the checked ids', () => {

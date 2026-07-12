@@ -23,11 +23,7 @@ export default {
         'Keeps book covers from turning into the plain title/author placeholder when Kobo cannot fetch them (e.g. offline or after a sync). Also lets you set up custom covers for select books, including books purchased from the Kobo Store.',
     default: false,
     experimental: true,
-    // Temporary maintainer kill switch: the feature stays listed as "Temporarily
-    // unavailable" and is never installed, while its removal detection keeps
-    // working so anyone who already has it can still uninstall. Remove this line
-    // to re-enable.
-    disabled: true,
+    disabled: 'Not available yet. When this has been tested more, it will become available to install.',
     available: false, // set to true at runtime if NickelCoverFix assets exist
     directories: ['.adds/nickel-cover-fix'],
     hint: 'https://github.com/nicoverbruggen/NickelCoverFix',

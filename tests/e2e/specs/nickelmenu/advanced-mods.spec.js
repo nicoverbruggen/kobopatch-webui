@@ -63,6 +63,19 @@ test.describe('NickelMenu — Advanced mods', () => {
         await expect(coverRow.locator('.nm-config-experimental')).toHaveText(/experimental/i);
     });
 
+    test('no device — a disabled add-on shows its maintainer reason instead of the generic text', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await goToManualNmFeatures(page);
+        await openNmSection(page, 'Advanced');
+        const cb = page.locator('input[name="nm-cfg-nickelcoverfix"]');
+        // Only meaningful while the kill switch is on with a string reason.
+        test.skip(!(await cb.isDisabled()), 'NickelCoverFix is enabled');
+        const reason = page.locator('.nm-config-item', { has: cb }).locator('.nm-config-disabled-reason');
+        // Matches the string in nickel-cover-fix/index.js's `disabled`.
+        await expect(reason).toHaveText('Temporarily disabled while a fix is being prepared. It will return in a future update.');
+    });
+
     test('no device — NickelCoverFix merges into KoboRoot.tgz preserving original files', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelCoverFixAssets(), 'NickelCoverFix assets not found (run npm run setup:installables)');
@@ -78,7 +91,7 @@ test.describe('NickelMenu — Advanced mods', () => {
         // The mod lives in the collapsed Advanced section, with its version and
         // a "learn more" link to the project.
         await openNmSection(page, 'Advanced');
-        // Auto-skip while the maintainer kill switch (`disabled: true`) is on;
+        // Auto-skip while the maintainer kill switch (`disabled`) is on;
         // removing it re-enables both the feature and this test, no edits needed.
         test.skip(await page.locator('input[name="nm-cfg-nickelcoverfix"]').isDisabled(), 'NickelCoverFix is temporarily disabled');
         const row = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickelcoverfix"]') });
@@ -132,7 +145,7 @@ test.describe('NickelMenu — Advanced mods', () => {
         await goToNmFeatures(page);
 
         await openNmSection(page, 'Advanced');
-        // Auto-skip while the maintainer kill switch (`disabled: true`) is on.
+        // Auto-skip while the maintainer kill switch (`disabled`) is on.
         test.skip(await page.locator('input[name="nm-cfg-nickelcoverfix"]').isDisabled(), 'NickelCoverFix is temporarily disabled');
         await expect(page.locator('input[name="nm-cfg-nickelcoverfix"]')).not.toBeChecked();
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');

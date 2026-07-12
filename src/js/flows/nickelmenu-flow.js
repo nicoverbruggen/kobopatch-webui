@@ -25,7 +25,7 @@ import {
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
 } from '../nickelmenu/probes.js';
-import { nmReviewModel } from '../nickelmenu/selection.js';
+import { nmReviewModel, featureDisabledReason } from '../nickelmenu/selection.js';
 import {
     cloneMenuCustomization,
     getMenuCustomizationSummaryItem,
@@ -388,7 +388,7 @@ export function initNickelMenuFlow(state) {
                 .filter(
                     (f) =>
                         f.available !== false &&
-                        f.disabled !== true &&
+                        !f.disabled &&
                         meetsMinimumVersion(firmware, f.minimumVersion) &&
                         !f.unsupportedDeviceReason?.(deviceInfo) &&
                         (f.required || f.default),
@@ -397,7 +397,7 @@ export function initNickelMenuFlow(state) {
         }
 
         const items = features.map((f) => {
-            const unavailable = f.available === false || f.disabled === true;
+            const unavailable = f.available === false || Boolean(f.disabled);
             const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
             // A feature-owned device gate (e.g. NickelDissolve's allowlist):
             // a returned string disables the checkbox and is shown as the reason.
@@ -413,9 +413,7 @@ export function initNickelMenuFlow(state) {
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
                 checked: state.selectedFeatureIds.includes(f.id) && !unavailable,
                 disabled: f.required || !meetsMinimum || Boolean(unsupportedReason) || unavailable,
-                disabledReason: !meetsMinimum
-                    ? `Requires Kobo software ${f.minimumVersion} or newer (this device runs ${firmware}).`
-                    : unsupportedReason || (unavailable ? 'Temporarily unavailable.' : undefined),
+                disabledReason: featureDisabledReason(f, deviceInfo),
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
                 onAction: f.customization

@@ -18,12 +18,32 @@ import { meetsMinimumVersion } from '../kobo/version.js';
 export function featuresToInstall(session, deviceInfo) {
     const firmware = deviceInfo?.firmware;
     return NICKELMENU_FEATURES.filter((f) => {
-        if (f.available === false || f.disabled === true) return false;
+        if (f.available === false || f.disabled) return false;
         if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
         if (f.unsupportedDeviceReason?.(deviceInfo)) return false;
         if (f.required) return true;
         return session.selectedFeatureIds.includes(f.id);
     });
+}
+
+/**
+ * The reason a feature's checkbox is disabled in the config step, or `undefined`
+ * when it is selectable. Ordered by authority: a maintainer kill switch
+ * (`disabled`) is global so it wins — a string value is shown verbatim, `true`
+ * falls back to the generic text; then a too-old firmware, then a feature's own
+ * device gate (`unsupportedDeviceReason`), then an unbundled asset. `required`
+ * features have no reason (they are locked on, not unavailable).
+ */
+export function featureDisabledReason(feature, deviceInfo) {
+    if (feature.disabled) return typeof feature.disabled === 'string' ? feature.disabled : 'Temporarily unavailable.';
+    const firmware = deviceInfo?.firmware;
+    if (!meetsMinimumVersion(firmware, feature.minimumVersion)) {
+        return `Requires Kobo software ${feature.minimumVersion} or newer (this device runs ${firmware}).`;
+    }
+    const unsupported = feature.unsupportedDeviceReason?.(deviceInfo);
+    if (unsupported) return unsupported;
+    if (feature.available === false) return 'Temporarily unavailable.';
+    return undefined;
 }
 
 /** Features whose cleanup always runs on removal, regardless of selection. */
