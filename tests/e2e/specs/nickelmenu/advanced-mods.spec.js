@@ -72,8 +72,11 @@ test.describe('NickelMenu — Advanced mods', () => {
         // Only meaningful while the kill switch is on with a string reason.
         test.skip(!(await cb.isDisabled()), 'NickelCoverFix is enabled');
         const reason = page.locator('.nm-config-item', { has: cb }).locator('.nm-config-disabled-reason');
-        // Matches the string in nickel-cover-fix/index.js's `disabled`.
-        await expect(reason).toHaveText('Temporarily disabled while a fix is being prepared. It will return in a future update.');
+        // A string `disabled` value is shown verbatim in place of the generic
+        // text — assert that, not the exact wording, so copy tweaks don't break it.
+        await expect(reason).toBeVisible();
+        await expect(reason).not.toHaveText('');
+        await expect(reason).not.toHaveText('Temporarily unavailable.');
     });
 
     test('no device — NickelCoverFix merges into KoboRoot.tgz preserving original files', async ({ page }) => {
