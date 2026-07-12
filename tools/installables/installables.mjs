@@ -242,14 +242,29 @@ async function setupInstallable(item, target, lock) {
     console.log(`[${target}/${item.name}] -> ${formatSize(buf.length)} (verified)`);
 }
 
-// update: resolve the latest upstream release, download, and rewrite the lock
-// entry (version/url/sha256/size). The resolved bytes are written to every target.
-// Run by a maintainer; commit the updated installables.lock.
+// update: resolve the latest upstream release and, only when the tag actually
+// moved (or the item is new), download and rewrite the lock entry
+// (version/url/sha256/size). When the locked version already matches upstream
+// there is nothing new to mint, so the (potentially large) download is skipped and
+// the targets are populated from the lock instead. Run by a maintainer; commit the
+// updated installables.lock.
+//
+// Trade-off: keying "is there an update?" off the tag means an asset re-uploaded
+// under the *same* tag is not re-hashed here (the same premise as `--check`). Bump
+// the tag upstream to force a refresh.
 async function updateInstallable(item, targets, lock) {
     console.log(`[${item.name}] resolving latest release...`);
     const { version, url } = await resolveLatest(item);
 
     const existing = lock.installables[item.name];
+    if (existing && existing.version === version) {
+        console.log(`[${item.name}] up to date (${version}), no download needed`);
+        // No lock change; still ensure every target holds the pinned asset,
+        // reusing an on-disk copy that verifies and fetching only a missing one.
+        for (const target of targets) await setupInstallable(item, target, lock);
+        return;
+    }
+
     const firstDir = TARGETS[targets[0]];
     await mkdir(firstDir, { recursive: true });
     const firstPath = join(firstDir, item.asset);
@@ -263,9 +278,8 @@ async function updateInstallable(item, targets, lock) {
         await writeFile(join(dir, item.asset), buf);
     }
 
-    const changed = !existing || existing.version !== version || existing.sha256 !== sha256;
     lock.installables[item.name] = { asset: item.asset, version, url, sha256, size: buf.length };
-    const note = !existing ? 'added' : changed ? `${existing.version} -> ${version}` : `unchanged (${version})`;
+    const note = existing ? `${existing.version} -> ${version}` : 'added';
     console.log(`[${item.name}] ${note} -> ${formatSize(buf.length)}`);
 }
 
