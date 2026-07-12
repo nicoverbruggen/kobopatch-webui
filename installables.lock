@@ -45,17 +45,17 @@
     },
     "cartisse": {
       "asset": "KF_Cartisse.zip",
-      "version": "v2.2",
-      "url": "https://github.com/nicoverbruggen/cartisse/releases/download/v2.2/KF_Cartisse.zip",
-      "sha256": "9bd98b1e9412c0a792f7aa20267d03741dd77937122c572834010ceb3b147179",
-      "size": 402243
+      "version": "v2.3",
+      "url": "https://github.com/nicoverbruggen/cartisse/releases/download/v2.3/KF_Cartisse.zip",
+      "sha256": "2903680c4b40391556d940c745c4f31974e7a94bac88f37a43f11f5028a64fd7",
+      "size": 404076
     },
     "nickeltypefix": {
       "asset": "NickelTypeFix.tgz",
-      "version": "v0.3",
-      "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.3/KoboRoot.tgz",
-      "sha256": "e3475bb0e81243a77d735a7705cff1896a797ef65835b740f2714328ac34ddfb",
-      "size": 16844
+      "version": "v0.5",
+      "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.5/KoboRoot.tgz",
+      "sha256": "a26fe5569a0edc6d39b1de3439c3881c4531c8d7412f6e23d98555c0df1186e1",
+      "size": 24331
     },
     "nickelcoverfix": {
       "asset": "NickelCoverFix.tgz",
@@ -63,6 +63,13 @@
       "url": "https://github.com/nicoverbruggen/NickelCoverFix/releases/download/v0.1/KoboRoot.tgz",
       "sha256": "360276b8229411f87a2740c7141eecd74a25fa818c0508f1ee47316f7e2be233",
       "size": 39722
+    },
+    "nickeldissolve": {
+      "asset": "NickelDissolve.tgz",
+      "version": "v0.3",
+      "url": "https://github.com/nicoverbruggen/NickelDissolve/releases/download/v0.3/KoboRoot.tgz",
+      "sha256": "8344bb607cef3b24a417a67f29957f9d80cc07555a3168a6719dc76ee6e28936",
+      "size": 26357
     }
   }
 }
