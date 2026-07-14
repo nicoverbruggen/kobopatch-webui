@@ -34,7 +34,7 @@ function normalizeTarPath(path) {
 export function parseTar(bytes) {
     const files = [];
 
-    for (let offset = 0; offset + TAR_BLOCK_SIZE <= bytes.length; ) {
+    for (let offset = 0; offset + TAR_BLOCK_SIZE <= bytes.length;) {
         if (isZeroBlock(bytes, offset)) break;
 
         const name = readString(bytes, offset, 100);

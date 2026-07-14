@@ -77,12 +77,13 @@ const CLARA_COLOUR = { hardwareId: '00000000-0000-0000-0000-000000000393', model
 const CLARA_BW_P365 = { hardwareId: '00000000-0000-0000-0000-000000000395', model: 'Kobo Clara BW' };
 const SAGE = { hardwareId: '00000000-0000-0000-0000-000000000383', model: 'Kobo Sage' };
 
-test('nickelDissolveSupport allowlists exactly the four supported models', () => {
-    for (const device of [LIBRA_2, LIBRA_COLOUR, CLARA_BW_N365, CLARA_COLOUR, CLARA_BW_P365]) {
+test('nickelDissolveSupport allowlists exactly the supported Colour and Clara BW hardware revisions', () => {
+    for (const device of [LIBRA_COLOUR, CLARA_BW_N365, CLARA_COLOUR, CLARA_BW_P365]) {
         assert.equal(nickelDissolveSupport(device), 'supported', device.model);
     }
 
     // Other known devices — and unrecognised future hardware — are unsupported.
+    assert.equal(nickelDissolveSupport(LIBRA_2), 'unsupported');
     assert.equal(nickelDissolveSupport(SAGE), 'unsupported');
     assert.equal(nickelDissolveSupport({ hardwareId: '00000000-0000-0000-0000-000000000999' }), 'unsupported');
 
@@ -99,11 +100,12 @@ test('unsupportedDeviceReason names the supported models only on unsupported dev
     assert.equal(nickelDissolve.unsupportedDeviceReason({}), null);
 
     const reason = nickelDissolve.unsupportedDeviceReason(SAGE);
-    assert.match(reason, /Libra Colour, Clara Colour, Clara BW, and Libra 2/);
+    assert.match(reason, /Libra Colour, Clara Colour, and Clara BW/);
+    assert.doesNotMatch(reason, /Libra 2/);
     assert.match(reason, /Kobo Sage/);
 
     // Without a model name the reason still reads cleanly.
-    assert.match(nickelDissolve.unsupportedDeviceReason({ hardwareId: 'not-a-kobo' }), /Libra 2\.$/);
+    assert.match(nickelDissolve.unsupportedDeviceReason({ hardwareId: 'not-a-kobo' }), /Clara BW\.$/);
 });
 
 test('featuresToInstall drops NickelDissolve on unsupported devices even when selected', () => {
@@ -113,11 +115,12 @@ test('featuresToInstall drops NickelDissolve on unsupported devices even when se
         const session = { selectedFeatureIds: ['nickeldissolve'] };
         const installedOn = (deviceInfo) => featuresToInstall(session, deviceInfo).some((f) => f.id === 'nickeldissolve');
 
-        assert.equal(installedOn(LIBRA_2), true);
+        assert.equal(installedOn(LIBRA_COLOUR), true);
         assert.equal(installedOn(CLARA_BW_P365), true);
         // Manual mode / download flow: the device is unknown, so it stays offered.
         assert.equal(installedOn(null), true);
 
+        assert.equal(installedOn(LIBRA_2), false);
         assert.equal(installedOn(SAGE), false);
     } finally {
         nickelDissolve.available = originalAvailable;

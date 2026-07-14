@@ -22,7 +22,6 @@ import { installableAvailable, installableVersion, installableAssetUrl, installa
  * twice because it has two hardware revisions (N365 and P365).
  */
 const SUPPORTED_HARDWARE_IDS = new Set([
-    '00000000-0000-0000-0000-000000000388', // N418 Kobo Libra 2
     '00000000-0000-0000-0000-000000000390', // N428 Kobo Libra Colour
     '00000000-0000-0000-0000-000000000391', // N365 Kobo Clara BW
     '00000000-0000-0000-0000-000000000393', // N367 Kobo Clara Colour
@@ -45,7 +44,7 @@ export default {
     section: 'Reading Experience',
     title: 'Page turn animations',
     description:
-        'Adds a Kindle-style directional wipe animation to page turns while reading. Experimental, and only supported on the Kobo Libra Colour, Clara Colour, Clara BW, and Libra 2.',
+        'Adds a Kindle-style directional wipe animation to page turns while reading. Experimental, and only supported on the Kobo Libra Colour, Clara Colour, and Clara BW.',
     default: false,
     experimental: true,
     available: false, // set to true at runtime if NickelDissolve assets exist
@@ -58,7 +57,7 @@ export default {
     unsupportedDeviceReason(deviceInfo) {
         if (nickelDissolveSupport(deviceInfo) !== 'unsupported') return null;
         const suffix = deviceInfo.model ? ` (this device is a ${deviceInfo.model}).` : '.';
-        return `Only supported on the Kobo Libra Colour, Clara Colour, Clara BW, and Libra 2${suffix}`;
+        return `Only supported on the Kobo Libra Colour, Clara Colour, and Clara BW${suffix}`;
     },
 
     reviewNotices() {

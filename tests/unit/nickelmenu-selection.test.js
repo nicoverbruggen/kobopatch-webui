@@ -75,15 +75,29 @@ test('featuresToInstall drops a feature marked disabled, even when selected', ()
     }
 });
 
+test('featuresToInstall drops a feature hidden from the install catalogue, even when selected', () => {
+    const nickelCoverFix = NICKELMENU_FEATURES.find((f) => f.id === 'nickelcoverfix');
+    const originalAvailable = nickelCoverFix.available;
+    nickelCoverFix.available = true;
+    try {
+        const ids = featuresToInstall(session({ selectedFeatureIds: ['nickelcoverfix'] }), null).map((f) => f.id);
+        assert.ok(!ids.includes('nickelcoverfix'), 'a hidden feature is never installed');
+    } finally {
+        nickelCoverFix.available = originalAvailable;
+    }
+});
+
 test('featuresToInstall drops a disabled feature even when its asset is available', () => {
     // An installable-backed feature stays uninstallable while disabled, no
     // matter what the availability manifest says.
     const nickelCoverFix = NICKELMENU_FEATURES.find((f) => f.id === 'nickelcoverfix');
     const originalAvailable = nickelCoverFix.available;
     const originalDisabled = nickelCoverFix.disabled;
+    const originalHidden = nickelCoverFix.hidden;
     const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
 
     nickelCoverFix.available = true;
+    delete nickelCoverFix.hidden; // establish a visible baseline (it may ship hidden)
     delete nickelCoverFix.disabled; // establish an enabled baseline (it may ship disabled)
     try {
         assert.ok(featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'nickelcoverfix'));
@@ -92,6 +106,8 @@ test('featuresToInstall drops a disabled feature even when its asset is availabl
         assert.ok(!ids.includes('nickelcoverfix'), 'disabled wins over available');
     } finally {
         nickelCoverFix.available = originalAvailable;
+        if (originalHidden === undefined) delete nickelCoverFix.hidden;
+        else nickelCoverFix.hidden = originalHidden;
         if (originalDisabled === undefined) delete nickelCoverFix.disabled;
         else nickelCoverFix.disabled = originalDisabled;
     }
@@ -101,14 +117,18 @@ test('featuresToInstall also drops a feature disabled with a string reason', () 
     const nickelCoverFix = NICKELMENU_FEATURES.find((f) => f.id === 'nickelcoverfix');
     const originalAvailable = nickelCoverFix.available;
     const originalDisabled = nickelCoverFix.disabled;
+    const originalHidden = nickelCoverFix.hidden;
     const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
 
     nickelCoverFix.available = true;
+    delete nickelCoverFix.hidden;
     nickelCoverFix.disabled = 'Off while a fix is prepared.';
     try {
         assert.ok(!featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'nickelcoverfix'), 'a string reason still disables install');
     } finally {
         nickelCoverFix.available = originalAvailable;
+        if (originalHidden === undefined) delete nickelCoverFix.hidden;
+        else nickelCoverFix.hidden = originalHidden;
         if (originalDisabled === undefined) delete nickelCoverFix.disabled;
         else nickelCoverFix.disabled = originalDisabled;
     }
@@ -154,9 +174,7 @@ test('featureReviewNotices flattens notices and forwards deviceInfo', () => {
                 return [{ title: 'one' }];
             },
         },
-        {
-            /* no reviewNotices */
-        },
+        {/* no reviewNotices */},
         { reviewNotices: () => [{ title: 'two' }] },
     ];
     const notices = featureReviewNotices(features, { firmware: '4.40.0' });

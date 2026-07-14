@@ -1,14 +1,13 @@
 // @ts-check
-// E2E coverage for the Advanced-section NickelHook mods: NickelCoverFix and
-// NickelDissolve. Both ship a bare KoboRoot.tgz that the installer merges into
+// E2E coverage for the NickelHook mods NickelCoverFix and NickelDissolve. Both
+// ship a bare KoboRoot.tgz that the installer merges into
 // the single archive it writes, and both follow the shared uninstall_xflag
 // convention: the .adds/<mod>/uninstall marker present means installed, and
 // deleting the whole folder triggers the mod's self-uninstall on reboot.
 //
-// NickelDissolve has no published release yet: until its asset is bundled, the
-// feature row is shown as "Temporarily unavailable" (covered below), and the
-// install-path tests skip via hasNickelDissolveAssets(). They activate on the
-// first locked release with no further changes.
+// NickelCoverFix stays hidden from installation until it is ready, while its
+// removal path remains available to devices where it was already installed.
+// NickelDissolve is shown when its locked release asset is bundled.
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
@@ -32,7 +31,7 @@ async function goToManualNmFeatures(page) {
 }
 
 test.describe('NickelMenu — Advanced mods', () => {
-    test('no device — both mods carry an Experimental badge, page turns sit below NickelClock in Reading Experience', async ({ page }) => {
+    test('no device — NickelDissolve is displayed while NickelCoverFix stays hidden', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 
         await goToManualNmFeatures(page);
@@ -42,6 +41,7 @@ test.describe('NickelMenu — Advanced mods', () => {
         const clockRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickelclock"]') });
         const dissolveRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickeldissolve"]') });
         const dissolveBadge = dissolveRow.locator('.nm-config-experimental');
+        await expect(dissolveRow).toBeVisible();
         await expect(dissolveBadge).toHaveText(/experimental/i);
         // The badge carries the hover/focus explanation, and reveals it on hover.
         await expect(dissolveBadge).toHaveAttribute('data-tooltip', /haven't been tested extensively.*filing a bug report/);
@@ -56,27 +56,10 @@ test.describe('NickelMenu — Advanced mods', () => {
         const fontsRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-additional-fonts"]') });
         await expect(fontsRow.locator('.nm-config-experimental')).toHaveCount(0);
 
-        // Alternative cover handling stays in the collapsed Advanced section and
-        // also carries the badge once that section is opened.
+        // NickelCoverFix remains registered for cleanup, but is not offered for
+        // new installations while it is hidden.
         await openNmSection(page, 'Advanced');
-        const coverRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickelcoverfix"]') });
-        await expect(coverRow.locator('.nm-config-experimental')).toHaveText(/experimental/i);
-    });
-
-    test('no device — a disabled add-on shows its maintainer reason instead of the generic text', async ({ page }) => {
-        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
-
-        await goToManualNmFeatures(page);
-        await openNmSection(page, 'Advanced');
-        const cb = page.locator('input[name="nm-cfg-nickelcoverfix"]');
-        // Only meaningful while the kill switch is on with a string reason.
-        test.skip(!(await cb.isDisabled()), 'NickelCoverFix is enabled');
-        const reason = page.locator('.nm-config-item', { has: cb }).locator('.nm-config-disabled-reason');
-        // A string `disabled` value is shown verbatim in place of the generic
-        // text — assert that, not the exact wording, so copy tweaks don't break it.
-        await expect(reason).toBeVisible();
-        await expect(reason).not.toHaveText('');
-        await expect(reason).not.toHaveText('Temporarily unavailable.');
+        await expect(page.locator('input[name="nm-cfg-nickelcoverfix"]')).toHaveCount(0);
     });
 
     test('no device — NickelCoverFix merges into KoboRoot.tgz preserving original files', async ({ page }) => {
@@ -94,9 +77,11 @@ test.describe('NickelMenu — Advanced mods', () => {
         // The mod lives in the collapsed Advanced section, with its version and
         // a "learn more" link to the project.
         await openNmSection(page, 'Advanced');
-        // Auto-skip while the maintainer kill switch (`disabled`) is on;
-        // removing it re-enables both the feature and this test, no edits needed.
-        test.skip(await page.locator('input[name="nm-cfg-nickelcoverfix"]').isDisabled(), 'NickelCoverFix is temporarily disabled');
+        // Auto-skip until the feature is made visible; removing `hidden` enables
+        // this install-path coverage without further changes.
+        const coverCheckbox = page.locator('input[name="nm-cfg-nickelcoverfix"]');
+        test.skip((await coverCheckbox.count()) === 0, 'NickelCoverFix is hidden');
+        test.skip(await coverCheckbox.isDisabled(), 'NickelCoverFix is temporarily disabled');
         const row = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickelcoverfix"]') });
         await expect(row.locator('.nm-config-title')).toContainText('Alternative cover handling');
         await expect(row.locator('.nm-config-version')).toHaveText(/^v?\d/);
@@ -148,9 +133,10 @@ test.describe('NickelMenu — Advanced mods', () => {
         await goToNmFeatures(page);
 
         await openNmSection(page, 'Advanced');
-        // Auto-skip while the maintainer kill switch (`disabled`) is on.
-        test.skip(await page.locator('input[name="nm-cfg-nickelcoverfix"]').isDisabled(), 'NickelCoverFix is temporarily disabled');
-        await expect(page.locator('input[name="nm-cfg-nickelcoverfix"]')).not.toBeChecked();
+        const coverCheckbox = page.locator('input[name="nm-cfg-nickelcoverfix"]');
+        test.skip((await coverCheckbox.count()) === 0, 'NickelCoverFix is hidden');
+        test.skip(await coverCheckbox.isDisabled(), 'NickelCoverFix is temporarily disabled');
+        await expect(coverCheckbox).not.toBeChecked();
         await page.uncheck('input[name="nm-cfg-additional-fonts"]');
         // Keep Better typography and fixes's merge out of this test.
         await page.uncheck('input[name="nm-cfg-better-typography"]');
@@ -309,20 +295,20 @@ test.describe('NickelMenu — Advanced mods', () => {
         await expect(row.locator('.nm-config-disabled-reason')).toHaveCount(0);
     });
 
-    test('with device — NickelDissolve is disabled with a reason on an unsupported device (Kobo Sage)', async ({ page }) => {
+    test('with device — NickelDissolve is disabled with a reason on an unsupported device (Kobo Libra 2)', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelDissolveAssets(), 'NickelDissolve assets not found (no locked release yet)');
 
         await connectMockDevice(page, {
-            serial: 'N778A00000000',
-            hardwareId: '00000000-0000-0000-0000-000000000383',
-            expectedModel: 'Kobo Sage',
+            serial: 'N418A00000000',
+            hardwareId: '00000000-0000-0000-0000-000000000388',
+            expectedModel: 'Kobo Libra 2',
         });
         await goToNmFeatures(page);
 
         const row = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickeldissolve"]') });
         await expect(page.locator('input[name="nm-cfg-nickeldissolve"]')).toBeDisabled();
-        await expect(row.locator('.nm-config-disabled-reason')).toContainText('Only supported on the Kobo Libra Colour, Clara Colour, Clara BW, and Libra 2');
-        await expect(row.locator('.nm-config-disabled-reason')).toContainText('Kobo Sage');
+        await expect(row.locator('.nm-config-disabled-reason')).toContainText('Only supported on the Kobo Libra Colour, Clara Colour, and Clara BW');
+        await expect(row.locator('.nm-config-disabled-reason')).toContainText('Kobo Libra 2');
     });
 });

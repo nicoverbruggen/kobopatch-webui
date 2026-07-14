@@ -376,12 +376,10 @@ export function initNickelMenuFlow(state) {
     function renderFeatureCheckboxes() {
         const deviceInfo = state.device?.deviceInfo;
         const firmware = deviceInfo?.firmware;
-        // Unavailable add-ons (their asset is not bundled, e.g. no published
-        // release yet or the release was pulled) and add-ons a maintainer has
-        // temporarily switched off (`disabled: true` on the feature module)
-        // stay listed but are disabled with a "temporarily unavailable" note
-        // instead of silently vanishing.
-        const features = NICKELMENU_FEATURES;
+        // Hidden add-ons stay in the registry so existing installs can still be
+        // detected and removed, but are omitted from the install catalogue.
+        // Unavailable or disabled add-ons stay listed with an explanation.
+        const features = NICKELMENU_FEATURES.filter((f) => !f.hidden);
 
         if (state.selectedFeatureIds.length === 0) {
             state.selectedFeatureIds = features

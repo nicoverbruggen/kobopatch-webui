@@ -54,7 +54,8 @@ test('nickelcoverfix is an Advanced feature registered in the NickelMenu feature
     assert.equal(nickelCoverFix.section, 'Advanced');
     assert.equal(nickelCoverFix.experimental, true);
     assert.equal(nickelCoverFix.default, false);
-    // Hidden until the runtime manifest marks the shipped asset available.
+    assert.equal(nickelCoverFix.hidden, true);
+    // Runtime asset availability is tracked independently of catalogue visibility.
     assert.equal(nickelCoverFix.available, false);
     assert.deepEqual(nickelCoverFix.directories, ['.adds/nickel-cover-fix']);
 });
@@ -141,11 +142,11 @@ test('optional cleanup removes the .adds/nickel-cover-fix directory during Nicke
     assert.equal(await device.pathExists(['.adds', 'nickel-cover-fix', 'config']), false);
 });
 
-test('optional cleanup still removes the mod while the feature is temporarily disabled', async () => {
-    // `disabled: true` only blocks installation; a mod already on the device
+test('optional cleanup still removes the mod while the feature is hidden', async () => {
+    // `hidden: true` blocks installation; a mod already on the device
     // must stay detectable and removable.
-    const originalDisabled = nickelCoverFix.disabled;
-    nickelCoverFix.disabled = true;
+    const originalHidden = nickelCoverFix.hidden;
+    nickelCoverFix.hidden = true;
     try {
         const device = new RecordingDevice({
             existingEntries: ['.adds/nm', '.adds/nickel-cover-fix', { path: '.adds/nickel-cover-fix/uninstall', kind: 'file' }],
@@ -162,8 +163,8 @@ test('optional cleanup still removes the mod while the feature is temporarily di
 
         assert.deepEqual(device.removalFor('.adds/nickel-cover-fix').options, { recursive: true });
     } finally {
-        if (originalDisabled === undefined) delete nickelCoverFix.disabled;
-        else nickelCoverFix.disabled = originalDisabled;
+        if (originalHidden === undefined) delete nickelCoverFix.hidden;
+        else nickelCoverFix.hidden = originalHidden;
     }
 });
 
