@@ -125,3 +125,25 @@ const HIDERS = [
 ];
 
 export const homeHiders = HIDERS.map(makeHider);
+
+// NickelHome's uninstall. All three hiders install the same mod, so this is one shared cleanup:
+// attach it to a single hider so it surfaces as ONE "Remove NickelHome" entry rather than one per
+// hider. Detection is by device state (the folder existing), so which hider carries it is
+// irrelevant. Removing NickelHome's config folder is what makes the mod finish uninstalling itself
+// on the next reboot (its NickelHook uninstall flag is the folder). Covers both the current
+// .adds/nickel-home and the pre-v0.6 .adds/nickelhome (older installs) for backward compatibility.
+homeHiders[0].cleanup = {
+    mode: 'optional',
+    title: 'NickelHome',
+    removeLabel: 'Remove NickelHome (.adds/nickel-home)',
+    description: 'Removes the home-screen hider mod. Deleting its folder triggers the mod to finish removing its own plugin on the next reboot.',
+    detect: [
+        ['.adds', 'nickel-home'],
+        ['.adds', 'nickelhome'],
+    ],
+    paths: [
+        { path: ['.adds', 'nm', 'scripts', 'toggle_hidden_home.sh'] },
+        { path: ['.adds', 'nickel-home'], recursive: true },
+        { path: ['.adds', 'nickelhome'], recursive: true },
+    ],
+};

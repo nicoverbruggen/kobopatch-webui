@@ -613,6 +613,23 @@ test('home-content hiders share one toggle item and append distinct flags', () =
     assert.match(cfg.data, /hide_home_row3_enabled:1/);
 });
 
+test('the home hiders expose a single NickelHome cleanup covering both folder names', () => {
+    // One shared cleanup, not one per hider, so removal shows a single "Remove NickelHome".
+    const withCleanup = homeHiders.filter((h) => h.cleanup);
+    assert.equal(withCleanup.length, 1);
+    const c = withCleanup[0].cleanup;
+    assert.equal(c.mode, 'optional');
+    assert.equal(c.title, 'NickelHome');
+    // Detects and removes both the current and the pre-v0.6 folder names.
+    assert.deepEqual(c.detect, [
+        ['.adds', 'nickel-home'],
+        ['.adds', 'nickelhome'],
+    ]);
+    const removedDirs = c.paths.filter((p) => p.recursive).map((p) => p.path.join('/'));
+    assert.ok(removedDirs.includes('.adds/nickel-home'));
+    assert.ok(removedDirs.includes('.adds/nickelhome'));
+});
+
 test('a home-content hider ships the shared toggle script to .adds/nm/scripts', async () => {
     // The hider fetches the shared script by its Vite-tracked URL, which the
     // installer routes through its per-run, de-duplicating asset cache.
