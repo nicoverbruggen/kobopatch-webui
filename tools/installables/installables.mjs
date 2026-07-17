@@ -30,12 +30,12 @@ const TARGETS = {
 // and the id used by the build-time manifest (see scripts/build.mjs).
 const INSTALLABLES = [
     {
+        // Upstream publishes a bare KoboRoot.tgz; stored under a distinct local
+        // name so it can't be confused with the generated .kobo/KoboRoot.tgz.
         name: 'nickelmenu',
-        asset: 'NickelMenu.zip',
-        pinned: {
-            version: 'fork-v1.1',
-            url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.1/NickelMenu.zip',
-        },
+        asset: 'NickelMenu.tgz',
+        repo: 'pgaskin/NickelMenu',
+        match: (n) => n === 'KoboRoot.tgz',
     },
     {
         name: 'nickelclock',
@@ -63,6 +63,13 @@ const INSTALLABLES = [
         name: 'nickeldissolve',
         asset: 'NickelDissolve.tgz',
         repo: 'nicoverbruggen/NickelDissolve',
+        match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
+        // Same shape as NickelTypeFix: a bare KoboRoot.tgz under a distinct local name.
+        name: 'nickelhome',
+        asset: 'NickelHome.tgz',
+        repo: 'nicoverbruggen/NickelHome',
         match: (n) => n === 'KoboRoot.tgz',
     },
     {

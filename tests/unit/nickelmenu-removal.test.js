@@ -265,11 +265,11 @@ test('executeNickelMenuRemoval writes KoboRoot.tgz last', async () => {
     assert.deepEqual(device.removePaths(), []);
 });
 
-test('executeNickelMenuRemoval stops before removals when NickelMenu zip is missing KoboRoot.tgz', async () => {
+test('executeNickelMenuRemoval stops before removals when NickelMenu KoboRoot.tgz is unavailable', async () => {
     const installer = {
         async loadNickelMenu() {},
         async getKoboRootTgz() {
-            throw new Error('KoboRoot.tgz not found in NickelMenu.zip');
+            throw new Error('NickelMenu KoboRoot.tgz not loaded');
         },
         async removeExcludeSyncFolders() {
             throw new Error('should not remove sync exclusions');
@@ -285,7 +285,7 @@ test('executeNickelMenuRemoval stops before removals when NickelMenu zip is miss
                 cleanupFeatures: [customMenu, screensaver],
                 shouldRemoveSyncExclusions: async () => true,
             }),
-        /KoboRoot\.tgz not found/,
+        /KoboRoot\.tgz not loaded/,
     );
 
     assert.deepEqual(device.writePaths(), []);

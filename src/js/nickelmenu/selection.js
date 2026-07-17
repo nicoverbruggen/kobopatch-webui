@@ -80,7 +80,9 @@ export function nmReviewModel(session, detected, deviceInfo) {
         };
     }
 
-    const installFeatures = session.nickelMenuOption === 'preset' ? featuresToInstall(session, deviceInfo) : [];
+    // The only remaining install option is the preset (the "NickelMenu only" barebones option was
+    // removed); a preset install always carries its curated feature set.
+    const installFeatures = featuresToInstall(session, deviceInfo);
     return {
         mode: session.nickelMenuOption,
         installFeatures,

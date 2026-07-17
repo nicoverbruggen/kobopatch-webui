@@ -66,10 +66,8 @@ test.describe('NickelMenu — Advanced mods', () => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelCoverFixAssets(), 'NickelCoverFix assets not found (run npm run setup:installables)');
 
-        // NickelMenu ships as a zip wrapping a KoboRoot.tgz; NickelCoverFix's
-        // release asset is a bare KoboRoot.tgz.
-        const nmZip = await JSZip.loadAsync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelMenu.zip')));
-        const nmEntries = parseTar(zlib.gunzipSync(await nmZip.file('KoboRoot.tgz').async('nodebuffer')));
+        // NickelMenu and NickelCoverFix both ship as a bare KoboRoot.tgz.
+        const nmEntries = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelMenu.tgz'))));
         const ncfEntries = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelCoverFix.tgz'))));
 
         await goToManualNmFeatures(page);

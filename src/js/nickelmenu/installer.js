@@ -96,31 +96,31 @@ function buildItemsFile(features, deviceInfo, menuCustomization = null) {
 
 export class NickelMenuInstaller {
     constructor() {
-        this.nickelMenuZip = null;
+        this.nickelMenuTgz = null;
     }
 
     /**
-     * Download and cache NickelMenu.zip (contains KoboRoot.tgz).
+     * Download and cache NickelMenu's KoboRoot.tgz. Upstream NickelMenu ships a
+     * bare KoboRoot.tgz (stored locally as NickelMenu.tgz to avoid confusion with
+     * the generated .kobo/KoboRoot.tgz), so the bytes are used verbatim.
      */
     async loadNickelMenu(progressFn) {
-        if (this.nickelMenuZip) return;
+        if (this.nickelMenuTgz) return;
         const label = 'Downloading NickelMenu...';
         progressFn(label);
-        const zipBytes = await fetchWithProgress(
-            installableAssetUrl('nickelmenu', 'NickelMenu.zip'),
+        this.nickelMenuTgz = await fetchWithProgress(
+            installableAssetUrl('nickelmenu', 'NickelMenu.tgz'),
             downloadProgress(progressFn, label, await installableSize('nickelmenu')),
-            'Failed to download NickelMenu.zip',
+            'Failed to download NickelMenu',
         );
-        this.nickelMenuZip = await JSZip.loadAsync(zipBytes);
     }
 
     /**
-     * Get the base NickelMenu KoboRoot.tgz from the NickelMenu zip.
+     * Get the base NickelMenu KoboRoot.tgz.
      */
     async getKoboRootTgz() {
-        const file = this.nickelMenuZip.file('KoboRoot.tgz');
-        if (!file) throw new Error('KoboRoot.tgz not found in NickelMenu.zip');
-        return new Uint8Array(await file.async('arraybuffer'));
+        if (!this.nickelMenuTgz) throw new Error('NickelMenu KoboRoot.tgz not loaded');
+        return this.nickelMenuTgz;
     }
 
     /**

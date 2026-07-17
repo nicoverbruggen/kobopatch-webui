@@ -465,21 +465,9 @@ test.describe('Custom patches', () => {
         await page.click('#btn-nm-back');
         await expect(page.locator('#step-mode')).not.toBeHidden();
 
-        // Mode → NM config → Continue (nickelmenu-only) → NM review
+        // Mode → NM config
         await page.click('input[name="mode"][value="nickelmenu"]');
         await page.click('#btn-mode-next');
-        await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
-        await page.click('input[value="nickelmenu-only"]');
-        await page.click('#btn-nm-next');
-        await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-        await page.click('input[name="nm-backup-option"][value="skip"]');
-        await page.click('#btn-nm-backup-next');
-        await expect(page.locator('#step-nm-review')).not.toBeHidden();
-
-        // NM review → Back → NM backup for nickelmenu-only
-        await page.click('#btn-nm-review-back');
-        await expect(page.locator('#step-nm-backup')).not.toBeHidden();
-        await page.click('#btn-nm-backup-back');
         await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
 
         // NM config → select preset → Continue → Features step

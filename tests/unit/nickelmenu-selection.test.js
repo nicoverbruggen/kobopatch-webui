@@ -210,10 +210,3 @@ test('nmReviewModel (preset) lists the install features including required ones'
     assert.ok(ids.includes('custom-menu') && ids.includes('screensaver'));
     assert.ok(Array.isArray(model.notices));
 });
-
-test('nmReviewModel (nickelmenu-only) installs no preset features', () => {
-    const model = nmReviewModel(session({ nickelMenuOption: 'nickelmenu-only', selectedFeatureIds: ['screensaver'] }), [], { firmware: '4.40.0' });
-    assert.equal(model.mode, 'nickelmenu-only');
-    assert.deepEqual(model.installFeatures, []);
-    assert.deepEqual(model.notices, []);
-});

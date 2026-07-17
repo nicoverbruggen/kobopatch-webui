@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import JSZip from 'jszip';
 
-import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
+import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/constants.js';
 import { NM_MENU_ICON_CUSTOM_PNG_PATH } from '../../src/js/nickelmenu/customization.js';
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
 import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
@@ -122,10 +122,11 @@ test('installToDevice writes post-processed NickelMenu items as bytes', async ()
     const itemsWrite = device.writeFor(NM_ITEMS_FILE);
     assert.ok(itemsWrite.data instanceof Uint8Array);
     const items = text(itemsWrite.data);
-    // hide-notices appends its flag to the generated items file
-    assert.match(items, /experimental:hide_home_row3_enabled:1\n$/);
-    // ...and contributes the shared home-content toggle item.
+    // hide-notices contributes the shared home-content toggle item to the items file...
     assert.match(items, /toggle_hidden_home\.sh/);
+    // ...and writes its hide flag to NickelHome's own config.
+    const homeCfg = text(device.writeFor(NICKELHOME_CONFIG_FILE).data);
+    assert.match(homeCfg, /hide_home_row3_enabled:1\n$/);
 });
 
 test('installToDevice de-duplicates the shared home-content toggle across hiders', async () => {
@@ -147,9 +148,10 @@ test('installToDevice de-duplicates the shared home-content toggle across hiders
     const items = text(device.writeFor(NM_ITEMS_FILE).data);
     const toggleCount = (items.match(/Minimal Home/g) || []).length;
     assert.equal(toggleCount, 1);
-    // Both hiders' distinct flags are still appended.
-    assert.match(items, /experimental:hide_home_row1col2_enabled:1/);
-    assert.match(items, /experimental:hide_home_row3_enabled:1/);
+    // Both hiders' distinct flags land in the single NickelHome config.
+    const homeCfg = text(device.writeFor(NICKELHOME_CONFIG_FILE).data);
+    assert.match(homeCfg, /hide_home_row1col2_enabled:1/);
+    assert.match(homeCfg, /hide_home_row3_enabled:1/);
 });
 
 test('install fetches the shared home-content toggle script only once across hiders', async () => {
@@ -276,13 +278,14 @@ test('installToDevice stops writing remaining feature files after a feature writ
     assert.deepEqual(device.writePaths(), [koboEReaderConfPath]);
 });
 
-test('installToDevice does not write to the device when NickelMenu zip is missing KoboRoot.tgz', async () => {
+test('installToDevice does not write to the device when NickelMenu fails to load', async () => {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuZip = new JSZip();
-    installer.nickelMenuZip.file('not-KoboRoot.tgz', bytes('wrong file'));
+    installer.loadNickelMenu = async () => {
+        throw new Error('Failed to download NickelMenu');
+    };
     const device = new RecordingDevice();
 
-    await assert.rejects(() => installer.installToDevice(device, [], createProgressRecorder()), /KoboRoot\.tgz not found/);
+    await assert.rejects(() => installer.installToDevice(device, [], createProgressRecorder()), /Failed to download NickelMenu/);
     assert.deepEqual(device.writePaths(), []);
 });
 
@@ -322,10 +325,11 @@ test('buildDownloadZip with features includes feature files but not Kobo eReader
             '.adds/nm/.cog.png',
             '.adds/nm/scripts/toggle_hidden_home.sh',
             NM_ITEMS_FILE,
+            NICKELHOME_CONFIG_FILE,
             '.kobopatch-webui/nickelmenu.json',
             'instructions.txt',
         ]);
-        assert.match(await zip.file(NM_ITEMS_FILE).async('string'), /experimental:hide_home_row3_enabled:1\n$/);
+        assert.match(await zip.file(NICKELHOME_CONFIG_FILE).async('string'), /hide_home_row3_enabled:1\n$/);
         assert.equal(zip.file(koboEReaderConfPath), null);
 
         // A preset install (features present) gets the ExcludeSyncFolders
@@ -338,12 +342,13 @@ test('buildDownloadZip with features includes feature files but not Kobo eReader
     }
 });
 
-test('buildDownloadZip rejects when NickelMenu zip is missing KoboRoot.tgz', async () => {
+test('buildDownloadZip rejects when NickelMenu fails to load', async () => {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuZip = new JSZip();
-    installer.nickelMenuZip.file('not-KoboRoot.tgz', bytes('wrong file'));
+    installer.loadNickelMenu = async () => {
+        throw new Error('Failed to download NickelMenu');
+    };
 
-    await assert.rejects(() => installer.buildDownloadZip([], createProgressRecorder()), /KoboRoot\.tgz not found/);
+    await assert.rejects(() => installer.buildDownloadZip([], createProgressRecorder()), /Failed to download NickelMenu/);
 });
 
 // --- KoboRoot.tgz merging (the generic koboRootEntries hook) ---
@@ -364,8 +369,7 @@ const tgzAddonFeature = {
 
 async function createInstallerWithBaseTgz() {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuZip = new JSZip();
-    installer.nickelMenuZip.file('KoboRoot.tgz', await buildTarGz([nmTgzEntry]));
+    installer.nickelMenuTgz = await buildTarGz([nmTgzEntry]);
     return installer;
 }
 

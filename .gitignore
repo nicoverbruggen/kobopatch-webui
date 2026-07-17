@@ -22,11 +22,12 @@ src/assets/KF_Libron.zip
 src/assets/KF_Cartisse.zip
 src/assets/koreader-kobo.zip
 src/assets/cadmus-kobo.tar.gz
-src/assets/NickelMenu.zip
+src/assets/NickelMenu.tgz
 src/assets/NickelClock.zip
 src/assets/NickelTypeFix.tgz
 src/assets/NickelCoverFix.tgz
 src/assets/NickelDissolve.tgz
+src/assets/NickelHome.tgz
 # Asset size index, regenerated from the lock by setup:installables (CI/prod)
 src/assets/index.json
 

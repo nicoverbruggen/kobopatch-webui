@@ -134,7 +134,7 @@ npm run build:wasm    # compiles WASM, copies to dist/wasm/ and src/js/
 
 ### Installable assets (lock-pinned)
 
-NickelMenu, NickelClock, NickelTypeFix, the reading apps (KOReader, Cadmus) and the font
+NickelMenu, NickelHome, NickelClock, NickelTypeFix, the reading apps (KOReader, Cadmus) and the font
 families (Readerly, Libron, Cartisse) are downloaded from upstream GitHub releases, not committed.
 `installables.lock` (committed at the repo root) is the single source of truth — it pins each
 asset's `version`, `url`, `sha256` and `size`. The archives themselves stay gitignored.
@@ -148,8 +148,8 @@ npm run update:installables    # like `npm update`: resolve latest upstream, rew
   build) downloads each asset from its **locked URL** and verifies the **locked sha256**, skipping
   any on-disk file whose hash already matches. It never queries "latest" and never hits the GitHub
   API — so a clean checkout and a deploy build are byte-for-byte reproducible.
-- **`update:installables`** is the *only* path that resolves "latest" (NickelMenu is pinned to a
-  fork release). It downloads, recomputes the hashes, and rewrites `installables.lock`. **Commit
+- **`update:installables`** is the *only* path that resolves "latest". It downloads, recomputes
+  the hashes, and rewrites `installables.lock`. **Commit
   the updated lock**; a rebuild + redeploy then ships the new versions. Use `--only=<name>` to
   bump one. Set `GITHUB_TOKEN` if you hit GitHub's unauthenticated rate limit.
 

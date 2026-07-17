@@ -86,16 +86,18 @@ test.describe('NickelMenu — install', () => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelClockAssets(), 'NickelClock assets not found (run npm run setup:installables)');
 
-        // Read the unmerged entries from each source archive. Both ship as a zip
-        // wrapping a gzipped tar; parseTar normalizes the leading "./" so names line
-        // up with what the merged archive contains.
-        async function tgzEntriesFromAsset(assetName) {
-            const assetZip = await JSZip.loadAsync(fs.readFileSync(path.join(WEBROOT, 'assets', assetName)));
-            const tgz = await assetZip.file('KoboRoot.tgz').async('nodebuffer');
+        // Read the unmerged entries from each source archive. NickelMenu ships as a
+        // bare gzipped tar; NickelClock ships as a zip wrapping one. parseTar
+        // normalizes the leading "./" so names line up with the merged archive.
+        function tgzEntries(tgz) {
             return parseTar(zlib.gunzipSync(tgz));
         }
-        const nmEntries = await tgzEntriesFromAsset('NickelMenu.zip');
-        const ncEntries = await tgzEntriesFromAsset('NickelClock.zip');
+        async function tgzEntriesFromZipAsset(assetName) {
+            const assetZip = await JSZip.loadAsync(fs.readFileSync(path.join(WEBROOT, 'assets', assetName)));
+            return tgzEntries(await assetZip.file('KoboRoot.tgz').async('nodebuffer'));
+        }
+        const nmEntries = tgzEntries(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelMenu.tgz')));
+        const ncEntries = await tgzEntriesFromZipAsset('NickelClock.zip');
 
         await goToManualMode(page);
         await page.click('input[name="mode"][value="nickelmenu"]');
@@ -167,10 +169,8 @@ test.describe('NickelMenu — install', () => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
 
-        // NickelMenu ships as a zip wrapping a KoboRoot.tgz; NickelTypeFix's
-        // release asset is a bare KoboRoot.tgz.
-        const nmZip = await JSZip.loadAsync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelMenu.zip')));
-        const nmEntries = parseTar(zlib.gunzipSync(await nmZip.file('KoboRoot.tgz').async('nodebuffer')));
+        // NickelMenu and NickelTypeFix both ship as a bare KoboRoot.tgz.
+        const nmEntries = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelMenu.tgz'))));
         const ntfEntries = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, 'assets', 'NickelTypeFix.tgz'))));
 
         await goToManualMode(page);
@@ -561,10 +561,6 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#step-nm-preset-conflict')).not.toBeHidden();
         await page.click('#btn-nm-preset-conflict-back');
         await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
-
-        await page.click('input[name="nm-option"][value="nickelmenu-only"]');
-        await page.click('#btn-nm-next');
-        await expect(page.locator('#step-nm-backup')).not.toBeHidden();
     });
 
     test('with device — simplify-tabs localizes the tab labels to the device language', async ({ page }) => {

@@ -25,7 +25,7 @@ import {
     visibleTabCount,
 } from '../../src/js/nickelmenu/features/simplify-tabs/customization.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
-import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
+import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/constants.js';
 import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
 import { revertableConfSettings } from '../../src/js/kobo/configuration.js';
 import { createResponse, text } from './test-helpers.js';
@@ -338,15 +338,18 @@ test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {
     );
 });
 
-test('NickelMenu postProcess features prepend tab config and append hide flags', () => {
+test('NickelMenu postProcess features prepend tab config; hide flags go to NickelHome config', () => {
     const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
 
     const processed = hideNotices.postProcess(simplifyTabs.postProcess(files));
-    const items = processed[0].data;
+    const items = processed.find((f) => f.path === NM_ITEMS_FILE).data;
+    const homeCfg = processed.find((f) => f.path === NICKELHOME_CONFIG_FILE).data;
 
-    // simplify-tabs prepends its tab config block, hide-notices appends its flag.
+    // simplify-tabs prepends its tab config block to the items file...
     assert.match(items, /^experimental :menu_main_15505_0_enabled: 1\n/);
-    assert.match(items, /menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n$/);
+    // ...while hide-notices writes its flag to NickelHome's own config, not the items file.
+    assert.doesNotMatch(items, /hide_home_row3_enabled/);
+    assert.match(homeCfg, /hide_home_row3_enabled:1\n$/);
 });
 
 test('simplify-tabs renames tabs in English with the possessive dropped and "Stats" for Activity', () => {
@@ -584,16 +587,30 @@ test('home-content hiders share one toggle item and append distinct flags', () =
     assert.deepEqual(toggleIds, ['toggle-hidden-home', 'toggle-hidden-home', 'toggle-hidden-home']);
     assert.match(homeHiders[0].menuItems()[0].lines[0], /toggle_hidden_home\.sh$/);
 
-    // ...but each appends its own experimental flag to the items file.
+    // ...but each writes its own hide flag to NickelHome's config (no experimental: prefix).
     const flags = homeHiders.map((h) => {
-        const files = h.postProcess([{ path: NM_ITEMS_FILE, data: '' }]);
-        return files.find((f) => f.path === NM_ITEMS_FILE).data.trim();
+        const files = h.postProcess([]);
+        const cfg = files.find((f) => f.path === NICKELHOME_CONFIG_FILE);
+        return cfg.data
+            .trim()
+            .split('\n')
+            .filter((l) => l.startsWith('hide_home_'))
+            .join('\n');
     });
-    assert.deepEqual(flags, [
-        'experimental:hide_home_row1col2_enabled:1',
-        'experimental:hide_home_row2col2_enabled:1',
-        'experimental:hide_home_row3_enabled:1',
-    ]);
+    assert.deepEqual(flags, ['hide_home_row1col2_enabled:1', 'hide_home_row2col2_enabled:1', 'hide_home_row3_enabled:1']);
+
+    // The config carries NickelHome's master switch, which the "Minimal Home" toggle flips.
+    assert.match(homeHiders[0].postProcess([]).find((f) => f.path === NICKELHOME_CONFIG_FILE).data, /^nhm_enabled:1$/m);
+
+    // Multiple selected hiders merge into a single NickelHome config file (one nhm_enabled line).
+    let merged = [];
+    for (const h of homeHiders) merged = h.postProcess(merged);
+    const cfg = merged.find((f) => f.path === NICKELHOME_CONFIG_FILE);
+    assert.equal(merged.filter((f) => f.path === NICKELHOME_CONFIG_FILE).length, 1);
+    assert.equal((cfg.data.match(/^nhm_enabled:1$/gm) || []).length, 1);
+    assert.match(cfg.data, /hide_home_row1col2_enabled:1/);
+    assert.match(cfg.data, /hide_home_row2col2_enabled:1/);
+    assert.match(cfg.data, /hide_home_row3_enabled:1/);
 });
 
 test('a home-content hider ships the shared toggle script to .adds/nm/scripts', async () => {

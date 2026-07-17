@@ -14,7 +14,7 @@ const required = [
     'patches/index.json',
     'patches/blacklist.json',
     'patches/downloads.json',
-    'assets/NickelMenu.zip',
+    'assets/NickelMenu.tgz',
     'assets/koreader-kobo.zip',
     'assets/KF_Readerly.zip',
     // Vite-tracked NickelMenu feature assets (the items file is generated from

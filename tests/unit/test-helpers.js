@@ -1,5 +1,3 @@
-import JSZip from 'jszip';
-
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
 import { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import { TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
@@ -17,8 +15,9 @@ function text(value) {
 
 function createInstaller(tgz = bytes('nickelmenu tgz')) {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuZip = new JSZip();
-    installer.nickelMenuZip.file('KoboRoot.tgz', tgz);
+    // Upstream NickelMenu ships a bare KoboRoot.tgz, so the installer holds the
+    // tgz bytes directly (no wrapping zip).
+    installer.nickelMenuTgz = tgz instanceof Uint8Array ? tgz : bytes(tgz);
     return installer;
 }
 
