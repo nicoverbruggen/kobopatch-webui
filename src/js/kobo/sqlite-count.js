@@ -104,8 +104,13 @@ function matchMasterRow(view, cellOffset, tableName) {
 // Walk the sqlite_master table b-tree (rooted at page 1) to find a table's
 // rootpage. Interior pages are recursed; leaf cells are matched. Pages are
 // fetched lazily through `getPage`.
-async function findTableRootpage(getPage, tableName, pageNum = 1, depth = 0) {
-    if (depth > 64) return null;
+async function findTableRootpage(getPage, tableName, pageNum = 1, depth = 0, visited = new Set()) {
+    // A b-tree is a tree, so any page seen twice in one walk means the file's
+    // page pointers form a cycle. Bail rather than recurse: without this guard a
+    // self-referencing interior page with fan-out >= 2 fans out to ~2^depth calls
+    // before the depth limit trips, which hangs on hostile input.
+    if (depth > 64 || visited.has(pageNum)) return null;
+    visited.add(pageNum);
     const view = await getPage(pageNum);
     if (!view) return null;
     const header = btreeHeaderOffset(pageNum);
@@ -125,10 +130,10 @@ async function findTableRootpage(getPage, tableName, pageNum = 1, depth = 0) {
         const pointers = header + 12;
         for (let i = 0; i < cells; i++) {
             const child = view.getUint32(view.getUint16(pointers + i * 2));
-            const found = await findTableRootpage(getPage, tableName, child, depth + 1);
+            const found = await findTableRootpage(getPage, tableName, child, depth + 1, visited);
             if (found !== null) return found;
         }
-        return findTableRootpage(getPage, tableName, view.getUint32(header + 8), depth + 1);
+        return findTableRootpage(getPage, tableName, view.getUint32(header + 8), depth + 1, visited);
     }
     return null;
 }
@@ -136,8 +141,12 @@ async function findTableRootpage(getPage, tableName, pageNum = 1, depth = 0) {
 // Sum the row count of a table b-tree by adding up the cell counts of its leaf
 // pages (recursing through interior pages). Only b-tree page headers and cell
 // pointers are read, never the cell payloads, so this stays cheap.
-async function countBtreeRows(getPage, pageNum, depth = 0) {
-    if (depth > 64) return null;
+async function countBtreeRows(getPage, pageNum, depth = 0, visited = new Set()) {
+    // See findTableRootpage: a page revisited within one walk is a pointer cycle.
+    // Stop instead of recursing so a self-referencing interior page can't fan the
+    // recursion out exponentially and hang.
+    if (depth > 64 || visited.has(pageNum)) return null;
+    visited.add(pageNum);
     const view = await getPage(pageNum);
     if (!view) return null;
     const header = btreeHeaderOffset(pageNum);
@@ -151,11 +160,11 @@ async function countBtreeRows(getPage, pageNum, depth = 0) {
     let total = 0;
     for (let i = 0; i < cells; i++) {
         const child = view.getUint32(view.getUint16(pointers + i * 2));
-        const sub = await countBtreeRows(getPage, child, depth + 1);
+        const sub = await countBtreeRows(getPage, child, depth + 1, visited);
         if (sub === null) return null;
         total += sub;
     }
-    const rightmost = await countBtreeRows(getPage, view.getUint32(header + 8), depth + 1);
+    const rightmost = await countBtreeRows(getPage, view.getUint32(header + 8), depth + 1, visited);
     if (rightmost === null) return null;
     return total + rightmost;
 }

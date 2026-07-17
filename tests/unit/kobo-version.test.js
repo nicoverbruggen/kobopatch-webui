@@ -28,16 +28,6 @@ test('parseKoboVersion reads known 4-character device prefixes', () => {
     });
 });
 
-test('parseKoboVersion does not identify devices by serial prefix alone', () => {
-    const info = parseKoboVersion(versionLine('N905ABC123456', '4.38.21908', UNKNOWN_HARDWARE_ID));
-
-    assert.equal(info.serialPrefix, 'N905');
-    assert.equal(info.model, 'Unknown Kobo (N905)');
-    assert.equal(info.channel, null);
-    assert.equal(info.identifiedBy, null);
-    assert.equal(info.deviceVerification, 'unknown');
-});
-
 test('parseKoboVersion accepts known R-prefixed serials as refurbished variants', () => {
     const info = parseKoboVersion(versionLine('R418ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000388'));
 
@@ -64,10 +54,13 @@ test('parseKoboVersion flags known UUIDs with mismatched serial prefixes', () =>
 test('parseKoboVersion reports unknown hardware UUIDs even with a known-looking serial prefix', () => {
     const info = parseKoboVersion(versionLine('N418ABC123456', '4.38.21908', UNKNOWN_HARDWARE_ID));
 
+    // A serial prefix that matches a real device is not enough: identification is UUID-driven.
     assert.equal(info.serialPrefix, 'N418');
     assert.equal(info.model, 'Unknown Kobo (N418)');
+    assert.equal(info.channel, null);
     assert.equal(info.identifiedBy, null);
     assert.equal(info.deviceVerification, 'unknown');
+    assert.equal(info.serialPrefixMatches, false);
 });
 
 test('parseKoboVersion flags unknown serial prefixes against known hardware UUIDs', () => {
@@ -170,38 +163,158 @@ test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
     );
 });
 
-test('parseKoboVersion rejects malformed version files', () => {
+test('parseKoboVersion rejects files with fewer than 6 fields', () => {
     assert.throws(() => parseKoboVersion('N428000000000,4.9.77,4.45.23646'), /Expected 6 comma-separated fields/);
+    assert.throws(() => parseKoboVersion(''), /Expected 6 comma-separated fields/);
 });
 
-test('parseKoboVersion marks firmware before 4.23 as incompatible', () => {
+test('parseKoboVersion throws on non-string content rather than returning garbage', () => {
+    // content is always a file string in production; a non-string is a programming
+    // error and must surface loudly, not silently parse to nonsense.
+    assert.throws(() => parseKoboVersion(null));
+    assert.throws(() => parseKoboVersion(undefined));
+});
+
+// --- compareFirmware: ordering correctness ---
+
+test('compareFirmware orders segments numerically, not lexically', () => {
+    assert.equal(compareFirmware('4.45.23646', '4.31'), 1);
+    assert.equal(compareFirmware('4.28.17820', '4.31'), -1);
+    assert.equal(compareFirmware('4.9.0', '4.10.0'), -1); // 9 < 10 numerically; would be > lexically
+    assert.equal(compareFirmware('4.100', '4.99'), 1); // 100 > 99 numerically; would be < lexically
+});
+
+test('compareFirmware treats missing trailing segments as zero', () => {
+    assert.equal(compareFirmware('4.31', '4.31.0'), 0);
+    assert.equal(compareFirmware('4.31.0.0', '4.31'), 0);
+    assert.equal(compareFirmware('4', '4.0.0'), 0); // short form equals padded form
+    assert.equal(compareFirmware('4.31.1', '4.31'), 1);
+});
+
+test('compareFirmware ranks a longer version above its own prefix', () => {
+    // Boundary: equal builds differing only by an extra final component.
+    assert.equal(compareFirmware('4.38.23697.1', '4.38.23697'), 1);
+    assert.equal(compareFirmware('4.38.23697', '4.38.23697.1'), -1);
+    assert.equal(compareFirmware('4.38.23697', '4.38.23698'), -1); // differ only in last component
+});
+
+test('compareFirmware is reflexive and antisymmetric across the value space', () => {
+    const samples = ['4', '4.23', '4.31.0', '4.31.1', '4.9.77', '4.45.23646', '4.100.0', '5.0.0'];
+    for (const v of samples) {
+        assert.equal(compareFirmware(v, v), 0, `${v} must equal itself`);
+    }
+    for (const a of samples) {
+        for (const b of samples) {
+            // `|| 0` normalizes -0 (from negating a 0 result) so strict equality holds.
+            assert.equal(compareFirmware(a, b), -compareFirmware(b, a) || 0, `antisymmetry failed for ${a} vs ${b}`);
+        }
+    }
+});
+
+test('compareFirmware is transitive across a triple', () => {
+    const a = '4.23';
+    const b = '4.31.5';
+    const c = '4.45.23646';
+    assert.equal(compareFirmware(a, b), -1);
+    assert.equal(compareFirmware(b, c), -1);
+    assert.equal(compareFirmware(a, c), -1); // a<b and b<c must force a<c
+});
+
+test('compareFirmware produces a self-consistent, numerically correct sort order', () => {
+    const input = ['4.45.23646', '4.9.77', '4.31', '4.23', '4.100.0', '4.31.1', '4'];
+    const sorted = [...input].sort(compareFirmware);
+    assert.deepEqual(sorted, ['4', '4.9.77', '4.23', '4.31', '4.31.1', '4.45.23646', '4.100.0']);
+    for (let i = 1; i < sorted.length; i++) {
+        assert.ok(compareFirmware(sorted[i - 1], sorted[i]) <= 0, `${sorted[i - 1]} sorted after ${sorted[i]}`);
+    }
+});
+
+// --- compareFirmware: malformed and hostile input (coerced, never NaN) ---
+
+test('compareFirmware coerces non-numeric segments to zero instead of producing NaN order', () => {
+    assert.equal(compareFirmware('4.x.y', '4.0.0'), 0); // non-numeric => 0
+    assert.equal(compareFirmware('4.38.', '4.38'), 0); // trailing dot => trailing empty => 0
+    assert.equal(compareFirmware('4.38.23646abc', '4.38.23646'), 0); // parseInt stops at first non-digit
+    assert.equal(compareFirmware('.4.38', '4.38'), -1); // leading dot shifts every segment one place right
+});
+
+test('compareFirmware parses leading zeros as base-10, not octal', () => {
+    assert.equal(compareFirmware('04.038', '4.38'), 0);
+    assert.equal(compareFirmware('4.010', '4.10'), 0); // '010' is ten, not eight
+});
+
+test('compareFirmware coerces empty, whitespace, and non-string inputs without throwing', () => {
+    assert.equal(compareFirmware('', ''), 0);
+    assert.equal(compareFirmware('', '0'), 0);
+    assert.equal(compareFirmware('   ', '0.0'), 0); // whitespace-only segment => NaN => 0
+    assert.equal(compareFirmware(null, undefined), 0); // String(null)/String(undefined) are non-numeric => 0
+    assert.equal(compareFirmware(null, '4.0'), -1);
+    assert.equal(compareFirmware(4.31, '4.31'), 0); // number coerced via String()
+});
+
+test('compareFirmware does not recognize non-ASCII digits', () => {
+    // Fullwidth digit U+FF14 is not parsed by parseInt(_, 10); it collapses to 0.
+    assert.equal(compareFirmware('4.４', '4.0'), 0);
+    assert.equal(compareFirmware('4.４', '4.4'), -1);
+});
+
+test('compareFirmware treats an explicit negative segment as below zero', () => {
+    // Not a supported input, but the ordering must stay deterministic and total.
+    assert.equal(compareFirmware('4.-1', '4.0'), -1);
+    assert.equal(compareFirmware('4.-1', '4.-1'), 0);
+});
+
+test('compareFirmware loses precision beyond Number.MAX_SAFE_INTEGER (needs review)', () => {
+    // AMBIGUOUS: build numbers past 2^53 collide because parseInt returns an IEEE-754
+    // double, so two distinct versions compare equal and strict ordering is lost. Real
+    // Kobo builds are ~5 digits, so this never bites; pinning current behavior.
+    const above = '4.0.9007199254740993'; // 2^53 + 1
+    const at = '4.0.9007199254740992'; // 2^53
+    assert.equal(compareFirmware(above, at), 0);
+});
+
+// --- meetsMinimumVersion ---
+
+test('meetsMinimumVersion gates only a known firmware below the floor', () => {
+    assert.equal(meetsMinimumVersion('4.45.23646', '4.31'), true);
+    assert.equal(meetsMinimumVersion('4.31.0', '4.31'), true); // boundary equal meets the floor
+    assert.equal(meetsMinimumVersion('4.31', '4.31.0'), true); // boundary equal, reversed
+    assert.equal(meetsMinimumVersion('4.28.17820', '4.31'), false);
+});
+
+test('meetsMinimumVersion never gates when the floor or firmware is absent', () => {
+    assert.equal(meetsMinimumVersion('4.28.17820', undefined), true);
+    assert.equal(meetsMinimumVersion('4.28.17820', ''), true);
+    assert.equal(meetsMinimumVersion('4.28.17820', null), true);
+    assert.equal(meetsMinimumVersion(undefined, '4.31'), true);
+    assert.equal(meetsMinimumVersion(null, '4.31'), true);
+    assert.equal(meetsMinimumVersion('', '4.31'), true);
+});
+
+test('meetsMinimumVersion treats whitespace-only firmware as present and below the floor (needs review)', () => {
+    // AMBIGUOUS: '' is treated as "unknown firmware" and passes, but a truthy
+    // whitespace string is compared and coerces to 0, so it fails. Inconsistent
+    // handling of "effectively empty" firmware; pinning current behavior.
+    assert.equal(meetsMinimumVersion(' ', '4.31'), false);
+});
+
+// --- parseKoboVersion.isIncompatible ---
+
+test('parseKoboVersion.isIncompatible tracks the minimum firmware boundary', () => {
     assert.equal(minimumSupportedFirmware, '4.23');
     assert.equal(parseKoboVersion(versionLine('N428000000000', '4.22.99999')).isIncompatible, true);
-});
-
-test('parseKoboVersion marks firmware 4.23 and later 4.x versions as compatible', () => {
-    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.23')).isIncompatible, false);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.23')).isIncompatible, false); // exact floor is compatible
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.23.0')).isIncompatible, false);
     assert.equal(parseKoboVersion(versionLine('N428000000000', '4.45.23646')).isIncompatible, false);
 });
 
-test('parseKoboVersion marks firmware 5.x as incompatible', () => {
+test('parseKoboVersion treats a bare major-4 build below the floor as incompatible', () => {
+    // "4" alone parses to 4.0.0, which is below 4.23 even though the major is 4.
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4')).isIncompatible, true);
+});
+
+test('parseKoboVersion treats any non-4 major as incompatible regardless of the floor', () => {
     assert.equal(parseKoboVersion(versionLine('N428000000000', '5.0.0')).isIncompatible, true);
-});
-
-test('compareFirmware orders versions segment-by-segment, ignoring trailing zeros', () => {
-    assert.equal(compareFirmware('4.45.23646', '4.31'), 1);
-    assert.equal(compareFirmware('4.28.17820', '4.31'), -1);
-    assert.equal(compareFirmware('4.31', '4.31.0'), 0);
-    assert.equal(compareFirmware('4.31.1', '4.31'), 1);
-    assert.equal(compareFirmware('4.9.0', '4.10.0'), -1); // numeric, not lexical
-});
-
-test('meetsMinimumVersion gates only when a known firmware is below the floor', () => {
-    assert.equal(meetsMinimumVersion('4.45.23646', '4.31'), true);
-    assert.equal(meetsMinimumVersion('4.31.0', '4.31'), true);
-    assert.equal(meetsMinimumVersion('4.28.17820', '4.31'), false);
-    // No minimum, or an unknown firmware (manual mode), is never gated.
-    assert.equal(meetsMinimumVersion('4.28.17820', undefined), true);
-    assert.equal(meetsMinimumVersion(undefined, '4.31'), true);
-    assert.equal(meetsMinimumVersion('', '4.31'), true);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '3.99.99999')).isIncompatible, true);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', 'x.50.0')).isIncompatible, true); // non-numeric major => 0
 });
