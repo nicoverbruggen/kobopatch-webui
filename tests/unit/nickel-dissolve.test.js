@@ -159,14 +159,14 @@ test('koboRootEntries throws a helpful error when the deployment lacks the asset
     }
 });
 
-test('reviewNotices warns about NickelDissolve and links to the repository', () => {
+test('reviewNotices describes NickelDissolve and links to the repository', () => {
     const notices = nickelDissolve.reviewNotices();
     assert.equal(notices.length, 1);
-    assert.equal(notices[0].type, 'warning');
+    assert.equal(notices[0].type, 'info');
     assert.match(notices[0].title, /NickelDissolve/);
-    // The mod's not-fully-verified caveat (the "experimental" signal itself now
-    // lives on the feature's Experimental badge).
-    assert.match(notices[0].paragraphs[0], /verified|may still change|inert/i);
+    // Describes what the mod does and stays inert on unsupported devices (the
+    // "experimental" signal now lives only on the feature's Experimental badge).
+    assert.match(notices[0].paragraphs[0], /wipe animation|reboot|inert/i);
     assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelDissolve');
 });
 

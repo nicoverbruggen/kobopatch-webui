@@ -31,10 +31,10 @@ export default {
     reviewNotices() {
         return [
             {
-                type: 'warning',
+                type: 'info',
                 title: 'NickelCoverFix',
                 paragraphs: [
-                    'Applied on the reboot after install. Covers are mirrored automatically as books are shown; with a large library, open "More > Repair Book Covers" on the device once to prepare all covers in one pass. Learn more on GitHub.',
+                    'NickelCoverFix keeps book covers from turning into the title/author placeholder, and supports custom covers. Applied on the reboot after install. Covers are mirrored automatically as books are shown; with a large library, open "More > Repair Book Covers" on the device once to prepare all covers in one pass.',
                 ],
                 link: {
                     label: 'NickelCoverFix on GitHub',

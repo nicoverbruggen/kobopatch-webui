@@ -72,7 +72,7 @@ export default {
                 type: 'info',
                 title: 'NickelTypeFix',
                 paragraphs: [
-                    'NickelTypeFix is part of the "Better typography" feature, and it repairs the rendering quirks of Kobo\'s optimized text renderer: uneven justification, vertical CJK text, and glyph "wobble" on unhinted fonts. It is applied on the reboot after install. Learn more about this mod on GitHub.',
+                    'NickelTypeFix is part of the "Better typography" feature, and it repairs the rendering quirks of Kobo\'s optimized text renderer: uneven justification, vertical CJK text, and glyph "wobble" on unhinted fonts. Applied on the reboot after install.',
                 ],
                 link: {
                     label: 'NickelTypeFix on GitHub',

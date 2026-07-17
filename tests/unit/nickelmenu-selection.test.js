@@ -185,6 +185,17 @@ test('featureReviewNotices flattens notices and forwards deviceInfo', () => {
     assert.deepEqual(seen, { firmware: '4.40.0' });
 });
 
+test('featureReviewNotices de-duplicates identical notices (shared across features)', () => {
+    // The home-screen hiders each contribute the same NickelHome notice; it should appear once.
+    const shared = { type: 'info', title: 'NickelHome', paragraphs: ['x'] };
+    const features = [{ reviewNotices: () => [shared] }, { reviewNotices: () => [{ ...shared }] }, { reviewNotices: () => [{ title: 'other' }] }];
+    const notices = featureReviewNotices(features, {});
+    assert.deepEqual(
+        notices.map((n) => n.title),
+        ['NickelHome', 'other'],
+    );
+});
+
 test('nmReviewModel (remove) reports removed vs kept from the detected cleanups', () => {
     const detected = [fakeCleanup('a', 'A'), fakeCleanup('b', 'B')];
     const model = nmReviewModel(session({ nickelMenuOption: 'remove', nmOptionalCleanupIds: ['a'] }), detected, {

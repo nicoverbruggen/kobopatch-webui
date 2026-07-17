@@ -64,7 +64,17 @@ export function optionalCleanupKept(session, detected) {
 /** Review notices contributed by a set of features, for the connected device. */
 export function featureReviewNotices(features, deviceInfo) {
     const ctx = { deviceInfo };
-    return features.flatMap((feature) => (feature.reviewNotices ? feature.reviewNotices(ctx) : []));
+    const all = features.flatMap((feature) => (feature.reviewNotices ? feature.reviewNotices(ctx) : []));
+    // De-duplicate identical notices: several generated features (the home-screen
+    // hiders) can each contribute the same shared NickelHome notice, but it should
+    // appear once.
+    const seen = new Set();
+    return all.filter((notice) => {
+        const key = JSON.stringify(notice);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 /**

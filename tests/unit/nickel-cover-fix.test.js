@@ -95,7 +95,7 @@ test('koboRootEntries throws a helpful error when the deployment lacks the asset
 test('reviewNotices links to the NickelCoverFix repository', () => {
     const notices = nickelCoverFix.reviewNotices();
     assert.equal(notices.length, 1);
-    assert.equal(notices[0].type, 'warning');
+    assert.equal(notices[0].type, 'info');
     assert.equal(notices[0].title, 'NickelCoverFix');
     assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelCoverFix');
 });

@@ -39,7 +39,7 @@ export default {
             {
                 type: 'warning',
                 title: 'Dark Mode is not supported',
-                paragraphs: [`${model} does not support Dark Mode, so it has been left out of the (...) menu for books on this device.`],
+                paragraphs: [`${model} does not support Dark Mode, so it has been left out of the dot menu (...) for books on this device.`],
                 link: {
                     label: 'Kobo documentation on dark mode',
                     href: 'https://help.kobo.com/hc/en-us/articles/360062231213-About-Dark-mode',

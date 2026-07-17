@@ -81,6 +81,24 @@ function makeHider({ id, title, description, flag }) {
         // Fold the NickelHome mod (which does the actual hiding) into the combined
         // KoboRoot.tgz. Shared across hiders: fetched once and de-duplicated by path.
         koboRootEntries: nickelHomeKoboRootEntries,
+
+        // One shared NickelHome notice for the review step. Every hider returns the
+        // identical entry; featureReviewNotices de-duplicates it so it shows once.
+        reviewNotices() {
+            return [
+                {
+                    type: 'info',
+                    title: 'NickelHome',
+                    paragraphs: [
+                        'NickelHome hides the home-screen widgets you selected. Applied on the reboot after install. You can turn the minimal home on or off any time with the "Minimal Home" menu item.',
+                    ],
+                    link: {
+                        label: 'NickelHome on GitHub',
+                        href: 'https://github.com/nicoverbruggen/NickelHome',
+                    },
+                },
+            ];
+        },
     };
 }
 

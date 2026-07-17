@@ -63,10 +63,10 @@ export default {
     reviewNotices() {
         return [
             {
-                type: 'warning',
+                type: 'info',
                 title: 'NickelDissolve',
                 paragraphs: [
-                    'Only some devices are verified, and its behavior may still change. On an unsupported device the mod stays inert (no animation, no risk).',
+                    'NickelDissolve adds a Kindle-style wipe animation to page turns. Applied on the reboot after install. On an unsupported device it stays inert (no animation, no risk).',
                 ],
                 link: {
                     label: 'NickelDissolve on GitHub',
