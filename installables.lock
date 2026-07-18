@@ -59,10 +59,10 @@
     },
     "nickelcoverfix": {
       "asset": "NickelCoverFix.tgz",
-      "version": "v0.1",
-      "url": "https://github.com/nicoverbruggen/NickelCoverFix/releases/download/v0.1/KoboRoot.tgz",
-      "sha256": "360276b8229411f87a2740c7141eecd74a25fa818c0508f1ee47316f7e2be233",
-      "size": 39722
+      "version": "v0.2",
+      "url": "https://github.com/nicoverbruggen/NickelCoverFix/releases/download/v0.2/KoboRoot.tgz",
+      "sha256": "96f3f10fc7c1fa34cc9798e0d25cdf815ead717701717a526309a1f94f96c622",
+      "size": 42874
     },
     "nickeldissolve": {
       "asset": "NickelDissolve.tgz",
