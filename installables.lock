@@ -66,10 +66,10 @@
     },
     "nickeldissolve": {
       "asset": "NickelDissolve.tgz",
-      "version": "v0.6",
-      "url": "https://github.com/nicoverbruggen/NickelDissolve/releases/download/v0.6/KoboRoot.tgz",
-      "sha256": "c3b38092bb7c0e627b4890cfbfb2121117b754c8f7fc5108a89e800dee68aa2f",
-      "size": 28063
+      "version": "v0.7",
+      "url": "https://github.com/nicoverbruggen/NickelDissolve/releases/download/v0.7/KoboRoot.tgz",
+      "sha256": "d543c90ffac8f5cc49b66df1b3d68b0335dbd8d69984745ba533d2c4ea8f27c6",
+      "size": 28200
     },
     "nickelhome": {
       "asset": "NickelHome.tgz",
