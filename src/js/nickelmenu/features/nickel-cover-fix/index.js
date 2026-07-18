@@ -18,6 +18,7 @@ import { installableAvailable, installableVersion, installableAssetUrl, installa
 export default {
     id: 'nickelcoverfix',
     section: 'Advanced',
+    analyticsEvent: 'add-nickelcoverfix',
     title: 'Alternative cover handling',
     description:
         'Keeps book covers from turning into the plain title/author placeholder when Kobo cannot fetch them (e.g. offline or after a sync). Also lets you set up custom covers for select books, including books purchased from the Kobo Store.',

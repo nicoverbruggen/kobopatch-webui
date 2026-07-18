@@ -108,6 +108,7 @@ export function tabOverrideLines(uiLocale, customization = null) {
 export default {
     id: 'simplify-tabs',
     section: 'Interface Tweaks',
+    analyticsEvent: 'add-basic-tabs',
     title: 'Simplify navigation tabs',
     description:
         'Streamlines the bottom navigation tab bar. By default it surfaces your reading stats as a separate "Stats" tab and hides the "My Notebooks" and "Discover" tabs. Use Customize to choose which tabs are shown and rename them.',

@@ -49,6 +49,9 @@ function makeHider({ id, title, description, flag }) {
     return {
         id,
         section: 'Interface Tweaks',
+        // All hiders share one event: what matters is that a minimal home was
+        // set up, not which rows were hidden.
+        analyticsEvent: 'add-minimal-home',
         title,
         description,
         default: false,

@@ -11,6 +11,7 @@ export const SCREENSAVER_MOON_URL = new URL('./moon.png', import.meta.url).href;
 export default {
     id: 'screensaver',
     section: 'Legacy',
+    analyticsEvent: 'add-screensaver',
     title: 'Copy sample screensaver',
     description:
         'Copies a sample screensaver to .kobo/screensaver and adds a new item to the Toggle menu to toggle the screensaver on or off. You can always add extra screensavers in the .kobo/screensaver folder.',

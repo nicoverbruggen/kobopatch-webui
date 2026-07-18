@@ -47,3 +47,15 @@ export const NICKELMENU_FEATURES = [
     screensaver,
     excludeCalibre,
 ];
+
+/**
+ * Deduped analytics event names for a set of selected features. Every feature
+ * declares an `analyticsEvent` (a name to track when it is installed, or null
+ * for features where tracking carries no signal) — a unit test enforces the
+ * key exists so a new feature can't be added without deciding on tracking.
+ * Related features may share one event (the home-content hiders all map to
+ * 'add-minimal-home'), which is why this dedupes.
+ */
+export function featureAnalyticsEvents(features) {
+    return [...new Set(features.map((feature) => feature.analyticsEvent).filter(Boolean))];
+}

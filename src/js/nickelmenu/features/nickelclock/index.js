@@ -30,6 +30,7 @@ export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclo
 export default {
     id: 'nickelclock',
     section: 'Reading Experience',
+    analyticsEvent: 'add-nickelclock',
     title: 'Display clock when reading',
     description:
         'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',

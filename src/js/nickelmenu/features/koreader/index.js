@@ -9,6 +9,7 @@ import { installableVersion, installableAssetUrl, installableSize } from '../../
 export default {
     id: 'koreader',
     section: 'Alternative reading apps',
+    analyticsEvent: 'add-koreader',
     title: 'Install KOReader',
     description:
         'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can launch KOReader from the Toggle menu; it does not replace the built-in reader functionality. Installing takes a while, please be patient.',

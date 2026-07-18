@@ -16,6 +16,9 @@ export const CUSTOM_MENU_ICON_URL = new URL('./.cog.png', import.meta.url).href;
 export default {
     id: 'custom-menu',
     section: 'Interface Tweaks',
+    // Required in every preset install, so an install event would carry no
+    // signal beyond the flow-level events already tracked.
+    analyticsEvent: null,
     title: 'Set up NickelMenu preset',
     description:
         'Adds menu items for dark mode, screenshots, and more. A new tab will be added in the bottom navigation bar. You can customize the icon and label.',

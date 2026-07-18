@@ -9,6 +9,7 @@ import { installableAssetUrl, installableSize } from '../../installables.js';
 export default {
     id: 'additional-fonts',
     section: 'Reading Experience',
+    analyticsEvent: 'add-fonts',
     title: 'Install additional fonts',
     description:
         'Adds a few custom fonts, including Readerly, Libron and Cartisse. When reading a book, these new entries will be visible in the font dropdown menu.',

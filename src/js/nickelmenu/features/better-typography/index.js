@@ -42,6 +42,7 @@ export function nickelTypeFixVersion() {
 export default {
     id: 'better-typography',
     section: 'Reading Experience',
+    analyticsEvent: 'add-nickeltypefix',
     title: 'Better typography and fixes',
     version: nickelTypeFixVersion,
     description:

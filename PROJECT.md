@@ -323,19 +323,28 @@ Events currently emitted:
 | `nm-option` | `{ option }` | NickelMenu option chosen (preset / NickelMenu only / removal). |
 | `add-koreader` | — | Only when the add-on is part of the install. |
 | `add-nickelclock` | — | Only when installed. |
+| `add-nickeldissolve` | — | Only when the page turn animations mod is installed. |
+| `add-nickeltypefix` | — | Only when better typography (NickelTypeFix) is installed. |
 | `add-cadmus` | — | Only when installed. |
 | `add-fonts` | — | Only when the additional fonts are installed. |
 | `add-screensaver` | — | Only when the custom screensaver is installed. |
-| `add-minimal-home` | — | Only when a minimal-home feature is installed. |
+| `add-minimal-home` | — | Only when a minimal-home feature is installed (once, however many hiders are selected). |
 | `add-basic-tabs` | — | Only when the basic tab bar is installed. |
 | `add-sideloaded-mode` | — | Only when sideloaded mode is installed. |
+| `add-nickelcoverfix` | — | Only when the alternative cover handling mod is installed. |
+| `add-exclude-calibre` | — | Only when the Calibre folder exclusion is applied. |
 | `flow-end` | `{ result }` | When a flow completes (write / download / remove). |
 | `feedback` | `{ vote }` | When the user submits the thumbs feedback. |
 | `error` | `{ value }` | When the error screen is shown for an *unexpected* failure. `value` is a coarse category (`write`, `probe`, `config-read`, `download`, `unknown`) — never the message or stack. Derived from `showError` options in `error-screen.js` (or an explicit `options.category`). Errors flagged `expected: true` — a normal outcome of user input or unsupported data, e.g. building incompatible patches, an unsupported firmware version, or a denied device-access prompt — are **not** reported. |
 
 The `add-*` events fire only when that add-on is actually included in the install (in
 `executeNmInstall`, for both write-to-device and download paths, never on removal), so each event
-counts a real install rather than a yes/no toggle.
+counts a real install rather than a yes/no toggle. Each feature module declares its own event via
+the `analyticsEvent` key (or an explicit `null` when an install event carries no signal, e.g. the
+required `custom-menu`); `featureAnalyticsEvents` in `features/index.js` collects and dedupes them,
+so related features can share one event (the three home hiders all map to `add-minimal-home`).
+`tests/unit/nickelmenu-analytics.test.js` fails when a feature omits the key or when the
+catalog-to-event mapping changes, so a new feature can't ship untracked by accident.
 
 ## Output Validation
 

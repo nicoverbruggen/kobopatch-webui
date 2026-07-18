@@ -42,6 +42,7 @@ export function nickelDissolveSupport(deviceInfo) {
 export default {
     id: 'nickeldissolve',
     section: 'Reading Experience',
+    analyticsEvent: 'add-nickeldissolve',
     title: 'Page turn animations',
     description:
         'Adds a Kindle-style directional wipe animation to page turns while reading. Experimental, and only supported on the Kobo Libra Colour, Clara Colour, and Clara BW.',

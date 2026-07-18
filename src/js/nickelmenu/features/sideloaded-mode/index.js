@@ -11,6 +11,7 @@ import { NM_ITEMS_FILE } from '../../constants.js';
 export default {
     id: 'sideloaded-mode',
     section: 'Advanced',
+    analyticsEvent: 'add-sideloaded-mode',
     title: 'Enable Sideload Mode',
     description:
         'Sideload Mode lets you use your device without signing into a Kobo account — useful if you factory reset the device and want to read sideloaded books without setting up an account.',

@@ -13,20 +13,14 @@ import { AuditLog } from '../kobo/audit-log.js';
 import { DeviceWriter } from '../kobo/device-writer.js';
 import { executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
 import { featuresToInstall, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
+import { featureAnalyticsEvents } from '../nickelmenu/features/index.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
 import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
 
 const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
 
 function trackFeatures(features) {
-    if (features.some((f) => f.id === 'koreader')) track('add-koreader');
-    if (features.some((f) => f.id === 'nickelclock')) track('add-nickelclock');
-    if (features.some((f) => f.id === 'cadmus')) track('add-cadmus');
-    if (features.some((f) => f.id === 'additional-fonts')) track('add-fonts');
-    if (features.some((f) => f.id === 'screensaver')) track('add-screensaver');
-    if (features.some((f) => ['hide-recommendations', 'hide-row2col2', 'hide-notices'].includes(f.id))) track('add-minimal-home');
-    if (features.some((f) => f.id === 'simplify-tabs')) track('add-basic-tabs');
-    if (features.some((f) => f.id === 'sideloaded-mode')) track('add-sideloaded-mode');
+    for (const event of featureAnalyticsEvents(features)) track(event);
 }
 
 export async function executeNmInstall({ state, flow, dom, showError }) {
