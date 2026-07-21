@@ -19,7 +19,7 @@ src/                            # Source assets (committed)
   css/
   js/
     app.js                      # Orchestrator: shared state, device connection, mode selection, error/retry, dialogs
-    shell/                      # DOM utilities, navigation, strings, analytics
+    shell/                      # App-shell orchestration: step machine, session, terminal, navigation, DOM utilities, strings, analytics
     flows/                      # NickelMenu and custom patch user journeys
     kobo/                       # Kobo device/version/firmware URL/configuration logic
     patches/                    # Custom patch UI and runner modules
@@ -30,14 +30,12 @@ src/                            # Source assets (committed)
   favicon/
 
 dist/                           # Build output (gitignored, fully regenerable)
-dist-dev/                       # Throwaway dev-server build (gitignored; created and removed by `npm run dev`)
 
 patches/                        # Patch catalog and source YAML files served by the app
-  index.json
+  index.json                     # Catalog: per-zip versions + the file→target patch map (formerly kobopatch.yaml)
   blacklist.json
-  downloads.json
+  downloads.json                 # Firmware URLs keyed by version -> firmware channel (kobo12, kobo13, ...)
   <version>/
-    kobopatch.yaml
     src/*.yaml
 
 tests/
@@ -45,7 +43,7 @@ tests/
   e2e/                          # Playwright integration tests
     config/                     # Playwright config, global setup, firmware metadata
     scripts/                    # E2E shell entrypoints
-    specs/                      # Browser test specs and screenshot capture spec
+    specs/                      # Browser test specs (nickelmenu/, patches/) and screenshot capture (screenshots/*.shots.mjs)
     support/                    # E2E helpers and mock device utilities
     cached_assets/              # Cached firmware test assets
 
@@ -54,10 +52,10 @@ tools/
   kobopatch-wasm/               # Go/WASM wrapper around kobopatch
 
 scripts/
-  build.mjs                     # esbuild build (+ installables manifest, precompression .br/.gz)
+  build.mjs                     # Vite production build plus patch ZIPs, worker/WASM placement, cache-bust queries, precompression
   serve-dist.mjs                # Production static server: Content-Length, cache tiers, ETag revalidation, br/gzip negotiation (see "Production Serving")
-  test.mjs                      # Runs all tests
-  serve-local.mjs               # Sets up, builds, and serves locally (dev mode uses a throwaway dist-dev/)
+  verify.mjs                    # Phase runner for `npm run verify` (full) and `npm run test` (--quick subset)
+  serve-local.mjs               # Sets up local assets/WASM, then starts Vite dev or the production static server
   validate-dist.mjs             # Validates all required dist resources exist
 ```
 
@@ -65,21 +63,54 @@ scripts/
 
 The JS source lives in `src/js/` as ES modules, organized by role:
 
-- **`app.js`** — the orchestrator: creates shared state, handles device connection, mode selection, error recovery, and dialogs.
-- **`shell/`** — app-shell helpers shared by multiple flows: DOM helpers, navigation, strings, and analytics.
-- **`flows/`** — the two main user journeys: NickelMenu and custom patches.
+- **`app.js`** — the orchestrator: creates the shared `Session` plus the long-lived services bag, handles device connection, mode selection, error recovery, and dialogs.
+- **`shell/`** — app-shell helpers shared by multiple flows: the declarative step machine (`step-machine.js`), the wizard `Session` (`session.js`), the shared result terminal (`terminal.js`), navigation/breadcrumb rendering, DOM helpers, strings, and analytics.
+- **`flows/`** — the two main user journeys: NickelMenu and custom patches. Each declares its steps to the step machine and routes its build→write/download tail through the terminal.
 - **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`audit-log.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
 - **`patches/`** — custom patch UI and runner modules.
-- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
+- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, preset-conflict, legacy-items, optional-cleanup, and Kobo-user-count probes) live in `probes.js`; the menu-icon customization dialog and its image processing (canvas resize, SVG→PNG rendering) live in `customization-dialog.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock, or Better typography and fixes's bundled rendering-fix mod) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
-Flow modules receive a shared `state` object by reference and call back into the orchestrator via `state.showError()` and `state.goToModeSelection()` when they need to cross module boundaries. esbuild bundles everything into `dist/bundle.js`.
+The wizard's mutable state is a `Session` (`shell/session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/step-machine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/terminal.js`), which both flows construct and configure. Vite bundles the app into `dist/bundle.js`.
+
+## File System Access write restrictions
+
+Some installs failed for users with `Failed to execute 'getFileHandle' on
+'FileSystemDirectoryHandle': Name is not allowed.` — surfaced to them as the
+generic "writing to your device didn't work."
+
+**Cause.** Chromium blocks `getFileHandle(name, {create:true})` when the file's
+extension is on its "dangerous / shell-integrated" list — the same filter
+`showSaveFilePicker()` enforces, later extended to cover `getFileHandle`. There
+is no prompt and no override: the page simply cannot create such a file. The
+block is by extension (regardless of contents or whether the file already
+exists) and rolled out gradually across browser versions, which is why the same
+install worked for some users and failed for others on a newer browser. For our
+payloads the affected file is NickelClock's `.adds/nickelclock/settings.ini`
+(`.ini` is blocked). Extensionless files (`.adds/nm/items`/`webui-preset`),
+`.sh`, `.png`, `.ttf` and `Kobo eReader.conf` are **not** blocked and still write
+directly. References: [Chromium issue 380857453](https://issues.chromium.org/issues/380857453),
+[blink-dev intent](https://groups.google.com/a/chromium.org/g/blink-dev/c/bFUbINgQNgk).
+
+**Fix.** No feature ships an onboard file with a blocked extension anymore.
+NickelClock's prefilled `.adds/nickelclock/settings.ini` was dropped: NickelClock
+generates its own settings file on first boot, at the cost of its tighter default
+margin instead of our roomier `Margin=40`. A runtime blocklist/staging mechanism
+(`blocked-extensions.js`) existed briefly but was reverted in favor of this
+simpler fix, so there is no guard in the installer. A new feature must avoid
+`install()` descriptors with a blocked extension; a payload that has to land at
+such a path can be staged into `.kobo/KoboRoot.tgz` via `koboRootEntries` under
+`mnt/onboard/…`, since the device extracts that archive over `/` on boot and
+onboard storage is mounted at `/mnt/onboard`. The manual-download flow
+(`buildDownloadZip`) was never affected: the user copies the ZIP contents by
+hand, which the File System Access API restriction does not touch.
 
 ## Adding a Software Version
 
 1. Add the patch sources to `patches/<version>/` and update `patches/index.json`.
-2. Add download URLs to `patches/downloads.json` keyed by version and serial prefix.
+2. Add download URLs to `patches/downloads.json` keyed by version and firmware channel (`kobo12`, `kobo13`, etc.).
 3. The Kobo CDN prefix per device family, such as `kobo12` or `kobo13`, is stable; the date path segment changes per release.
+4. Update `tests/e2e/config/firmware-config.js` to use the latest builds.
 
 ## Build And Assets
 
@@ -104,8 +135,8 @@ npm run build:wasm    # compiles WASM, copies to dist/wasm/ and src/js/
 
 ### Installable assets (lock-pinned)
 
-NickelMenu, NickelClock, the reading apps (KOReader, Cadmus) and the font families
-(Readerly, Libron, Cartisse) are downloaded from upstream GitHub releases, not committed.
+NickelMenu, NickelHome, NickelClock, NickelTypeFix, the reading apps (KOReader, Cadmus) and the font
+families (Readerly, Libron, Cartisse) are downloaded from upstream GitHub releases, not committed.
 `installables.lock` (committed at the repo root) is the single source of truth — it pins each
 asset's `version`, `url`, `sha256` and `size`. The archives themselves stay gitignored.
 
@@ -118,8 +149,8 @@ npm run update:installables    # like `npm update`: resolve latest upstream, rew
   build) downloads each asset from its **locked URL** and verifies the **locked sha256**, skipping
   any on-disk file whose hash already matches. It never queries "latest" and never hits the GitHub
   API — so a clean checkout and a deploy build are byte-for-byte reproducible.
-- **`update:installables`** is the *only* path that resolves "latest" (NickelMenu is pinned to a
-  fork release). It downloads, recomputes the hashes, and rewrites `installables.lock`. **Commit
+- **`update:installables`** is the *only* path that resolves "latest". It downloads, recomputes
+  the hashes, and rewrites `installables.lock`. **Commit
   the updated lock**; a rebuild + redeploy then ships the new versions. Use `--only=<name>` to
   bump one. Set `GITHUB_TOKEN` if you hit GitHub's unauthenticated rate limit.
 
@@ -128,26 +159,42 @@ Updating an installable is therefore a deliberate, reviewable change (a lock dif
 container (it conflicted with the immutable, version-suffixed asset URLs the CDN caches).
 
 The build derives a **build-time manifest** from the lock — each id's pinned `version` plus whether
-its asset is present (`scripts/build.mjs` → `installablesManifest()`) — and injects it into the
-bundle via esbuild `define` (`globalThis.__INSTALLABLES__`). The app reads it through
+its asset is present (`vite.config.mjs` → `installablesManifest()`) — and injects it into the
+bundle via Vite `define` (`globalThis.__INSTALLABLES__`). The app reads it through
 `src/js/nickelmenu/installables.js` (`installableVersion`/`installableAvailable`/`installableAssetUrl`):
 add-on availability and the on-screen version come from the bundle with **no runtime metadata
 fetch** — the per-asset `*-release.json` files no longer exist. Asset downloads use
 `/assets/<file>?v=<version>` so the URL changes with the pinned version (see Production Serving).
 
+Small feature-owned NickelMenu assets (preset icons, sample screensavers, and on-device toggle
+scripts) are declared in their feature modules with `new URL('./asset', import.meta.url)` so Vite
+tracks and emits them into `dist/assets/`. Feature `install()` hooks load those URLs through
+`ctx.bundledAsset(url)`, which uses the installer's per-run cache; shared assets such as
+`toggle_hidden_home.sh` are fetched once even when several features contribute them.
+
 ## Testing
 
-Run all tests:
+Run the full pipeline:
+
+```bash
+npm run verify
+```
+
+This installs dependencies, sets up installable assets, then runs each phase in order: Prettier format check, lint, unit tests, WASM build, web build, `dist` validation, patch blacklist check, the WASM integration test (when cached firmware is present), Playwright E2E tests, and the screenshot set. On first run it may prompt to download firmware test assets to `tests/e2e/cached_assets/`.
+
+For ordinary frontend work, use the faster subset:
 
 ```bash
 npm run test
 ```
 
-This installs dependencies, sets up installable assets, builds WASM, builds the app, validates `dist`, checks the patch blacklist, runs unit tests, runs the WASM integration test when cached firmware is present, and runs Playwright E2E tests. On first run it may prompt to download firmware test assets to `tests/e2e/cached_assets/`.
+`npm run test` is `verify --quick`: it runs Prettier, lint, unit tests, web build, `dist` validation, E2E, and screenshots, skipping the initial dependency install and the three WASM phases (build, blacklist, integration). It reuses the already-built `kobopatch.wasm`, so build/test WASM only when you have changed the patcher (`npm run verify`). Both suites share `scripts/verify.mjs`; phases are declared once and tagged for the quick subset.
 
 Useful commands:
 
 ```bash
+npm run format          # rewrite JS/MJS with Prettier
+npm run format:check    # verify formatting only (first phase of verify/test)
 npm run test:unit
 npm run test:e2e
 npm run test:e2e:fresh
@@ -170,11 +217,11 @@ bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 
 ### Screenshots
 
-`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs only `specs/screenshots.mjs` against two viewport projects — `mobile` (393×852) and `desktop` (1280×900) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
+`npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run verify` and `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs the `specs/screenshots/*.shots.mjs` specs (`testMatch: '**/*.shots.mjs'`) against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
 
-Each test in `screenshots.mjs` walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus an `edge-cases` group. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read), KOReader is made available via a `koreader-release.json` route mock, and firmware-dependent flows skip when the firmware zip is absent.
+Each test in `specs/screenshots/` (one `.shots.mjs` file per journey — `connected`, `manual`, `patches`, `edge-cases`) walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus grouped edge cases. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read). Add-on availability comes from the baked installables manifest, and firmware-dependent flows skip when the firmware zip is absent.
 
-Output lands in `tests/e2e/screenshots/{mobile,desktop}/{manual-nickelmenu,manual-patches,connected-nickelmenu,connected-nickelmenu-removal,connected-nickelmenu-factory,connected-patches,edge-cases}/` and is gitignored; the directory is wiped at the start of each run. File names are prefixed with an order number (`05-…`, `08b-…`) so they sort in flow order. To capture a new state, add or extend a test and drop a `shot(...)` call where you want the frame.
+Output lands under `tests/e2e/screenshots/{mobile,desktop}/` and is gitignored; the directory is wiped at the start of each run. Top-level groups are `manual/`, `connected/`, and `edge-cases/`. Edge cases are split by concern (`connection/`, `device-write/`, `download/`, `compatibility/`, `dialogs/`, `nickelmenu/`) so unusual recovery states do not pile into one folder. File names are prefixed with an order number (`05-…`, `08b-…`) so they sort in flow order. To capture a new state, add or extend a test and drop a `shot(...)` call where you want the frame.
 
 ## Running Locally
 
@@ -190,7 +237,7 @@ For watch mode:
 npm run dev
 ```
 
-This builds into a throwaway `dist-dev/` (so it never clashes with the production `dist/` the e2e and screenshot suites build), serves it on `http://localhost:8888`, logs each request as it is served, and removes `dist-dev/` on exit. Press `q` or `Ctrl-C` to quit.
+This starts Vite on `http://localhost:8888` with module/CSS hot reload and full-page reloads for `src/index.html` plus included `src/html/**/*.html` partials. `serve-local.mjs` still prepares the locked installable assets and ensures `dist/wasm/kobopatch.wasm` exists first; `vite.config.mjs` serves the few generated/static resources that live outside `src/` during production builds (patch ZIPs, the WASM binary, and `wasm_exec.js` at the worker-relative path). Press `q` or `Ctrl-C` to quit.
 
 To test analytics UI locally without sending data:
 
@@ -211,12 +258,12 @@ injection, so the server is kept but made production-grade. The behaviour and *w
   length, leaving the browser unable to compute download progress. The asset download-progress UI
   (`fetchWithProgress` in `src/js/shell/dom.js`) depends on this header — without it, progress
   silently degrades to the no-percentage fallback.
-- **Build-time precompression, not on-the-fly.** `scripts/build.mjs` writes `.br`/`.gz` siblings for
+- **Build-time precompression, not on-the-fly.** After Vite writes the production bundle, `scripts/build.mjs` writes `.br`/`.gz` siblings for
   compressible types (`PRECOMPRESS_EXT`); the server negotiates them via `Accept-Encoding` (brotli
   preferred) at zero per-request CPU. Already-compressed archives (`.zip`/`.tgz`) and images are
   **excluded on purpose**: re-compressing them gains nothing, and adding `Content-Encoding` to an
   archive would make its `Content-Length` (compressed) smaller than the decompressed stream the
-  browser reads, breaking the progress percentage. Precompression is skipped for dev/watch builds.
+  browser reads, breaking the progress percentage. Precompression is skipped for Vite dev.
 - **Cache tiers** (`cacheControl`): just two. **Versioned URLs are `immutable, max-age=1yr`** —
   `?h=<content hash>` on `bundle.js`/`style.css`/`kobopatch.wasm`, and `?v=<pinned version>` on the
   `assets/*` add-on archives (the version comes from the build-time manifest; see Build And Assets).
@@ -239,10 +286,28 @@ injection, so the server is kept but made production-grade. The behaviour and *w
 - **Stale-sibling guard** (`pickEncoding`): a `.br`/`.gz` sibling is only served when at least as new
   as its source file, so a compressible asset replaced live without regenerating siblings falls back
   to serving the fresh identity bytes rather than a stale compressed copy.
+- **Security headers + a self-deriving CSP** (`securityHeaders`/`getCsp`): every response carries
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a
+  `Permissions-Policy`, and a `Content-Security-Policy`. The CSP is **assembled from the app itself at
+  startup**, so there is no hand-maintained allowlist to drift: the inline `<script>`/`<style>` blocks
+  (pre-paint theme bootstrap, inlined critical CSS, and the injected analytics snippet) are authorized by
+  SHA-256 **hashes** computed from the served HTML — never `'unsafe-inline'`; the firmware `connect-src`
+  hosts are read from `patches/downloads.json`; and the Umami script/beacon origin is added from
+  `UMAMI_SCRIPT_URL` only when analytics is enabled. `'wasm-unsafe-eval'` is required for the patcher;
+  `img-src` allows `data:`/`blob:` for the NickelMenu icon-resize previews. Hashes cover `<style>`
+  *elements* but **not** style *attributes*, so inline `style="…"` is effectively forbidden — use a CSS
+  class. Set `CSP_REPORT_ONLY=1` to emit `Content-Security-Policy-Report-Only` instead (a safe rollout:
+  violations are logged, nothing is blocked); an explicit falsy value (`0`/`false`/`off`) or unsetting it
+  enforces (`envFlag`). The var is read once at startup, so flipping it needs a restart/redeploy.
+- **Malformed URLs redirect to `/`**: `decodeURIComponent(url.pathname)` throws on a bad percent-escape
+  (e.g. `/%`). That runs before the file-read `try`, so an unguarded throw would be an uncaught exception
+  that crashes the process — a one-request DoS. It is caught and answered with a non-cached `302` to the
+  homepage instead. (In production a TLS-terminating proxy typically rejects such URLs first; this closes
+  the latent crash for any request that reaches Node directly.)
 
-`scripts/serve-dist.mjs` is the single server for production, `npm run serve`, `npm run dev` (via
-`serve-local.mjs`, with `NO_CACHE=1` so caching/compression are bypassed for fast iteration), and the
-screenshot runner — so this behaviour is exercised by the E2E suite, not just in production.
+`scripts/serve-dist.mjs` is the single server for production, `npm run serve`, and the screenshot
+runner — so this behaviour is exercised by the E2E suite, not just in production. `npm run dev`
+uses Vite's dev server instead.
 
 ## Analytics
 
@@ -259,18 +324,28 @@ Events currently emitted:
 | `nm-option` | `{ option }` | NickelMenu option chosen (preset / NickelMenu only / removal). |
 | `add-koreader` | — | Only when the add-on is part of the install. |
 | `add-nickelclock` | — | Only when installed. |
+| `add-nickeldissolve` | — | Only when the page turn animations mod is installed. |
+| `add-nickeltypefix` | — | Only when better typography (NickelTypeFix) is installed. |
 | `add-cadmus` | — | Only when installed. |
 | `add-fonts` | — | Only when the additional fonts are installed. |
 | `add-screensaver` | — | Only when the custom screensaver is installed. |
-| `add-minimal-home` | — | Only when a minimal-home feature is installed. |
+| `add-minimal-home` | — | Only when a minimal-home feature is installed (once, however many hiders are selected). |
 | `add-basic-tabs` | — | Only when the basic tab bar is installed. |
 | `add-sideloaded-mode` | — | Only when sideloaded mode is installed. |
+| `add-nickelcoverfix` | — | Only when the alternative cover handling mod is installed. |
+| `add-exclude-calibre` | — | Only when the Calibre folder exclusion is applied. |
 | `flow-end` | `{ result }` | When a flow completes (write / download / remove). |
 | `feedback` | `{ vote }` | When the user submits the thumbs feedback. |
+| `error` | `{ value }` | When the error screen is shown for an *unexpected* failure. `value` is a coarse category (`write`, `probe`, `config-read`, `download`, `unknown`) — never the message or stack. Derived from `showError` options in `error-screen.js` (or an explicit `options.category`). Errors flagged `expected: true` — a normal outcome of user input or unsupported data, e.g. building incompatible patches, an unsupported firmware version, or a denied device-access prompt — are **not** reported. |
 
 The `add-*` events fire only when that add-on is actually included in the install (in
 `executeNmInstall`, for both write-to-device and download paths, never on removal), so each event
-counts a real install rather than a yes/no toggle.
+counts a real install rather than a yes/no toggle. Each feature module declares its own event via
+the `analyticsEvent` key (or an explicit `null` when an install event carries no signal, e.g. the
+required `custom-menu`); `featureAnalyticsEvents` in `features/index.js` collects and dedupes them,
+so related features can share one event (the three home hiders all map to `add-minimal-home`).
+`tests/unit/nickelmenu-analytics.test.js` fails when a feature omits the key or when the
+catalog-to-event mapping changes, so a new feature can't ship untracked by accident.
 
 ## Output Validation
 

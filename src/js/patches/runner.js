@@ -2,10 +2,6 @@
  * Runs kobopatch WASM in a Web Worker for non-blocking UI.
  */
 class KoboPatchRunner {
-    constructor() {
-        this._worker = null;
-    }
-
     /**
      * Run the patching pipeline in a Web Worker.
      *
@@ -18,7 +14,6 @@ class KoboPatchRunner {
     patchFirmware(configYAML, firmwareZip, patchFiles, onProgress) {
         return new Promise((resolve, reject) => {
             const worker = new Worker('js/workers/patch-worker.js');
-            this._worker = worker;
 
             worker.onmessage = (e) => {
                 const msg = e.data;
@@ -26,28 +21,28 @@ class KoboPatchRunner {
                     if (onProgress) onProgress(msg.message);
                 } else if (msg.type === 'done') {
                     worker.terminate();
-                    this._worker = null;
                     resolve({ tgz: msg.tgz, log: msg.log });
                 } else if (msg.type === 'error') {
                     worker.terminate();
-                    this._worker = null;
                     reject(new Error(msg.message));
                 }
             };
 
             worker.onerror = (e) => {
                 worker.terminate();
-                this._worker = null;
                 reject(new Error('Worker error: ' + e.message));
             };
 
             // Transfer the firmwareZip buffer to avoid copying
-            worker.postMessage({
-                type: 'patch',
-                configYAML,
-                firmwareZip,
-                patchFiles,
-            }, [firmwareZip.buffer]);
+            worker.postMessage(
+                {
+                    type: 'patch',
+                    configYAML,
+                    firmwareZip,
+                    patchFiles,
+                },
+                [firmwareZip.buffer],
+            );
         });
     }
 }

@@ -1,75 +1,26 @@
+/**
+ * device.js — `KoboDevice`, the File System Access wrapper for a connected Kobo.
+ *
+ * Validates the picked directory looks like a Kobo and exposes read/list helpers
+ * over its filesystem. Writes go through DeviceWriter; this class owns connection
+ * and reads. `isSupported()` reports whether the browser exposes the API at all.
+ */
+
+import { assertValidDevicePath, formatDevicePath } from './device-paths.js';
+import { devicePathError, deviceWriteError, deviceWriteProbeError, isNotFoundError, isTypeMismatchError } from './device-errors.js';
 import { parseKoboVersion } from './version.js';
-
-function formatDevicePath(pathParts) {
-    return pathParts.join('/');
-}
-
-function invalidPathPartReason(part) {
-    if (typeof part !== 'string') return 'path segments must be strings';
-    if (part === '') return 'path segments cannot be empty';
-    if (part === '.' || part === '..') return 'path segments cannot be "." or ".."';
-    if (part.includes('/') || part.includes('\\')) return 'path segments cannot contain path separators';
-    return null;
-}
-
-function assertValidDevicePath(pathParts, operation) {
-    if (!Array.isArray(pathParts) || pathParts.length === 0) {
-        throw new Error(`Invalid device path for ${operation}: expected at least one path segment`);
-    }
-
-    for (const part of pathParts) {
-        const reason = invalidPathPartReason(part);
-        if (reason) {
-            throw new Error(`Invalid device path for ${operation}: ${formatDevicePath(pathParts)} (${reason})`);
-        }
-    }
-}
-
-function describeError(err) {
-    return err?.message || String(err);
-}
-
-function devicePathError(operation, pathParts, err) {
-    const wrapped = new Error(
-        `Could not ${operation} ${formatDevicePath(pathParts)}: ${describeError(err)}`,
-        { cause: err }
-    );
-    wrapped.devicePath = formatDevicePath(pathParts);
-    wrapped.deviceOperation = operation;
-    wrapped.deviceWrite = operation === 'write';
-    return wrapped;
-}
-
-function deviceWriteError(pathParts, phase, err) {
-    const wrapped = new Error(
-        `Could not write ${formatDevicePath(pathParts)} while ${phase}: ${describeError(err)}`,
-        { cause: err }
-    );
-    wrapped.devicePath = formatDevicePath(pathParts);
-    wrapped.deviceOperation = 'write';
-    wrapped.deviceWrite = true;
-    wrapped.devicePhase = phase;
-    return wrapped;
-}
-
-const WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
-const WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
-
-function deviceWriteProbeError(err) {
-    const wrapped = new Error(
-        'Could not verify write access to the Kobo drive. The app could read ' +
-        '.kobo/version, but a small test write failed. Direct install is not safe ' +
-        `for this connection. Details: ${describeError(err)}`,
-        { cause: err }
-    );
-    wrapped.devicePath = formatDevicePath(WRITE_PROBE_PATH);
-    wrapped.deviceOperation = 'write probe';
-    wrapped.deviceWrite = true;
-    return wrapped;
-}
+import { readUiLocale } from './locale.js';
 
 class KoboDevice {
+    static WRITE_PROBE_PATH = ['.kobopatch-webui-probe'];
+    static WRITE_PROBE_CONTENT = 'kobopatch-webui write probe\n';
+
     constructor() {
+        this.directoryHandle = null;
+        this.deviceInfo = null;
+    }
+
+    reset() {
         this.directoryHandle = null;
         this.deviceInfo = null;
     }
@@ -95,25 +46,22 @@ class KoboDevice {
         try {
             koboDir = await this.directoryHandle.getDirectoryHandle('.kobo');
         } catch (err) {
-            throw new Error(
-                'This does not appear to be a Kobo device. Could not find the .kobo directory.',
-                { cause: err }
-            );
+            throw new Error('This does not appear to be a Kobo device. Could not find the .kobo directory.', {
+                cause: err,
+            });
         }
 
         let versionFile;
         try {
             versionFile = await koboDir.getFileHandle('version');
         } catch (err) {
-            throw new Error(
-                'Could not find .kobo/version. Is this the root of your Kobo drive?',
-                { cause: err }
-            );
+            throw new Error('Could not find .kobo/version. Is this the root of your Kobo drive?', { cause: err });
         }
 
         const file = await versionFile.getFile();
         const content = await file.text();
         this.deviceInfo = KoboDevice.parseVersion(content.trim());
+        this.deviceInfo.uiLocale = await this.readUiLocale();
 
         if (!this.deviceInfo.isIncompatible) {
             try {
@@ -131,7 +79,7 @@ class KoboDevice {
      * Parse the .kobo/version file content.
      *
      * Format: serial,version1,firmware,version3,version4,hardware_uuid
-     * Example: N4284B5215352,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390
+     * Example: N428000000000,4.9.77,4.45.23646,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390
      */
     static parseVersion(content) {
         return parseKoboVersion(content);
@@ -170,11 +118,7 @@ class KoboDevice {
             try {
                 dir = await dir.getDirectoryHandle(part, { create: true });
             } catch (err) {
-                throw deviceWriteError(
-                    filePath,
-                    `opening or creating directory ${formatDevicePath(directoryPath)}`,
-                    err
-                );
+                throw deviceWriteError(filePath, `opening or creating directory ${formatDevicePath(directoryPath)}`, err);
             }
         }
 
@@ -210,14 +154,15 @@ class KoboDevice {
      * create/write/commit/remove operations the install flows need.
      */
     async verifyWriteAccess() {
+        const probePath = KoboDevice.WRITE_PROBE_PATH;
         let probeWritten = false;
         let probeError = null;
         try {
-            await this.writeFile(WRITE_PROBE_PATH, new TextEncoder().encode(WRITE_PROBE_CONTENT));
+            await this.writeFile(probePath, new TextEncoder().encode(KoboDevice.WRITE_PROBE_CONTENT));
             probeWritten = true;
 
-            const written = await this.readFile(WRITE_PROBE_PATH);
-            if (written !== WRITE_PROBE_CONTENT) {
+            const written = await this.readFile(probePath);
+            if (written !== KoboDevice.WRITE_PROBE_CONTENT) {
                 throw new Error('The write probe could not be read back from the Kobo drive.');
             }
         } catch (err) {
@@ -226,14 +171,47 @@ class KoboDevice {
 
         if (probeWritten) {
             try {
-                await this.removeEntry(WRITE_PROBE_PATH);
+                await this.removeEntry(probePath);
             } catch (err) {
                 probeError = probeError || err;
             }
         }
 
         if (probeError) {
-            throw deviceWriteProbeError(probeError);
+            throw deviceWriteProbeError(probeError, probePath);
+        }
+    }
+
+    /**
+     * Resolve a directory handle by walking `pathParts` from the device root.
+     * An empty array returns the root. Throws if any segment is missing — the
+     * read helpers catch that and degrade to null/[].
+     */
+    async resolveDirectory(pathParts) {
+        let dir = this.directoryHandle;
+        for (const part of pathParts) {
+            dir = await dir.getDirectoryHandle(part);
+        }
+        return dir;
+    }
+
+    /** Resolve the file handle at `filePath` (directory walk + final getFileHandle). */
+    async resolveFileHandle(filePath) {
+        const dir = await this.resolveDirectory(filePath.slice(0, -1));
+        return dir.getFileHandle(filePath[filePath.length - 1]);
+    }
+
+    /**
+     * Read the device UI locale from Kobo eReader.conf (best effort). Returns the
+     * raw `CurrentLocale` value (e.g. `en`, `fr_CA`) or null when the conf is
+     * missing/unreadable or the key is absent.
+     */
+    async readUiLocale() {
+        try {
+            const conf = await this.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf']);
+            return readUiLocale(conf);
+        } catch {
+            return null;
         }
     }
 
@@ -242,105 +220,23 @@ class KoboDevice {
      */
     async readFile(filePath) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const fileHandle = await dir.getFileHandle(fileName);
+            const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             return await file.text();
-        } catch {
-            return null;
-        }
-    }
-
-    /**
-     * List direct children for a directory path. Returns [] if the directory is missing.
-     */
-    async listDirectory(pathParts) {
-        try {
-            let dir = this.directoryHandle;
-            for (const part of pathParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const entries = [];
-            for await (const entry of dir.values()) {
-                entries.push({ name: entry.name, kind: entry.kind });
-            }
-            return entries;
-        } catch {
-            return [];
-        }
-    }
-
-    /**
-     * Check if a file or directory exists at the given path.
-     */
-    async pathExists(pathParts) {
-        try {
-            let dir = this.directoryHandle;
-            const dirParts = pathParts.slice(0, -1);
-            const lastPart = pathParts[pathParts.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            try {
-                await dir.getDirectoryHandle(lastPart);
-                return true;
-            } catch {
-                await dir.getFileHandle(lastPart);
-                return true;
-            }
-        } catch {
-            return false;
-        }
-    }
-
-    /**
-     * List the names of files and directories directly inside a directory.
-     * Returns an empty array if the path cannot be read.
-     */
-    async listDirectoryNames(pathParts = []) {
-        try {
-            let dir = this.directoryHandle;
-            for (const part of pathParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-
-            const names = [];
-            if (typeof dir.values === 'function') {
-                for await (const entry of dir.values()) {
-                    names.push(entry.name);
-                }
-                return names;
-            }
-            if (typeof dir[Symbol.asyncIterator] === 'function') {
-                for await (const entry of dir) {
-                    names.push(entry.name);
-                }
-                return names;
-            }
-            return [];
-        } catch {
-            return [];
+        } catch (err) {
+            if (isNotFoundError(err)) return null;
+            throw devicePathError('read', filePath, err);
         }
     }
 
     async readFileBytes(filePath) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const fileHandle = await dir.getFileHandle(fileName);
+            const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             return new Uint8Array(await file.arrayBuffer());
-        } catch {
-            return null;
+        } catch (err) {
+            if (isNotFoundError(err)) return null;
+            throw devicePathError('read', filePath, err);
         }
     }
 
@@ -353,18 +249,60 @@ class KoboDevice {
      */
     async readFileRange(filePath, offset, length) {
         try {
-            let dir = this.directoryHandle;
-            const dirParts = filePath.slice(0, -1);
-            const fileName = filePath[filePath.length - 1];
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-            const fileHandle = await dir.getFileHandle(fileName);
+            const fileHandle = await this.resolveFileHandle(filePath);
             const file = await fileHandle.getFile();
             const slice = file.slice(offset, offset + length);
             return new Uint8Array(await slice.arrayBuffer());
-        } catch {
-            return null;
+        } catch (err) {
+            if (isNotFoundError(err)) return null;
+            throw devicePathError('read', filePath, err);
+        }
+    }
+
+    /**
+     * List direct children for a directory path. Returns [] if the directory is missing.
+     */
+    async listDirectory(pathParts) {
+        try {
+            const dir = await this.resolveDirectory(pathParts);
+            const entries = [];
+            for await (const entry of dir.values()) {
+                entries.push({ name: entry.name, kind: entry.kind });
+            }
+            return entries;
+        } catch (err) {
+            if (isNotFoundError(err)) return [];
+            throw devicePathError('list', pathParts, err);
+        }
+    }
+
+    /**
+     * Check if a file or directory exists at the given path.
+     */
+    async pathExists(pathParts) {
+        try {
+            const dir = await this.resolveDirectory(pathParts.slice(0, -1));
+            const lastPart = pathParts[pathParts.length - 1];
+            try {
+                await dir.getDirectoryHandle(lastPart);
+                return true;
+            } catch (dirErr) {
+                if (!isNotFoundError(dirErr) && !isTypeMismatchError(dirErr)) {
+                    throw dirErr;
+                }
+            }
+
+            try {
+                await dir.getFileHandle(lastPart);
+                return true;
+            } catch (fileErr) {
+                if (isNotFoundError(fileErr)) return false;
+                if (isTypeMismatchError(fileErr)) return true;
+                throw fileErr;
+            }
+        } catch (err) {
+            if (isNotFoundError(err)) return false;
+            throw devicePathError('check existence of', pathParts, err);
         }
     }
 
@@ -377,23 +315,25 @@ class KoboDevice {
     }
 
     async collectExistingFilePaths(pathParts, filePaths) {
-        let dir = this.directoryHandle;
-        const dirParts = pathParts.slice(0, -1);
-        const entryName = pathParts[pathParts.length - 1];
-
+        let dir;
         try {
-            for (const part of dirParts) {
-                dir = await dir.getDirectoryHandle(part);
-            }
-        } catch {
-            return;
+            dir = await this.resolveDirectory(pathParts.slice(0, -1));
+        } catch (err) {
+            if (isNotFoundError(err)) return;
+            throw devicePathError('open directory', pathParts.slice(0, -1), err);
         }
+        const entryName = pathParts[pathParts.length - 1];
 
         try {
             const childDir = await dir.getDirectoryHandle(entryName);
             await this.collectDirectoryFilePaths(childDir, pathParts, filePaths);
             return;
-        } catch {}
+        } catch (err) {
+            if (isNotFoundError(err)) return;
+            if (!isTypeMismatchError(err)) {
+                throw devicePathError('check directory', pathParts, err);
+            }
+        }
 
         const data = await this.readFileBytes(pathParts);
         if (data) {
@@ -407,9 +347,7 @@ class KoboDevice {
         for await (const entry of dirHandle.values()) {
             const nextPathParts = [...currentPathParts, entry.name];
             if (entry.kind === 'directory') {
-                const childDir = typeof entry.values === 'function'
-                    ? entry
-                    : await dirHandle.getDirectoryHandle(entry.name);
+                const childDir = typeof entry.values === 'function' ? entry : await dirHandle.getDirectoryHandle(entry.name);
                 await this.collectDirectoryFilePaths(childDir, nextPathParts, filePaths);
             } else if (entry.kind === 'file') {
                 filePaths.push(nextPathParts);
@@ -465,12 +403,7 @@ class KoboDevice {
      * Resolve the directory handle that contains the final segment of `pathParts`.
      */
     async resolveParentHandle(pathParts) {
-        let dir = this.directoryHandle;
-        const dirParts = pathParts.slice(0, -1);
-        for (const part of dirParts) {
-            dir = await dir.getDirectoryHandle(part);
-        }
-        return dir;
+        return this.resolveDirectory(pathParts.slice(0, -1));
     }
 
     /**
@@ -484,8 +417,8 @@ class KoboDevice {
         } catch (err) {
             // NotFoundError → already gone. TypeMismatchError → it's a file, so
             // drop through to the plain removeEntry below. Anything else is real.
-            if (err?.name === 'NotFoundError') return;
-            if (err?.name !== 'TypeMismatchError') throw err;
+            if (isNotFoundError(err)) return;
+            if (!isTypeMismatchError(err)) throw err;
         }
 
         if (dirHandle) {
@@ -495,7 +428,7 @@ class KoboDevice {
         try {
             await parentHandle.removeEntry(entryName);
         } catch (err) {
-            if (err?.name === 'NotFoundError') return;
+            if (isNotFoundError(err)) return;
             throw err;
         }
     }
@@ -520,7 +453,7 @@ class KoboDevice {
                 }
                 await dirHandle.removeEntry(name);
             } catch (err) {
-                if (err?.name === 'NotFoundError') continue;
+                if (isNotFoundError(err)) continue;
                 throw err;
             }
         }
@@ -534,8 +467,5 @@ class KoboDevice {
         this.deviceInfo = null;
     }
 }
-
-// Expose on window for E2E test compatibility (tests access these via page.evaluate)
-window.KoboDevice = KoboDevice;
 
 export { KoboDevice };

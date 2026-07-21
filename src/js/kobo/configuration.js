@@ -1,3 +1,11 @@
+/**
+ * configuration.js — Reading and editing of `Kobo eReader.conf`.
+ *
+ * Parses the INI-like config into sections, and provides get/set/remove helpers
+ * for individual keys and for the ExcludeSyncFolders line, plus the revertable
+ * conf-setting bookkeeping features rely on. Pure string/section logic, no I/O.
+ */
+
 const SECTION_HEADER_PATTERN = /^\s*\[([^\]]+)\]\s*$/;
 const featureSettingsSection = 'FeatureSettings';
 const excludeSyncFoldersKey = 'ExcludeSyncFolders';
@@ -165,7 +173,7 @@ function createExcludeSyncFoldersMatcher(value) {
 
 function validateExcludeSyncFoldersRegex(value) {
     const errors = [];
-    let regex = null;
+    let regex;
 
     try {
         regex = createExcludeSyncFoldersMatcher(value);
@@ -218,29 +226,36 @@ function validateExcludeSyncFoldersLine(line) {
 
 function setExcludeSyncFoldersLine(content, settingLine) {
     const value = parseExcludeSyncFoldersLine(settingLine);
-    return setConfSetting(
-        content,
-        featureSettingsSection,
-        excludeSyncFoldersKey,
-        value
-    );
+    return setConfSetting(content, featureSettingsSection, excludeSyncFoldersKey, value);
 }
 
 function removeExcludeSyncFoldersLine(content) {
-    return removeConfSetting(
-        content,
-        featureSettingsSection,
-        excludeSyncFoldersKey
-    );
+    return removeConfSetting(content, featureSettingsSection, excludeSyncFoldersKey);
+}
+
+/**
+ * The Kobo eReader.conf settings a feature both applies AND owns for removal:
+ * the entries its `confSettings` declares with `revertable: true`. The installer
+ * applies every `confSettings` entry; this subset is also what the flow detects
+ * the feature by and what the uninstaller reverts (to `revertTo`, or removes the
+ * line when `revertTo` is null/absent). Declaring `revertable`/`revertTo` on the
+ * setting itself keeps each reverted key defined once, in `confSettings`, instead
+ * of being repeated in `cleanup.detectConf`/`cleanup.revertConf`. A setting left
+ * without `revertable` is applied but never clawed back (e.g. a general reading
+ * preference).
+ */
+function revertableConfSettings(feature, ctx = {}) {
+    if (!feature.confSettings) return [];
+    return feature.confSettings(ctx).filter((setting) => setting.revertable);
 }
 
 export {
     createExcludeSyncFoldersMatcher,
     getConfSetting,
     parseKoboConfiguration,
-    parseExcludeSyncFoldersLine,
     removeConfSetting,
     removeExcludeSyncFoldersLine,
+    revertableConfSettings,
     setConfSetting,
     setExcludeSyncFoldersLine,
     validateExcludeSyncFoldersLine,

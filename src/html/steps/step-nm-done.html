@@ -1,0 +1,33 @@
+        <section id="step-nm-done" class="step" hidden>
+            <div class="done-card">
+                <div class="done-card-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <p id="nm-done-status" class="done-card-title" aria-live="polite"></p>
+                <p id="nm-write-instructions" class="done-card-detail" hidden>
+                    Files have been written to your Kobo.
+                    <strong>Safely eject</strong> the device before unplugging the USB cable &mdash; it will reboot and install NickelMenu automatically.
+                </p>
+                <div id="nm-download-instructions" class="install-instructions" hidden>
+                    <ol class="install-steps">
+                        <li>Connect your Kobo via USB so it appears as a removable drive.</li>
+                        <li id="nm-download-conf-step" hidden>Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor.<br>
+                            Find the <code>[FeatureSettings]</code> section (or add it at the end of the file) and add the following line <strong>inside</strong> that section (do not replace the entire file):<br>
+                            <code id="nm-download-conf-line"></code><br>
+                            <span id="nm-download-conf-desc"></span></li>
+                        <li id="nm-download-conf-settings-step" hidden>In the same <strong>.kobo/Kobo/Kobo eReader.conf</strong>, apply the following settings (replace any existing lines that have the same key):
+                            <div id="nm-download-conf-settings"></div></li>
+                        <li id="nm-download-reboot-step" hidden><strong>Safely eject</strong> the Kobo, then power it off by holding the power button until it says "Powered off". Press the power button again to boot it back up. The config change takes effect after reboot. Reconnect the Kobo via USB afterwards.</li>
+                        <li>Extract the downloaded ZIP to the <strong>root</strong> of the Kobo drive, preserving the folder structure. Make sure hidden folders like <code>.kobo</code> and <code>.adds</code> are also copied.</li>
+                        <li><strong>Safely eject</strong> the Kobo before unplugging the USB cable &mdash; it will reboot and install NickelMenu automatically.</li>
+                    </ol>
+                    <p class="fallback-hint">The downloaded ZIP also contains an <code>instructions.txt</code> file with these steps for offline reference.</p>
+                </div>
+                <p id="nm-reboot-instructions" class="done-card-detail" hidden>
+                    <strong>Safely eject your Kobo and let it reboot.</strong> Please be patient, NickelMenu will be automatically removed during the reboot.
+                    A "glitchy" horizontal line may briefly appear on screen after restarting — this is normal, as NickelMenu removes itself.
+                </p>
+            </div>
+            <p class="restart-hint">You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.</p>
+            <!-- include: partials/feedback.html -->
+        </section>

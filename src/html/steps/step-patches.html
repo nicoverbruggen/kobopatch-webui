@@ -1,0 +1,80 @@
+        <section id="step-patches" class="step" hidden>
+            <div id="patch-reload-banner" class="banner banner--info patch-reload-banner" hidden>
+                <span id="patch-reload-text">You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.</span>
+                <button id="btn-patch-reload" class="secondary" type="button">Restore previous patches</button>
+            </div>
+            <p>Enable or disable patches below. Patches in the same group are mutually exclusive.</p>
+            <div id="patch-container" class="patch-container-scroll"></div>
+            <details id="patch-about-patches-section" class="patch-advanced">
+                <summary>
+                    <svg class="patch-summary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M10 5H3"/>
+                        <path d="M12 19H3"/>
+                        <path d="M14 3v4"/>
+                        <path d="M16 17v4"/>
+                        <path d="M21 12h-9"/>
+                        <path d="M21 19h-5"/>
+                        <path d="M21 5h-7"/>
+                        <path d="M8 10v4"/>
+                        <path d="M8 12H3"/>
+                    </svg>
+                    Customize Patch List
+                </summary>
+                <div class="patch-advanced-body">
+                    <section class="patch-display-format" aria-labelledby="patch-display-format-title">
+                        <label class="patch-pref-row">
+                            <input id="patch-original-format" type="checkbox">
+                            <span class="patch-pref-text">
+                                <span id="patch-display-format-title" class="patch-pref-label">Classic Grouping</span>
+                                <span class="patch-pref-hint">Group patches by their source file and show their original kobopatch titles instead of the themed labels. Users who are used to the original format as used on the MobileRead forums might be able to find their patches more easily this way.</span>
+                            </span>
+                        </label>
+                    </section>
+                    <section class="patch-history" aria-labelledby="patch-history-title">
+                        <div class="patch-pref-text">
+                            <span id="patch-history-title" class="patch-pref-label">Compatibility Report</span>
+                            <span class="patch-pref-hint">Shows a popover that displays a list of patches that are known to fail on the latest firmware. You will be able to see if your firmware matches that known list.</span>
+                        </div>
+                        <button id="btn-patch-blacklist" class="secondary patch-blacklist-button" type="button" title="View incompatible patches for this firmware" aria-label="View incompatible patches for this firmware">
+                            <svg class="patch-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+                                <path d="M12 8v4"/>
+                                <path d="M12 16h.01"/>
+                            </svg>
+                            View compatibility report
+                        </button>
+                    </section>
+                </div>
+            </details>
+            <details id="patch-advanced-section" class="patch-advanced">
+                <summary>
+                    <svg class="patch-summary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <path d="M12 10v6"/>
+                        <path d="M9 13h6"/>
+                        <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+                    </svg>
+                    Additional Files
+                </summary>
+                <div class="patch-advanced-body">
+                    <section class="patch-additional-files" aria-labelledby="patch-additional-files-title">
+                        <div class="patch-additional-files-head">
+                            <div>
+                                <p>These are inserted into the generated KoboRoot.tgz and written to the Kobo system during the update. Only add files when you know the exact destination path and have a recovery plan!</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button id="btn-patch-additional-files" class="secondary" type="button">Choose files</button>
+                            <input id="patch-additional-file-input" type="file" multiple hidden>
+                            <p id="patch-additional-files-empty" class="fallback-hint">No additional files selected.</p>
+                            <div id="patch-additional-files-list" class="patch-additional-files-list"></div>
+                            <p id="patch-additional-files-error" class="patch-additional-files-error" hidden></p>
+                        </div>
+                    </section>
+                </div>
+            </details>
+            <div class="step-actions">
+                <button id="btn-patches-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-patches-next" class="primary" disabled>Continue &#x203A;</button>
+            </div>
+            <p id="patch-count-hint" class="fallback-hint"></p>
+        </section>

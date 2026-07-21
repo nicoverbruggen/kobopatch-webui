@@ -1,0 +1,26 @@
+        <section id="step-nickelmenu" class="step" hidden>
+            <p>How would you like to configure NickelMenu?</p>
+            <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
+                <label class="selection-card">
+                    <input type="radio" name="nm-option" value="preset">
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z"/></svg>
+                    <div class="selection-card-body">
+                        <div id="nm-option-preset-title" class="selection-card-title">Install with preset (and customize)</div>
+                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You also get to decide which extra optional features you'd like to enable, including enabling some home screen tweaks and installing KOReader, among others.</div>
+                    </div>
+                </label>
+                <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">
+                    <input type="radio" name="nm-option" value="remove" disabled>
+                    <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Remove NickelMenu</div>
+                        <div class="selection-card-desc" id="nm-remove-desc">Removes NickelMenu from your device. (Only available when a Kobo with NickelMenu installed is connected.)</div>
+                    </div>
+                </label>
+                <div id="nm-uninstall-options" hidden></div>
+            </div>
+            <div class="step-actions">
+                <button id="btn-nm-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-nm-next" class="primary">Continue &#x203A;</button>
+            </div>
+        </section>

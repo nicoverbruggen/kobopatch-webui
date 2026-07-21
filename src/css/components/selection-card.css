@@ -1,6 +1,14 @@
 /* Unified selection card component.
    Replaces the old .mode-card and .nm-option classes with a single base + modifiers. */
 
+#step-connect .selection-cards .selection-card-title {
+    margin-bottom: 8px;
+}
+
+#step-connect .selection-cards .selection-card-icon {
+    margin-top: 5px;
+}
+
 .selection-cards {
     display: flex;
     flex-direction: column;
@@ -53,6 +61,7 @@
 }
 
 .selection-card-desc {
+    font-weight: 400;
     font-size: 0.83rem;
     color: var(--text-secondary);
     line-height: 1.5;
@@ -62,7 +71,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin-top: 0.55rem;
+    margin-top: 0.8rem;
+    margin-bottom: 0.1rem;
 }
 
 .selection-card-note {
@@ -70,7 +80,7 @@
     align-items: center;
     padding: 0.18rem 0.45rem;
     border: 1px solid var(--info-border);
-    border-radius: 999px;
+    border-radius: 5px;
     background: color-mix(in srgb, var(--info-bg) 45%, transparent);
     color: var(--info-text);
     font-size: 0.72rem;
@@ -90,7 +100,7 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--primary);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.5rem;
 }
 
 /* --- State modifiers --- */
@@ -140,10 +150,8 @@
 
 .selection-card--danger {
     &:not(.selection-card--disabled) {
-        border-color: var(--error-border);
-
         &:hover {
-            border-color: var(--error-text);
+            border-color: var(--error-border);
         }
     }
 

@@ -704,3 +704,10 @@ Change TOC level indentation:
       - {Find: "qproperty-indentUnit: 72;", Replace: "qproperty-indentUnit: 36;"} # storm
       - {Find: "qproperty-indentUnit: 76;", Replace: "qproperty-indentUnit: 38;"} # daylight
 
+Remove line from bottom tab bar via CSS:
+  - Enabled: no
+  - Description: Removes the line from the top of the bottom tab bar
+  - FindZlib: "#activeTabLine" # qss/MainNavButton.qss
+  - ReplaceZlibGroup:
+      Replacements:
+        - {Find: "solid", Replace: "none"}

@@ -4,25 +4,33 @@ import { gzipSync } from 'node:zlib';
 
 import JSZip from 'jszip';
 
-import customMenu from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import customMenu, { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import cadmus from '../../src/js/nickelmenu/features/cadmus/index.js';
-import { homeHiders } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
+import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
-import betterTypography from '../../src/js/nickelmenu/features/better-typography/index.js';
+import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
-import simplifyTabs from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
-import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
-import { NM_ITEMS_FILE } from '../../src/js/nickelmenu/constants.js';
+import simplifyTabs, {
+    TOGGLE_TABS_SCRIPT_URL,
+    tabLabelsFor,
+    defaultTabLabels,
+    tabOverrideLines,
+} from '../../src/js/nickelmenu/features/simplify-tabs/index.js';
 import {
-    isValidMenuLabel,
-    NM_MENU_ICON_CUSTOM_PNG_PATH,
-    sanitizeMenuLabel,
-} from '../../src/js/nickelmenu/customization.js';
-import { revertableConfSettings } from '../../src/js/nickelmenu/installer.js';
+    createDefaultTabsCustomization,
+    isDefaultTabsCustomization,
+    normalizeTabLabel,
+    sanitizeTabLabel,
+    visibleTabCount,
+} from '../../src/js/nickelmenu/features/simplify-tabs/customization.js';
+import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
+import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/constants.js';
+import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
+import { revertableConfSettings } from '../../src/js/kobo/configuration.js';
 import { createResponse, text } from './test-helpers.js';
 
-const hideNotices = homeHiders.find(f => f.id === 'hide-notices');
+const hideNotices = homeHiders.find((f) => f.id === 'hide-notices');
 
 async function createZip(entries) {
     const zip = new JSZip();
@@ -60,7 +68,7 @@ function createTarGzFixture(entries) {
         blocks.push(header);
         if (!isDirectory) {
             blocks.push(data);
-            const padding = (512 - data.length % 512) % 512;
+            const padding = (512 - (data.length % 512)) % 512;
             if (padding) blocks.push(Buffer.alloc(padding));
         }
     }
@@ -69,7 +77,7 @@ function createTarGzFixture(entries) {
     return gzipSync(Buffer.concat(blocks));
 }
 
-// Set the build-time installables manifest (normally injected by esbuild define)
+// Set the build-time installables manifest (normally injected by Vite define)
 // so features can resolve their pinned version and versioned asset URL in tests.
 async function withManifest(manifest, fn) {
     const original = globalThis.__INSTALLABLES__;
@@ -109,31 +117,52 @@ test('Additional Fonts install bundles all three families, strips ZIP dirs and i
         'KF_Cartisse-Regular.ttf': 'cartisse regular',
     });
 
-    await withMockFetch(new Map([
-        ['/assets/KF_Readerly.zip', createResponse(readerlyZip)],
-        ['/assets/KF_Libron.zip', createResponse(libronZip)],
-        ['/assets/KF_Cartisse.zip', createResponse(cartisseZip)],
-    ]), async () => {
-        const files = await additionalFonts.install({ progress() {} });
+    await withMockFetch(
+        new Map([
+            ['/assets/KF_Readerly.zip', createResponse(readerlyZip)],
+            ['/assets/KF_Libron.zip', createResponse(libronZip)],
+            ['/assets/KF_Cartisse.zip', createResponse(cartisseZip)],
+        ]),
+        async () => {
+            const files = await additionalFonts.install({ progress() {} });
 
-        assert.deepEqual(files.map(file => file.path), [
-            'fonts/KF_Readerly-Regular.ttf',
-            'fonts/KF_Readerly-Bold.ttf',
-            'fonts/KF_Readerly-Italic.ttf',
-            'fonts/KF_Libron-Regular.ttf',
-            'fonts/KF_Cartisse-Regular.ttf',
-        ]);
-        assert.equal(text(files[0].data), 'readerly regular');
-        assert.ok(files.every(file => file.data instanceof Uint8Array));
+            assert.deepEqual(
+                files.map((file) => file.path),
+                [
+                    'fonts/KF_Readerly-Regular.ttf',
+                    'fonts/KF_Readerly-Bold.ttf',
+                    'fonts/KF_Readerly-Italic.ttf',
+                    'fonts/KF_Libron-Regular.ttf',
+                    'fonts/KF_Cartisse-Regular.ttf',
+                ],
+            );
+            assert.equal(text(files[0].data), 'readerly regular');
+            assert.ok(files.every((file) => file.data instanceof Uint8Array));
+        },
+    );
+});
+
+test('Better typography and fixes exposes label and version', async () => {
+    assert.equal(betterTypography.title, 'Better typography and fixes');
+
+    await withManifest({ nickeltypefix: { version: 'v0.3', available: true } }, () => {
+        assert.equal(betterTypography.version(), 'v0.3');
+    });
+    await withManifest({ nickeltypefix: { version: 'v0.3', available: false } }, () => {
+        assert.equal(betterTypography.version(), null);
     });
 });
 
-test('Better Typography sets reading rendering and alignment; default font only when fonts are installed', () => {
+test('Better typography and fixes sets reading rendering; default font only when fonts are installed', () => {
     const readingDefaults = [
-        // webkitTextRendering is revertable (owned for removal); the others are
-        // general preferences applied once and never reverted.
-        { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null },
-        { section: 'Reading', key: 'readingAlignment', value: 'Left' },
+        // webkitTextRendering is revertable (owned for removal).
+        {
+            section: 'Reading',
+            key: 'webkitTextRendering',
+            value: 'optimizeLegibility',
+            revertable: true,
+            revertTo: null,
+        },
     ];
 
     // Without the additional fonts, the default reading font is left untouched.
@@ -141,32 +170,36 @@ test('Better Typography sets reading rendering and alignment; default font only 
     assert.deepEqual(betterTypography.confSettings(), readingDefaults);
 
     // With the additional fonts selected, KF Libron becomes the default font.
-    assert.deepEqual(
-        betterTypography.confSettings({ features: [{ id: 'additional-fonts' }] }),
-        [...readingDefaults, { section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' }],
-    );
+    assert.deepEqual(betterTypography.confSettings({ features: [{ id: 'additional-fonts' }] }), [
+        ...readingDefaults,
+        { section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' },
+    ]);
 });
 
-test('Better Typography ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {
-    // install() ships the on-device toggle script from the feature's own assets.
+test('Better typography and fixes ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {
     const requested = [];
     const ctx = {
-        async asset(path) {
-            requested.push(path);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('#!/bin/sh\ntoggle');
         },
     };
     const installed = await betterTypography.install(ctx);
-    assert.deepEqual(requested, ['scripts/toggle_typography.sh']);
-    assert.deepEqual(installed.map(f => f.path), ['.adds/nm/scripts/toggle_typography.sh']);
+    assert.deepEqual(requested, [TOGGLE_TYPOGRAPHY_SCRIPT_URL]);
+    assert.deepEqual(
+        installed.map((f) => f.path),
+        ['.adds/nm/scripts/toggle_typography.sh'],
+    );
 
     // menuItems() contributes the single "Typography" entry; its position
     // (the old "Legibility Toggle" slot) is set in features/menu-order.js.
     const entries = betterTypography.menuItems();
-    assert.deepEqual(entries, [{
-        id: 'typography',
-        lines: ['menu_item :main :Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
-    }]);
+    assert.deepEqual(entries, [
+        {
+            id: 'typography',
+            lines: ['menu_item :main :Typography :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_typography.sh'],
+        },
+    ]);
 });
 
 test('Sideload Mode sets SideloadedMode under ApplicationPreferences and declares a 4.31 floor', () => {
@@ -181,10 +214,7 @@ test('Sideload Mode sets SideloadedMode under ApplicationPreferences and declare
 
 test('Sideload Mode comments out the home-tab override so the home tab is hidden', () => {
     // simplify-tabs force-enables the home tab; Sideload Mode must comment it out.
-    const files = itemsFiles(
-        'experimental :menu_main_15505_0_enabled: 1',
-        'experimental :menu_main_15505_1_label: Books',
-    );
+    const files = itemsFiles('experimental :menu_main_15505_0_enabled: 1', 'experimental :menu_main_15505_1_label: Books');
     const result = itemsText(sideloadedMode.postProcess(files));
     const lines = result.split('\n');
 
@@ -215,34 +245,44 @@ test('Sideload Mode cleanup is conf-only: detect/revert derive from its revertab
 });
 
 test('KOReader contributes its launcher entry at the top of the menu', () => {
-    assert.deepEqual(koreader.menuItems(), [{
-        id: 'koreader',
-        lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
-    }]);
+    assert.deepEqual(koreader.menuItems(), [
+        {
+            id: 'koreader',
+            lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+        },
+    ]);
 });
 
 test('Cadmus contributes its launcher entry at the top of the menu', () => {
-    assert.equal(cadmus.section, 'Reading Apps');
-    assert.deepEqual(cadmus.menuItems(), [{
-        id: 'cadmus',
-        lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
-    }]);
+    assert.equal(cadmus.section, 'Alternative reading apps');
+    assert.deepEqual(cadmus.menuItems(), [
+        {
+            id: 'cadmus',
+            lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+        },
+    ]);
 });
 
-test('Better Typography cleanup removes the toggle script and the WebKit setting', () => {
+test('Better typography and fixes cleanup removes the toggle script, NickelTypeFix, and the WebKit setting', () => {
     const { cleanup } = betterTypography;
 
     assert.equal(cleanup.mode, 'optional');
     // The toggle script is cleaned up by explicit path (alongside NM recursive
-    // .adds/nm deletion) for robustness. Detection is from the revertable conf.
-    assert.deepEqual(cleanup.paths, [
-        { path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] },
-    ]);
-    assert.equal(cleanup.detect, undefined);
+    // .adds/nm deletion) for robustness; NickelTypeFix is removed by deleting
+    // its directory (its uninstall_xflag makes the mod self-remove on reboot).
+    // Detection is the revertable conf setting or the mod's directory.
+    assert.deepEqual(cleanup.paths, [{ path: ['.adds', 'nm', 'scripts', 'toggle_typography.sh'] }, { path: ['.adds', 'nickel-type-fix'], recursive: true }]);
+    assert.deepEqual(cleanup.detect, [['.adds', 'nickel-type-fix']]);
     assert.equal(cleanup.detectConf, undefined);
     assert.equal(cleanup.revertConf, undefined);
     assert.deepEqual(revertableConfSettings(betterTypography), [
-        { section: 'Reading', key: 'webkitTextRendering', value: 'optimizeLegibility', revertable: true, revertTo: null },
+        {
+            section: 'Reading',
+            key: 'webkitTextRendering',
+            value: 'optimizeLegibility',
+            revertable: true,
+            revertTo: null,
+        },
     ]);
 });
 
@@ -254,25 +294,21 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
     const progressMessages = [];
 
     await withManifest({ koreader: { version: 'v2026.01', available: true } }, () =>
-        withMockFetch(new Map([
-            ['/assets/koreader-kobo.zip?v=v2026.01', createResponse(zipData)],
-        ]), async () => {
+        withMockFetch(new Map([['/assets/koreader-kobo.zip?v=v2026.01', createResponse(zipData)]]), async () => {
             const files = await koreader.install({
                 progress(message) {
                     progressMessages.push(message);
                 },
             });
 
-            assert.deepEqual(files.map(file => file.path), [
-                '.adds/koreader/koreader.sh',
-                '.adds/koreader/defaults.lua',
-            ]);
+            assert.deepEqual(
+                files.map((file) => file.path),
+                ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua'],
+            );
             assert.equal(text(files[0].data), '#!/bin/sh');
-            assert.deepEqual(progressMessages, [
-                'Downloading KOReader v2026.01...',
-                'Extracting KOReader...',
-            ]);
-        }));
+            assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);
+        }),
+    );
 });
 
 test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {
@@ -285,40 +321,149 @@ test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {
     const progressMessages = [];
 
     await withManifest({ cadmus: { version: 'v0.10.1', available: true } }, () =>
-        withMockFetch(new Map([
-            ['/assets/cadmus-kobo.tar.gz?v=v0.10.1', createResponse(tarData)],
-        ]), async () => {
+        withMockFetch(new Map([['/assets/cadmus-kobo.tar.gz?v=v0.10.1', createResponse(tarData)]]), async () => {
             const files = await cadmus.install({
                 progress(message) {
                     progressMessages.push(message);
                 },
             });
 
-            assert.deepEqual(files.map(file => file.path), [
-                '.adds/cadmus/cadmus.sh',
-                '.adds/cadmus/libs/libcadmus.so',
-            ]);
+            assert.deepEqual(
+                files.map((file) => file.path),
+                ['.adds/cadmus/cadmus.sh', '.adds/cadmus/libs/libcadmus.so'],
+            );
             assert.equal(text(files[0].data), '#!/bin/sh');
-            assert.deepEqual(progressMessages, [
-                'Downloading Cadmus v0.10.1...',
-                'Extracting Cadmus...',
-            ]);
-        }));
+            assert.deepEqual(progressMessages, ['Downloading Cadmus v0.10.1...', 'Extracting Cadmus...']);
+        }),
+    );
 });
 
-test('NickelMenu postProcess features prepend tab config and append hide flags', () => {
-    const files = [
-        { path: NM_ITEMS_FILE, data: 'menu_item :main :base' },
-    ];
+test('NickelMenu postProcess features prepend tab config; hide flags go to NickelHome config', () => {
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
 
-    const processed = hideNotices.postProcess(
-        simplifyTabs.postProcess(files)
-    );
-    const items = processed[0].data;
+    const processed = hideNotices.postProcess(simplifyTabs.postProcess(files));
+    const items = processed.find((f) => f.path === NM_ITEMS_FILE).data;
+    const homeCfg = processed.find((f) => f.path === NICKELHOME_CONFIG_FILE).data;
 
-    // simplify-tabs prepends its tab config block, hide-notices appends its flag.
+    // simplify-tabs prepends its tab config block to the items file...
     assert.match(items, /^experimental :menu_main_15505_0_enabled: 1\n/);
-    assert.match(items, /menu_item :main :base\nexperimental:hide_home_row3_enabled:1\n$/);
+    // ...while hide-notices writes its flag to NickelHome's own config, not the items file.
+    assert.doesNotMatch(items, /hide_home_row3_enabled/);
+    assert.match(homeCfg, /hide_home_row3_enabled:1\n$/);
+});
+
+test('simplify-tabs renames tabs in English with the possessive dropped and "Stats" for Activity', () => {
+    assert.deepEqual(tabLabelsFor('en'), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+    // Region variants resolve by language subtag.
+    assert.deepEqual(tabLabelsFor('en_US'), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+
+    const lines = tabOverrideLines('en_GB');
+    assert.ok(lines.includes('experimental :menu_main_15505_1_label: Books'));
+    assert.ok(lines.includes('experimental :menu_main_15505_2_label: Stats'));
+    assert.ok(lines.includes('experimental :menu_main_15505_3_label: Notes'));
+});
+
+test('simplify-tabs uses localized labels for a translated non-English language', () => {
+    assert.deepEqual(tabLabelsFor('fr_CA'), { books: 'Livres', stats: 'Stats', notes: 'Notes' });
+
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
+    const items = simplifyTabs.postProcess(files, { deviceInfo: { uiLocale: 'de' } })[0].data;
+    assert.match(items, /^experimental :menu_main_15505_1_label: Bücher$/m);
+    assert.match(items, /^experimental :menu_main_15505_2_label: Stats$/m);
+    assert.match(items, /^experimental :menu_main_15505_3_label: Notizen$/m);
+    // Structural lines are still present.
+    assert.match(items, /^experimental :menu_main_15505_enabled: 1$/m);
+});
+
+test('simplify-tabs omits the label lines for an untranslated language so the device keeps its names', () => {
+    assert.equal(tabLabelsFor('ja'), null);
+
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
+    const items = simplifyTabs.postProcess(files, { deviceInfo: { uiLocale: 'ja' } })[0].data;
+    assert.doesNotMatch(items, /_label:/);
+    // The structural tab overrides are still applied.
+    assert.match(items, /^experimental :menu_main_15505_0_enabled: 1$/m);
+    assert.match(items, /^experimental :menu_main_15505_enabled: 1$/m);
+});
+
+test('simplify-tabs falls back to the English defaults when the locale is unknown (manual connection / download)', () => {
+    // The raw translation lookup has nothing for an unknown locale...
+    assert.equal(tabLabelsFor(null), null);
+    assert.equal(tabLabelsFor(undefined), null);
+    // ...but the applied default falls back to English so the tabs are still
+    // renamed (matching the dialog placeholders and the pre-customization
+    // behaviour), rather than leaving the device's own "My Books" names.
+    assert.deepEqual(defaultTabLabels(null), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+    assert.deepEqual(defaultTabLabels(undefined), { books: 'Books', stats: 'Stats', notes: 'Notes' });
+
+    // No ctx at all (download flow) and an explicit null locale both apply the
+    // English default labels.
+    const noCtx = simplifyTabs.postProcess([{ path: NM_ITEMS_FILE, data: 'base' }])[0].data;
+    const nullLocale = simplifyTabs.postProcess([{ path: NM_ITEMS_FILE, data: 'base' }], { deviceInfo: { uiLocale: null } })[0].data;
+    for (const items of [noCtx, nullLocale]) {
+        assert.match(items, /^experimental :menu_main_15505_1_label: Books$/m);
+        assert.match(items, /^experimental :menu_main_15505_2_label: Stats$/m);
+        assert.match(items, /^experimental :menu_main_15505_3_label: Notes$/m);
+    }
+    assert.match(noCtx, /^experimental :menu_main_15505_0_enabled: 1$/m);
+});
+
+test('simplify-tabs visibility customization toggles the optional tab _enabled lines', () => {
+    // Default customization matches the historical behaviour: show Stats, hide
+    // Notes and the store.
+    const def = tabOverrideLines('en', createDefaultTabsCustomization());
+    assert.ok(def.includes('experimental :menu_main_15505_2_enabled: 1'));
+    assert.ok(def.includes('experimental :menu_main_15505_3_enabled: 0'));
+    assert.ok(def.includes('experimental :menu_main_15505_4_enabled: 0'));
+
+    // Flip every optional tab: hide Stats, show Notes and the store.
+    const custom = tabOverrideLines('en', { visibility: { stats: false, notes: true, store: true } });
+    assert.ok(custom.includes('experimental :menu_main_15505_2_enabled: 0'));
+    assert.ok(custom.includes('experimental :menu_main_15505_3_enabled: 1'));
+    assert.ok(custom.includes('experimental :menu_main_15505_4_enabled: 1'));
+    // Home / More / default / enabled remain structural.
+    assert.ok(custom.includes('experimental :menu_main_15505_0_enabled: 1'));
+    assert.ok(custom.includes('experimental :menu_main_15505_5_enabled: 1'));
+    assert.ok(custom.includes('experimental :menu_main_15505_default: 1'));
+});
+
+test('simplify-tabs explicit labels win over the locale defaults, and a blank label omits its line', () => {
+    // Explicit labels override even the localized defaults.
+    const custom = { labels: { books: 'Library', stats: 'Activity', notes: 'Ideas' }, visibility: { stats: true, notes: false, store: false } };
+    const lines = tabOverrideLines('de', custom);
+    assert.ok(lines.includes('experimental :menu_main_15505_1_label: Library'));
+    assert.ok(lines.includes('experimental :menu_main_15505_2_label: Activity'));
+    assert.ok(lines.includes('experimental :menu_main_15505_3_label: Ideas'));
+    assert.ok(!lines.some((l) => /_label:.*Bücher/.test(l)));
+
+    // A blank (or whitespace-only) label omits just that tab's _label line while
+    // keeping the others.
+    const partial = tabOverrideLines('en', { labels: { books: 'Reads', stats: '', notes: '  ' } });
+    assert.ok(partial.includes('experimental :menu_main_15505_1_label: Reads'));
+    assert.ok(!partial.some((l) => l.startsWith('experimental :menu_main_15505_2_label:')));
+    assert.ok(!partial.some((l) => l.startsWith('experimental :menu_main_15505_3_label:')));
+});
+
+test('simplify-tabs postProcess threads a tabsCustomization from the install context', () => {
+    const files = [{ path: NM_ITEMS_FILE, data: 'menu_item :main :base' }];
+    const items = simplifyTabs.postProcess(files, {
+        deviceInfo: { uiLocale: 'en' },
+        tabsCustomization: { labels: { books: 'Books', stats: 'Stats', notes: 'Notes' }, visibility: { stats: false, notes: true, store: true } },
+    })[0].data;
+    assert.match(items, /^experimental :menu_main_15505_2_enabled: 0$/m);
+    assert.match(items, /^experimental :menu_main_15505_3_enabled: 1$/m);
+    assert.match(items, /^experimental :menu_main_15505_4_enabled: 1$/m);
+});
+
+test('simplify-tabs label sanitizer strips config-breaking characters and caps length', () => {
+    assert.equal(sanitizeTabLabel('My: Books\n'), 'My Books');
+    assert.equal(sanitizeTabLabel('ThisIsAReallyLongLabel'), 'ThisIsAReall'); // 12 chars
+    assert.equal(normalizeTabLabel('  spaced  '), 'spaced');
+    assert.equal(visibleTabCount(createDefaultTabsCustomization()), 4);
+    assert.equal(visibleTabCount({ visibility: { stats: true, notes: true, store: true } }), 6);
+    assert.equal(isDefaultTabsCustomization(createDefaultTabsCustomization()), true);
+    assert.equal(isDefaultTabsCustomization({ visibility: { stats: false } }), false);
+    assert.equal(isDefaultTabsCustomization({ labels: { books: 'X' } }), false);
 });
 
 test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab override can be commented out', () => {
@@ -337,19 +482,21 @@ test('simplify-tabs postProcess runs before sideloaded-mode so the home-tab over
     assert.match(items, /menu_item :main :Power :power :reboot/);
 });
 
-const AURA_HD = { serialPrefix: 'N204', model: 'Kobo Aura HD' };       // no Dark mode
-const LIBRA_COLOUR = { serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
+// Dark mode support is keyed on the hardware UUID, so these carry the real UUID
+// (the serial prefix is included to mirror a parsed deviceInfo).
+const AURA_HD = { hardwareId: '00000000-0000-0000-0000-000000000350', serialPrefix: 'N204', model: 'Kobo Aura HD' }; // no Dark mode
+const LIBRA_COLOUR = { hardwareId: '00000000-0000-0000-0000-000000000390', serialPrefix: 'N428', model: 'Kobo Libra Colour' }; // Dark mode
 
 function itemsFiles(...lines) {
     return [{ path: NM_ITEMS_FILE, data: lines.join('\n') }];
 }
 
 function itemsText(files) {
-    return files.find(f => f.path === NM_ITEMS_FILE).data;
+    return files.find((f) => f.path === NM_ITEMS_FILE).data;
 }
 
 test('custom menu omits the Dark Mode item on unsupported devices', () => {
-    const ids = customMenu.menuItems({ deviceInfo: AURA_HD }).map(e => e.id);
+    const ids = customMenu.menuItems({ deviceInfo: AURA_HD }).map((e) => e.id);
     assert.ok(!ids.includes('dark-mode'));
     // The rest of the base menu is still present.
     assert.ok(ids.includes('tweak-header'));
@@ -358,22 +505,24 @@ test('custom menu omits the Dark Mode item on unsupported devices', () => {
 
 test('custom menu includes the Dark Mode item on supported devices', () => {
     const entries = customMenu.menuItems({ deviceInfo: LIBRA_COLOUR });
-    const darkMode = entries.find(e => e.id === 'dark-mode');
+    const darkMode = entries.find((e) => e.id === 'dark-mode');
     assert.deepEqual(darkMode.lines, ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode']);
 });
 
 test('custom menu includes the Dark Mode item when the device is unknown (manual mode)', () => {
-    const ids = customMenu.menuItems({}).map(e => e.id);
+    const ids = customMenu.menuItems({}).map((e) => e.id);
     assert.ok(ids.includes('dark-mode'));
 });
 
 test('custom menu uses the configured tab label and custom icon path', () => {
-    const header = customMenu.menuItems({
-        menuCustomization: {
-            label: 'Read',
-            icon: { type: 'preset', id: 'spark', mimeType: 'image/png', data: new Uint8Array([1, 2, 3]) },
-        },
-    }).find(e => e.id === 'tweak-header');
+    const header = customMenu
+        .menuItems({
+            menuCustomization: {
+                label: 'Read',
+                icon: { type: 'preset', id: 'spark', mimeType: 'image/png', data: new Uint8Array([1, 2, 3]) },
+            },
+        })
+        .find((e) => e.id === 'tweak-header');
 
     assert.deepEqual(header.lines, [
         'experimental :menu_main_15505_label :Read',
@@ -399,7 +548,7 @@ test('screensaver feature contributes its Tweak menu toggle near the top of the 
     assert.equal(entries.length, 1);
     assert.equal(entries[0].id, 'screensaver');
     assert.equal(entries[0].lines[0], 'menu_item :main :Screensaver :cmd_output :500 :quiet :test -e /mnt/onboard/.disabled/screensaver');
-    assert.ok(entries[0].lines.some(l => /Screensaver is now ON/.test(l)));
+    assert.ok(entries[0].lines.some((l) => /Screensaver is now ON/.test(l)));
 });
 
 test('custom menu reviewNotices warns only on unsupported devices', () => {
@@ -416,74 +565,117 @@ test('custom menu install ships only the menu icon when no hiders are selected',
     const requested = [];
     const ctx = {
         features: [],
-        async asset(path) {
-            requested.push(path);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('asset');
         },
     };
 
     const files = await customMenu.install(ctx);
 
-    assert.deepEqual(requested, ['.cog.png']);
-    assert.deepEqual(files.map(file => file.path), ['.adds/nm/.cog.png']);
+    assert.deepEqual(requested, [CUSTOM_MENU_ICON_URL]);
+    assert.deepEqual(
+        files.map((file) => file.path),
+        ['.adds/nm/.cog.png'],
+    );
 });
 
 test('home-content hiders share one toggle item and append distinct flags', () => {
     // Every hider contributes the identical shared toggle entry (same id, same
     // script), so the installer can de-duplicate them into a single Tweak item.
-    const toggleIds = homeHiders.map(h => h.menuItems()[0].id);
+    const toggleIds = homeHiders.map((h) => h.menuItems()[0].id);
     assert.deepEqual(toggleIds, ['toggle-hidden-home', 'toggle-hidden-home', 'toggle-hidden-home']);
     assert.match(homeHiders[0].menuItems()[0].lines[0], /toggle_hidden_home\.sh$/);
 
-    // ...but each appends its own experimental flag to the items file.
-    const flags = homeHiders.map(h => {
-        const files = h.postProcess([{ path: NM_ITEMS_FILE, data: '' }]);
-        return files.find(f => f.path === NM_ITEMS_FILE).data.trim();
+    // ...but each writes its own hide flag to NickelHome's config (no experimental: prefix).
+    const flags = homeHiders.map((h) => {
+        const files = h.postProcess([]);
+        const cfg = files.find((f) => f.path === NICKELHOME_CONFIG_FILE);
+        return cfg.data
+            .trim()
+            .split('\n')
+            .filter((l) => l.startsWith('hide_home_'))
+            .join('\n');
     });
-    assert.deepEqual(flags, [
-        'experimental:hide_home_row1col2_enabled:1',
-        'experimental:hide_home_row2col2_enabled:1',
-        'experimental:hide_home_row3_enabled:1',
+    assert.deepEqual(flags, ['hide_home_row1col2_enabled:1', 'hide_home_row2col2_enabled:1', 'hide_home_row3_enabled:1']);
+
+    // The config carries NickelHome's master switch, which the "Minimal Home" toggle flips.
+    assert.match(homeHiders[0].postProcess([]).find((f) => f.path === NICKELHOME_CONFIG_FILE).data, /^nhm_enabled:1$/m);
+
+    // Multiple selected hiders merge into a single NickelHome config file (one nhm_enabled line).
+    let merged = [];
+    for (const h of homeHiders) merged = h.postProcess(merged);
+    const cfg = merged.find((f) => f.path === NICKELHOME_CONFIG_FILE);
+    assert.equal(merged.filter((f) => f.path === NICKELHOME_CONFIG_FILE).length, 1);
+    assert.equal((cfg.data.match(/^nhm_enabled:1$/gm) || []).length, 1);
+    assert.match(cfg.data, /hide_home_row1col2_enabled:1/);
+    assert.match(cfg.data, /hide_home_row2col2_enabled:1/);
+    assert.match(cfg.data, /hide_home_row3_enabled:1/);
+});
+
+test('the home hiders expose a single NickelHome cleanup covering both folder names', () => {
+    // One shared cleanup, not one per hider, so removal shows a single "Remove NickelHome".
+    const withCleanup = homeHiders.filter((h) => h.cleanup);
+    assert.equal(withCleanup.length, 1);
+    const c = withCleanup[0].cleanup;
+    assert.equal(c.mode, 'optional');
+    assert.equal(c.title, 'NickelHome');
+    // Detects and removes both the current and the pre-v0.6 folder names.
+    assert.deepEqual(c.detect, [
+        ['.adds', 'nickel-home'],
+        ['.adds', 'nickelhome'],
     ]);
+    const removedDirs = c.paths.filter((p) => p.recursive).map((p) => p.path.join('/'));
+    assert.ok(removedDirs.includes('.adds/nickel-home'));
+    assert.ok(removedDirs.includes('.adds/nickelhome'));
 });
 
 test('a home-content hider ships the shared toggle script to .adds/nm/scripts', async () => {
-    // The hider fetches the shared script by its real path via ctx.sharedAsset(),
-    // which the installer routes through its per-run, de-duplicating asset cache.
+    // The hider fetches the shared script by its Vite-tracked URL, which the
+    // installer routes through its per-run, de-duplicating asset cache.
     let requestedUrl = null;
     const ctx = {
-        async sharedAsset(url) {
+        async bundledAsset(url) {
             requestedUrl = url;
             return new TextEncoder().encode('toggle home');
         },
     };
 
     const files = await hideNotices.install(ctx);
-    assert.equal(requestedUrl, 'js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh');
-    assert.deepEqual(files.map(file => file.path), ['.adds/nm/scripts/toggle_hidden_home.sh']);
+    assert.equal(requestedUrl, TOGGLE_HIDDEN_HOME_SCRIPT_URL);
+    assert.deepEqual(
+        files.map((file) => file.path),
+        ['.adds/nm/scripts/toggle_hidden_home.sh'],
+    );
 });
 
 test('simplify-tabs owns its navigation-tab toggle script and item', async () => {
     const requested = [];
     const ctx = {
-        async asset(path) {
-            requested.push(path);
+        async bundledAsset(url) {
+            requested.push(url);
             return new TextEncoder().encode('script');
         },
     };
 
     const files = await simplifyTabs.install(ctx);
 
-    assert.deepEqual(requested, ['scripts/toggle_tabs.sh']);
-    assert.deepEqual(files.map(file => file.path), ['.adds/nm/scripts/toggle_tabs.sh']);
+    assert.deepEqual(requested, [TOGGLE_TABS_SCRIPT_URL]);
+    assert.deepEqual(
+        files.map((file) => file.path),
+        ['.adds/nm/scripts/toggle_tabs.sh'],
+    );
 
     const items = simplifyTabs.menuItems();
-    assert.deepEqual(items.map(e => e.id), ['toggle-tabs']);
+    assert.deepEqual(
+        items.map((e) => e.id),
+        ['toggle-tabs'],
+    );
     assert.match(items[0].lines[0], /toggle_tabs\.sh$/);
 });
 
 test('custom menu never contributes toggle items itself', () => {
     // The toggles are owned by the hide-home-content and simplify-tabs features.
-    const ids = customMenu.menuItems({ features: [{ id: 'koreader' }] }).map(e => e.id);
-    assert.ok(!ids.some(id => id.startsWith('toggle-')));
+    const ids = customMenu.menuItems({ features: [{ id: 'koreader' }] }).map((e) => e.id);
+    assert.ok(!ids.some((id) => id.startsWith('toggle-')));
 });

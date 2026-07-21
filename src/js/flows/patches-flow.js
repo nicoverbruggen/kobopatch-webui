@@ -1,101 +1,271 @@
 /**
- * patches-flow.js — Custom firmware patching flow.
+ * patches-flow.js — The Custom Patches wizard flow.
  *
- * Handles the entire custom-patches path through the wizard:
- *   1. Configure patches — toggle individual patches on/off
- *   2. Review & build    — confirm selections, download firmware, apply patches
- *   3. Install/download  — write KoboRoot.tgz to device or trigger browser download
- *
- * Also supports "restore" mode where no patches are applied — the original
- * KoboRoot.tgz is extracted from the firmware ZIP and offered as-is.
- *
- * Exported `initPatchesFlow(state)` receives the shared app state and returns
- * functions the orchestrator needs: `goToPatches`, `goToBuild`,
- * `updatePatchCount`, and `configureFirmwareStep`.
+ * Owns the patches → build → done steps: patch selection UI wiring, firmware
+ * download/patch orchestration (via patches-execute.js), and writing or
+ * downloading the resulting KoboRoot.tgz plus its manifest and conf side effects.
  */
 
-import { AuditLog, AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { $, formatMB, fetchWithProgress, triggerDownload, populateList, setupFeedback } from '../shell/dom.js';
-import { showStep, setNavLabels, setNavStep } from '../shell/navigation.js';
+import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
+import { collect, formatBytes, populateList, renderDownloadConfSettings } from '../shell/dom.js';
+import { createFlow } from '../shell/step-machine.js';
+import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
-import { koboModels } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
-import { isEnabled as analyticsEnabled, track } from '../shell/analytics.js';
-import JSZip from 'jszip';
+import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher, buildPatchesManifest, checkExistingTgz } from './patches-execute.js';
+import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../patches/side-effects.js';
+import { getPatchMeta } from '../patches/patch-metadata.js';
+import { openBlacklistDialog } from '../patches/patch-list-view.js';
+import {
+    buildAdditionalFilesTgz,
+    mergeAdditionalFilesIntoTgz,
+    readAdditionalFilesArchive,
+    sha256Hex,
+    additionalFilesArchiveName,
+    patchManifestName,
+} from '../patches/additional-files.js';
 
 export function initPatchesFlow(state) {
+    const {
+        'step-done': stepDone,
+        'patch-container': patchContainer,
+        'patch-reload-banner': patchReloadBanner,
+        'patch-reload-text': patchReloadText,
+        'btn-patch-reload': btnPatchReload,
+        'patch-reload-dialog': patchReloadDialog,
+        'btn-patch-reload-dialog-close': btnPatchReloadDialogClose,
+        'patch-reload-dialog-intro': patchReloadDialogIntro,
+        'patch-reload-dialog-list': patchReloadDialogList,
+        'patch-reload-dialog-notes': patchReloadDialogNotes,
+        'patch-reload-dialog-footnote': patchReloadDialogFootnote,
+        'patch-reload-dialog-modified-note': patchReloadDialogModifiedNote,
+        'patch-reload-dialog-additional-summary': patchReloadDialogAdditionalSummary,
+        'patch-reload-dialog-additional-note': patchReloadDialogAdditionalNote,
+        'patch-advanced-section': patchAdvancedSection,
+        'btn-patch-blacklist': btnPatchBlacklist,
+        'patch-original-format': patchOriginalFormat,
+        'btn-patch-additional-files': btnPatchAdditionalFiles,
+        'patch-additional-file-input': patchAdditionalFileInput,
+        'patch-additional-files-empty': patchAdditionalFilesEmpty,
+        'patch-additional-files-list': patchAdditionalFilesList,
+        'patch-additional-files-error': patchAdditionalFilesError,
+        'btn-patches-back': btnPatchesBack,
+        'btn-patches-next': btnPatchesNext,
+        'btn-build-back': btnBuildBack,
+        'btn-build': btnBuild,
+        'btn-write': btnWrite,
+        'btn-download': btnDownload,
+        'build-progress': buildProgress,
+        'build-log': buildLog,
+        'build-status': buildStatus,
+        'existing-tgz-warning': existingTgzWarning,
+        'write-instructions': writeInstructions,
+        'download-instructions': downloadInstructions,
+        'write-conf-settings-note': writeConfSettingsNote,
+        'patch-download-conf-settings-step': patchDownloadConfSettingsStep,
+        'patch-download-conf-settings': patchDownloadConfSettings,
+        'firmware-version-label': firmwareVersionLabel,
+        'firmware-device-label': firmwareDeviceLabel,
+        'firmware-description': firmwareDescription,
+        'firmware-download-details': firmwareDownloadDetails,
+        'patch-count-hint': patchCountHint,
+        'done-log': _doneLog,
+        'selected-patches-list': _selectedPatchesList,
+        'selected-patches-heading': _selectedPatchesHeading,
+        'selected-additional-files-list': _selectedAdditionalFilesList,
+        'selected-additional-files-heading': _selectedAdditionalFilesHeading,
+        'build-wait-hint': _buildWaitHint,
+        'firmware-download-url': _firmwareDownloadUrl,
+        'download-device-name': _downloadDeviceName,
+    } = collect([
+        'step-done',
+        'patch-container',
+        'patch-reload-banner',
+        'patch-reload-text',
+        'btn-patch-reload',
+        'patch-reload-dialog',
+        'btn-patch-reload-dialog-close',
+        'patch-reload-dialog-intro',
+        'patch-reload-dialog-list',
+        'patch-reload-dialog-notes',
+        'patch-reload-dialog-footnote',
+        'patch-reload-dialog-modified-note',
+        'patch-reload-dialog-additional-summary',
+        'patch-reload-dialog-additional-note',
+        'patch-advanced-section',
+        'btn-patch-blacklist',
+        'patch-original-format',
+        'btn-patch-additional-files',
+        'patch-additional-file-input',
+        'patch-additional-files-empty',
+        'patch-additional-files-list',
+        'patch-additional-files-error',
+        'btn-patches-back',
+        'btn-patches-next',
+        'btn-build-back',
+        'btn-build',
+        'btn-write',
+        'btn-download',
+        'build-progress',
+        'build-log',
+        'build-status',
+        'existing-tgz-warning',
+        'write-instructions',
+        'download-instructions',
+        'write-conf-settings-note',
+        'patch-download-conf-settings-step',
+        'patch-download-conf-settings',
+        'firmware-version-label',
+        'firmware-device-label',
+        'firmware-description',
+        'firmware-download-details',
+        'patch-count-hint',
+        'done-log',
+        'selected-patches-list',
+        'selected-patches-heading',
+        'selected-additional-files-list',
+        'selected-additional-files-heading',
+        'build-wait-hint',
+        'firmware-download-url',
+        'download-device-name',
+    ]);
 
-    // --- DOM references (scoped to this flow) ---
+    const steps = [
+        {
+            id: 'patches',
+            domId: 'step-patches',
+            navLabels: TL.NAV_PATCHES,
+            navIndex: 3,
+            recoveryStep: 'patches',
+            onEnter: async () => {
+                void maybeOfferReload();
+            },
+        },
+        {
+            id: 'firmware',
+            domId: 'step-firmware',
+            navLabels: TL.NAV_PATCHES,
+            navIndex: 4,
+            recoveryStep: 'patches',
+            back: (ctx) => (ctx.isRestore ? null : 'patches'),
+            onEnter: async () => {
+                const additionalFilesOnly = !state.isRestore && state.patchUI.getEnabledCount() === 0;
+                if (state.isRestore) {
+                    firmwareDescription.textContent = TL.STATUS.RESTORE_ORIGINAL;
+                    btnBuild.textContent = TL.BUTTON.RESTORE_ORIGINAL;
+                } else if (additionalFilesOnly) {
+                    firmwareDescription.textContent = TL.STATUS.ADDITIONAL_FILES_ONLY;
+                    btnBuild.textContent = TL.BUTTON.BUILD_ADDITIONAL_FILES;
+                } else {
+                    firmwareDescription.textContent = TL.STATUS.FIRMWARE_WILL_BE_DOWNLOADED;
+                    btnBuild.textContent = TL.BUTTON.BUILD_PATCHED;
+                }
+                // The download URL is only relevant when the firmware is actually fetched.
+                firmwareDownloadDetails.hidden = additionalFilesOnly;
+                populateSelectedPatchesList();
+            },
+        },
+        {
+            id: 'building',
+            domId: 'step-building',
+            transient: true,
+            recoveryStep: 'patches',
+        },
+        {
+            id: 'done',
+            domId: 'step-done',
+            navLabels: TL.NAV_PATCHES,
+            navIndex: 5,
+            onEnter: async () => {
+                const additionalFilesOnly = !state.isRestore && state.patchUI.getEnabledCount() === 0;
+                const action = state.isRestore ? 'Software extracted' : additionalFilesOnly ? 'Files packaged' : 'Patching complete';
+                const description = state.isRestore ? 'This will restore the original unpatched software.' : '';
+                const deviceName = state.deviceModelLabel || 'Kobo';
+                const installHint = state.manualMode
+                    ? 'Download the file and copy it to your ' + deviceName + '.'
+                    : 'Write it directly to your connected Kobo, or download for manual installation.';
 
-    const stepPatches = $('step-patches');
-    const stepBuilding = $('step-building');
-    const stepDone = $('step-done');
-    const patchContainer = $('patch-container');
-    const patchReloadBanner = $('patch-reload-banner');
-    const patchReloadText = $('patch-reload-text');
-    const btnPatchReload = $('btn-patch-reload');
-    const btnPatchesBack = $('btn-patches-back');
-    const btnPatchesNext = $('btn-patches-next');
-    const btnBuildBack = $('btn-build-back');
-    const btnBuild = $('btn-build');
-    const btnWrite = $('btn-write');
-    const btnDownload = $('btn-download');
-    const buildProgress = $('build-progress');
-    const buildLog = $('build-log');
-    const buildStatus = $('build-status');
-    const existingTgzWarning = $('existing-tgz-warning');
-    const writeInstructions = $('write-instructions');
-    const downloadInstructions = $('download-instructions');
-    const firmwareVersionLabel = $('firmware-version-label');
-    const firmwareDeviceLabel = $('firmware-device-label');
-    const firmwareDescription = $('firmware-description');
-    const patchCountHint = $('patch-count-hint');
+                buildStatus.innerHTML =
+                    action +
+                    '. <strong>KoboRoot.tgz</strong> (' +
+                    formatBytes(state.resultTgz.length) +
+                    ') is ready. ' +
+                    (description ? description + ' ' : '') +
+                    installHint;
 
-    // --- Patch count ---
-    // Updates the hint text below the patch list ("3 patches selected", etc.).
-    // Also wired as the onChange callback on PatchUI so it updates live.
+                const doneLog = _doneLog;
+                doneLog.textContent = buildLog.textContent;
+
+                btnWrite.hidden = state.manualMode;
+                btnWrite.disabled = false;
+                btnWrite.className = 'primary';
+                btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
+                btnDownload.disabled = false;
+                writeInstructions.hidden = true;
+                writeConfSettingsNote.hidden = true;
+                downloadInstructions.hidden = true;
+                patchDownloadConfSettingsStep.hidden = true;
+                existingTgzWarning.hidden = true;
+
+                terminal.wireFeedback();
+
+                requestAnimationFrame(() => {
+                    doneLog.scrollTop = doneLog.scrollHeight;
+                });
+
+                if (await checkExistingTgz(state.device, state.manualMode)) {
+                    existingTgzWarning.hidden = false;
+                }
+            },
+        },
+    ];
+
+    const flow = createFlow({ id: 'patches', steps });
+    const terminal = createTerminal({
+        doneStep: stepDone,
+        showError: (...args) => state.showError(...args),
+    });
 
     function updatePatchCount() {
         const count = state.patchUI.getEnabledCount();
-        btnPatchesNext.disabled = false;
-        if (count === 0) {
+        const additionalCount = state.patchUI.getAdditionalFileCount();
+        const additionalValidation = state.patchUI.validateAdditionalFiles();
+        btnPatchesNext.disabled = !additionalValidation.ok;
+        renderAdditionalFiles();
+        patchAdditionalFilesError.hidden = additionalValidation.ok;
+        patchAdditionalFilesError.textContent = additionalValidation.message;
+        if (!additionalValidation.ok) patchAdvancedSection.open = true;
+
+        if (count === 0 && additionalCount === 0) {
             patchCountHint.textContent = TL.STATUS.PATCH_COUNT_ZERO;
-        } else {
+        } else if (count === 0) {
+            patchCountHint.textContent = additionalCount === 1 ? TL.STATUS.PATCH_EXTRA_FILE_COUNT_ONE : TL.STATUS.PATCH_EXTRA_FILE_COUNT_MULTI(additionalCount);
+        } else if (additionalCount === 0) {
             patchCountHint.textContent = count === 1 ? TL.STATUS.PATCH_COUNT_ONE : TL.STATUS.PATCH_COUNT_MULTI(count);
+        } else {
+            patchCountHint.textContent = TL.STATUS.PATCH_AND_EXTRA_FILE_COUNT(count, additionalCount);
         }
     }
 
     state.patchUI.onChange = updatePatchCount;
 
-    // --- Firmware step config ---
-    // Sets the firmware download URL and labels shown on the review step.
-    // Called once when the device is detected or the user picks a manual version.
-
-    function configureFirmwareStep(version, prefix) {
-        state.firmwareURL = prefix ? state.getSoftwareUrl(prefix, version) : null;
+    function configureFirmwareStep(version, channel, deviceLabel = channel) {
+        state.selectedChannel = channel;
+        state.firmwareURL = channel ? state.getSoftwareUrl(channel, version) : null;
         state.firmwareVersion = version;
-        state.deviceModelLabel = koboModels[prefix] || prefix;
+        state.deviceModelLabel = deviceLabel;
         firmwareVersionLabel.textContent = version;
         firmwareDeviceLabel.textContent = state.deviceModelLabel;
-        $('firmware-download-url').textContent = state.firmwareURL || '';
+        _firmwareDownloadUrl.textContent = state.firmwareURL || '';
     }
-
-    // --- Step: Configure patches ---
 
     function goToPatches() {
-        setNavStep(3);
-        showStep(stepPatches);
-        // Offer to reload a previously applied patch set (connected mode only).
-        void maybeOfferReload();
+        flow.go('patches', state);
     }
 
-    // --- Reload previously applied patches ---
-    // When a connected device carries a custom-patches manifest from an earlier
-    // run, offer to re-apply its selections and manual edits to the loaded set.
-
-    /** Reset the banner to its default "offer" state and probe the device. */
     async function maybeOfferReload() {
         state.reloadManifest = null;
+        state.reloadAdditionalFiles = null;
         patchReloadBanner.hidden = true;
         btnPatchReload.hidden = false;
         btnPatchReload.disabled = false;
@@ -106,271 +276,347 @@ export function initPatchesFlow(state) {
         if (state.manualMode || !state.device?.directoryHandle || !state.patchesLoaded) return;
 
         try {
-            const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json']);
+            const text = await state.device.readFile([AUDIT_LOG_DIRECTORY, patchManifestName]);
             if (!text) return;
             const manifest = JSON.parse(text);
-            // Only offer when there is actually something to re-apply: at least one
-            // enabled patch or a manual edit. A manifest left by a "restore original
-            // firmware" run has every override set to false and no edits — there is
-            // nothing to restore, so don't offer.
-            const hasEnabled = manifest?.overrides && Object.values(manifest.overrides).some(
-                file => file && typeof file === 'object' && Object.values(file).some(Boolean)
-            );
+            const hasEnabled =
+                manifest?.overrides && Object.values(manifest.overrides).some((file) => file && typeof file === 'object' && Object.values(file).some(Boolean));
             const hasCustomized = manifest?.customized && Object.keys(manifest.customized).length > 0;
-            if (!hasEnabled && !hasCustomized) return;
+            const hasAdditional = Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file');
+            if (!hasEnabled && !hasCustomized && !hasAdditional) return;
             state.reloadManifest = manifest;
+            state.reloadAdditionalFiles = await readReloadAdditionalFiles(manifest);
             patchReloadBanner.hidden = false;
+        } catch {}
+    }
+
+    // Load the bytes of the Additional Files recorded in a manifest from the
+    // companion archive, verifying its checksum first. Returns `[{ sourceName,
+    // destination, data }]`, or null when there is no archive, it is missing, its
+    // checksum/size does not match, or it is unreadable — in which case the files
+    // simply are not restored (older manifests predate the archive entirely).
+    async function readReloadAdditionalFiles(manifest) {
+        const archiveRef = manifest?.additionalFilesArchive;
+        if (!archiveRef?.sha256) return null;
+        const fileEntries = (manifest.files || []).filter((f) => f?.type === 'additional-file' && f.path);
+        if (fileEntries.length === 0) return null;
+
+        try {
+            const bytes = await state.device.readFileBytes([AUDIT_LOG_DIRECTORY, additionalFilesArchiveName]);
+            if (!bytes) return null;
+            if (typeof archiveRef.size === 'number' && bytes.length !== archiveRef.size) return null;
+            if ((await sha256Hex(bytes)) !== archiveRef.sha256) return null;
+
+            const archive = await readAdditionalFilesArchive(bytes);
+            const restored = [];
+            for (const entry of fileEntries) {
+                const data = archive.get(entry.path);
+                if (!data) continue;
+                restored.push({
+                    sourceName: entry.sourceName || entry.path.split('/').pop(),
+                    destination: entry.path,
+                    data,
+                });
+            }
+            return restored.length > 0 ? restored : null;
         } catch {
-            // No manifest, unreadable, or invalid JSON — silently skip the offer.
+            return null;
         }
     }
+
+    function showReloadSummaryDialog({ applied, showModifiedNote, restoredCount, additionalFilesUnavailable }) {
+        patchReloadDialogIntro.textContent = TL.PATCH.RELOAD_SUMMARY_INTRO;
+
+        patchReloadDialogList.innerHTML = '';
+        let anyIncompatible = false;
+        for (const patch of applied) {
+            const li = document.createElement('li');
+            const label = document.createElement('span');
+            label.textContent = getPatchMeta(patch.name).label || patch.name;
+            li.appendChild(label);
+            if (patch.customized) {
+                const badge = document.createElement('span');
+                badge.className = 'patch-reload-dialog-badge';
+                badge.textContent = TL.PATCH.RELOAD_SUMMARY_CUSTOMIZED;
+                li.appendChild(badge);
+            }
+            if (patch.incompatible) {
+                const badge = document.createElement('span');
+                badge.className = 'patch-reload-dialog-badge patch-reload-dialog-badge--warning';
+                badge.textContent = 'Known to fail';
+                li.appendChild(badge);
+                anyIncompatible = true;
+            }
+            patchReloadDialogList.appendChild(li);
+        }
+
+        // The compatibility status always appears; the remaining notes only show
+        // for the situations they describe.
+        patchReloadDialogFootnote.textContent = anyIncompatible ? TL.PATCH.RELOAD_SUMMARY_INCOMPATIBLE : TL.PATCH.RELOAD_SUMMARY_COMPATIBLE;
+        patchReloadDialogFootnote.hidden = false;
+
+        patchReloadDialogModifiedNote.textContent = showModifiedNote ? TL.PATCH.RELOAD_SUMMARY_MODIFIED_NOTE : '';
+        patchReloadDialogModifiedNote.hidden = !showModifiedNote;
+
+        // Restored Additional Files are a call to review, shown above the divider
+        // directly under the re-applied patch list.
+        const restoredSummary = restoredCount > 0 ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_RESTORED(restoredCount) : '';
+        patchReloadDialogAdditionalSummary.textContent = restoredSummary;
+        patchReloadDialogAdditionalSummary.hidden = !restoredSummary;
+
+        // When the files could not be restored (an older manifest, or a missing /
+        // checksum-mismatched archive that was not trusted), a caveat sits with the
+        // other notes below the divider.
+        const unavailableNote = restoredCount === 0 && additionalFilesUnavailable ? TL.PATCH.RELOAD_SUMMARY_ADDITIONAL_FILES_UNAVAILABLE : '';
+        patchReloadDialogAdditionalNote.textContent = unavailableNote;
+        patchReloadDialogAdditionalNote.hidden = !unavailableNote;
+
+        patchReloadDialogNotes.hidden = !(applied.length > 0 || showModifiedNote || unavailableNote);
+
+        patchReloadDialog.showModal();
+    }
+
+    btnPatchReloadDialogClose.addEventListener('click', () => patchReloadDialog.close());
+    patchReloadDialog.addEventListener('click', (e) => {
+        if (e.target === patchReloadDialog) patchReloadDialog.close();
+    });
 
     btnPatchReload.addEventListener('click', () => {
         if (!state.reloadManifest) return;
         btnPatchReload.disabled = true;
 
         const summary = state.patchUI.applyReloadManifest(state.reloadManifest);
+        const restoredAdditional = state.reloadAdditionalFiles?.length ? state.patchUI.addRestoredAdditionalFiles(state.reloadAdditionalFiles) : 0;
         state.patchUI.render(patchContainer);
         updatePatchCount();
 
+        // Reveal the restored files so the user can review them right away (they
+        // live in the collapsed Advanced section).
+        if (restoredAdditional > 0) patchAdvancedSection.open = true;
+
+        const manifest = state.reloadManifest;
+        const hadAdditional = Array.isArray(manifest?.files) && manifest.files.some((f) => f?.type === 'additional-file');
+
         patchReloadBanner.classList.remove('banner--info');
-        // "None matched" only when nothing in the manifest lined up with the loaded
-        // patch set (e.g. a different software version) — not merely when the
-        // restored selection happens to enable nothing.
-        if (summary.matched === 0 && summary.edits === 0) {
+        if (summary.matched === 0 && summary.edits === 0 && restoredAdditional === 0) {
             patchReloadBanner.classList.add('banner--warning');
             patchReloadText.textContent = TL.PATCH.RELOAD_NONE_MATCHED;
         } else {
             patchReloadBanner.classList.add('banner--success');
             patchReloadText.textContent = TL.PATCH.RELOAD_APPLIED;
+            // Only surface the summary modal when there are re-enabled patches to
+            // list; an edits-only or additional-files-only reload just updates the banner.
+            if (summary.applied.length > 0) {
+                showReloadSummaryDialog({
+                    applied: summary.applied,
+                    showModifiedNote: summary.edits > 0,
+                    restoredCount: restoredAdditional,
+                    additionalFilesUnavailable: hadAdditional && restoredAdditional === 0,
+                });
+            }
         }
         btnPatchReload.hidden = true;
     });
 
     btnPatchesBack.addEventListener('click', () => {
-        // Going back reloads patches from scratch, discarding any edits. Warn first.
         if (state.patchUI.hasEdits() && !window.confirm(TL.PATCH.DISCARD_EDITS_CONFIRM)) {
             return;
         }
         if (state.manualMode) {
-            setNavStep(2);
-            showStep($('step-manual-version'));
+            state.goToManualVersionStep();
         } else {
             state.goToModeSelection();
         }
     });
 
     btnPatchesNext.addEventListener('click', () => {
-        // If zero patches are enabled, treat this as a firmware restore.
-        state.isRestore = state.patchUI.getEnabledCount() === 0;
-        goToBuild();
+        if (!state.patchUI.validateAdditionalFiles().ok) return;
+        state.isRestore = state.patchUI.getEnabledCount() === 0 && !state.patchUI.hasAdditionalFiles();
+        flow.go('firmware', state, { skipHistory: true });
     });
 
-    // --- Step: Review & Build ---
-    // Shows the list of selected patches and a "Build" button.
-
     function populateSelectedPatchesList() {
-        const patchList = $('selected-patches-list');
+        const patchList = _selectedPatchesList;
         const enabled = state.patchUI.getEnabledPatches();
         populateList(patchList, enabled);
         const hasPatches = enabled.length > 0;
         patchList.hidden = !hasPatches;
-        $('selected-patches-heading').hidden = !hasPatches;
+        _selectedPatchesHeading.hidden = !hasPatches;
+
+        const additionalFiles = state.patchUI.getAdditionalFiles().map((file) => `${file.name} -> ${file.validation.path || file.destination}`);
+        populateList(_selectedAdditionalFilesList, additionalFiles);
+        const hasAdditionalFiles = additionalFiles.length > 0;
+        _selectedAdditionalFilesList.hidden = !hasAdditionalFiles;
+        _selectedAdditionalFilesHeading.hidden = !hasAdditionalFiles;
+    }
+
+    function renderAdditionalFiles() {
+        const files = state.patchUI.getAdditionalFiles();
+        patchAdditionalFilesEmpty.hidden = files.length > 0;
+        patchAdditionalFilesList.innerHTML = '';
+
+        for (const file of files) {
+            const row = document.createElement('div');
+            row.className = 'patch-additional-file-row';
+
+            const name = document.createElement('div');
+            name.className = 'patch-additional-file-name';
+            name.textContent = file.name;
+
+            const size = document.createElement('span');
+            size.className = 'patch-additional-file-size';
+            size.textContent = formatBytes(file.size);
+            name.appendChild(size);
+
+            const target = document.createElement('div');
+            target.className = 'patch-additional-file-target';
+
+            const label = document.createElement('label');
+            label.setAttribute('for', `patch-additional-file-destination-${file.id}`);
+            label.textContent = 'Destination';
+
+            const input = document.createElement('input');
+            input.id = `patch-additional-file-destination-${file.id}`;
+            input.value = file.destination;
+            input.placeholder = 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Font.ttf';
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+            input.setAttribute('aria-invalid', file.validation.ok ? 'false' : 'true');
+            if (!file.validation.ok) input.setAttribute('aria-describedby', `patch-additional-file-error-${file.id}`);
+            input.addEventListener('change', () => state.patchUI.updateAdditionalFileDestination(file.id, input.value));
+            target.append(label, input);
+
+            if (!file.validation.ok) {
+                const error = document.createElement('p');
+                error.id = `patch-additional-file-error-${file.id}`;
+                error.className = 'patch-additional-file-error';
+                error.textContent = file.validation.message;
+                target.appendChild(error);
+            }
+
+            const remove = document.createElement('button');
+            remove.className = 'secondary patch-additional-file-remove';
+            remove.type = 'button';
+            remove.setAttribute('aria-label', `Remove ${file.name}`);
+            remove.title = `Remove ${file.name}`;
+            remove.textContent = '\u00d7';
+            remove.addEventListener('click', () => state.patchUI.removeAdditionalFile(file.id));
+
+            row.append(name, target, remove);
+            patchAdditionalFilesList.appendChild(row);
+        }
+    }
+
+    function selectedPatchConfSettings() {
+        if (state.isRestore) return [];
+        return patchSideEffectConfSettings(state.patchUI.getEnabledPatches());
+    }
+
+    async function addPatchSideEffectWrites(writes, confSettings) {
+        if (confSettings.length === 0) return false;
+
+        const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
+        const current = (await state.device.readFile(confPath)) || '';
+        const updated = applyPatchSideEffectConfSettings(current, confSettings);
+        if (updated === current) return false;
+
+        writes.push({
+            path: confPath,
+            data: new TextEncoder().encode(updated),
+            label: 'Updated .kobo/Kobo/Kobo eReader.conf for selected patch side effects',
+        });
+        return true;
+    }
+
+    // Build the persisted manifest plus its companion Additional Files archive (when
+    // any files were merged). The archive holds the files' bytes; the manifest
+    // references it with a checksum so a later reload can verify and restore them.
+    // Both the device-write and download paths share this so they stay in lockstep.
+    async function buildManifestArtifacts() {
+        const entries = state.additionalFileEntries || [];
+        let archiveBytes = null;
+        let archiveInfo = null;
+        if (entries.length > 0) {
+            archiveBytes = await buildAdditionalFilesTgz(entries);
+            archiveInfo = { sha256: await sha256Hex(archiveBytes), size: archiveBytes.length };
+        }
+        const manifest = buildPatchesManifest(state.patchUI, state.firmwareVersion, state.selectedChannel, entries, archiveInfo);
+        const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
+        return { archiveBytes, manifestData };
     }
 
     function goToBuild() {
-        // Adjust labels for restore vs patch mode.
-        if (state.isRestore) {
-            firmwareDescription.textContent = TL.STATUS.RESTORE_ORIGINAL;
-            btnBuild.textContent = TL.BUTTON.RESTORE_ORIGINAL;
-        } else {
-            firmwareDescription.textContent = TL.STATUS.FIRMWARE_WILL_BE_DOWNLOADED;
-            btnBuild.textContent = TL.BUTTON.BUILD_PATCHED;
-        }
-        populateSelectedPatchesList();
-        setNavStep(4);
-        // `false` = don't push to step history (building is a transient state).
-        showStep($('step-firmware'), false);
+        flow.go('firmware', state, { skipHistory: true });
     }
 
-    btnBuildBack.addEventListener('click', () => {
+    btnBuildBack.addEventListener('click', async () => {
         if (state.isRestore) {
-            // Restore was entered from the device step — go back there.
             state.isRestore = false;
-            setNavLabels(TL.NAV_DEFAULT);
-            setNavStep(1);
-            showStep($('step-device'));
+            state.goBackToDeviceStep();
         } else {
-            goToPatches();
+            const target = flow.back(state);
+            if (target) await flow.go(target, state);
         }
     });
 
-    // --- Download & patch ---
-    // These functions handle the heavy lifting: downloading firmware,
-    // extracting the original tgz, and running the WASM patcher.
-
-    function appendLog(msg) {
-        buildLog.textContent += msg + '\n';
-        buildLog.scrollTop = buildLog.scrollHeight;
-    }
-
-    /**
-     * Download firmware from the given URL with progress reporting.
-     * Uses a ReadableStream reader when Content-Length is available
-     * so we can show "Downloading X / Y MB (Z%)".
-     */
-    async function downloadFirmware(url) {
-        buildProgress.textContent = TL.STATUS.DOWNLOADING;
-        return fetchWithProgress(url, (received, total) => {
-            const pct = ((received / total) * 100).toFixed(0);
-            buildProgress.textContent = TL.STATUS.DOWNLOADING_PROGRESS(formatMB(received), formatMB(total), pct);
-        }, 'Download failed');
-    }
-
-    /** Extract the original KoboRoot.tgz from a Kobo firmware ZIP. */
-    async function extractOriginalTgz(firmwareBytes) {
-        buildProgress.textContent = TL.STATUS.EXTRACTING;
-        appendLog('Extracting original KoboRoot.tgz from firmware...');
-        const zip = await JSZip.loadAsync(firmwareBytes);
-        const koboRoot = zip.file('KoboRoot.tgz');
-        if (!koboRoot) throw new Error(TL.STATUS.EXTRACT_FAILED);
-        const tgz = new Uint8Array(await koboRoot.async('arraybuffer'));
-        appendLog('Extracted KoboRoot.tgz: ' + formatMB(tgz.length));
-        return tgz;
-    }
-
-    /**
-     * Run the WASM patcher on downloaded firmware bytes.
-     * Generates a kobopatch YAML config from the UI selections,
-     * then delegates to the Web Worker via KoboPatchRunner.
-     */
-    async function runPatcher(firmwareBytes) {
-        buildProgress.textContent = TL.STATUS.APPLYING_PATCHES;
-        const configYAML = state.patchUI.generateConfig();
-        const patchFiles = state.patchUI.getPatchFileBytes();
-
-        const result = await state.runner.patchFirmware(configYAML, firmwareBytes, patchFiles, (msg) => {
-            appendLog(msg);
-            // Surface key progress lines in the status bar.
-            const trimmed = msg.trimStart();
-            if (trimmed.startsWith('Patching ') || trimmed.startsWith('Checking ') ||
-                trimmed.startsWith('Loading WASM') || trimmed.startsWith('WASM module')) {
-                buildProgress.textContent = trimmed;
-            }
-        });
-
-        return result.tgz;
-    }
-
-    // --- Build result ---
-    // Shown after a successful build/extract. Offers "Write to Kobo" and
-    // "Download" buttons. Also warns if a KoboRoot.tgz already exists on
-    // the device (which would be overwritten).
-
-    function showBuildResult() {
-        const action = state.isRestore ? 'Software extracted' : 'Patching complete';
-        const description = state.isRestore ? 'This will restore the original unpatched software.' : '';
-        const deviceName = koboModels[state.selectedPrefix] || 'Kobo';
-        const installHint = state.manualMode
-            ? 'Download the file and copy it to your ' + deviceName + '.'
-            : 'Write it directly to your connected Kobo, or download for manual installation.';
-
-        buildStatus.innerHTML =
-            action + '. <strong>KoboRoot.tgz</strong> (' + formatMB(state.resultTgz.length) + ') is ready. ' +
-            (description ? description + ' ' : '') + installHint;
-
-        const doneLog = $('done-log');
-        doneLog.textContent = buildLog.textContent;
-
-        btnWrite.hidden = state.manualMode;
-        btnWrite.disabled = false;
-        btnWrite.className = 'primary';
-        btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
-        btnDownload.disabled = false;
-        writeInstructions.hidden = true;
-        downloadInstructions.hidden = true;
-        existingTgzWarning.hidden = true;
-
-        if (analyticsEnabled()) {
-            setupFeedback(stepDone, (vote) => {
-                track('feedback', { vote });
-            });
-        }
-
-        setNavStep(5);
-        showStep(stepDone);
-
-        requestAnimationFrame(() => {
-            doneLog.scrollTop = doneLog.scrollHeight;
-        });
-    }
-
-    /** Check if the device already has a KoboRoot.tgz and show a warning if so. */
-    async function checkExistingTgz() {
-        if (state.manualMode || !state.device.directoryHandle) return;
-        try {
-            const koboDir = await state.device.directoryHandle.getDirectoryHandle('.kobo');
-            await koboDir.getFileHandle('KoboRoot.tgz');
-            existingTgzWarning.hidden = false;
-        } catch {
-            // No existing file — that's fine.
-        }
-    }
-
-    // --- Build button ---
-    // Orchestrates the full pipeline: download firmware -> extract/patch -> show result.
-
     btnBuild.addEventListener('click', async () => {
-        showStep(stepBuilding, false);
+        await flow.go('building', state, { skipHistory: true });
         buildLog.textContent = '';
         buildProgress.textContent = TL.STATUS.BUILDING_STARTING;
-        $('build-wait-hint').textContent = state.isRestore
+        _buildWaitHint.textContent = state.isRestore
             ? 'Please wait while the original software is being downloaded and extracted...'
-            : 'Please wait while the patch is being applied...';
+            : state.patchUI.getEnabledCount() === 0
+              ? 'Please wait while KoboRoot.tgz is being built...'
+              : 'Please wait while the patch is being applied...';
 
         try {
-            if (!state.firmwareURL) {
-                state.showError(TL.STATUS.NO_FIRMWARE_URL);
+            const log = (msg) => appendLog(buildLog, msg);
+
+            // No patches selected, only additional files: build a KoboRoot.tgz
+            // containing just those files. The firmware and patched libraries are
+            // not needed, so skip the download and the patcher entirely.
+            if (!state.isRestore && state.patchUI.getEnabledCount() === 0) {
+                state.additionalFileEntries = await state.patchUI.readAdditionalFileEntries();
+                buildProgress.textContent = 'Building KoboRoot.tgz...';
+                log(
+                    `Building KoboRoot.tgz with ${state.additionalFileEntries.length} additional file${state.additionalFileEntries.length === 1 ? '' : 's'} (no patches selected)...`,
+                );
+                state.resultTgz = await buildAdditionalFilesTgz(state.additionalFileEntries);
+                for (const entry of state.additionalFileEntries) {
+                    log(`  ADD ${entry.sourceName} -> ${entry.path}`);
+                }
+                await flow.go('done', state);
                 return;
             }
 
-            const firmwareBytes = await downloadFirmware(state.firmwareURL);
-            appendLog('Download complete: ' + formatMB(firmwareBytes.length));
+            if (!state.firmwareURL) {
+                state.showError(TL.STATUS.NO_FIRMWARE_URL, null, { expected: true }); // no firmware mapping for this version
+                return;
+            }
 
-            // Either extract the original tgz (restore) or run the patcher.
+            const firmwareBytes = await downloadFirmware(state.firmwareURL, buildProgress);
+            log('Download complete: ' + formatBytes(firmwareBytes.length));
+
             state.resultTgz = state.isRestore
-                ? await extractOriginalTgz(firmwareBytes)
-                : await runPatcher(firmwareBytes);
+                ? await extractOriginalTgz(firmwareBytes, buildProgress, log)
+                : await runPatcher(state.runner, state.patchUI.generateConfig(), firmwareBytes, state.patchUI.getPatchFileBytes(), buildProgress, log);
 
-            showBuildResult();
-            await checkExistingTgz();
+            state.additionalFileEntries = state.isRestore ? [] : await state.patchUI.readAdditionalFileEntries();
+            if (state.additionalFileEntries.length > 0) {
+                log(`Adding ${state.additionalFileEntries.length} additional file${state.additionalFileEntries.length === 1 ? '' : 's'}...`);
+                state.resultTgz = await mergeAdditionalFilesIntoTgz(state.resultTgz, state.additionalFileEntries);
+                for (const entry of state.additionalFileEntries) {
+                    log(`  ADD ${entry.sourceName} -> ${entry.path}`);
+                }
+            }
+
+            await flow.go('done', state);
         } catch (err) {
-            state.showError('Build failed: ' + err.message, buildLog.textContent);
+            // A build failure is usually a user-selected incompatible patch set —
+            // an expected outcome, not a tool malfunction, so it is not reported.
+            state.showError('Build failed: ' + err.message, buildLog.textContent, { expected: true });
         }
     });
-
-    // --- Install step ---
-    // Writes the built KoboRoot.tgz to the device via File System Access API,
-    // or triggers a browser download.
-
-    function buildPatchesManifest() {
-        const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
-        return {
-            overrides: state.patchUI.getOverrides(),
-            customized: state.patchUI.getCustomizations(),
-            files: [
-                { path: '.kobo/KoboRoot.tgz', type: 'file' },
-            ],
-            meta: {
-                writer: { name: 'kobopatch-webui', version },
-                installed: {
-                    timestamp: new Date().toISOString(),
-                    firmware: state.firmwareVersion,
-                    model: state.selectedPrefix,
-                },
-            },
-        };
-    }
 
     btnWrite.addEventListener('click', async () => {
         if (!state.resultTgz || !state.device.directoryHandle) return;
@@ -379,41 +625,60 @@ export function initPatchesFlow(state) {
         btnWrite.textContent = TL.BUTTON.WRITING;
         downloadInstructions.hidden = true;
 
-        const audit = new AuditLog('custom-patches', new Date(), state.device);
+        const confSettings = selectedPatchConfSettings();
+        const writes = [];
+        let handledConfSettings = false;
 
         try {
-            await state.device.writeFile(['.kobo', 'KoboRoot.tgz'], state.resultTgz);
-            audit.record(`Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`);
-
-            // Best-effort manifest write — but never for a restore. The manifest
-            // reflects the last *customized* state; restoring stock firmware is a
-            // de-customization, so it must leave any existing manifest untouched
-            // (so a later reload can still re-apply the genuine last patch set).
+            await addPatchSideEffectWrites(writes, confSettings);
+            handledConfSettings = confSettings.length > 0;
+            writes.push({
+                path: ['.kobo', 'KoboRoot.tgz'],
+                data: state.resultTgz,
+                label: `Wrote .kobo/KoboRoot.tgz (${state.resultTgz.length} bytes)`,
+            });
             if (!state.isRestore) {
-                try {
-                    const manifest = buildPatchesManifest();
-                    const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-                    await state.device.writeFile([AUDIT_LOG_DIRECTORY, 'custom-patches.json'], data);
-                    audit.record('Wrote .kobopatch-webui/custom-patches.json manifest');
-                } catch (e) {
-                    console.warn('Could not write custom-patches manifest:', e);
+                const { archiveBytes, manifestData } = await buildManifestArtifacts();
+                writes.push({
+                    path: [AUDIT_LOG_DIRECTORY, patchManifestName],
+                    data: manifestData,
+                    label: `Wrote ${AUDIT_LOG_DIRECTORY}/${patchManifestName} manifest`,
+                    optional: true,
+                });
+                if (archiveBytes) {
+                    writes.push({
+                        path: [AUDIT_LOG_DIRECTORY, additionalFilesArchiveName],
+                        data: archiveBytes,
+                        label: `Wrote ${AUDIT_LOG_DIRECTORY}/${additionalFilesArchiveName} (${archiveBytes.length} bytes)`,
+                        optional: true,
+                    });
                 }
             }
-
-            await audit.write();
-            btnWrite.textContent = TL.BUTTON.WRITTEN;
-            btnWrite.className = 'btn-success';
-            writeInstructions.hidden = false;
-            track('flow-end', { result: state.isRestore ? 'restore-write' : 'patches-write' });
         } catch (err) {
-            audit.record(`Failed: ${err.message}`);
+            state.showError(TL.STATUS.WRITE_FAILED(err.message), null, { category: 'write' });
             btnWrite.disabled = false;
             btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
-            state.showError(TL.STATUS.WRITE_FAILED(err.message), null, {
-                deviceWrite: !!err.deviceWrite,
-                auditLog: audit,
-            });
+            return;
         }
+
+        const result = await terminal.writeToDevice({
+            device: state.device,
+            auditName: 'custom-patches',
+            writes,
+            failMessage: (err) => TL.STATUS.WRITE_FAILED(err.message),
+        });
+
+        if (!result.ok) {
+            btnWrite.disabled = false;
+            btnWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
+            return;
+        }
+
+        btnWrite.textContent = TL.BUTTON.WRITTEN;
+        btnWrite.className = 'btn-success';
+        writeConfSettingsNote.hidden = !handledConfSettings;
+        writeInstructions.hidden = false;
+        terminal.end(state.isRestore ? 'restore-write' : 'patches-write');
     });
 
     btnDownload.addEventListener('click', async () => {
@@ -421,30 +686,31 @@ export function initPatchesFlow(state) {
 
         btnDownload.disabled = true;
         try {
-            // Bundle KoboRoot.tgz together with the manifest, mirroring the
-            // folder layout a USB install writes to the device. The manifest
-            // carries the definitional info about the chosen patches/config.
-            const zip = new JSZip();
-            zip.file('.kobo/KoboRoot.tgz', state.resultTgz);
-            // A restore carries no customization, so it omits the manifest — both
-            // to reflect that nothing is applied and to avoid overwriting the
-            // device's last-customized manifest when the ZIP is extracted.
+            const entries = [{ path: '.kobo/KoboRoot.tgz', data: state.resultTgz }];
+            const confSettings = selectedPatchConfSettings();
             if (!state.isRestore) {
-                const manifest = buildPatchesManifest();
-                const manifestData = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-                zip.file(`${AUDIT_LOG_DIRECTORY}/custom-patches.json`, manifestData);
+                const { archiveBytes, manifestData } = await buildManifestArtifacts();
+                entries.push({ path: `${AUDIT_LOG_DIRECTORY}/${patchManifestName}`, data: manifestData });
+                if (archiveBytes) {
+                    entries.push({ path: `${AUDIT_LOG_DIRECTORY}/${additionalFilesArchiveName}`, data: archiveBytes });
+                }
             }
-            // Bundle the same manual-install guidance the wizard shows on screen.
             const version = typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : 'unknown';
-            zip.file('instructions.txt', buildPatchesInstructions({
-                version,
-                deviceName: koboModels[state.selectedPrefix] || 'Kobo',
-            }));
-            const bytes = await zip.generateAsync({ type: 'uint8array' });
-            triggerDownload(bytes, 'custom-patches.zip', 'application/zip');
+            await terminal.download({
+                entries,
+                instructions: buildPatchesInstructions({
+                    version,
+                    deviceName: state.deviceModelLabel || 'Kobo',
+                    confSettings,
+                }),
+                filename: 'custom-patches.zip',
+            });
+            renderDownloadConfSettings(patchDownloadConfSettings, confSettings);
+            patchDownloadConfSettingsStep.hidden = confSettings.length === 0;
         } catch (err) {
             state.showError(TL.ERROR.DOWNLOAD_FAILED_MESSAGE, err.message, {
                 title: TL.ERROR.DOWNLOAD_FAILED_TITLE,
+                category: 'download',
             });
             return;
         } finally {
@@ -453,10 +719,33 @@ export function initPatchesFlow(state) {
 
         writeInstructions.hidden = true;
         downloadInstructions.hidden = false;
-        $('download-device-name').textContent = koboModels[state.selectedPrefix] || 'Kobo';
-        track('flow-end', { result: state.isRestore ? 'restore-download' : 'patches-download' });
+        _downloadDeviceName.textContent = state.deviceModelLabel || 'Kobo';
+        terminal.end(state.isRestore ? 'restore-download' : 'patches-download');
     });
 
-    // Expose only what the orchestrator needs.
+    btnPatchBlacklist.addEventListener('click', () => {
+        openBlacklistDialog(state.patchUI, patchContainer);
+    });
+
+    // Toggle between the themed metadata view and the original kobopatch/MobileRead
+    // format (grouped by source file, raw YAML titles). The preference lives on the
+    // patch container so renderPatchList/updatePatchCounts read it across re-renders.
+    patchOriginalFormat.addEventListener('change', () => {
+        patchContainer.dataset.originalFormat = patchOriginalFormat.checked ? 'true' : 'false';
+        state.patchUI.render(patchContainer);
+    });
+
+    btnPatchAdditionalFiles.addEventListener('click', () => {
+        patchAdditionalFileInput.click();
+    });
+
+    patchAdditionalFileInput.addEventListener('change', () => {
+        state.patchUI.addAdditionalFiles(Array.from(patchAdditionalFileInput.files || []));
+        patchAdditionalFileInput.value = '';
+        patchAdvancedSection.open = true;
+        renderAdditionalFiles();
+        updatePatchCount();
+    });
+
     return { goToPatches, goToBuild, updatePatchCount, configureFirmwareStep };
 }

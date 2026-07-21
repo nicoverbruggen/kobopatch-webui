@@ -91,7 +91,7 @@
 
     & code {
         font-size: 0.8rem;
-        background: #f1f5f9;
+        background: var(--bg-subtle);
         padding: 0.1rem 0.35rem;
         border-radius: 3px;
     }

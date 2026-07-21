@@ -1,3 +1,26 @@
+/*
+ * CSS browser target: modern browsers that support native CSS nesting,
+ * :has(), @layer, and other CSS 2023+ features (Chrome 120+, Firefox 121+,
+ * Safari 17.2+). No PostCSS transforms are used — the stylesheets are
+ * served as-authored.
+ */
+
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 0.5rem;
+    z-index: 1000;
+    background: var(--primary);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 0 0 4px 4px;
+    text-decoration: none;
+    font-size: 0.88rem;
+}
+.skip-link:focus {
+    top: 0;
+}
+
 /* Reset */
 *,
 *::before,
@@ -32,10 +55,84 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+.preview-banner {
+    width: 100%;
+    background: #b91c1c;
+    color: #fff;
+    border-bottom: 1px solid #991b1b;
+}
+
+.preview-banner-inner {
+    position: relative;
+    min-height: 28px;
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-banner-message {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.preview-banner-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+
+.preview-banner-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.preview-banner-text {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    padding: 8px 0;
+}
+
+.preview-banner a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.preview-banner-close {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    border-radius: 6px;
+}
+
 main {
     max-width: 640px;
     margin: 0 auto;
     padding: 2rem 1.5rem 4rem;
+
+    &:focus {
+        outline: none;
+    }
 }
 
 h2 {
@@ -75,4 +172,10 @@ select:focus,
 button:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+}
+
+/* Intro */
+#step-connect .intro .no-jailbreak {
+    text-decoration: underline;
+
 }

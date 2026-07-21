@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Usage: ./run-screenshots.sh
 #
-# Output: screenshots/{mobile,desktop}/{manual-nickelmenu,manual-patches,connected-nickelmenu,connected-nickelmenu-removal,connected-nickelmenu-factory,connected-patches,edge-cases}/*.png (gitignored)
+# Output: screenshots/{mobile,desktop}/{manual,connected,edge-cases}/.../*.png (gitignored)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 E2E_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"

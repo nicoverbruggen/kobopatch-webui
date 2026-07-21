@@ -4,24 +4,24 @@
 // that id appears in this list. To reorder the menu, move an id; to insert an
 // item, add its id in the right place — no numbers to juggle.
 export const MENU_ITEM_ORDER = [
-    'tweak-header',        // custom-menu: the Toggle tab header
-    'koreader',            // koreader: Open KOReader
-    'cadmus',              // cadmus: Open Cadmus
-    'screenshots',         // custom-menu: Screenshots
-    'screensaver',         // screensaver: Screensaver (below Screenshots)
-    'auto-usb',            // custom-menu: Auto USB
-    'typography',          // better-typography: Typography
-    'nickelclock',         // nickelclock: NickelClock (clock on/off)
-    'toggle-hidden-home',  // hide-home-content: Minimal Home
-    'toggle-tabs',         // simplify-tabs: Simple Tabs
-    'invert-reboot',       // custom-menu: Invert Display
-    'sleep',               // custom-menu: Sleep Device
-    'reboot',              // custom-menu: Reboot Device
+    'tweak-header', // custom-menu: the Toggle tab header
+    'koreader', // koreader: Open KOReader
+    'cadmus', // cadmus: Open Cadmus
+    'screenshots', // custom-menu: Screenshots
+    'screensaver', // screensaver: Screensaver (below Screenshots)
+    'auto-usb', // custom-menu: Auto USB
+    'typography', // better-typography: Typography
+    'nickelclock', // nickelclock: NickelClock (clock on/off)
+    'toggle-hidden-home', // hide-home-content: Minimal Home
+    'toggle-tabs', // simplify-tabs: Simple Tabs
+    'invert-reboot', // custom-menu: Invert Display
+    'sleep', // custom-menu: Sleep Device
+    'reboot', // custom-menu: Reboot Device
     // Rescan books (:library) and Dark Mode (:reader) live in other NickelMenu
     // sections, so their position among the :main items is irrelevant — pinned
     // at the bottom.
-    'rescan-books',        // custom-menu
-    'dark-mode',           // custom-menu (reader, supported devices only)
+    'rescan-books', // custom-menu
+    'dark-mode', // custom-menu (reader, supported devices only)
 ];
 
 // Position of a menu entry's id within the menu. Throws on an unknown id — a

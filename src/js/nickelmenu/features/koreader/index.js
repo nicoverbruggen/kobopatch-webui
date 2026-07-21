@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl } from '../../installables.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
 
 // Installs KOReader, an alternative e-book reader, alongside the built-in Kobo
 // reader (it does not replace it). The app is downloaded as a release zip at
@@ -8,9 +8,11 @@ import { installableVersion, installableAssetUrl } from '../../installables.js';
 // added to launch it. Removal deletes the whole app directory.
 export default {
     id: 'koreader',
-    section: 'Reading Apps',
+    section: 'Alternative reading apps',
+    analyticsEvent: 'add-koreader',
     title: 'Install KOReader',
-    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can launch KOReader from the Toggle menu; it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
+    description:
+        'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can launch KOReader from the Toggle menu; it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
     directories: ['.adds/koreader'],
@@ -22,7 +24,7 @@ export default {
                 type: 'warning',
                 title: 'Known issue with KOReader',
                 paragraphs: [
-                    'KOReader has a known issue where exiting while Bluetooth is enabled may cause NickelMenu to uninstall itself. Use KOReader\'s reboot option instead, or turn Bluetooth off before starting KOReader.',
+                    "KOReader has a known issue where exiting while Bluetooth is enabled may cause NickelMenu to uninstall itself. Use KOReader's reboot option instead, or turn Bluetooth off before starting KOReader.",
                 ],
                 link: {
                     label: 'GitHub issue',
@@ -38,9 +40,7 @@ export default {
         removeLabel: 'Remove the KOReader app (.adds/koreader)',
         description: 'Removes the KOReader app directory (.adds/koreader/).',
         detect: [['.adds', 'koreader']],
-        paths: [
-            { path: ['.adds', 'koreader'], recursive: true },
-        ],
+        paths: [{ path: ['.adds', 'koreader'], recursive: true }],
     },
 
     async install(ctx) {
@@ -51,7 +51,7 @@ export default {
         ctx.progress(label);
         const zipBytes = await fetchWithProgress(
             installableAssetUrl('koreader', 'koreader-kobo.zip'),
-            downloadProgress(ctx.progress, label),
+            downloadProgress(ctx.progress, label, await installableSize('koreader')),
             'Failed to download KOReader',
         );
         const zip = await JSZip.loadAsync(zipBytes);
@@ -60,9 +60,7 @@ export default {
         const files = [];
         for (const [relativePath, entry] of Object.entries(zip.files)) {
             if (entry.dir) continue;
-            const devicePath = relativePath.startsWith('koreader/')
-                ? '.adds/' + relativePath
-                : '.adds/koreader/' + relativePath;
+            const devicePath = relativePath.startsWith('koreader/') ? '.adds/' + relativePath : '.adds/koreader/' + relativePath;
             files.push({
                 path: devicePath,
                 data: new Uint8Array(await entry.async('arraybuffer')),
@@ -75,9 +73,11 @@ export default {
     menuItems() {
         // The Toggle-menu entry that launches KOReader. Its position (just below
         // the Toggle tab header) is set by 'koreader' in ../menu-order.js.
-        return [{
-            id: 'koreader',
-            lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
-        }];
+        return [
+            {
+                id: 'koreader',
+                lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+            },
+        ];
     },
 };

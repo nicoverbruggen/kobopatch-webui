@@ -1,0 +1,23 @@
+# Build output and dependencies
+dist/
+dist-dev/
+node_modules/
+
+# Vendored / generated JavaScript
+src/js/wasm_exec.js
+
+# Go sources for the WASM patcher
+tools/kobopatch-wasm/go/
+tools/kobopatch-wasm/kobopatch-src/
+
+# Cached test fixtures
+tests/e2e/cached_assets/
+tests/e2e/screenshots/
+
+# Prettier is JS-only in this repo (the format scripts glob **/*.{js,mjs}).
+# Ignore the non-JS formats it can also reformat so that even a stray direct
+# `prettier --write <file>` leaves them alone. HTML in particular is
+# whitespace-sensitive: the build injects the version via an exact-string
+# replace in vite.config.mjs, so reflowing index.html silently breaks it.
+*.html
+*.css

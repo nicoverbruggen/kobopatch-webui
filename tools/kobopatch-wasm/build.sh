@@ -6,6 +6,8 @@ APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SRC_DIR="$APP_DIR/src"
 DIST_DIR="$APP_DIR/dist"
 LOCAL_GO_DIR="$SCRIPT_DIR/go"
+export GOCACHE="${GOCACHE:-$APP_DIR/tmp/go/cache}"
+mkdir -p "$GOCACHE"
 
 if [ ! -d "$SCRIPT_DIR/kobopatch-src" ]; then
     echo "Error: kobopatch source not found. Run ./setup.sh first."

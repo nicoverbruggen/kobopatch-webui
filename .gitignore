@@ -1,5 +1,6 @@
 # Temporary folder
-tmp/
+tmp
+tmp-doc
 
 # Kobopatch WASM build artifacts
 tools/kobopatch-wasm/kobopatch
@@ -7,6 +8,10 @@ tools/kobopatch-wasm/go/
 tools/kobopatch-wasm/kobopatch-src/
 tools/kobopatch-wasm/kobopatch.wasm
 tools/kobopatch-wasm/wasm_exec.js
+
+# Generated kobopatch config — produced on demand by the test-only tooling
+patches/**/kobopatch.yaml
+kobopatch.yaml
 
 # Generated files in src (written by build scripts, regenerated on demand)
 src/js/wasm_exec.js
@@ -17,8 +22,14 @@ src/assets/KF_Libron.zip
 src/assets/KF_Cartisse.zip
 src/assets/koreader-kobo.zip
 src/assets/cadmus-kobo.tar.gz
-src/assets/NickelMenu.zip
+src/assets/NickelMenu.tgz
 src/assets/NickelClock.zip
+src/assets/NickelTypeFix.tgz
+src/assets/NickelCoverFix.tgz
+src/assets/NickelDissolve.tgz
+src/assets/NickelHome.tgz
+# Asset size index, regenerated from the lock by setup:installables (CI/prod)
+src/assets/index.json
 
 # Build output
 dist/

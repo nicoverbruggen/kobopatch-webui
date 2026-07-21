@@ -1,6 +1,10 @@
 .step {
     margin-bottom: 1rem;
 
+    &:focus {
+        outline: none;
+    }
+
     & p {
         color: var(--text-secondary);
         margin-bottom: 1rem;
@@ -46,10 +50,19 @@
     }
 }
 
+.step-actions--spaced {
+    margin-top: 25px;
+}
+
 .step-actions-right {
     display: flex;
     gap: 0.75rem;
     margin-left: auto;
+}
+
+#step-error .step-actions > .primary:first-child,
+#step-error .step-actions > [hidden] + .primary {
+    margin-left: 0;
 }
 
 @media (max-width: 500px) {

@@ -1,24 +1,8 @@
+import { gunzipSync, gzipSync } from 'fflate';
+
 const TAR_BLOCK_SIZE = 512;
 const textDecoder = new TextDecoder();
 const textEncoder = new TextEncoder();
-
-async function ungzip(bytes) {
-    if (typeof globalThis.DecompressionStream !== 'function') {
-        throw new Error('This browser does not support gzip decompression.');
-    }
-
-    const stream = new Blob([bytes]).stream().pipeThrough(new globalThis.DecompressionStream('gzip'));
-    return new Uint8Array(await new globalThis.Response(stream).arrayBuffer());
-}
-
-async function gzip(bytes) {
-    if (typeof globalThis.CompressionStream !== 'function') {
-        throw new Error('This browser does not support gzip compression.');
-    }
-
-    const stream = new Blob([bytes]).stream().pipeThrough(new globalThis.CompressionStream('gzip'));
-    return new Uint8Array(await new globalThis.Response(stream).arrayBuffer());
-}
 
 function isZeroBlock(bytes, offset) {
     for (let i = 0; i < TAR_BLOCK_SIZE; i++) {
@@ -80,7 +64,7 @@ export function parseTar(bytes) {
 }
 
 export async function parseTarGz(bytes) {
-    return parseTar(await ungzip(bytes));
+    return parseTar(gunzipSync(bytes));
 }
 
 const DEFAULT_FILE_MODE = 0o644;
@@ -162,7 +146,10 @@ function buildTarHeader(entry) {
 export function buildTar(entries) {
     const blocks = [];
     let total = 0;
-    const push = (block) => { blocks.push(block); total += block.length; };
+    const push = (block) => {
+        blocks.push(block);
+        total += block.length;
+    };
 
     for (const entry of entries) {
         push(buildTarHeader(entry));
@@ -183,5 +170,5 @@ export function buildTar(entries) {
 
 /** Build a gzip-compressed tar (`.tar.gz`/`.tgz`) from tar entries. */
 export async function buildTarGz(entries) {
-    return gzip(buildTar(entries));
+    return gzipSync(buildTar(entries));
 }

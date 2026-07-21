@@ -2,7 +2,7 @@
  * Build-time manifest of bundled installable assets.
  *
  * `scripts/build.mjs` derives this from `installables.lock` and injects it via
- * esbuild `define` (`globalThis.__INSTALLABLES__`), so the app knows each add-on's
+ * Vite `define` (`globalThis.__INSTALLABLES__`), so the app knows each add-on's
  * pinned version and whether this deployment shipped its asset — without any
  * runtime `*-release.json` fetch. Shape: `{ <id>: { version, available } }`.
  *
@@ -20,15 +20,36 @@ export function installableVersion(id) {
     return entry ? entry.version : null;
 }
 
-/** Whether this deployment shipped the installable's asset. */
+/** Whether this deployment actually bundled the installable's archive. */
 export function installableAvailable(id) {
-    const entry = manifest()[id];
-    return !!(entry && entry.available);
+    return manifest()[id]?.available === true;
 }
 
 /** The full manifest object (used by app.js to mark features available at startup). */
 export function installablesManifest() {
     return manifest();
+}
+
+/**
+ * The served asset index (`/assets/index.json`, written by tools/installables).
+ * It maps each id to `{ asset, version, size }` so the app can show the expected
+ * download size — the lockfile that holds these sizes isn't served. Fetched once
+ * and cached; resolves to `{}` if the index is missing (e.g. an old deployment).
+ */
+let indexPromise = null;
+function loadIndex() {
+    if (!indexPromise) {
+        indexPromise = fetch('/assets/index.json')
+            .then((r) => (r.ok ? r.json() : {}))
+            .catch(() => ({}));
+    }
+    return indexPromise;
+}
+
+/** Expected download size in bytes for an installable id, or null if unknown. */
+export async function installableSize(id) {
+    const entry = (await loadIndex())[id];
+    return entry && typeof entry.size === 'number' ? entry.size : null;
 }
 
 /**

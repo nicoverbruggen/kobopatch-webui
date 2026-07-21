@@ -47,7 +47,7 @@
             color: var(--success-text);
 
             &::before {
-                background: var(--success-text);
+                background: var(--success-solid);
                 color: #fff;
                 content: "\2713";
             }

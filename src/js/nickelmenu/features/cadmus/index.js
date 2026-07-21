@@ -1,15 +1,17 @@
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl } from '../../installables.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
 
 // Installs Cadmus, an alternative Kobo reader app, from its Kobo tarball.
 // The upstream archive is rooted at the app directory contents, so each file is
 // written under .adds/cadmus/ and launched from Cadmus' own cadmus.sh script.
 export default {
     id: 'cadmus',
-    section: 'Reading Apps',
+    section: 'Alternative reading apps',
+    analyticsEvent: 'add-cadmus',
     title: 'Install Cadmus',
-    description: 'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean reading experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
+    description:
+        'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean Reading Experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
     default: false,
     available: false, // set to true at runtime if Cadmus assets exist
     directories: ['.adds/cadmus'],
@@ -21,9 +23,7 @@ export default {
         removeLabel: 'Remove the Cadmus app (.adds/cadmus)',
         description: 'Removes the Cadmus app directory (.adds/cadmus/).',
         detect: [['.adds', 'cadmus']],
-        paths: [
-            { path: ['.adds', 'cadmus'], recursive: true },
-        ],
+        paths: [{ path: ['.adds', 'cadmus'], recursive: true }],
     },
 
     async install(ctx) {
@@ -34,22 +34,23 @@ export default {
         ctx.progress(label);
         const tarBytes = await fetchWithProgress(
             installableAssetUrl('cadmus', 'cadmus-kobo.tar.gz'),
-            downloadProgress(ctx.progress, label),
+            downloadProgress(ctx.progress, label, await installableSize('cadmus')),
             'Failed to download Cadmus',
         );
 
         ctx.progress('Extracting Cadmus...');
-        return (await parseTarGz(tarBytes))
-            .map(file => ({
-                path: '.adds/cadmus/' + file.path,
-                data: file.data,
-            }));
+        return (await parseTarGz(tarBytes)).map((file) => ({
+            path: '.adds/cadmus/' + file.path,
+            data: file.data,
+        }));
     },
 
     menuItems() {
-        return [{
-            id: 'cadmus',
-            lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
-        }];
+        return [
+            {
+                id: 'cadmus',
+                lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+            },
+        ];
     },
 };

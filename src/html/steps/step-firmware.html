@@ -1,0 +1,19 @@
+        <section id="step-firmware" class="step" hidden>
+            <p id="firmware-auto-info">
+                Software update <strong id="firmware-version-label"></strong> for
+                <strong id="firmware-device-label"></strong>
+                <span id="firmware-description">will be downloaded automatically from Kobo's servers and will be patched after the download completes.</span>
+            </p>
+            <p id="selected-patches-heading" hidden>The following patches will be applied:</p>
+            <ul id="selected-patches-list" class="selected-patches-list"></ul>
+            <p id="selected-additional-files-heading" hidden>The following additional files will be included:</p>
+            <ul id="selected-additional-files-list" class="selected-patches-list"></ul>
+            <details id="firmware-download-details" class="log-details">
+                <summary>Software download URL</summary>
+                <code id="firmware-download-url"></code>
+            </details>
+            <div class="step-actions">
+                <button id="btn-build-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-build" class="primary">Build Patched Software</button>
+            </div>
+        </section>

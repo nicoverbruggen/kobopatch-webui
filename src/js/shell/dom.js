@@ -14,9 +14,27 @@ export const $q = (sel, ctx = document) => ctx.querySelector(sel);
 /** querySelectorAll shorthand; defaults to searching the whole document. */
 export const $qa = (sel, ctx = document) => ctx.querySelectorAll(sel);
 
+/**
+ * Collect multiple elements by ID in one call, returning a frozen object.
+ * Throws loudly on any missing id so typos fail at init time instead of
+ * producing silent `null` references mid-flow.
+ */
+export function collect(ids) {
+    const els = {};
+    for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) throw new Error(`Element #${id} not found`);
+        els[id] = el;
+    }
+    return Object.freeze(els);
+}
+
 /** Format a byte count as a human-readable "X.X MB" string. */
-export function formatMB(bytes) {
-    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+export function formatBytes(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
 }
 
 /**
@@ -44,186 +62,36 @@ export function populateSelect(selectEl, placeholder, items) {
     }
 }
 
+const _trappedDialogs = new WeakSet();
+
 /**
- * Render a list of checkbox items into a container.
- * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, disabled?: boolean, disabledReason?: string, hint?: string, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * Trap Tab focus within a modal dialog so keyboard users can't tab behind it.
+ * Idempotent — safe to call multiple times on the same element.
  */
-export function renderNmCheckboxList(container, items) {
-    container.innerHTML = '';
+export function trapFocus(dialog) {
+    if (_trappedDialogs.has(dialog)) return;
+    _trappedDialogs.add(dialog);
 
-    const sectionBodies = new Map();
+    const focusable =
+        'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
 
-    for (const item of items) {
-        let currentTarget = container;
-        const sectionKey = item.sectionTitle || '';
+    dialog.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
 
-        if (sectionKey) {
-            if (!sectionBodies.has(sectionKey)) {
-                // Sections are collapsible; a section starts collapsed when its
-                // items declare `sectionCollapsed` (less-popular "Advanced" and
-                // "Legacy" options are tucked away by default).
-                const section = document.createElement('details');
-                section.className = 'nm-config-section';
-                section.open = !item.sectionCollapsed;
+        const elements = dialog.querySelectorAll(focusable);
+        if (elements.length === 0) return;
 
-                const heading = document.createElement('summary');
-                heading.className = 'nm-config-section-heading';
+        const first = elements[0];
+        const last = elements[elements.length - 1];
 
-                const title = document.createElement('h3');
-                title.className = 'nm-config-section-title';
-                title.textContent = item.sectionTitle;
-                heading.appendChild(title);
-
-                if (item.sectionDescription) {
-                    const desc = document.createElement('p');
-                    desc.className = 'nm-config-section-desc';
-                    desc.textContent = item.sectionDescription;
-                    heading.appendChild(desc);
-                }
-
-                const itemsWrap = document.createElement('div');
-                itemsWrap.className = 'nm-config-section-items';
-
-                section.appendChild(heading);
-                section.appendChild(itemsWrap);
-                container.appendChild(section);
-                sectionBodies.set(sectionKey, itemsWrap);
-            }
-            currentTarget = sectionBodies.get(sectionKey);
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
         }
-
-        const label = document.createElement('label');
-        label.className = 'nm-config-item';
-
-        if (item.disabled) label.classList.add('nm-config-item--disabled');
-        if (item.actionLabel && item.onAction) label.classList.add('nm-config-item--has-action');
-
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.name = item.name;
-        input.checked = item.checked;
-        if (item.disabled) input.disabled = true;
-
-        const textDiv = document.createElement('div');
-        textDiv.className = 'nm-config-text';
-
-        const titleSpan = document.createElement('span');
-        titleSpan.className = 'nm-config-title';
-        titleSpan.textContent = item.title;
-
-        // The asset version sits inline right after the title, in a muted style.
-        if (item.version) {
-            const version = document.createElement('span');
-            version.className = 'nm-config-version';
-            version.textContent = item.version;
-            titleSpan.append(version);
-        }
-
-        const descSpan = document.createElement('span');
-        descSpan.className = 'nm-config-desc';
-        descSpan.textContent = item.description;
-
-        textDiv.appendChild(titleSpan);
-        textDiv.appendChild(descSpan);
-
-        // Explain (in red) why a feature is unavailable, e.g. when the device's
-        // Kobo software is older than the feature's minimum supported version.
-        if (item.disabledReason) {
-            const reason = document.createElement('span');
-            reason.className = 'nm-config-disabled-reason';
-            reason.textContent = item.disabledReason;
-            textDiv.appendChild(reason);
-        }
-
-        label.appendChild(input);
-        label.appendChild(textDiv);
-
-        if (item.actionLabel && item.onAction) {
-            const side = document.createElement('div');
-            side.className = 'nm-config-side';
-
-            if (item.summaryId) {
-                const caption = document.createElement('span');
-                caption.className = 'nm-config-customize-caption';
-                caption.textContent = item.actionLabel + ':';
-                side.appendChild(caption);
-
-                const summary = document.createElement('button');
-                summary.type = 'button';
-                summary.id = item.summaryId;
-                summary.className = 'nm-config-summary nm-config-summary-button';
-                summary.setAttribute('aria-label', item.actionAriaLabel || item.actionLabel);
-
-                const icon = document.createElement('span');
-                icon.className = 'nm-config-summary-icon';
-                if (item.summaryIconHtml) {
-                    icon.innerHTML = item.summaryIconHtml;
-                } else if (item.summaryIconSrc) {
-                    const img = document.createElement('img');
-                    img.alt = '';
-                    img.src = item.summaryIconSrc;
-                    icon.appendChild(img);
-                }
-
-                const text = document.createElement('span');
-                text.className = 'nm-config-summary-label';
-                text.textContent = item.summaryLabel || '';
-
-                summary.append(icon, text);
-                summary.addEventListener('click', event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    item.onAction();
-                });
-                side.appendChild(summary);
-            } else {
-                const action = document.createElement('button');
-                action.type = 'button';
-                action.className = 'nm-config-action secondary';
-                action.textContent = item.actionLabel;
-                action.setAttribute('aria-label', item.actionAriaLabel || item.actionLabel);
-                action.addEventListener('click', event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    item.onAction();
-                });
-                side.appendChild(action);
-            }
-            label.appendChild(side);
-        }
-
-        // Optional right-aligned "learn more" badge. A hint that looks like a URL
-        // opens in a new tab; any other hint is treated as text and shown in a
-        // popup. Both are interactive content, so a click opens them rather than
-        // toggling the box.
-        if (item.hint) {
-            const isUrl = /^https?:\/\//i.test(item.hint);
-            const help = document.createElement(isUrl ? 'a' : 'button');
-            help.className = 'nm-config-help';
-            help.textContent = '?';
-            help.setAttribute('aria-label', `More about ${item.title}`);
-
-            if (isUrl) {
-                help.href = item.hint;
-                help.target = '_blank';
-                help.rel = 'noopener';
-                help.title = 'Learn more';
-                help.addEventListener('click', event => event.stopPropagation());
-            } else {
-                help.type = 'button';
-                help.title = 'Show details';
-                help.addEventListener('click', event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    showHint(item.title, item.hint);
-                });
-            }
-            label.appendChild(help);
-        }
-
-        currentTarget.appendChild(label);
-    }
+    });
 }
 
 /** Show a text hint in the shared hint dialog (used by feature "?" badges). */
@@ -234,7 +102,10 @@ export function showHint(title, text) {
     const heading = document.getElementById('hint-dialog-title');
     if (heading && title) heading.textContent = title;
     body.textContent = text;
+    trapFocus(dialog);
     dialog.showModal();
+    const closeBtn = document.getElementById('btn-hint-close');
+    if (closeBtn) closeBtn.focus();
 }
 
 /** Populate a <ul>/<ol> with text items, clearing existing content. */
@@ -257,23 +128,29 @@ export async function fetchOrThrow(url, errorPrefix = 'Fetch failed') {
 /**
  * Fetch a URL as bytes while reporting download progress.
  *
- * When the server reports a Content-Length and streaming is available, the body
- * is read chunk by chunk and `onProgress(received, total)` is called after each
- * chunk so callers can render a percentage. When neither is available (no
- * Content-Length or no `resp.body`), it falls back to a single-shot read with no
- * progress callbacks. Returns a `Uint8Array` of the full payload.
+ * Whenever the body is streamable, it is read chunk by chunk and
+ * `onProgress(received, total)` fires after each chunk. `total` is the parsed
+ * Content-Length when present, or `null` when it isn't — which is the common case
+ * in production: a proxy/CDN serving these archives with `Content-Encoding: gzip`
+ * drops Content-Length (the header would describe the compressed size, while the
+ * stream we read is the decompressed body), so the browser reports no length even
+ * though `curl -I` (which sends no Accept-Encoding) sees one. We must keep
+ * streaming in that case and let callers show byte counts without a percentage;
+ * bailing to a single read here is what left the progress label frozen. Only when
+ * `resp.body` is entirely unavailable do we fall back to a single-shot read with
+ * no progress callbacks. Returns a `Uint8Array` of the full payload.
  */
 export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download failed') {
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`${errorPrefix}: HTTP ${resp.status}`);
 
-    const contentLength = resp.headers?.get?.('Content-Length');
-    if (!contentLength || !resp.body) {
-        // No progress info available — download in one shot.
+    if (!resp.body) {
+        // No streaming available — download in one shot.
         return new Uint8Array(await resp.arrayBuffer());
     }
 
-    const total = parseInt(contentLength, 10);
+    const contentLength = resp.headers?.get?.('Content-Length');
+    const total = contentLength ? parseInt(contentLength, 10) : null;
     const reader = resp.body.getReader();
     const chunks = [];
     let received = 0;
@@ -297,40 +174,91 @@ export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download
 
 /**
  * Build an `onProgress(received, total)` handler for `fetchWithProgress` that
- * renders byte counts as a "<label> X.X / Y.Y MB (Z%)" status string through
- * `report` (e.g. a feature's `ctx.progress`).
+ * reports download progress through `report(label, detail, fraction)`.
+ *
+ * `label` stays put (e.g. "Downloading KOReader..."); the moving byte count rides
+ * the separate `detail` line, with `fraction` (0–1) driving a progress bar.
+ *
+ * The percentage is measured against the best total available: the server's
+ * Content-Length when present, else `expectedTotal` — the size baked into
+ * /assets/index.json. That fallback is what keeps the percentage working in
+ * production, where the proxy serves these archives gzip-encoded and strips
+ * Content-Length. Only with neither does it show the indeterminate "X.X MB" with
+ * no bar (`fraction` null). The fraction is capped at 1 so a slightly-off estimate
+ * can't read over.
  */
-export function downloadProgress(report, label) {
+export function downloadProgress(report, label, expectedTotal = null) {
     return (received, total) => {
-        const pct = ((received / total) * 100).toFixed(0);
-        report(`${label} ${formatMB(received)} / ${formatMB(total)} (${pct}%)`);
+        const knownTotal = total || expectedTotal;
+        if (knownTotal) {
+            const fraction = Math.min(1, received / knownTotal);
+            const pct = (fraction * 100).toFixed(0);
+            report(label, `${formatBytes(received)} / ${formatBytes(knownTotal)} (${pct}%)`, fraction);
+        } else {
+            report(label, formatBytes(received), null);
+        }
     };
 }
 
 /**
+ * Render the secondary progress line of a `.busy-progress` container: the byte
+ * count text and, when a 0–1 `fraction` is given, a filled progress bar. A null
+ * `detail` hides the whole line (non-download steps that only set a status); a
+ * null `fraction` keeps the line but drops the bar (indeterminate downloads).
+ */
+export function setProgressDetail(container, detail, fraction = null) {
+    if (!container) return;
+    container.hidden = !detail;
+    if (!detail) return;
+
+    const text = container.querySelector('.busy-progress-text');
+    if (text) text.textContent = detail;
+
+    const track = container.querySelector('.busy-progress-track');
+    const fill = container.querySelector('.busy-progress-fill');
+    const determinate = fraction !== null && fraction !== undefined;
+    if (track) track.hidden = !determinate;
+    if (fill && determinate) fill.style.width = `${(fraction * 100).toFixed(1)}%`;
+}
+
+/**
  * Wire up a .feedback banner inside a container element.
- * Shows text + vote buttons; clicking one replaces all with a thank-you message.
+ * Shows text + vote buttons; clicking one replaces all with a vote-specific follow-up message.
  * @param {HTMLElement} container - element containing the .feedback widget
  * @param {function} onVote - callback receiving 'up' or 'down'
  */
 export function setupFeedback(container, onVote) {
     const widget = container.querySelector('.feedback');
     if (!widget) return;
-    widget.hidden = false;
     const text = widget.querySelector('.feedback-text');
     const buttons = widget.querySelectorAll('.feedback-btn');
     const thanks = widget.querySelector('.feedback-thanks');
+    const donate = widget.querySelector('.feedback-donate');
+
+    widget.hidden = false;
     text.hidden = false;
     thanks.hidden = true;
+    if (donate) donate.hidden = true;
     buttons.forEach((btn) => {
         btn.hidden = false;
         btn.disabled = false;
-        btn.addEventListener('click', () => {
-            text.hidden = true;
-            buttons.forEach((b) => { b.hidden = true; });
-            thanks.hidden = false;
-            onVote(btn.dataset.vote);
-        }, { once: true });
+    });
+
+    if (widget.dataset.feedbackWired) return;
+    widget.dataset.feedbackWired = 'true';
+    widget.addEventListener('click', (e) => {
+        const btn = e.target.closest('.feedback-btn');
+        if (!btn || btn.disabled || !widget.contains(btn)) return;
+
+        text.hidden = true;
+        buttons.forEach((b) => {
+            b.hidden = true;
+            b.disabled = true;
+        });
+        const vote = btn.dataset.vote;
+        if (donate) donate.hidden = vote !== 'up';
+        thanks.hidden = vote === 'up';
+        onVote(vote);
     });
 }
 
@@ -346,4 +274,33 @@ export function triggerDownload(data, filename, mimeType) {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+/**
+ * Render `Kobo eReader.conf` settings into a container as `[Section]` intros
+ * followed by their `key=value` lines. Shared by the patches and NickelMenu
+ * download steps so both show conf edits identically.
+ */
+export function renderDownloadConfSettings(container, settings) {
+    container.innerHTML = '';
+
+    const sections = new Map();
+    for (const { section, key, value } of settings) {
+        if (!sections.has(section)) sections.set(section, []);
+        sections.get(section).push(`${key}=${value}`);
+    }
+
+    for (const [section, lines] of sections) {
+        const intro = document.createElement('p');
+        const sectionCode = document.createElement('code');
+        sectionCode.textContent = `[${section}]`;
+        intro.append('In the ', sectionCode, ' section (add it if it is missing):');
+        container.appendChild(intro);
+
+        for (const line of lines) {
+            const lineCode = document.createElement('code');
+            lineCode.textContent = line;
+            container.append(lineCode, document.createElement('br'));
+        }
+    }
 }

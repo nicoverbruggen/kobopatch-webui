@@ -20,6 +20,6 @@
     & input[type="checkbox"] {
         flex-shrink: 0;
         margin-top: 0.15rem;
-        accent-color: var(--primary);
+        accent-color: var(--success-text);
     }
 }

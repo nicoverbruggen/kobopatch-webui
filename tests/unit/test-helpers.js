@@ -1,6 +1,6 @@
-import JSZip from 'jszip';
-
 import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
+import { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import { TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 
 const koboEReaderConfPath = '.kobo/Kobo/Kobo eReader.conf';
 const koboRootTgzPath = '.kobo/KoboRoot.tgz';
@@ -15,8 +15,9 @@ function text(value) {
 
 function createInstaller(tgz = bytes('nickelmenu tgz')) {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuZip = new JSZip();
-    installer.nickelMenuZip.file('KoboRoot.tgz', tgz);
+    // Upstream NickelMenu ships a bare KoboRoot.tgz, so the installer holds the
+    // tgz bytes directly (no wrapping zip).
+    installer.nickelMenuTgz = tgz instanceof Uint8Array ? tgz : bytes(tgz);
     return installer;
 }
 
@@ -25,6 +26,12 @@ function createProgressRecorder() {
     const record = (message) => messages.push(message);
     record.messages = messages;
     return record;
+}
+
+function namedError(name, message) {
+    const err = new Error(message);
+    err.name = name;
+    return err;
 }
 
 function arrayBufferFor(value) {
@@ -49,10 +56,10 @@ function useCustomMenuAssetFetch() {
     const originalFetch = globalThis.fetch;
     // The items file is generated from feature menuItems hooks now. custom-menu
     // fetches the menu icon; the home-content hiders fetch their shared toggle
-    // script (simplify-tabs fetches its own toggle script via ctx.asset).
+    // script through Vite-tracked asset URLs.
     const assets = new Map([
-        ['js/nickelmenu/features/custom-menu/.cog.png', 'cog png'],
-        ['js/nickelmenu/features/hide-home-content/scripts/toggle_hidden_home.sh', '#!/bin/sh\ntoggle home'],
+        [CUSTOM_MENU_ICON_URL, 'cog png'],
+        [TOGGLE_HIDDEN_HOME_SCRIPT_URL, '#!/bin/sh\ntoggle home'],
     ]);
 
     globalThis.fetch = async (url) => {
@@ -74,8 +81,9 @@ function useCustomMenuAssetFetch() {
 }
 
 class RecordingDevice {
-    constructor({ textFiles = {}, existingEntries = [], failWritePath = null, failRemovePaths = [] } = {}) {
+    constructor({ textFiles = {}, existingEntries = [], failReadPaths = [], failWritePath = null, failRemovePaths = [] } = {}) {
         this.textFiles = new Map(Object.entries(textFiles));
+        this.failReadPaths = new Set(failReadPaths);
         this.failWritePath = failWritePath;
         this.failRemovePaths = new Set(failRemovePaths);
         this.writes = [];
@@ -122,7 +130,19 @@ class RecordingDevice {
     }
 
     async readFile(pathParts) {
-        return this.textFiles.get(pathParts.join('/')) ?? null;
+        const path = pathParts.join('/');
+        if (this.failReadPaths.has(path)) {
+            throw new Error(`Refusing read of ${path}`);
+        }
+        return this.textFiles.get(path) ?? null;
+    }
+
+    async readFileBytes(pathParts) {
+        const path = pathParts.join('/');
+        const value = await this.readFile(pathParts);
+        if (value === null) return null;
+        const write = this.writeFor(path);
+        return write ? write.data : bytes(value);
     }
 
     async writeFile(pathParts, data) {
@@ -143,7 +163,7 @@ class RecordingDevice {
         const path = pathParts.join('/');
         if (!this.entryKinds.has(path)) return [];
 
-        return this.listChildPaths(path).map(childPath => ({
+        return this.listChildPaths(path).map((childPath) => ({
             name: childPath.slice(path.length + 1),
             kind: this.entryKinds.get(childPath),
         }));
@@ -161,7 +181,7 @@ class RecordingDevice {
 
         const kind = this.entryKinds.get(path);
         if (!kind) {
-            throw new Error(`Refusing remove of missing ${path}`);
+            throw namedError('NotFoundError', `Refusing remove of missing ${path}`);
         }
 
         if (kind === 'directory' && !options.recursive && this.listChildPaths(path).length > 0) {
@@ -185,30 +205,20 @@ class RecordingDevice {
     }
 
     writePaths() {
-        return this.writes.map(write => write.path);
+        return this.writes.map((write) => write.path);
     }
 
     removePaths() {
-        return this.removals.map(remove => remove.path);
+        return this.removals.map((remove) => remove.path);
     }
 
     writeFor(path) {
-        return this.writes.find(write => write.path === path);
+        return this.writes.find((write) => write.path === path);
     }
 
     removalFor(path) {
-        return this.removals.find(remove => remove.path === path);
+        return this.removals.find((remove) => remove.path === path);
     }
 }
 
-export {
-    RecordingDevice,
-    bytes,
-    createResponse,
-    createInstaller,
-    createProgressRecorder,
-    koboEReaderConfPath,
-    koboRootTgzPath,
-    text,
-    useCustomMenuAssetFetch,
-};
+export { RecordingDevice, bytes, createResponse, createInstaller, createProgressRecorder, koboEReaderConfPath, koboRootTgzPath, text, useCustomMenuAssetFetch };

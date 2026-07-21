@@ -19,16 +19,13 @@ export const KOBO_RESET_HELP_URL = 'https://help.kobo.com/hc/en-us/articles/3600
 // Description shown under the ExcludeSyncFolders config step. Kept here so the
 // on-screen step (nickelmenu-flow.js) and the instructions.txt stay identical.
 export const CONF_DESC_EXCLUDE_CALIBRE =
-    'This prevents new books in the calibre folder from showing up in Kobo\'s list of books. ' +
-    'Move Calibre-transferred books into a "calibre" folder first.';
-export const CONF_DESC_DEFAULT =
-    'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
+    "This prevents new books in the calibre folder from showing up in Kobo's list of books. " + 'Move Calibre-transferred books into a "calibre" folder first.';
+export const CONF_DESC_DEFAULT = 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
 
 /** Format a Date as a readable UTC timestamp, e.g. `2026-06-14 13:45 UTC`. */
 function formatTimestamp(date) {
     const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
-        `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` + `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
 }
 
 /** Underline a heading with `-` to its own length. */
@@ -41,12 +38,14 @@ function heading(text) {
  * list with continuation lines indented to line up under the first line's text.
  */
 function renderSteps(steps) {
-    return steps.map((lines, index) => {
-        const marker = `${index + 1}. `;
-        const indent = ' '.repeat(marker.length);
-        const [first, ...rest] = lines;
-        return [marker + first, ...rest.map((line) => (line ? indent + line : ''))].join('\n');
-    }).join('\n\n');
+    return steps
+        .map((lines, index) => {
+            const marker = `${index + 1}. `;
+            const indent = ' '.repeat(marker.length);
+            const [first, ...rest] = lines;
+            return [marker + first, ...rest.map((line) => (line ? indent + line : ''))].join('\n');
+        })
+        .join('\n\n');
 }
 
 /** Shared file header: what generated this, which version, and when. */
@@ -70,7 +69,7 @@ function disclaimer() {
         'reset your Kobo if needed, as there are always risks involved with these',
         'types of modifications. You apply them at your own risk.',
         '',
-        'If your device becomes unresponsive or hard-locked, follow Kobo\'s guide on',
+        "If your device becomes unresponsive or hard-locked, follow Kobo's guide on",
         'how to manually reset your Kobo:',
         KOBO_RESET_HELP_URL,
     ].join('\n');
@@ -128,14 +127,7 @@ function renderConfBlock(confLine, confSettings) {
  * @param {object[]}[ctx.confSettings]   Feature `Kobo eReader.conf` settings.
  * @param {boolean} [ctx.hasExcludeCalibre]
  */
-export function buildNickelMenuInstructions({
-    version,
-    date = new Date(),
-    isPreset,
-    confLine = '',
-    confSettings = [],
-    hasExcludeCalibre = false,
-} = {}) {
+export function buildNickelMenuInstructions({ version, date = new Date(), isPreset, confLine = '', confSettings = [], hasExcludeCalibre = false } = {}) {
     const steps = [];
 
     steps.push(['Connect your Kobo via USB so it appears as a removable drive.']);
@@ -168,53 +160,39 @@ export function buildNickelMenuInstructions({
         'are also copied.',
     ]);
 
-    steps.push([
-        'Safely eject the Kobo before unplugging the USB cable — it will',
-        'reboot and install NickelMenu automatically.',
-    ]);
+    steps.push(['Safely eject the Kobo before unplugging the USB cable — it will', 'reboot and install NickelMenu automatically.']);
 
-    return [
-        header(version, date),
-        '',
-        disclaimer(),
-        '',
-        heading('Installation steps'),
-        '',
-        renderSteps(steps),
-        '',
-    ].join('\n');
+    return [header(version, date), '', disclaimer(), '', heading('Installation steps'), '', renderSteps(steps), ''].join('\n');
 }
 
 /**
  * Build the instructions.txt body for the custom-patch manual download.
  *
- * @param {object} ctx
- * @param {string} ctx.version      App version string.
- * @param {Date}   [ctx.date]       Generation timestamp.
- * @param {string} [ctx.deviceName] Friendly device name (e.g. "Kobo Libra Color").
+ * @param {object}   ctx
+ * @param {string}   ctx.version        App version string.
+ * @param {Date}     [ctx.date]         Generation timestamp.
+ * @param {string}   [ctx.deviceName]   Friendly device name (e.g. "Kobo Libra Color").
+ * @param {object[]} [ctx.confSettings] Patch side-effect `Kobo eReader.conf` settings.
  */
-export function buildPatchesInstructions({ version, date = new Date(), deviceName = 'Kobo' } = {}) {
-    const steps = [
-        [`Connect your ${deviceName} via USB so it appears as a removable drive.`],
-        [
-            'Extract the downloaded ZIP to the root of the Kobo drive, preserving',
-            'the folder structure. Make sure the hidden .kobo folder is also',
-            'copied.',
-        ],
-        [
-            'Safely eject the Kobo before unplugging the USB cable — it will',
-            'reboot and apply the patches automatically.',
-        ],
-    ];
+export function buildPatchesInstructions({ version, date = new Date(), deviceName = 'Kobo', confSettings = [] } = {}) {
+    const steps = [[`Connect your ${deviceName} via USB so it appears as a removable drive.`]];
 
-    return [
-        header(version, date),
-        '',
-        disclaimer(),
-        '',
-        heading('Installation steps'),
-        '',
-        renderSteps(steps),
-        '',
-    ].join('\n');
+    if (confSettings.length > 0) {
+        const confBlock = renderConfBlock('', confSettings);
+        steps.push([
+            'Open .kobo/Kobo/Kobo eReader.conf in a text editor and add the',
+            'settings shown below. Keep each line under its [Section] header,',
+            'adding a section if it is missing and replacing any existing line',
+            'that has the same key. Do not replace the entire file.',
+            '',
+            ...confBlock.map((line) => (line ? `    ${line}` : '')),
+        ]);
+    }
+
+    steps.push(
+        ['Extract the downloaded ZIP to the root of the Kobo drive, preserving', 'the folder structure. Make sure the hidden .kobo folder is also', 'copied.'],
+        ['Safely eject the Kobo before unplugging the USB cable — it will', 'reboot and apply the patches automatically.'],
+    );
+
+    return [header(version, date), '', disclaimer(), '', heading('Installation steps'), '', renderSteps(steps), ''].join('\n');
 }

@@ -1,8 +1,43 @@
 import { createServer } from 'node:http';
-import { createReadStream, readFileSync, statSync, existsSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { appendFileSync, createReadStream, mkdirSync, readFileSync, statSync, existsSync, watch } from 'node:fs';
+import { join, extname, sep } from 'node:path';
+import { pipeline } from 'node:stream';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
+
+import { storageDir } from './storage.mjs';
+
+// A crash record also goes to the persistent storage volume, because the
+// container filesystem — and with it the stdout the platform captured — can be
+// gone by the time anyone investigates. Best-effort and one appended entry per
+// crash; a bookkeeping failure must never mask the crash being recorded.
+function recordCrash(kind, detail) {
+    try {
+        const dir = join(storageDir(), 'logs');
+        mkdirSync(dir, { recursive: true });
+        appendFileSync(join(dir, 'crash.log'), `${new Date().toISOString()} [${kind}] ${detail}\n\n`);
+    } catch {
+        // stdout still has the record.
+    }
+}
+
+// Last-resort crash logging. This is a single-process server: one uncaught
+// exception takes the whole site down until the platform restarts the
+// container (see the decodeURIComponent guard below for the class of bug that
+// has caused exactly that). Log the full stack, then exit non-zero so the
+// restart policy still kicks in — never limp on in an unknown state.
+process.on('uncaughtException', (err) => {
+    const detail = err?.stack || err;
+    console.error(`[fatal] uncaught exception: ${detail}`);
+    recordCrash('uncaughtException', detail);
+    process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+    const detail = reason?.stack || reason;
+    console.error(`[fatal] unhandled rejection: ${detail}`);
+    recordCrash('unhandledRejection', detail);
+    process.exit(1);
+});
 
 // Served directory. Defaults to dist/; the dev server points it (via DIST_DIR)
 // at its own throwaway build directory.
@@ -21,6 +56,136 @@ if (analyticsEnabled) {
         `    <script defer src="${UMAMI_SCRIPT_URL}" data-website-id="${UMAMI_WEBSITE_ID}"></script>\n`;
 }
 
+// Parse an operator-facing boolean env var. Unlike a bare `!!process.env.X`, an
+// explicit falsy value (`0`, `false`, `no`, `off`, empty) reads as off — so an
+// operator can disable the flag by setting it to "0" instead of having to delete
+// the variable entirely, which is the intuitive thing to reach for.
+function envFlag(name) {
+    const value = process.env[name];
+    if (value === undefined) return false;
+    return !['', '0', 'false', 'no', 'off'].includes(value.trim().toLowerCase());
+}
+
+// Content-Security-Policy. Deployed behind a TLS-terminating proxy; this is the
+// app's own defence-in-depth layer (see also the inline-hash strategy below).
+// Set CSP_REPORT_ONLY=1 to ship it as `…-Report-Only` first — the browser logs
+// violations without blocking, so a new third-party source can be caught before
+// it breaks anything. Set it to 0 (or delete it) to enforce.
+const cspReportOnly = envFlag('CSP_REPORT_ONLY');
+
+function originOf(url) {
+    try {
+        return new URL(url).origin;
+    } catch {
+        return null;
+    }
+}
+
+// The analytics host (script + beacon) is only part of the policy when analytics
+// is actually wired up, derived from the same env var that injects the snippet.
+const umamiOrigin = analyticsEnabled ? originOf(UMAMI_SCRIPT_URL) : null;
+
+// connect-src for the firmware downloads is read straight from downloads.json, so
+// adding a new Kobo/mirror host there updates the policy with no code change.
+function firmwareConnectOrigins() {
+    try {
+        const raw = readFileSync(join(DIST, 'patches', 'downloads.json'), 'utf-8');
+        const origins = new Set();
+        for (const match of raw.matchAll(/"(https?:\/\/[^"]+)"/g)) {
+            const origin = originOf(match[1]);
+            if (origin) origins.add(origin);
+        }
+        return [...origins];
+    } catch {
+        return [];
+    }
+}
+
+// Hash every *bare* inline <script>/<style> block (no attributes) in the served
+// HTML — the pre-paint theme bootstrap, the inlined critical CSS, and the
+// runtime-injected analytics/live-reload snippets. Hashing the actual bytes means
+// script-src/style-src never need 'unsafe-inline' and the hashes can never drift
+// from the markup. JSON-LD (type="application/ld+json") and the module/analytics
+// <script src> tags carry attributes, so they don't match and don't need hashing.
+function inlineHashes(html, tag) {
+    const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'g');
+    const hashes = [];
+    for (const match of html.matchAll(re)) {
+        const digest = createHash('sha256').update(match[1], 'utf-8').digest('base64');
+        hashes.push(`'sha256-${digest}'`);
+    }
+    return hashes;
+}
+
+let cspCache = null;
+function getCsp() {
+    if (!noCache && cspCache) return cspCache;
+    const html = getIndexHtml() || '';
+
+    const scriptSrc = ["'self'", "'wasm-unsafe-eval'", ...inlineHashes(html, 'script')];
+    const styleSrc = ["'self'", 'https://fonts.googleapis.com', ...inlineHashes(html, 'style')];
+    const connectSrc = ["'self'", ...firmwareConnectOrigins()];
+    if (umamiOrigin) {
+        scriptSrc.push(umamiOrigin);
+        connectSrc.push(umamiOrigin);
+    }
+
+    const csp = [
+        `default-src 'self'`,
+        `script-src ${scriptSrc.join(' ')}`,
+        `style-src ${styleSrc.join(' ')}`,
+        `font-src 'self' https://fonts.gstatic.com`,
+        // blob: is needed for the NickelMenu custom-icon flow, which loads the
+        // uploaded file and the canvas-resized PNG/SVG previews from object URLs.
+        `img-src 'self' data: blob:`,
+        `connect-src ${connectSrc.join(' ')}`,
+        `worker-src 'self'`,
+        `object-src 'none'`,
+        `base-uri 'self'`,
+        `form-action 'self'`,
+        `frame-ancestors 'none'`,
+        `manifest-src 'self'`,
+        `upgrade-insecure-requests`,
+    ].join('; ');
+
+    if (!noCache) cspCache = csp;
+    return csp;
+}
+
+// CSP plus the companion hardening headers, applied to every response.
+function securityHeaders() {
+    return {
+        [cspReportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy']: getCsp(),
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    };
+}
+
+// CSS live-reload, enabled by the dev server (LIVE_RELOAD=1). When the watch build
+// regenerates css/style.css, the server pushes a Server-Sent Event to connected
+// browsers, which swap the stylesheet's href (cache-busted) in place. CSS-only — no
+// full page reload — so the in-progress wizard state survives an edit. Changes to
+// critical.css (inlined into index.html) still need a manual refresh.
+const liveReload = !!process.env.LIVE_RELOAD;
+const liveReloadSnippet = liveReload
+    ? `    <script>
+    (() => {
+      const es = new EventSource('/__livereload');
+      es.addEventListener('css', () => {
+        for (const link of document.querySelectorAll('link[rel="stylesheet"][href*="style.css"]')) {
+          const u = new URL(link.href, location.href);
+          u.searchParams.set('h', Date.now());
+          link.href = u.href;
+        }
+        console.info('[live-reload] CSS updated');
+      });
+    })();
+    </script>
+`
+    : '';
+
 // Cache the processed index.html (disabled when NO_CACHE is set, e.g. during --dev)
 const noCache = !!process.env.NO_CACHE;
 let cachedIndexHtml = null;
@@ -31,6 +196,9 @@ function getIndexHtml() {
     let html = readFileSync(indexPath, 'utf-8');
     if (analyticsSnippet) {
         html = html.replace('</head>', analyticsSnippet + '</head>');
+    }
+    if (liveReloadSnippet) {
+        html = html.replace('</head>', liveReloadSnippet + '</head>');
     }
     if (!noCache) cachedIndexHtml = html;
     return html;
@@ -89,11 +257,18 @@ const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '
  *    after a deploy. Paired with the content-hash ETag, an unchanged asset (incl. a
  *    40 MB archive) is reused on a tiny 304 — `no-cache` does not mean re-download —
  *    while a deploy or `update:installables` bump is picked up on the next request.
+ *
+ * `compressible` is false for the binary archives (zip/tgz/png/wasm), which are
+ * already compressed. For those we add `no-transform`: it tells any TLS-terminating
+ * reverse proxy in front of this (HTTP/1.1-only) Node server not to gzip them. That
+ * recompression saves ~0 bytes but drops Content-Length (the proxy switches to
+ * chunked), and without Content-Length the browser can't show download progress —
+ * `fetchWithProgress` falls back to a single unmetered read. `no-transform` (RFC 7234)
+ * is the standard signal to forbid that; honoured by nginx's gzip module and others.
  */
-function cacheControl(search) {
-    if (noCache) return 'no-cache';
-    if (/[?&][hv]=/.test(search)) return 'public, max-age=31536000, immutable';
-    return 'no-cache';
+function cacheControl(search, compressible) {
+    const base = noCache ? 'no-cache' : /[?&][hv]=/.test(search) ? 'public, max-age=31536000, immutable' : 'no-cache';
+    return compressible ? base : `${base}, no-transform`;
 }
 
 // Strong content-hash ETag, memoized per server lifetime. The validator is the
@@ -151,7 +326,7 @@ function pickEncoding(filePath, srcStat, accept) {
 // response branch — 200s, redirects to index.html, and 404s alike.
 const logRequests = !!process.env.LOG_REQUESTS;
 const useColor = logRequests && process.stdout.isTTY;
-const paint = (code, text) => useColor ? `\u001b[${code}m${text}\u001b[0m` : `${text}`;
+const paint = (code, text) => (useColor ? `\u001b[${code}m${text}\u001b[0m` : `${text}`);
 function logServed(req, res, url) {
     res.on('finish', () => {
         const status = res.statusCode;
@@ -160,10 +335,63 @@ function logServed(req, res, url) {
     });
 }
 
+// Connected live-reload browsers (held-open SSE responses) and the broadcast that
+// nudges them to swap the stylesheet after a CSS rebuild.
+const sseClients = new Set();
+function broadcastCss() {
+    for (const client of sseClients) client.write('event: css\ndata: reload\n\n');
+}
+
+// Watch the served tree for the regenerated css/style.css and broadcast. DIST itself
+// is never removed during a dev session (the watch build only rewrites its children),
+// so a recursive watch on the root stays alive across rebuilds; we filter to the one
+// output file and debounce the burst of events a rebuild produces.
+function setupCssWatch() {
+    let timer = null;
+    try {
+        watch(DIST, { recursive: true }, (_event, filename) => {
+            if (!filename || filename.split(sep).join('/') !== 'css/style.css') return;
+            clearTimeout(timer);
+            timer = setTimeout(broadcastCss, 100);
+        });
+    } catch {
+        // DIST not ready yet (build still creating it) — retry shortly.
+        setTimeout(setupCssWatch, 500);
+    }
+}
+
 createServer((req, res) => {
     const url = new URL(req.url, `http://localhost`);
     if (logRequests) logServed(req, res, url);
-    let filePath = join(DIST, decodeURIComponent(url.pathname));
+
+    // Live-reload SSE stream: held open, never logged as a served file.
+    if (liveReload && url.pathname === '/__livereload') {
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+        });
+        res.write('retry: 1000\n\n');
+        sseClients.add(res);
+        req.on('close', () => sseClients.delete(res));
+        return;
+    }
+
+    // decodeURIComponent throws URIError on a malformed percent-escape (e.g. a
+    // bare "%" or "%zz"). This runs before the try/catch around the file reads, so
+    // an unguarded throw here would be an uncaught exception that takes down the
+    // whole process — a one-request DoS. Send those to the homepage instead (a
+    // temporary redirect, never cached, so a bad URL lands on the app).
+    let decodedPath;
+    try {
+        decodedPath = decodeURIComponent(url.pathname);
+    } catch {
+        res.writeHead(302, { Location: '/', 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+    }
+
+    let filePath = join(DIST, decodedPath);
     if (!filePath.startsWith(DIST + '/') && filePath !== DIST) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');
@@ -179,15 +407,26 @@ createServer((req, res) => {
     if (filePath.endsWith('index.html')) {
         const v = getIndexVariants();
         if (v) {
-            const headers = { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache', 'Vary': 'Accept-Encoding', 'ETag': v.etag };
+            const headers = {
+                'Content-Type': 'text/html',
+                'Cache-Control': 'no-cache',
+                Vary: 'Accept-Encoding',
+                ETag: v.etag,
+                ...securityHeaders(),
+            };
             if (notModified(req, v.etag)) {
                 res.writeHead(304, headers);
                 res.end();
                 return;
             }
             let body = v.identity;
-            if (/\bbr\b/.test(accept)) { body = v.br; headers['Content-Encoding'] = 'br'; }
-            else if (/\bgzip\b/.test(accept)) { body = v.gz; headers['Content-Encoding'] = 'gzip'; }
+            if (/\bbr\b/.test(accept)) {
+                body = v.br;
+                headers['Content-Encoding'] = 'br';
+            } else if (/\bgzip\b/.test(accept)) {
+                body = v.gz;
+                headers['Content-Encoding'] = 'gzip';
+            }
             headers['Content-Length'] = body.length;
             res.writeHead(200, headers);
             res.end(body);
@@ -205,12 +444,14 @@ createServer((req, res) => {
         // The ETag hashes the identity bytes, so it 304s regardless of which encoding
         // the client cached (paired with Vary below) and changes iff the content does.
         const etag = contentEtag(filePath, srcStat);
+        const compressible = COMPRESSIBLE.has(extname(filePath));
         const headers = {
             'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
-            'Cache-Control': cacheControl(url.search),
-            'ETag': etag,
+            'Cache-Control': cacheControl(url.search, compressible),
+            ETag: etag,
+            ...securityHeaders(),
         };
-        if (COMPRESSIBLE.has(extname(filePath))) headers['Vary'] = 'Accept-Encoding';
+        if (compressible) headers['Vary'] = 'Accept-Encoding';
 
         if (notModified(req, etag)) {
             res.writeHead(304, headers);
@@ -224,11 +465,28 @@ createServer((req, res) => {
         headers['Content-Length'] = serveStat.size;
         if (picked) headers['Content-Encoding'] = picked.encoding;
         res.writeHead(200, headers);
-        createReadStream(picked ? picked.path : filePath).pipe(res);
+        // pipeline, not pipe: pipe() forwards no errors, so a read failure
+        // mid-stream (file swapped during a deploy, fd exhaustion) would crash
+        // the process, and a client abort would leak the read stream's fd —
+        // with the 40 MB archives that leak compounds toward EMFILE. pipeline
+        // destroys both streams on either side failing; the errors themselves
+        // (mostly routine aborts) need no handling beyond that.
+        pipeline(createReadStream(picked ? picked.path : filePath), res, () => {});
     } catch {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');
     }
-}).listen(PORT, () => {
-    console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
-});
+})
+    .on('error', (err) => {
+        // Listen-time failures such as EADDRINUSE. Without a handler this
+        // still crashes, but through the generic uncaughtException path; name
+        // it here so a port conflict is recognizable at a glance in the logs.
+        const detail = err?.stack || err;
+        console.error(`[fatal] server error: ${detail}`);
+        recordCrash('serverError', detail);
+        process.exit(1);
+    })
+    .listen(PORT, () => {
+        console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
+        if (liveReload) setupCssWatch();
+    });

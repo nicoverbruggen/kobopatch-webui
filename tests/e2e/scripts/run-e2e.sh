@@ -24,6 +24,11 @@ E2E_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_DIR="$(cd "$E2E_DIR/../.." && pwd)"
 DIST_DIR="$APP_DIR/dist"
 STALE_TEST_NODE_MODULES="$APP_DIR/tests/e2e/node_modules"
+STALE_TEST_ARTIFACTS=(
+    "$APP_DIR/test-results"
+    "$E2E_DIR/test-results"
+    "$E2E_DIR/playwright-report"
+)
 
 source "$SCRIPT_DIR/env.sh"
 
@@ -77,6 +82,13 @@ if [ -d "$STALE_TEST_NODE_MODULES" ]; then
     echo "Removing stale tests/node_modules from the former E2E npm package..."
     rm -rf "$STALE_TEST_NODE_MODULES"
 fi
+
+for artifact_dir in "${STALE_TEST_ARTIFACTS[@]}"; do
+    if [ -d "$artifact_dir" ]; then
+        echo "Removing stale test artifact directory: $artifact_dir"
+        rm -rf "$artifact_dir"
+    fi
+done
 
 # Install dependencies and browser.
 npm --prefix "$APP_DIR" install --silent

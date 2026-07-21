@@ -8,6 +8,35 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 DOWNLOADS="$APP_DIR/patches/downloads.json"
 
+# Validate channel-key ordering. Prefix-keyed test/local entries remain tolerated
+# by the app, but committed downloads.json should use firmware-channel keys.
+node -e "
+  const d = require('$DOWNLOADS');
+  const channelNumber = key => {
+    const match = String(key).match(/^kobo(\d+)$/);
+    return match ? Number(match[1]) : null;
+  };
+  let failed = false;
+  for (const [version, val] of Object.entries(d)) {
+    if (version.startsWith('_') || typeof val !== 'object' || Array.isArray(val)) continue;
+    const keys = Object.keys(val);
+    const invalidKeys = keys.filter(key => channelNumber(key) === null);
+    if (invalidKeys.length > 0) {
+      console.error(\`Firmware downloads for \${version} must be keyed by kobo channel, got: \${invalidKeys.join(', ')}\`);
+      failed = true;
+      continue;
+    }
+    const channels = keys;
+    const sorted = [...channels].sort((a, b) => channelNumber(b) - channelNumber(a));
+    if (channels.join('\n') !== sorted.join('\n')) {
+      console.error(\`Firmware channels for \${version} are not sorted descending: \${channels.join(', ')}\`);
+      console.error(\`Expected: \${sorted.join(', ')}\`);
+      failed = true;
+    }
+  }
+  if (failed) process.exit(1);
+"
+
 # Extract unique URLs (skip keys starting with _).
 URLS=$(node -e "
   const d = require('$DOWNLOADS');

@@ -2,7 +2,10 @@ import JSZip from 'jszip';
 
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl } from '../../installables.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { loadBundledAsset } from '../assets.js';
+
+export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclock.sh', import.meta.url).href;
 
 // Installs NickelClock (https://github.com/shermp/NickelClock), which shows a
 // clock and battery indicator while reading. Like NickelMenu, it ships as a Qt
@@ -26,9 +29,11 @@ import { installableVersion, installableAssetUrl } from '../../installables.js';
 // shape as every other add-on cleanup here — so no KoboRoot.tgz is needed.
 export default {
     id: 'nickelclock',
-    section: 'Advanced',
-    title: 'Install NickelClock',
-    description: 'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',
+    section: 'Reading Experience',
+    analyticsEvent: 'add-nickelclock',
+    title: 'Display clock when reading',
+    description:
+        'Display the clock on the right in the header while you\'re reading. Adds a "NickelClock" item to the Toggle menu that turns this clock on or off.',
     default: false,
     available: false, // set to true at runtime if NickelClock assets exist
     directories: ['.adds/nickelclock'],
@@ -56,26 +61,17 @@ export default {
         removeLabel: 'Remove NickelClock (.adds/nickelclock)',
         description: 'Removes NickelClock. Deleting its folder triggers NickelClock to finish removing its own plugin on the next reboot.',
         detect: [['.adds', 'nickelclock']],
-        paths: [
-            { path: ['.adds', 'nickelclock'], recursive: true },
-        ],
+        paths: [{ path: ['.adds', 'nickelclock'], recursive: true }],
     },
 
     // Ship the on-device toggle script under .adds/nm/scripts (so NickelMenu
-    // removal's recursive delete cleans it up). The script flips [Clock] Enabled
-    // in settings.ini and reboots; the matching Toggle item is below.
-    //
-    // We deliberately do NOT ship a prefilled .adds/nickelclock/settings.ini:
-    // Chromium's File System Access API refuses to create `.ini` files
-    // (getFileHandle throws "Name is not allowed"), which broke device installs.
-    // NickelClock generates its own settings.ini on first boot, so omitting it
-    // here is the simplest fix — at the cost of NickelClock's default Margin
-    // rather than our roomier Margin=40.
+    // removal's recursive delete cleans it up). The matching Toggle item is below.
     async install(ctx) {
+        const toggleScript = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_NICKELCLOCK_SCRIPT_URL) : await loadBundledAsset(TOGGLE_NICKELCLOCK_SCRIPT_URL);
         return [
             {
                 path: '.adds/nm/scripts/toggle_nickelclock.sh',
-                data: await ctx.asset('scripts/toggle_nickelclock.sh'),
+                data: toggleScript,
             },
         ];
     },
@@ -83,10 +79,12 @@ export default {
     // Contribute the "NickelClock" Toggle-menu item that turns the reading-screen
     // clock on or off. Its position is set by 'nickelclock' in ../menu-order.js.
     menuItems() {
-        return [{
-            id: 'nickelclock',
-            lines: ['menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh'],
-        }];
+        return [
+            {
+                id: 'nickelclock',
+                lines: ['menu_item :main :NickelClock :cmd_output :7000 :/mnt/onboard/.adds/nm/scripts/toggle_nickelclock.sh'],
+            },
+        ];
     },
 
     /**
@@ -102,7 +100,7 @@ export default {
         ctx.progress(label);
         const zipBytes = await fetchWithProgress(
             installableAssetUrl('nickelclock', 'NickelClock.zip'),
-            downloadProgress(ctx.progress, label),
+            downloadProgress(ctx.progress, label, await installableSize('nickelclock')),
             'Failed to download NickelClock',
         );
         const zip = await JSZip.loadAsync(zipBytes);

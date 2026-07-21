@@ -26,6 +26,8 @@ if [ -x "$LOCAL_GO_DIR/bin/go" ]; then
 fi
 
 APP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export GOCACHE="${GOCACHE:-$APP_DIR/tmp/go/cache}"
+mkdir -p "$GOCACHE"
 E2E_DIR="$APP_DIR/tests/e2e"
 FIRMWARE_CONFIG="$E2E_DIR/config/firmware-config.js"
 CACHED_ASSETS="$E2E_DIR/cached_assets"
@@ -86,9 +88,11 @@ for i in $(seq 0 $((COUNT - 1))); do
     echo "=== Copying patches from $PATCHES_SOURCE ==="
     cp -r "$PATCHES_SRC_DIR"/* "$PATCH_TMPDIR/"
 
-    # Rewrite the config to point at the cached firmware and create output dir.
-    sed "s|^in:.*|in: $FIRMWARE_FILE|" "$PATCH_TMPDIR/kobopatch.yaml" > "$PATCH_TMPDIR/kobopatch.yaml.tmp"
-    mv "$PATCH_TMPDIR/kobopatch.yaml.tmp" "$PATCH_TMPDIR/kobopatch.yaml"
+    # Generate the kobopatch config from index.json, pointed at the cached
+    # firmware. The source dirs no longer ship a kobopatch.yaml.
+    node "$SCRIPT_DIR/gen-kobopatch-config.mjs" \
+        --source "$PATCHES_SOURCE" --version "$VERSION" --in "$FIRMWARE_FILE" \
+        > "$PATCH_TMPDIR/kobopatch.yaml"
     mkdir -p "$PATCH_TMPDIR/out"
 
     # Run patch tests and capture output.

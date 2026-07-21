@@ -1,37 +1,49 @@
 {
   "name": "kobopatch-webui",
-  "version": "1.28.1",
+  "version": "1.52",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:wasm": "bash tools/kobopatch-wasm/build.sh",
     "dev": "node scripts/serve-local.mjs --dev",
+    "format": "prettier --write \"**/*.{js,mjs}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs}\"",
     "lint": "eslint .",
     "screenshots": "bash tests/e2e/scripts/run-screenshots.sh",
     "serve": "node scripts/serve-local.mjs",
     "serve:fake-analytics": "node scripts/serve-local.mjs --fake-analytics",
+    "hardware:get-ids": "node scripts/get-hardware-ids.mjs",
+    "hardware:resolve-ids": "node scripts/resolve-hardware-ids.mjs",
     "setup:installables": "node tools/installables/installables.mjs --src",
     "update:installables": "node tools/installables/installables.mjs --update --src --dist",
+    "check:installables": "node tools/installables/installables.mjs --check --force",
+    "check:patch-metadata": "node scripts/check-patch-metadata.mjs",
     "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
     "start": "node scripts/serve-dist.mjs",
-    "test": "node scripts/test.mjs",
+    "verify": "node scripts/verify.mjs",
+    "test": "node scripts/verify.mjs --quick",
     "test:e2e": "bash tests/e2e/scripts/run-e2e.sh",
     "test:e2e:fresh": "bash tests/e2e/scripts/run-e2e-fresh.sh",
     "test:patches": "bash tools/kobopatch-wasm/test-patches.sh",
     "test:patches:check": "bash tools/kobopatch-wasm/test-patches.sh --check",
     "test:unit": "node --test tests/unit/*.test.js",
+    "test:unit:coverage": "node --test --experimental-test-coverage tests/unit/*.test.js",
     "test:wasm": "bash tools/kobopatch-wasm/test-integration.sh",
     "validate:dist": "node scripts/validate-dist.mjs",
     "version:generate": "node scripts/version-generate.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "esbuild": "^0.28.1",
-    "eslint": "^9.0.0"
+    "eslint": "^9.0.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.4",
+    "vite": "^7.2.7"
   },
   "dependencies": {
+    "fflate": "^0.8.3",
     "js-yaml": "^4.2.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "lucide": "^1.21.0"
   }
 }

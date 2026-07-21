@@ -1,15 +1,22 @@
 /* Patch search */
 .patch-search-wrap {
-    position: relative;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+    padding-right: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.patch-search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .patch-search {
     width: 100%;
     padding: 0.55rem 2rem 0.55rem 0.75rem;
     border: none;
-    border-bottom: 1px solid var(--border);
     font-size: 0.85rem;
     background: var(--bg);
     color: var(--text);
@@ -45,6 +52,40 @@
     }
 }
 
+.patch-blacklist-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.patch-blacklist-button .patch-icon-btn-icon,
+.patch-blacklist-button svg {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+@media (max-width: 560px) {
+    .patch-search-wrap {
+        flex-wrap: wrap;
+        align-items: stretch;
+        padding: 0.4rem;
+    }
+
+    .patch-search-field {
+        flex-basis: 100%;
+    }
+
+    .patch-blacklist-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 .patch-search-none {
     padding: 1.5rem 0.75rem;
     text-align: center;
@@ -59,6 +100,272 @@
     flex-direction: column;
     border: 1px solid var(--border);
     border-radius: 5px;
+}
+
+.patch-advanced {
+    margin-top: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--card-bg);
+
+    & summary {
+        min-height: 2.5rem;
+        padding: 0 0.85rem;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        list-style: none;
+        user-select: none;
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+
+        &::before {
+            content: "\203A";
+            display: inline-block;
+            width: 1rem;
+            margin-right: 0.35rem;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            transition: transform 0.15s ease;
+        }
+
+        &:hover {
+            background: var(--bg-subtle);
+        }
+    }
+
+    &[open] summary {
+        border-bottom: 1px solid var(--border-light);
+
+        &::before {
+            transform: rotate(90deg) translateX(0.25rem);
+        }
+    }
+}
+
+.patch-summary-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.45rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.patch-advanced-body {
+    padding: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.patch-display-format {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.patch-history {
+    margin-left: 1.2rem;
+}
+
+.patch-pref-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+label.patch-pref-row {
+    cursor: pointer;
+}
+
+.patch-pref-row input {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.patch-pref-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.patch-pref-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.patch-pref-hint {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.patch-history .patch-blacklist-button {
+    margin-top: 0.6rem;
+}
+
+.patch-button-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    flex-shrink: 0;
+}
+
+.patch-additional-files-warning {
+    margin-bottom: 0.85rem;
+
+    & p {
+        margin: 0;
+    }
+}
+
+.patch-additional-files-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+
+    & h3 {
+        margin: 0 0 0.2rem;
+        font-size: 0.95rem;
+        line-height: 1.25;
+    }
+
+    & p {
+        margin: 0;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    & button {
+        flex-shrink: 0;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+    }
+}
+
+#patch-additional-files-empty {
+    margin-bottom: -0.8rem;
+}
+
+#patch-additional-files-title {
+    margin-bottom: 0.5rem;
+}
+
+#btn-patch-additional-files {
+    font-size: 0.85rem;
+    padding: 0.30rem 1rem;
+    margin: 0.5rem 0;
+}
+
+.patch-additional-files-list {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 0.75rem;
+}
+
+.patch-additional-file-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "name remove"
+        "target target";
+    align-items: center;
+    gap: 0.5rem 0.6rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    background: var(--bg);
+}
+
+.patch-additional-file-name {
+    grid-area: name;
+    min-width: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.patch-additional-file-size {
+    display: block;
+    margin-top: 0.1rem;
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.patch-additional-file-target {
+    grid-area: target;
+    min-width: 0;
+
+    & label {
+        display: block;
+        margin-bottom: 0.15rem;
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0;
+        color: var(--text-secondary);
+    }
+
+    & input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.45rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--card-bg);
+        color: var(--text);
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+    }
+
+    & input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    & input[aria-invalid="true"] {
+        border-color: var(--error-text);
+        box-shadow: 0 0 0 2px var(--error-bg);
+    }
+}
+
+.patch-additional-file-error {
+    margin: 0.25rem 0 0;
+    font-size: 0.72rem;
+    color: var(--error-text);
+}
+
+.patch-additional-file-remove {
+    grid-area: remove;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.patch-additional-files-error {
+    margin: 0.65rem 0 0;
+    font-size: 0.78rem;
+    color: var(--error-text);
+}
+
+@media (max-width: 680px) {
+    .patch-additional-files-head {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .patch-additional-files-head button {
+        justify-self: start;
+    }
 }
 
 .patch-list-wrapper {
@@ -108,7 +415,7 @@
         }
 
         &:hover {
-            background: #f9fafb;
+            background: var(--bg-subtle);
         }
     }
 
@@ -180,7 +487,7 @@
 .patch-incompatible {
     font-size: 0.7rem;
     font-weight: 500;
-    color: var(--error, #c0392b);
+    color: var(--error-text);
     flex-shrink: 0;
 }
 
@@ -196,27 +503,78 @@
     flex-shrink: 0;
 }
 
-.patch-desc-toggle {
+.patch-icon-btn {
     flex-shrink: 0;
-    margin-left: auto;
-    background: none;
-    border: none;
-    padding: 0 0.3rem;
-    font-size: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--card-bg);
     color: var(--text-secondary);
     cursor: pointer;
     box-shadow: none;
-    opacity: 0.6;
-    transition: opacity 0.1s;
+    transition:
+        background 0.1s,
+        border-color 0.1s,
+        color 0.1s,
+        box-shadow 0.1s;
 
     &:hover {
-        opacity: 1;
+        color: var(--primary);
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    &:focus-visible {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    &[aria-expanded="true"] {
+        color: var(--primary);
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+}
+
+.patch-icon-btn-icon,
+.patch-icon-btn svg {
+    width: 0.95rem;
+    height: 0.95rem;
+    display: block;
+}
+
+.patch-desc-toggle {
+    margin-left: auto;
+    font-size: 0.7rem;
+}
+
+.patch-desc-toggle .patch-icon-btn-icon,
+.patch-desc-toggle svg {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+.patch-edit-btn {
+    font-size: 0.8rem;
+
+    &:hover {
+        color: var(--primary);
     }
 }
 
 /* Visual grouping for mutually exclusive patches */
 .patch-group {
-    background: #f8fafc;
+    background: var(--bg-subtle);
     border-left: 3px solid var(--primary);
     margin: 0.35rem 0.5rem;
     border-radius: 0 6px 6px 0;
@@ -235,39 +593,40 @@
     padding: 0.45rem 0.75rem 0;
 }
 
-.step .patch-description {
-    margin-top: 0.3rem;
-    margin-left: 1.6rem;
-    margin-bottom: 0;
+.patch-notes[hidden] {
+    display: none;
+}
+
+.step .patch-notes {
+    margin-top: -0.2rem;
+    margin-left: 1.4rem;
+    padding: 0.25rem 0;
+}
+
+.step .patch-notes p {
+    margin: 0;
     font-size: 0.72rem;
     color: var(--text-secondary);
     white-space: pre-line;
     line-height: 1.4;
-    padding: 0.25rem 0;
 }
 
-.patch-description[hidden] {
-    display: none;
+.step .patch-notes p + p {
+    margin-top: 0.35rem;
+}
+
+.step .patch-note {
+    font-style: italic;
+}
+
+.step .patch-author {
+    font-size: 0.68rem;
+    opacity: 0.8;
 }
 
 /* Edit button for patches */
 .patch-edit-btn {
-    flex-shrink: 0;
     margin-left: auto;
-    background: none;
-    border: none;
-    padding: 0 0.3rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-    box-shadow: none;
-    opacity: 0.5;
-    transition: opacity 0.1s;
-
-    &:hover {
-        opacity: 1;
-        color: var(--primary);
-    }
 }
 
 /* When both edit and desc-toggle are present, order them */
@@ -290,6 +649,42 @@
     color: var(--text-secondary);
     margin: 0 0 0.75rem;
     line-height: 1.4;
+}
+
+.patch-editor-tips[hidden] {
+    display: none;
+}
+
+.patch-editor-tips {
+    margin: 0 0 0.75rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 6px;
+    background: var(--surface-muted, rgba(127, 127, 127, 0.1));
+    border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+}
+
+.patch-editor-tips-heading {
+    margin: 0 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+
+.patch-editor-tips ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.patch-editor-tips li {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.patch-editor-tips li + li {
+    margin-top: 0.25rem;
 }
 
 .patch-editor-textarea {
@@ -355,7 +750,7 @@
 
 /* Reload-from-device banner at the top of the patches step. */
 .patch-reload-banner {
-    display: flex;
+    display: block;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
@@ -371,11 +766,12 @@
 }
 
 .patch-reload-banner #patch-reload-text {
-    flex: 1;
+    display: block;
 }
 
 .patch-reload-banner #btn-patch-reload {
     flex-shrink: 0;
+    margin-top: 0.5rem;
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
     color: var(--text-secondary);
@@ -386,5 +782,138 @@
         color: var(--text);
         border-color: var(--border);
         background: var(--bg);
+    }
+}
+
+.patch-reload-dialog-list {
+    & li {
+        color: var(--text);
+    }
+}
+
+.patch-reload-dialog-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    background: var(--primary-light);
+    color: var(--accent-text);
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-left: 0.35rem;
+    vertical-align: 0.05rem;
+}
+
+.patch-reload-dialog-badge--warning {
+    background: var(--warning-bg);
+    color: var(--warning-text);
+}
+
+.patch-reload-dialog-notes {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.patch-reload-dialog-note {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Restored Additional Files are a call to action (review them), shown directly
+   under the re-applied patch list and above the notes divider, in the primary
+   text color rather than the muted secondary one used for the caveat notes. */
+.patch-reload-dialog-additional-summary {
+    margin: 0.85rem 0 0;
+    font-size: 0.82rem;
+    color: var(--text);
+}
+
+.patch-blacklist-dialog-content {
+    position: relative;
+    max-width: 620px;
+}
+
+.patch-blacklist-description {
+    margin: 0 0 0.85rem;
+    color: var(--text);
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.patch-blacklist-meta {
+    margin: 0 0 0.35rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.patch-blacklist-current-version {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    & .device-identification-badge::after {
+        content: none;
+    }
+}
+
+.patch-blacklist-version-tooltip {
+    position: absolute;
+    z-index: 30;
+    width: 260px;
+    max-width: calc(100% - 24px);
+    padding: 0.55rem 0.65rem;
+    border-radius: 6px;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    box-shadow: var(--shadow-md);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.patch-blacklist-version-tooltip--visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.patch-blacklist-list {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.patch-blacklist-group {
+    margin-top: 0.9rem;
+
+    &:first-child {
+        margin-top: 0;
+    }
+
+    & h3 {
+        margin: 0;
+        font-size: 0.92rem;
+    }
+
+    & ul {
+        margin: 0.45rem 0 0;
+        padding-left: 1.15rem;
+    }
+
+    & li {
+        margin: 0.2rem 0;
+        color: var(--text);
     }
 }

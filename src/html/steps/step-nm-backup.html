@@ -1,0 +1,41 @@
+        <section id="step-nm-backup" class="step" hidden>
+            <p id="nm-backup-intro">Before continuing, choose whether you want to create a local backup from your Kobo first. This happens entirely in your browser on this computer and is never uploaded to any server.</p>
+            <div id="nm-backup-options" class="selection-cards" role="radiogroup" aria-label="NickelMenu backup options">
+                <label class="selection-card selection-card--recommended">
+                    <input type="radio" name="nm-backup-option" value="key-files">
+                    <div class="selection-card-body">
+                        <div class="recommended-label">Recommended (and safest)</div>
+                        <div class="selection-card-title">Back up important files</div>
+                        <div class="selection-card-desc">This minimal backup includes key database and configuration files that you cannot easily re-download. For example, the database includes all information about your reading time, stats, and annotations.</div>
+                    </div>
+                </label>
+                <label class="selection-card">
+                    <input type="radio" name="nm-backup-option" value="skip">
+                    <div class="selection-card-body">
+                        <div class="selection-card-title">Don't make a backup</div>
+                        <div class="selection-card-desc">If you previously made a backup, you can probably skip this.</div>
+                    </div>
+                </label>
+            </div>
+            <div id="nm-keep-config-option" class="nm-keep-config" hidden>
+                <label class="nm-keep-config-label">
+                    <input type="checkbox" id="nm-keep-items">
+                    <span id="nm-keep-config-title" class="nm-keep-config-title">Keep my custom NickelMenu configuration</span>
+                    <span id="nm-keep-config-desc" class="nm-keep-config-desc"></span>
+                </label>
+            </div>
+            <p id="nm-backup-local-note">
+                A backup of your files is only created locally via your browser. Your backup is never uploaded anywhere. Once ready, your browser will "download" an archive that you can use to restore files. Store this archive in a safe location, in the unlikely event that something goes wrong.
+            </p>
+            <div id="nm-manual-backup-instructions" class="install-instructions" hidden>
+                <ol class="install-steps">
+                    <li>Connect your Kobo via USB so it appears as a removable drive.</li>
+                    <li>Copy the hidden <strong>.kobo</strong> folder to a safe folder on your computer.</li>
+                    <li>When the files have been copied, you can continue with the wizard. Make sure to store this copy in a safe location, in the unlikely event something goes wrong.</li>
+                </ol>
+            </div>
+            <div class="step-actions">
+                <button id="btn-nm-backup-back" class="secondary">&#x2039; Back</button>
+                <button id="btn-nm-backup-next" class="primary" disabled>Continue &#x203A;</button>
+            </div>
+        </section>

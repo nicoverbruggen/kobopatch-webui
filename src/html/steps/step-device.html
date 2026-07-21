@@ -1,0 +1,48 @@
+        <section id="step-device" class="step" hidden>
+            <div id="device-info" class="info-card">
+                <div class="info-row">
+                    <span class="label" tabindex="0" data-tooltip="This is the name of the device. It's the marketing name that Kobo uses.">Model</span>
+                    <span id="device-model" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label" tabindex="0" data-tooltip="Unique hardware revision. Sometimes a unique model has multiple hardware revisions, and this is how they are distinguished.">Hardware UUID</span>
+                    <span id="device-hardware-id" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label" tabindex="0" data-tooltip="In addition to having a hardware UUID which is unique to each revision, each individual customer has a private, unique number and that's your serial number. Each serial number begins with a few characters that also can help identify the device model.">Serial Number</span>
+                    <span id="device-serial" class="value">--</span>
+                </div>
+                <div class="info-row" id="device-language-row">
+                    <span class="label" tabindex="0" data-tooltip="The interface language your Kobo is set to. Some menu customisations only rename tabs on English devices; on other languages the device keeps its own labels.">Language</span>
+                    <span id="device-language" class="value">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="label" tabindex="0" data-tooltip="The software version. This version is used to determine if your device can be modded. Kobo devices are not restricted or locked down, so you just need a compatible version.">Software</span>
+                    <span id="device-firmware" class="value">--</span>
+                </div>
+            </div>
+            <p id="device-status"></p>
+            <p id="device-unknown-warning" class="banner banner--warning" hidden>
+                This Kobo hardware UUID is not recognized yet. Custom patches are disabled because the matching firmware channel cannot be verified. Please
+                <a href="https://github.com/nicoverbruggen/kobopatch-webui/issues/new" target="_blank">file an issue on GitHub</a>
+                so the developer can add this device to the list.
+            </p>
+            <label id="device-unknown-ack" class="device-unknown-ack" hidden>
+                <input type="checkbox" id="device-unknown-checkbox">
+                <span>I understand that this model is likely not officially supported by NickelMenu yet, but I wish to continue regardless, and I understand it may not work correctly.</span>
+            </label>
+            <div class="step-actions">
+                <button id="btn-device-back" class="secondary">&#x2039; Back</button>
+                <div class="step-actions-right">
+                    <button id="btn-device-restore" class="secondary">
+                        <!-- Lucide rotate-ccw: https://lucide.dev/icons/rotate-ccw -->
+                        <svg class="button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                        </svg>
+                        <span>Restore Software</span>
+                    </button>
+                    <button id="btn-device-next" class="primary">Continue &#x203A;</button>
+                </div>
+            </div>
+        </section>

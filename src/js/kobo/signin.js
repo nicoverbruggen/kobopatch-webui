@@ -1,3 +1,10 @@
+/**
+ * signin.js — Detects whether the Kobo has a signed-in account.
+ *
+ * Counts user rows in `KoboReader.sqlite` so flows can warn before changes that
+ * assume (or that break without) a Kobo account.
+ */
+
 import { countTableRows } from './sqlite-count.js';
 
 const KOBO_READER_DB = ['.kobo', 'KoboReader.sqlite'];
@@ -19,10 +26,5 @@ const KOBO_READER_DB = ['.kobo', 'KoboReader.sqlite'];
  * @returns {Promise<number|null>}
  */
 export async function countKoboUsers(device) {
-    return countTableRows(
-        (offset, length) => device.readFileRange(KOBO_READER_DB, offset, length),
-        'user'
-    );
+    return countTableRows((offset, length) => device.readFileRange(KOBO_READER_DB, offset, length), 'user');
 }
-
-
