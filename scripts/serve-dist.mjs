@@ -56,6 +56,21 @@ if (analyticsEnabled) {
         `    <script defer src="${UMAMI_SCRIPT_URL}" data-website-id="${UMAMI_WEBSITE_ID}"></script>\n`;
 }
 
+// Redirect the whole site elsewhere. Meant for the dev deployment: set
+// REDIRECT_URL=https://<production host> and every request 302s there (path
+// and query preserved), so the dev domain can be parked on the production site
+// between test rounds. Temporary redirect + no-store, so unsetting the
+// variable takes effect immediately for anyone who visited meanwhile. An
+// invalid value is ignored with a warning rather than crashing the server.
+let redirectBase = null;
+if (process.env.REDIRECT_URL) {
+    try {
+        redirectBase = new URL(process.env.REDIRECT_URL);
+    } catch {
+        console.error(`[warn] ignoring invalid REDIRECT_URL: ${process.env.REDIRECT_URL}`);
+    }
+}
+
 // Parse an operator-facing boolean env var. Unlike a bare `!!process.env.X`, an
 // explicit falsy value (`0`, `false`, `no`, `off`, empty) reads as off — so an
 // operator can disable the flag by setting it to "0" instead of having to delete
@@ -363,6 +378,15 @@ function setupCssWatch() {
 createServer((req, res) => {
     const url = new URL(req.url, `http://localhost`);
     if (logRequests) logServed(req, res, url);
+
+    if (redirectBase) {
+        res.writeHead(302, {
+            Location: new URL(url.pathname + url.search, redirectBase).href,
+            'Cache-Control': 'no-store',
+        });
+        res.end();
+        return;
+    }
 
     // Live-reload SSE stream: held open, never logged as a served file.
     if (liveReload && url.pathname === '/__livereload') {
