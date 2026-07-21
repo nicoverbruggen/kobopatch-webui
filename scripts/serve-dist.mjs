@@ -1,8 +1,43 @@
 import { createServer } from 'node:http';
-import { createReadStream, readFileSync, statSync, existsSync, watch } from 'node:fs';
+import { appendFileSync, createReadStream, mkdirSync, readFileSync, statSync, existsSync, watch } from 'node:fs';
 import { join, extname, sep } from 'node:path';
+import { pipeline } from 'node:stream';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
+
+import { storageDir } from './storage.mjs';
+
+// A crash record also goes to the persistent storage volume, because the
+// container filesystem — and with it the stdout the platform captured — can be
+// gone by the time anyone investigates. Best-effort and one appended entry per
+// crash; a bookkeeping failure must never mask the crash being recorded.
+function recordCrash(kind, detail) {
+    try {
+        const dir = join(storageDir(), 'logs');
+        mkdirSync(dir, { recursive: true });
+        appendFileSync(join(dir, 'crash.log'), `${new Date().toISOString()} [${kind}] ${detail}\n\n`);
+    } catch {
+        // stdout still has the record.
+    }
+}
+
+// Last-resort crash logging. This is a single-process server: one uncaught
+// exception takes the whole site down until the platform restarts the
+// container (see the decodeURIComponent guard below for the class of bug that
+// has caused exactly that). Log the full stack, then exit non-zero so the
+// restart policy still kicks in — never limp on in an unknown state.
+process.on('uncaughtException', (err) => {
+    const detail = err?.stack || err;
+    console.error(`[fatal] uncaught exception: ${detail}`);
+    recordCrash('uncaughtException', detail);
+    process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+    const detail = reason?.stack || reason;
+    console.error(`[fatal] unhandled rejection: ${detail}`);
+    recordCrash('unhandledRejection', detail);
+    process.exit(1);
+});
 
 // Served directory. Defaults to dist/; the dev server points it (via DIST_DIR)
 // at its own throwaway build directory.
@@ -430,12 +465,28 @@ createServer((req, res) => {
         headers['Content-Length'] = serveStat.size;
         if (picked) headers['Content-Encoding'] = picked.encoding;
         res.writeHead(200, headers);
-        createReadStream(picked ? picked.path : filePath).pipe(res);
+        // pipeline, not pipe: pipe() forwards no errors, so a read failure
+        // mid-stream (file swapped during a deploy, fd exhaustion) would crash
+        // the process, and a client abort would leak the read stream's fd —
+        // with the 40 MB archives that leak compounds toward EMFILE. pipeline
+        // destroys both streams on either side failing; the errors themselves
+        // (mostly routine aborts) need no handling beyond that.
+        pipeline(createReadStream(picked ? picked.path : filePath), res, () => {});
     } catch {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');
     }
-}).listen(PORT, () => {
-    console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
-    if (liveReload) setupCssWatch();
-});
+})
+    .on('error', (err) => {
+        // Listen-time failures such as EADDRINUSE. Without a handler this
+        // still crashes, but through the generic uncaughtException path; name
+        // it here so a port conflict is recognizable at a glance in the logs.
+        const detail = err?.stack || err;
+        console.error(`[fatal] server error: ${detail}`);
+        recordCrash('serverError', detail);
+        process.exit(1);
+    })
+    .listen(PORT, () => {
+        console.log(`Serving dist on http://localhost:${PORT}` + (analyticsEnabled ? ' (analytics enabled)' : ''));
+        if (liveReload) setupCssWatch();
+    });
