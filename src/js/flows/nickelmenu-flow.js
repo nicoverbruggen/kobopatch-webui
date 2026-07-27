@@ -43,6 +43,16 @@ import {
     seedTabsCustomizeDialog,
     updateTabsCustomizationDialog,
 } from '../nickelmenu/features/simplify-tabs/customization-dialog.js';
+import {
+    cloneFontsCustomization,
+    createDefaultFontsCustomization,
+    getFontsCustomizationSummaryItem,
+    updateFontsCustomizationSummary,
+    openFontsCustomizeDialog,
+    seedFontsCustomizeDialog,
+    setFontsCollectionSelection,
+    normalizedFontsCustomization,
+} from '../nickelmenu/features/additional-fonts/customization-dialog.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
@@ -101,6 +111,20 @@ export function initNickelMenuFlow(state) {
         'btn-nm-tabs-cancel': btnNmTabsCancel,
         'btn-nm-tabs-reset': btnNmTabsReset,
         'btn-nm-tabs-save': btnNmTabsSave,
+        'nm-fonts-dialog': nmFontsDialog,
+        'nm-fonts-status': nmFontsStatus,
+        'nm-fonts-core-list': nmFontsCoreList,
+        'nm-fonts-extra-list': nmFontsExtraList,
+        'nm-fonts-core-count': nmFontsCoreCount,
+        'nm-fonts-extra-count': nmFontsExtraCount,
+        'btn-nm-fonts-core-all': btnNmFontsCoreAll,
+        'btn-nm-fonts-core-none': btnNmFontsCoreNone,
+        'btn-nm-fonts-extra-all': btnNmFontsExtraAll,
+        'btn-nm-fonts-extra-none': btnNmFontsExtraNone,
+        'btn-nm-fonts-close': btnNmFontsClose,
+        'btn-nm-fonts-cancel': btnNmFontsCancel,
+        'btn-nm-fonts-reset': btnNmFontsReset,
+        'btn-nm-fonts-save': btnNmFontsSave,
         'nm-option-preset-title': nmOptionPresetTitle,
     } = collect([
         'step-nickelmenu',
@@ -151,6 +175,20 @@ export function initNickelMenuFlow(state) {
         'btn-nm-tabs-cancel',
         'btn-nm-tabs-reset',
         'btn-nm-tabs-save',
+        'nm-fonts-dialog',
+        'nm-fonts-status',
+        'nm-fonts-core-list',
+        'nm-fonts-extra-list',
+        'nm-fonts-core-count',
+        'nm-fonts-extra-count',
+        'btn-nm-fonts-core-all',
+        'btn-nm-fonts-core-none',
+        'btn-nm-fonts-extra-all',
+        'btn-nm-fonts-extra-none',
+        'btn-nm-fonts-close',
+        'btn-nm-fonts-cancel',
+        'btn-nm-fonts-reset',
+        'btn-nm-fonts-save',
         'nm-option-preset-title',
     ]);
 
@@ -177,6 +215,7 @@ export function initNickelMenuFlow(state) {
     let nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
     let nmCustomizationSession = 0;
     let nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
+    let nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
 
     function resolveNavLabels(ctx) {
         const option = ctx.nickelMenuOption;
@@ -373,6 +412,14 @@ export function initNickelMenuFlow(state) {
         showError: (...args) => state.showError(...args),
     });
 
+    // The summary chip shown next to a feature's customize action, per
+    // customization type (the Toggle-menu icon/label, tabs, or fonts dialog).
+    function customizationSummaryItem(type) {
+        if (type === 'tabs') return getTabsCustomizationSummaryItem(state);
+        if (type === 'fonts') return getFontsCustomizationSummaryItem(state);
+        return getMenuCustomizationSummaryItem(state);
+    }
+
     function renderFeatureCheckboxes() {
         const deviceInfo = state.device?.deviceInfo;
         const firmware = deviceInfo?.firmware;
@@ -418,12 +465,14 @@ export function initNickelMenuFlow(state) {
                     ? (triggerEl) => {
                           if (f.customization.type === 'tabs') {
                               nmTabsDraft = openTabsCustomizeDialog(state, tabsDialogDom, triggerEl);
+                          } else if (f.customization.type === 'fonts') {
+                              nmFontsDraft = openFontsCustomizeDialog(state, fontsDialogDom, triggerEl);
                           } else {
                               nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl);
                           }
                       }
                     : undefined,
-                ...(f.customization ? (f.customization.type === 'tabs' ? getTabsCustomizationSummaryItem(state) : getMenuCustomizationSummaryItem(state)) : {}),
+                ...(f.customization ? customizationSummaryItem(f.customization.type) : {}),
             };
         });
         renderNmCheckboxList(nmConfigOptions, items);
@@ -472,6 +521,14 @@ export function initNickelMenuFlow(state) {
             stats: nmTabsLabelStats,
             notes: nmTabsLabelNotes,
         },
+    };
+
+    const fontsDialogDom = {
+        dialog: nmFontsDialog,
+        status: nmFontsStatus,
+        save: btnNmFontsSave,
+        lists: { core: nmFontsCoreList, extra: nmFontsExtraList },
+        counts: { core: nmFontsCoreCount, extra: nmFontsExtraCount },
     };
 
     function renderCleanupCheckboxes() {
@@ -528,9 +585,12 @@ export function initNickelMenuFlow(state) {
         nmCustomizationSession++;
         state.nickelMenuTabsCustomization = createDefaultTabsCustomization();
         nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
+        state.nickelMenuFontsCustomization = createDefaultFontsCustomization();
+        nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
         nmConfigOptions.innerHTML = '';
         updateMenuCustomizationSummary(state);
         updateTabsCustomizationSummary(state);
+        updateFontsCustomizationSummary(state);
         btnNmBackupNext.disabled = true;
         btnNmBackupNext.textContent = 'Continue \u203A';
         btnNmBackupBack.disabled = false;
@@ -719,6 +779,24 @@ export function initNickelMenuFlow(state) {
         };
         updateTabsCustomizationSummary(state);
         nmTabsDialog.close();
+    });
+
+    // "Select additional fonts" dialog wiring.
+    btnNmFontsClose.addEventListener('click', () => nmFontsDialog.close());
+    btnNmFontsCancel.addEventListener('click', () => nmFontsDialog.close());
+    btnNmFontsCoreAll.addEventListener('click', () => setFontsCollectionSelection(nmFontsDraft, fontsDialogDom, 'core', true));
+    btnNmFontsCoreNone.addEventListener('click', () => setFontsCollectionSelection(nmFontsDraft, fontsDialogDom, 'core', false));
+    btnNmFontsExtraAll.addEventListener('click', () => setFontsCollectionSelection(nmFontsDraft, fontsDialogDom, 'extra', true));
+    btnNmFontsExtraNone.addEventListener('click', () => setFontsCollectionSelection(nmFontsDraft, fontsDialogDom, 'extra', false));
+    btnNmFontsReset.addEventListener('click', () => {
+        nmFontsDraft = seedFontsCustomizeDialog(fontsDialogDom, createDefaultFontsCustomization());
+        nmFontsStatus.textContent = 'Defaults restored.';
+    });
+    btnNmFontsSave.addEventListener('click', () => {
+        if (nmFontsDraft.families.length === 0) return;
+        state.nickelMenuFontsCustomization = normalizedFontsCustomization(nmFontsDraft);
+        updateFontsCustomizationSummary(state);
+        nmFontsDialog.close();
     });
 
     for (const radio of $qa('input[name="nm-backup-option"]', stepNmBackup)) {

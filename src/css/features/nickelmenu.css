@@ -682,6 +682,111 @@
     font-weight: 400;
 }
 
+/* "Select additional fonts" dialog: two collection sections with per-family
+   checkboxes and All/None bulk actions in the section header. */
+.nm-fonts-body {
+    gap: 0.85rem;
+}
+
+.nm-fonts-intro,
+.nm-fonts-section-desc {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.nm-fonts-bulk-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.nm-fonts-count {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.nm-fonts-bulk {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    box-shadow: none;
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.nm-fonts-bulk:hover {
+    border-color: var(--border-strong);
+    color: var(--text);
+}
+
+.nm-fonts-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.3rem 0.55rem;
+}
+
+.nm-fonts-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--card-bg);
+    cursor: pointer;
+}
+
+.nm-fonts-item:hover {
+    border-color: var(--border-strong);
+}
+
+.nm-fonts-item-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.nm-fonts-item input {
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.nm-fonts-item-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    color: var(--text);
+}
+
+/* The pre-rendered "Aa" specimen (inline SVG, one square em band per family).
+   The tile itself is the SVG element, so the box scales with the font size. */
+.nm-fonts-item-preview {
+    display: block;
+    flex-shrink: 0;
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-subtle);
+    color: var(--text);
+}
+
+@media (max-width: 520px) {
+    .nm-fonts-list {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 520px) {
     .nm-config-item {
         flex-wrap: wrap;

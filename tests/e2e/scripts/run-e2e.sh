@@ -75,9 +75,6 @@ if ! grep -q '<style>:root{' "$DIST_DIR/index.html"; then
     exit 1
 fi
 
-# Set up installable assets if not present.
-node "$APP_DIR/tools/installables/installables.mjs" --src --skip-if-present
-
 if [ -d "$STALE_TEST_NODE_MODULES" ]; then
     echo "Removing stale tests/node_modules from the former E2E npm package..."
     rm -rf "$STALE_TEST_NODE_MODULES"
@@ -94,6 +91,10 @@ done
 npm --prefix "$APP_DIR" install --silent
 PLAYWRIGHT="$APP_DIR/node_modules/.bin/playwright"
 "$PLAYWRIGHT" install chromium
+
+# Set up installable assets if not present. After npm install, so the
+# font-preview derivation has its dependencies.
+node "$APP_DIR/tools/installables/installables.mjs" --src --skip-if-present
 
 # Run the tests.
 echo "Running E2E integration tests..."

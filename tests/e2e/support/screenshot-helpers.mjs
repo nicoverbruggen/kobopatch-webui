@@ -103,6 +103,19 @@ export const shotNickelMenuTabsModal = async (page, folder, name, testInfo) => {
     await expect(dialog).not.toBeVisible();
 };
 
+export const shotNickelMenuFontsModal = async (page, folder, name, testInfo) => {
+    await page.getByRole('button', { name: 'Select which additional fonts are installed' }).click();
+    const dialog = page.locator('#nm-fonts-dialog');
+    await expect(dialog).toBeVisible();
+    // The family lists are rendered from the generated catalogue on open, and
+    // the type specimens fill in once font-previews.json is fetched.
+    await expect(dialog.locator('#nm-fonts-core-list input[type="checkbox"]').first()).toBeVisible();
+    await expect(dialog.locator('.nm-fonts-item-preview').first()).toBeVisible();
+    await shot(page, folder, name, testInfo);
+    await page.click('#btn-nm-fonts-close');
+    await expect(dialog).not.toBeVisible();
+};
+
 export const selectManualPatchesModel = async (page) => {
     await page.selectOption('#manual-version', { index: 1 });
     await expect(page.locator('#manual-model')).not.toBeHidden();

@@ -16,7 +16,9 @@ const required = [
     'patches/downloads.json',
     'assets/NickelMenu.tgz',
     'assets/koreader-kobo.zip',
-    'assets/KF_Readerly.zip',
+    'assets/kobo-core-fonts.zip',
+    'assets/kobo-extra-fonts.zip',
+    'assets/font-previews.json',
     // Vite-tracked NickelMenu feature assets (the items file is generated from
     // feature menuItems hooks, so it is no longer shipped as a static asset).
     'assets/.cog.png',

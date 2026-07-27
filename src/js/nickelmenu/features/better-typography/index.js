@@ -2,6 +2,7 @@ import { loadBundledAsset } from '../assets.js';
 import { parseTarGz } from '../../archive.js';
 import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
 import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { isFontFamilySelected } from '../additional-fonts/customization.js';
 
 export const TOGGLE_TYPOGRAPHY_SCRIPT_URL = new URL('./scripts/toggle_typography.sh', import.meta.url).href;
 
@@ -23,7 +24,8 @@ export function nickelTypeFixVersion() {
 //   - webkitTextRendering=optimizeLegibility enables ligatures/GPOS kerning in
 //     kepub books (the WebKit font feature the toggle script flips).
 //   - readingFontFamily=KF Libron is only applied when the additional fonts
-//     are part of the install, so we don't point at a font that isn't there.
+//     are part of the install and Libron is among the selected families, so we
+//     don't point at a font that isn't there.
 //
 // On top of those one-time settings, this feature also folds in the on-device
 // "Typography Toggle" Toggle-menu item (it ships the toggle script and inserts
@@ -129,8 +131,9 @@ export default {
     },
 
     // Declarative Kobo eReader.conf changes, applied by the installer when a
-    // device is connected. Receives the selected features so the default font is
-    // only set when the additional fonts are actually being installed.
+    // device is connected. Receives the selected features and the fonts
+    // selection so the default font is only set when Libron is actually being
+    // installed.
     //
     // `revertable` marks webkitTextRendering as a setting the feature owns for
     // removal: the flow/uninstaller derive detection and revert from it
@@ -148,7 +151,7 @@ export default {
         ];
 
         const additionalFontsInstalled = (ctx.features || []).some((f) => f.id === 'additional-fonts');
-        if (additionalFontsInstalled) {
+        if (additionalFontsInstalled && isFontFamilySelected(ctx.fontsCustomization, 'libron')) {
             settings.push({ section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' });
         }
 

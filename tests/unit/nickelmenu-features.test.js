@@ -27,6 +27,7 @@ import {
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
 import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/constants.js';
 import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
+import { FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/catalogue.js';
 import { revertableConfSettings } from '../../src/js/kobo/configuration.js';
 import { createResponse, text } from './test-helpers.js';
 
@@ -103,43 +104,78 @@ async function withMockFetch(responses, fn) {
     }
 }
 
-test('Additional Fonts install bundles all three families, strips ZIP dirs and ignores non-font files', async () => {
-    const readerlyZip = await createZip({
-        'Readerly/KF_Readerly-Regular.ttf': 'readerly regular',
-        'Readerly/KF_Readerly-Bold.ttf': 'readerly bold',
-        'Readerly/LICENSE.txt': 'license',
-        '__MACOSX/KF_Readerly-Italic.ttf': 'ignored directory prefix still stripped',
+// An in-memory stand-in for a collection archive holding the catalogued files
+// of the given families (each file's content is its own name).
+async function createFontArchive(families, extraEntries = {}) {
+    return createZip({
+        ...Object.fromEntries(families.flatMap((family) => family.files.map((file) => [file, `data ${file}`]))),
+        ...extraEntries,
     });
-    const libronZip = await createZip({
-        'KF_Libron-Regular.ttf': 'libron regular',
+}
+
+test('Additional Fonts installs the core collection by default, extracting only catalogued font files', async () => {
+    const coreFamilies = FONT_FAMILIES.filter((family) => family.collection === 'core');
+    const coreZip = await createFontArchive(coreFamilies, { 'LICENSE.txt': 'ignored non-font file' });
+
+    // Only the core archive is mocked: fetching the extra archive would 404, so
+    // this also proves a default install never downloads the larger extra set.
+    await withMockFetch(new Map([['/assets/kobo-core-fonts.zip', createResponse(coreZip)]]), async () => {
+        const files = await additionalFonts.install({ progress() {} });
+
+        assert.deepEqual(
+            files.map((file) => file.path),
+            coreFamilies.flatMap((family) => family.files.map((file) => 'fonts/' + file)),
+        );
+        assert.ok(files.map((file) => file.path).includes('fonts/KF_Libron-Regular.ttf'));
+        assert.ok(files.every((file) => file.data instanceof Uint8Array));
+        assert.equal(text(files.find((file) => file.path === 'fonts/KF_Libron-Regular.ttf').data), 'data KF_Libron-Regular.ttf');
     });
-    const cartisseZip = await createZip({
-        'KF_Cartisse-Regular.ttf': 'cartisse regular',
+});
+
+test('Additional Fonts downloads only the archives its selection needs and strips ZIP directory prefixes', async () => {
+    const readerly = FONT_FAMILIES.find((family) => family.id === 'readerly');
+    assert.equal(readerly.collection, 'extra');
+
+    const [regular, ...rest] = readerly.files;
+    const extraZip = await createZip({
+        // A directory prefix is stripped, so nested archive layouts still land in fonts/.
+        ['Readerly/' + regular]: 'readerly regular',
+        ...Object.fromEntries(rest.map((file) => [file, `data ${file}`])),
+        'KF_Literata-Regular.ttf': 'not selected',
     });
 
-    await withMockFetch(
-        new Map([
-            ['/assets/KF_Readerly.zip', createResponse(readerlyZip)],
-            ['/assets/KF_Libron.zip', createResponse(libronZip)],
-            ['/assets/KF_Cartisse.zip', createResponse(cartisseZip)],
-        ]),
-        async () => {
-            const files = await additionalFonts.install({ progress() {} });
+    await withMockFetch(new Map([['/assets/kobo-extra-fonts.zip', createResponse(extraZip)]]), async () => {
+        const files = await additionalFonts.install({ progress() {}, fontsCustomization: { families: ['readerly'] } });
 
-            assert.deepEqual(
-                files.map((file) => file.path),
-                [
-                    'fonts/KF_Readerly-Regular.ttf',
-                    'fonts/KF_Readerly-Bold.ttf',
-                    'fonts/KF_Readerly-Italic.ttf',
-                    'fonts/KF_Libron-Regular.ttf',
-                    'fonts/KF_Cartisse-Regular.ttf',
-                ],
-            );
-            assert.equal(text(files[0].data), 'readerly regular');
-            assert.ok(files.every((file) => file.data instanceof Uint8Array));
-        },
-    );
+        assert.deepEqual(files.map((file) => file.path).sort(), readerly.files.map((file) => 'fonts/' + file).sort());
+        assert.equal(text(files.find((file) => file.path === 'fonts/' + regular).data), 'readerly regular');
+    });
+});
+
+test('Additional Fonts fails loudly when an archive is missing a catalogued file', async () => {
+    const libron = FONT_FAMILIES.find((family) => family.id === 'libron');
+    const coreZip = await createZip({ [libron.files[0]]: 'only the regular weight' });
+
+    await withMockFetch(new Map([['/assets/kobo-core-fonts.zip', createResponse(coreZip)]]), async () => {
+        await assert.rejects(additionalFonts.install({ progress() {}, fontsCustomization: { families: ['libron'] } }), /core fonts archive is missing/);
+    });
+});
+
+test('Additional Fonts cleanup detects any Regular weight and removes every catalogued font file', () => {
+    const { cleanup } = additionalFonts;
+
+    assert.equal(cleanup.mode, 'optional');
+    assert.ok(cleanup.detect.every(([dir, file]) => dir === 'fonts' && file.endsWith('-Regular.ttf')));
+    // Fonts installed by older app versions (Readerly/Libron/Cartisse) use the
+    // same file names, so existing installs stay detected and removable.
+    assert.ok(cleanup.detect.some(([, file]) => file === 'KF_Readerly-Regular.ttf'));
+
+    const paths = cleanup.paths.map((entry) => entry.path.join('/'));
+    for (const family of FONT_FAMILIES) {
+        for (const file of family.files) {
+            assert.ok(paths.includes('fonts/' + file), `cleanup misses fonts/${file}`);
+        }
+    }
 });
 
 test('Better typography and fixes exposes label and version', async () => {
@@ -153,7 +189,7 @@ test('Better typography and fixes exposes label and version', async () => {
     });
 });
 
-test('Better typography and fixes sets reading rendering; default font only when fonts are installed', () => {
+test('Better typography and fixes sets reading rendering; default font only when Libron is installed', () => {
     const readingDefaults = [
         // webkitTextRendering is revertable (owned for removal).
         {
@@ -169,11 +205,19 @@ test('Better typography and fixes sets reading rendering; default font only when
     assert.deepEqual(betterTypography.confSettings({ features: [] }), readingDefaults);
     assert.deepEqual(betterTypography.confSettings(), readingDefaults);
 
-    // With the additional fonts selected, KF Libron becomes the default font.
+    // With the additional fonts selected (the default selection includes
+    // Libron), KF Libron becomes the default font.
     assert.deepEqual(betterTypography.confSettings({ features: [{ id: 'additional-fonts' }] }), [
         ...readingDefaults,
         { section: 'Reading', key: 'readingFontFamily', value: 'KF Libron' },
     ]);
+
+    // A fonts selection without Libron leaves the default font untouched, so we
+    // never point the reader at a font that isn't there.
+    assert.deepEqual(
+        betterTypography.confSettings({ features: [{ id: 'additional-fonts' }], fontsCustomization: { families: ['sourcerer'] } }),
+        readingDefaults,
+    );
 });
 
 test('Better typography and fixes ships the toggle script and contributes its Tweak menu item at the Legibility slot', async () => {

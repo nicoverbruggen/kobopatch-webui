@@ -1,6 +1,6 @@
 {
   "name": "kobopatch-webui",
-  "version": "1.52",
+  "version": "1.53",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,7 +16,7 @@
     "hardware:get-ids": "node scripts/get-hardware-ids.mjs",
     "hardware:resolve-ids": "node scripts/resolve-hardware-ids.mjs",
     "setup:installables": "node tools/installables/installables.mjs --src",
-    "update:installables": "node tools/installables/installables.mjs --update --src --dist",
+    "update:installables": "node tools/installables/installables.mjs --update --src --dist && node tools/installables/generate-font-catalogue.mjs && node tools/installables/generate-font-previews.mjs --src --dist",
     "check:installables": "node tools/installables/installables.mjs --check --force",
     "check:patch-metadata": "node scripts/check-patch-metadata.mjs",
     "setup:wasm": "bash tools/kobopatch-wasm/setup.sh",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "eslint": "^9.0.0",
+    "fontkit": "^2.0.4",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.4",
     "vite": "^7.2.7"

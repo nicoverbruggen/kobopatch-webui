@@ -80,17 +80,20 @@ const INSTALLABLES = [
     },
     { name: 'cadmus', asset: 'cadmus-kobo.tar.gz', repo: 'OGKevin/cadmus', match: (n) => n === 'cadmus-kobo.tar.gz' },
     {
-        name: 'readerly',
-        asset: 'KF_Readerly.zip',
-        repo: 'nicoverbruggen/readerly',
-        match: (n) => n === 'KF_Readerly.zip',
+        // The Kobo (KF) builds of the ebook-fonts collection, split into the
+        // curated "core" set and the larger "extra" set. Both archives come from
+        // the same release. After an update, regenerate the committed font
+        // catalogue from these archives (see generate-font-catalogue.mjs).
+        name: 'ebook-fonts-core',
+        asset: 'kobo-core-fonts.zip',
+        repo: 'nicoverbruggen/ebook-fonts',
+        match: (n) => n === 'kobo-core-fonts.zip',
     },
-    { name: 'libron', asset: 'KF_Libron.zip', repo: 'nicoverbruggen/libron', match: (n) => n === 'KF_Libron.zip' },
     {
-        name: 'cartisse',
-        asset: 'KF_Cartisse.zip',
-        repo: 'nicoverbruggen/cartisse',
-        match: (n) => n === 'KF_Cartisse.zip',
+        name: 'ebook-fonts-extra',
+        asset: 'kobo-extra-fonts.zip',
+        repo: 'nicoverbruggen/ebook-fonts',
+        match: (n) => n === 'kobo-extra-fonts.zip',
     },
 ];
 
@@ -418,6 +421,17 @@ if (opts.check) {
     process.exit(0);
 }
 
+// Derive the served font-preview specimens from the (now present) font
+// archives. Cosmetic data, so a failure here never fails the pipeline.
+async function generateFontPreviewsFor(targets) {
+    try {
+        const { generateFontPreviews } = await import('./generate-font-previews.mjs');
+        await generateFontPreviews(targets.map((target) => TARGETS[target]));
+    } catch (err) {
+        console.warn(`Could not generate font previews: ${err.message}`);
+    }
+}
+
 if (opts.update) {
     // One unresolvable installable (e.g. a repo with no release yet) must not
     // abort the whole update run: warn, keep its existing lock entry (if any),
@@ -434,11 +448,14 @@ if (opts.update) {
     await writeLock(lock);
     if (failed.length) console.warn(`\n⚠ Not updated: ${failed.join(', ')}`);
     for (const target of opts.targets) await writeIndex(target, lock);
+    // Font previews are NOT derived here: the npm `update:installables` chain
+    // regenerates the catalogue first and derives the previews from that.
     console.log(`Done. Updated installables.lock and assets in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
 } else {
     for (const item of items) {
         for (const target of opts.targets) await setupInstallable(item, target, lock);
     }
     for (const target of opts.targets) await writeIndex(target, lock);
+    await generateFontPreviewsFor(opts.targets);
     console.log(`Done. Installables ready in: ${opts.targets.map((t) => TARGETS[t]).join(', ')}.`);
 }

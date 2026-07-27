@@ -74,6 +74,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
                 audit,
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
+                fontsCustomization: state.nickelMenuFontsCustomization,
             });
             state._nmDoneMode = 'written';
             await flow.go('done', state);
@@ -81,6 +82,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
+                fontsCustomization: state.nickelMenuFontsCustomization,
                 isPreset: state.nickelMenuOption === 'preset',
             });
             state._nmDoneMode = 'download';
@@ -103,8 +105,8 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
     }
 }
 
-function getFeatureConfSettings(features, deviceInfo) {
-    const ctx = { deviceInfo: deviceInfo ?? null, features };
+function getFeatureConfSettings(features, deviceInfo, fontsCustomization = null) {
+    const ctx = { deviceInfo: deviceInfo ?? null, features, fontsCustomization };
     return features.flatMap((feature) => (feature.confSettings ? feature.confSettings(ctx) : []));
 }
 
@@ -132,7 +134,7 @@ export function renderNmDoneStatus(state, terminal, dom) {
         dom.downloadRebootStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadConfLine.textContent = getExcludeSyncFoldersLine(features);
         dom.downloadConfDesc.textContent = hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT;
-        const confSettings = getFeatureConfSettings(features, state.device.deviceInfo);
+        const confSettings = getFeatureConfSettings(features, state.device.deviceInfo, state.nickelMenuFontsCustomization);
         renderDownloadConfSettings(dom.downloadConfSettings, confSettings);
         dom.downloadConfSettingsStep.hidden = confSettings.length === 0;
         terminal.end('nm-download');

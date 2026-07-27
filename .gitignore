@@ -17,9 +17,8 @@ kobopatch.yaml
 src/js/wasm_exec.js
 
 # Downloaded installable assets (pinned by installables.lock, which IS committed)
-src/assets/KF_Readerly.zip
-src/assets/KF_Libron.zip
-src/assets/KF_Cartisse.zip
+src/assets/kobo-core-fonts.zip
+src/assets/kobo-extra-fonts.zip
 src/assets/koreader-kobo.zip
 src/assets/cadmus-kobo.tar.gz
 src/assets/NickelMenu.tgz
@@ -30,6 +29,8 @@ src/assets/NickelDissolve.tgz
 src/assets/NickelHome.tgz
 # Asset size index, regenerated from the lock by setup:installables (CI/prod)
 src/assets/index.json
+# Font preview specimens, derived from the font archives by setup:installables
+src/assets/font-previews.json
 
 # Build output
 dist/

@@ -6,6 +6,7 @@ import {
     makeKOReaderAvailable,
     shotNickelMenuCustomizeModal,
     shotNickelMenuTabsModal,
+    shotNickelMenuFontsModal,
     openNmFeatureSection,
     selectManualPatchesModel,
     capturePatchesBuildingScreen,
@@ -43,6 +44,7 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await shot(page, dir, '03-nickelmenu-features', testInfo);
     await shotNickelMenuCustomizeModal(page, dir, '03a-nickelmenu-customize-modal', testInfo);
     await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
+    await shotNickelMenuFontsModal(page, dir, '03c-nickelmenu-fonts-modal', testInfo);
 
     // Hover the "Experimental" badge (on Page turn animations) to show its popover.
     await page

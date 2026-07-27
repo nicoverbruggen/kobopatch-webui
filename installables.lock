@@ -17,10 +17,10 @@
     },
     "koreader": {
       "asset": "koreader-kobo.zip",
-      "version": "v2026.03",
-      "url": "https://github.com/koreader/koreader/releases/download/v2026.03/koreader-kobo-v2026.03.zip",
-      "sha256": "510bbc4618dcc5a2fc54a2a8069f94ea5aa7a47a5d6c5a92b75c22d7b701146f",
-      "size": 41589964
+      "version": "v2026.07",
+      "url": "https://github.com/koreader/koreader/releases/download/v2026.07/koreader-kobo-v2026.07.zip",
+      "sha256": "12673c2f9ccda01ebd22ed9562ea66f7b7f8501088bba86f826d6f84c427677b",
+      "size": 42272554
     },
     "cadmus": {
       "asset": "cadmus-kobo.tar.gz",
@@ -28,27 +28,6 @@
       "url": "https://github.com/OGKevin/cadmus/releases/download/v0.11.0/cadmus-kobo.tar.gz",
       "sha256": "2dddf585ca174c28f6ba85a6ac4b21cef559c84e7fc659925ecb81a4c808492e",
       "size": 30243464
-    },
-    "readerly": {
-      "asset": "KF_Readerly.zip",
-      "version": "v1.11",
-      "url": "https://github.com/nicoverbruggen/readerly/releases/download/v1.11/KF_Readerly.zip",
-      "sha256": "5438a665d1618568ec4936e8edc26e1e07220ab39413b261482e984e4fdfd67d",
-      "size": 495897
-    },
-    "libron": {
-      "asset": "KF_Libron.zip",
-      "version": "v0.23",
-      "url": "https://github.com/nicoverbruggen/libron/releases/download/v0.23/KF_Libron.zip",
-      "sha256": "9c23c84d82eb6df3e7150682be0245b37b315bbcec44b4c6eac4b462a4ff533c",
-      "size": 494473
-    },
-    "cartisse": {
-      "asset": "KF_Cartisse.zip",
-      "version": "v2.4",
-      "url": "https://github.com/nicoverbruggen/cartisse/releases/download/v2.4/KF_Cartisse.zip",
-      "sha256": "a2904406e30e1f361da89c0dfb49272a426454591031727a42f3b376bef3f185",
-      "size": 404022
     },
     "nickeltypefix": {
       "asset": "NickelTypeFix.tgz",
@@ -77,6 +56,20 @@
       "url": "https://github.com/nicoverbruggen/NickelHome/releases/download/v0.6/KoboRoot.tgz",
       "sha256": "05b131d8d185b00dbf48bbfc7cba1fb63b7bcb7276f2ebc31324422de1fd187e",
       "size": 16804
+    },
+    "ebook-fonts-core": {
+      "asset": "kobo-core-fonts.zip",
+      "version": "v2026.07.21",
+      "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.07.21/kobo-core-fonts.zip",
+      "sha256": "b2cfa49afaa37c4aeebe31efa11ee61f0a4cde65219d78a6792af30626c8b46a",
+      "size": 5812348
+    },
+    "ebook-fonts-extra": {
+      "asset": "kobo-extra-fonts.zip",
+      "version": "v2026.07.21",
+      "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.07.21/kobo-extra-fonts.zip",
+      "sha256": "b492c9d2487e4c764397e8583b08f6e1351ea4dabb36e126cb63dcc7cb62676e",
+      "size": 22528606
     }
   }
 }

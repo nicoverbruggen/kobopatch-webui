@@ -31,11 +31,11 @@ function hasNickelDissolveAssets() {
 }
 
 function hasFontAssets() {
-    return (
-        fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Readerly.zip')) &&
-        fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Libron.zip')) &&
-        fs.existsSync(path.join(WEBROOT, 'assets', 'KF_Cartisse.zip'))
-    );
+    return fs.existsSync(path.join(WEBROOT, 'assets', 'kobo-core-fonts.zip')) && fs.existsSync(path.join(WEBROOT, 'assets', 'kobo-extra-fonts.zip'));
+}
+
+function hasFontPreviews() {
+    return fs.existsSync(path.join(WEBROOT, 'assets', 'font-previews.json'));
 }
 
 function hasFirmwareZip() {
@@ -64,6 +64,7 @@ module.exports = {
     hasNickelCoverFixAssets,
     hasNickelDissolveAssets,
     hasFontAssets,
+    hasFontPreviews,
     hasFirmwareZip,
     setupFirmwareSymlink,
     cleanupFirmwareSymlink,

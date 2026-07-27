@@ -16,6 +16,11 @@ WASM_SRC_DIR="$APP_DIR/tools/kobopatch-wasm/kobopatch-src"
 echo "Removing existing dist..."
 rm -rf "$DIST_DIR"
 
+echo "Installing dependencies..."
+npm install --prefix "$APP_DIR" --silent
+
+# After npm install, so the font-preview derivation has its dependencies
+# (a clean CI checkout has no node_modules yet).
 echo "Setting up installable assets..."
 node "$APP_DIR/tools/installables/installables.mjs" --src --skip-if-present
 
@@ -23,9 +28,6 @@ if [ ! -d "$WASM_SRC_DIR" ]; then
     echo "Setting up kobopatch source..."
     "$APP_DIR/tools/kobopatch-wasm/setup.sh"
 fi
-
-echo "Installing dependencies..."
-npm install --prefix "$APP_DIR" --silent
 
 echo "Building WASM artifact..."
 "$APP_DIR/tools/kobopatch-wasm/build.sh"

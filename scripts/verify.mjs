@@ -115,9 +115,11 @@ function printSummary() {
 }
 
 // Installables come first: ensure the locked assets are present, then run a soft
-// (non-failing, 12h-throttled) check for newer upstream releases. Both are
-// dependency-free node scripts, so they run before everything else — the firmware
-// prompt, the WASM setup, and `npm install`. The update check is full-suite only.
+// (non-failing, 12h-throttled) check for newer upstream releases. Both run before
+// everything else — the firmware prompt, the WASM setup, and `npm install`. The
+// derived font previews are the one part that needs node_modules; on a clean tree
+// this pass only warns about them and the post-install pass below fills them in.
+// The update check is full-suite only.
 await run('node', [join(toolsDir, 'installables/installables.mjs'), '--src', '--skip-if-present']);
 if (!quick) {
     await run('node', [join(toolsDir, 'installables/installables.mjs'), '--check']);
@@ -154,6 +156,9 @@ if (!quick && !existsSync(join(toolsDir, 'kobopatch-wasm/kobopatch-src'))) {
 // the first phase) and is full-suite only — `npm run test` assumes an installed tree.
 if (!quick) {
     await run('npm', ['install']);
+    // On a clean tree the pre-install installables pass could not derive the
+    // font previews (the generator needs node_modules); now it can.
+    await run('node', [join(toolsDir, 'installables/generate-font-previews.mjs'), '--src']);
 }
 
 const suiteStart = performance.now();
@@ -165,6 +170,7 @@ const allPhases = [
     { name: 'Lint', quick: true, task: () => run('npx', ['eslint', '.']) },
     { name: 'Unit tests', quick: true, task: () => run('npm', ['run', 'test:unit']) },
     { name: 'Check patch metadata', quick: true, task: () => run('npm', ['run', 'check:patch-metadata']) },
+    { name: 'Check font catalogue', quick: true, task: () => run('node', [join(toolsDir, 'installables/generate-font-catalogue.mjs'), '--check']) },
     { name: 'Build WASM', quick: false, task: () => run(join(toolsDir, 'kobopatch-wasm/build.sh'), []) },
     { name: 'Build web app', quick: true, task: () => run('node', ['scripts/build.mjs']) },
     { name: 'Validate dist resources', quick: true, task: () => run('npm', ['run', 'validate:dist']) },

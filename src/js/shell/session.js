@@ -8,6 +8,7 @@
 
 import { createDefaultMenuCustomization } from '../nickelmenu/customization.js';
 import { createDefaultTabsCustomization } from '../nickelmenu/features/simplify-tabs/customization.js';
+import { createDefaultFontsCustomization } from '../nickelmenu/features/additional-fonts/customization.js';
 
 export class Session {
     constructor() {
@@ -49,6 +50,7 @@ export class Session {
         this.nickelMenuOption = null;
         this.nickelMenuCustomization = createDefaultMenuCustomization();
         this.nickelMenuTabsCustomization = createDefaultTabsCustomization();
+        this.nickelMenuFontsCustomization = createDefaultFontsCustomization();
         this.selectedFeatureIds = [];
         this.nmBackupChoice = null;
         this.nmKeepLegacyConfig = false;

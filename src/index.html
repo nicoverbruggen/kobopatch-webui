@@ -484,6 +484,49 @@
         </div>
     </dialog>
 
+    <dialog id="nm-fonts-dialog" class="modal nm-customize-dialog nm-fonts-dialog" aria-labelledby="nm-fonts-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="nm-fonts-title">Select additional fonts</h2>
+                <button id="btn-nm-fonts-close" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body nm-customize-body nm-fonts-body">
+                <p class="nm-fonts-intro">Each family installs its regular, italic, bold and bold italic weights. On the device, these fonts show up in the font dropdown with a "KF" prefix.</p>
+                <div class="nm-customize-field">
+                    <div class="nm-customize-label-row">
+                        <span>Core fonts</span>
+                        <span class="nm-fonts-bulk-actions">
+                            <span id="nm-fonts-core-count" class="nm-fonts-count"></span>
+                            <button id="btn-nm-fonts-core-all" class="nm-fonts-bulk" type="button">All</button>
+                            <button id="btn-nm-fonts-core-none" class="nm-fonts-bulk" type="button">None</button>
+                        </span>
+                    </div>
+                    <p class="nm-fonts-section-desc">The highest quality fonts of the collection, and a great choice for most readers. Installed by default.</p>
+                    <div id="nm-fonts-core-list" class="nm-fonts-list"></div>
+                </div>
+                <div class="nm-customize-field">
+                    <div class="nm-customize-label-row">
+                        <span>Extra fonts</span>
+                        <span class="nm-fonts-bulk-actions">
+                            <span id="nm-fonts-extra-count" class="nm-fonts-count"></span>
+                            <button id="btn-nm-fonts-extra-all" class="nm-fonts-bulk" type="button">All</button>
+                            <button id="btn-nm-fonts-extra-none" class="nm-fonts-bulk" type="button">None</button>
+                        </span>
+                    </div>
+                    <p class="nm-fonts-section-desc">More fonts worth trying. Selecting any of these adds a larger download.</p>
+                    <div id="nm-fonts-extra-list" class="nm-fonts-list"></div>
+                </div>
+                <p id="nm-fonts-status" class="nm-customize-status" role="status" aria-live="polite"></p>
+            </div>
+            <div class="modal-footer nm-customize-footer">
+                <button id="btn-nm-fonts-reset" class="secondary">Reset defaults</button>
+                <span class="nm-customize-footer-spacer"></span>
+                <button id="btn-nm-fonts-cancel" class="secondary">Cancel</button>
+                <button id="btn-nm-fonts-save" class="primary">Save</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog id="patch-editor-dialog" class="modal" aria-labelledby="patch-editor-title">
         <div class="modal-content patch-editor-content">
             <div class="modal-header">

@@ -6,6 +6,7 @@ import {
     makeKOReaderAvailable,
     shotNickelMenuCustomizeModal,
     shotNickelMenuTabsModal,
+    shotNickelMenuFontsModal,
     connectToDeviceScreen,
     injectMockDevice,
     openNmFeatureSection,
@@ -51,6 +52,7 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
     await shot(page, dir, '06-nickelmenu-features', testInfo);
     await shotNickelMenuCustomizeModal(page, dir, '06a-nickelmenu-customize-modal', testInfo);
     await shotNickelMenuTabsModal(page, dir, '06b-nickelmenu-tabs-modal', testInfo);
+    await shotNickelMenuFontsModal(page, dir, '06c-nickelmenu-fonts-modal', testInfo);
 
     // Features → backup → review
     await page.click('#btn-nm-features-next');

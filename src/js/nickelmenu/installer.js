@@ -49,7 +49,12 @@ function loadAssetCached(assetCache, url) {
  * per-run cache (`assetCache`), so an asset used by several features is fetched
  * only once.
  */
-function createContext(progressFn, deviceInfo = null, features = [], menuCustomization = null, assetCache = new Map(), tabsCustomization = null) {
+function createContext(
+    progressFn,
+    deviceInfo = null,
+    features = [],
+    { menuCustomization = null, tabsCustomization = null, fontsCustomization = null, assetCache = new Map() } = {},
+) {
     return {
         bundledAsset(url) {
             return loadAssetCached(assetCache, url);
@@ -61,6 +66,7 @@ function createContext(progressFn, deviceInfo = null, features = [], menuCustomi
         features,
         menuCustomization,
         tabsCustomization,
+        fontsCustomization,
     };
 }
 
@@ -165,7 +171,7 @@ export class NickelMenuInstaller {
      * @param {function} progressFn
      * @returns {{ path: string, data: Uint8Array|string }[]}
      */
-    async collectFiles(features, progressFn, deviceInfo = null, { menuCustomization = null, tabsCustomization = null } = {}) {
+    async collectFiles(features, progressFn, deviceInfo = null, { menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
         let files = [];
         const featureFiles = {};
 
@@ -176,7 +182,7 @@ export class NickelMenuInstaller {
         // Run install() for features that have it
         for (const feature of features) {
             if (!feature.install) continue;
-            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache, tabsCustomization);
+            const ctx = createContext(progressFn, deviceInfo, features, { menuCustomization, tabsCustomization, fontsCustomization, assetCache });
             progressFn(`Setting up ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
@@ -202,7 +208,7 @@ export class NickelMenuInstaller {
         const itemsFile = files.find((f) => f.path === NM_ITEMS_FILE);
         for (const feature of features) {
             if (!feature.postProcess) continue;
-            const ctx = createContext(progressFn, deviceInfo, features, menuCustomization, assetCache, tabsCustomization);
+            const ctx = createContext(progressFn, deviceInfo, features, { menuCustomization, tabsCustomization, fontsCustomization, assetCache });
             files = feature.postProcess(files, ctx);
         }
 
@@ -217,7 +223,7 @@ export class NickelMenuInstaller {
     /**
      * Install to a connected Kobo device via File System Access API.
      */
-    async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null, tabsCustomization = null } = {}) {
+    async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
         await this.loadNickelMenu(progressFn);
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
@@ -227,15 +233,15 @@ export class NickelMenuInstaller {
 
         if (features.length > 0) {
             progressFn('Preparing Kobo eReader.conf...');
-            const eReaderConfData = await this.buildEReaderConfData(device, features);
+            const eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
 
-            const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization, tabsCustomization });
+            const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization, tabsCustomization, fontsCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
 
             progressFn('Updating Kobo eReader.conf...');
             await device.writeFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], eReaderConfData);
-            this.recordEReaderConfUpdates(features, device.deviceInfo, audit);
+            this.recordEReaderConfUpdates(features, device.deviceInfo, audit, fontsCustomization);
 
             progressFn('Writing files to Kobo...');
             for (let i = 0; i < collectedFiles.length; i++) {
@@ -268,7 +274,7 @@ export class NickelMenuInstaller {
         features,
         progressFn,
         deviceInfo = null,
-        { menuCustomization = null, tabsCustomization = null, isPreset = features.length > 0 } = {},
+        { menuCustomization = null, tabsCustomization = null, fontsCustomization = null, isPreset = features.length > 0 } = {},
     ) {
         await this.loadNickelMenu(progressFn);
 
@@ -282,7 +288,7 @@ export class NickelMenuInstaller {
         let featureFiles = {};
 
         if (features.length > 0) {
-            const result = await this.collectFiles(features, progressFn, deviceInfo, { menuCustomization, tabsCustomization });
+            const result = await this.collectFiles(features, progressFn, deviceInfo, { menuCustomization, tabsCustomization, fontsCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
             for (const { path, data } of collectedFiles) {
@@ -301,7 +307,7 @@ export class NickelMenuInstaller {
 
         // Bundle the same manual-install guidance the wizard shows on screen,
         // so the steps travel with the download.
-        zip.file('instructions.txt', this.buildInstructionsText(features, deviceInfo, isPreset));
+        zip.file('instructions.txt', this.buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization));
 
         progressFn('Compressing...');
         const result = await zip.generateAsync({ type: 'uint8array' });
@@ -314,9 +320,9 @@ export class NickelMenuInstaller {
      * ZIP. The conf steps are only relevant for a curated preset install, which
      * is exactly when the on-screen instructions show them too.
      */
-    buildInstructionsText(features, deviceInfo, isPreset) {
+    buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization = null) {
         const version = (typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : null) || 'unknown';
-        const settingsCtx = { deviceInfo: deviceInfo ?? null, features };
+        const settingsCtx = { deviceInfo: deviceInfo ?? null, features, fontsCustomization };
         const confSettings = isPreset ? features.flatMap((feature) => (feature.confSettings ? feature.confSettings(settingsCtx) : [])) : [];
         return buildNickelMenuInstructions({
             version,
@@ -338,20 +344,20 @@ export class NickelMenuInstaller {
         this.recordEReaderConfUpdates(features, device.deviceInfo, audit);
     }
 
-    async buildEReaderConfData(device, features = []) {
-        return new TextEncoder().encode(await this.buildEReaderConfContent(device, features));
+    async buildEReaderConfData(device, features = [], fontsCustomization = null) {
+        return new TextEncoder().encode(await this.buildEReaderConfContent(device, features, fontsCustomization));
     }
 
-    async buildEReaderConfContent(device, features = []) {
+    async buildEReaderConfContent(device, features = [], fontsCustomization = null) {
         const confPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
         const settingLine = getExcludeSyncFoldersLine(features);
         let content = setExcludeSyncFoldersLine((await device.readFile(confPath)) || '', settingLine);
 
         // Apply any Kobo eReader.conf settings declared by selected features
-        // (e.g. better-typography's reading/rendering preferences). Features pass
+        // (e.g. better-typography's reading/rendering preferences). Features get
         // the full selection so they can adapt (e.g. only set a default font when
-        // the fonts are also being installed).
-        const settingsCtx = { deviceInfo: device.deviceInfo, features };
+        // that font is part of the fonts selection being installed).
+        const settingsCtx = { deviceInfo: device.deviceInfo, features, fontsCustomization };
         for (const feature of features) {
             if (!feature.confSettings) continue;
             for (const { section, key, value } of feature.confSettings(settingsCtx)) {
@@ -362,12 +368,12 @@ export class NickelMenuInstaller {
         return content;
     }
 
-    recordEReaderConfUpdates(features = [], deviceInfo = null, audit = null) {
+    recordEReaderConfUpdates(features = [], deviceInfo = null, audit = null, fontsCustomization = null) {
         if (!audit) return;
         const settingLine = getExcludeSyncFoldersLine(features);
         audit.record(`Set Kobo eReader.conf ExcludeSyncFolders=${settingLine}`);
 
-        const settingsCtx = { deviceInfo, features };
+        const settingsCtx = { deviceInfo, features, fontsCustomization };
         for (const feature of features) {
             if (!feature.confSettings) continue;
             for (const { section, key, value } of feature.confSettings(settingsCtx)) {
