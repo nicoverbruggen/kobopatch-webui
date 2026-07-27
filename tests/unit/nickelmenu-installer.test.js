@@ -108,6 +108,54 @@ test('installToDevice uses the calibre sync exclusion when exclude-calibre is se
     assert.match(text(device.writeFor(koboEReaderConfPath).data), /^ExcludeSyncFolders=\(calibre\|/m);
 });
 
+// The bar must never claim a file is on the device before its write returns, and
+// the fraction is what actually moves the bar — assert it, not just the text.
+test('installToDevice reports a written file only once its write has returned', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({ textFiles: { [koboEReaderConfPath]: '' } });
+    const feature = {
+        id: 'three-files',
+        title: 'Three files',
+        analyticsEvent: null,
+        install: () => [
+            { path: 'a/one', data: '1' },
+            { path: 'a/two', data: '2' },
+            { path: 'a/three', data: '3' },
+        ],
+    };
+
+    // Snapshot how many files had actually reached the device at each report.
+    const observed = [];
+    const progress = (message, detail, fraction) => observed.push({ message, detail, fraction, written: device.writes.length });
+
+    await installer.installToDevice(device, [feature], progress);
+
+    const writes = observed.filter((entry) => entry.message === 'Writing files to your Kobo...');
+    // The conf file is written before the loop, so subtract it to count ours.
+    assert.deepEqual(
+        writes.map((entry) => [entry.detail, entry.fraction, entry.written - 1]),
+        [
+            ['1 of 3 files', 1 / 3, 1],
+            ['2 of 3 files', 2 / 3, 2],
+            ['3 of 3 files', 1, 3],
+        ],
+    );
+});
+
+test('buildDownloadZip reports compression progress with a fraction', async () => {
+    const installer = createInstaller();
+    const feature = { id: 'one-file', title: 'One file', analyticsEvent: null, install: () => [{ path: 'a/one', data: '1' }] };
+    const observed = [];
+    const progress = (message, detail, fraction) => observed.push({ message, detail, fraction });
+
+    await installer.buildDownloadZip([feature], progress);
+
+    const compressing = observed.filter((entry) => entry.message === 'Compressing...' && entry.fraction !== null && entry.fraction !== undefined);
+    assert.ok(compressing.length > 0, 'compression should report a fraction, otherwise the bar never appears');
+    assert.equal(compressing.at(-1).fraction, 1);
+    assert.equal(compressing.at(-1).detail, '100%');
+});
+
 test('installToDevice writes post-processed NickelMenu items as bytes', async () => {
     const restoreFetch = useCustomMenuAssetFetch();
     const installer = createInstaller();

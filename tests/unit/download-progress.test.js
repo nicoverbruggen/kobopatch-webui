@@ -51,13 +51,15 @@ test('downloadProgress falls back to the expected size when there is no server t
     assert.deepEqual(calls, [['Downloading...', '5.0 MB / 10.0 MB (50%)', 0.5]]);
 });
 
-test('downloadProgress caps the fraction at 1 when the estimate is slightly low', () => {
+test('downloadProgress caps both the fraction and the byte count when the estimate is slightly low', () => {
     const calls = [];
     const onProgress = downloadProgress((...args) => calls.push(args), 'Downloading...', 10 * MB);
 
     onProgress(11 * MB, null);
 
-    assert.deepEqual(calls, [['Downloading...', '11.0 MB / 10.0 MB (100%)', 1]]);
+    // Reads as finished rather than as more bytes than the download was
+    // supposed to have.
+    assert.deepEqual(calls, [['Downloading...', '10.0 MB / 10.0 MB (100%)', 1]]);
 });
 
 test('downloadProgress shows an indeterminate byte count with no fraction when no total is known', () => {

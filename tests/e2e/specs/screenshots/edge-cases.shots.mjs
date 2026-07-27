@@ -15,12 +15,13 @@ test('connected nickelmenu installing (busy indicator)', async ({ page }, testIn
     await page.goto('/');
     await dismissMobileModal(page);
 
-    // The install step is transient, so force it visible with a representative
-    // progress message to capture the busy-indicator styling on its own.
+    // The install step is transient, so force it visible to capture the
+    // busy-indicator styling on its own. The message is one of the steps with
+    // nothing to measure, which is what leaves the indicator standing alone.
     await page.evaluate(() => {
         for (const step of document.querySelectorAll('.step')) step.hidden = true;
         document.getElementById('step-nm-installing').hidden = false;
-        document.getElementById('nm-progress').textContent = 'Writing files to Kobo (3 of 12)...';
+        document.getElementById('nm-progress').textContent = 'Preparing Kobo eReader.conf...';
     });
 
     await expect(page.locator('#step-nm-installing .busy-indicator')).toBeVisible();

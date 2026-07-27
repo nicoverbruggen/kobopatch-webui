@@ -183,7 +183,7 @@ export class NickelMenuInstaller {
         for (const feature of features) {
             if (!feature.install) continue;
             const ctx = createContext(progressFn, deviceInfo, features, { menuCustomization, tabsCustomization, fontsCustomization, assetCache });
-            progressFn(`Setting up ${feature.title}...`);
+            progressFn(`Setting up: ${feature.title}...`);
             const result = await feature.install(ctx);
             files.push(...result);
             featureFiles[feature.id] = result.map((f) => f.path);
@@ -243,13 +243,19 @@ export class NickelMenuInstaller {
             await device.writeFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], eReaderConfData);
             this.recordEReaderConfUpdates(features, device.deviceInfo, audit, fontsCustomization);
 
-            progressFn('Writing files to Kobo...');
-            for (let i = 0; i < collectedFiles.length; i++) {
+            // Thousands of files over USB for a KOReader install: the slowest
+            // part of the whole thing, and the one non-download step that knows
+            // exactly where it is. Each file is counted *after* its write
+            // resolves, the way a download counts bytes actually received —
+            // reporting the write we are about to attempt would leave the bar a
+            // file ahead of the device, sitting at 100% while the last one goes.
+            const total = collectedFiles.length;
+            for (let i = 0; i < total; i++) {
                 const { path, data } = collectedFiles[i];
                 const fileData = typeof data === 'string' ? new TextEncoder().encode(data) : data;
-                progressFn(`Writing files to Kobo (${i + 1} of ${collectedFiles.length})...`);
                 await device.writeFile(path.split('/'), fileData);
                 audit?.record(`Wrote ${path} (${fileData.length} bytes)`);
+                progressFn('Writing files to your Kobo...', `${i + 1} of ${total} files`, (i + 1) / total);
             }
         }
 
@@ -310,7 +316,13 @@ export class NickelMenuInstaller {
         zip.file('instructions.txt', this.buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization));
 
         progressFn('Compressing...');
-        const result = await zip.generateAsync({ type: 'uint8array' });
+        let shown = -1;
+        const result = await zip.generateAsync({ type: 'uint8array' }, ({ percent }) => {
+            const rounded = Math.round(percent);
+            if (rounded === shown) return;
+            shown = rounded;
+            progressFn('Compressing...', `${rounded}%`, rounded / 100);
+        });
         progressFn('Done.');
         return result;
     }

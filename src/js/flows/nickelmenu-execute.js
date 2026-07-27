@@ -29,6 +29,10 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
         setProgressDetail(dom.progressDetail, detail, fraction);
     };
     let audit = null;
+    // The step's markup is static, so a retry (or a download after an install)
+    // would otherwise show the previous run's status and part-filled bar until
+    // the first report replaces them.
+    progressFn(TL.STATUS.BUILDING_STARTING);
     await flow.go('installing', state);
 
     try {

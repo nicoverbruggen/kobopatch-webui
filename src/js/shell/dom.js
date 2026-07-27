@@ -184,8 +184,8 @@ export async function fetchWithProgress(url, onProgress, errorPrefix = 'Download
  * /assets/index.json. That fallback is what keeps the percentage working in
  * production, where the proxy serves these archives gzip-encoded and strips
  * Content-Length. Only with neither does it show the indeterminate "X.X MB" with
- * no bar (`fraction` null). The fraction is capped at 1 so a slightly-off estimate
- * can't read over.
+ * no bar (`fraction` null). Both the fraction and the byte count are capped, so a
+ * slightly-low estimate reads as finished rather than as "5.0 MB / 4.0 MB (100%)".
  */
 export function downloadProgress(report, label, expectedTotal = null) {
     return (received, total) => {
@@ -193,7 +193,7 @@ export function downloadProgress(report, label, expectedTotal = null) {
         if (knownTotal) {
             const fraction = Math.min(1, received / knownTotal);
             const pct = (fraction * 100).toFixed(0);
-            report(label, `${formatBytes(received)} / ${formatBytes(knownTotal)} (${pct}%)`, fraction);
+            report(label, `${formatBytes(Math.min(received, knownTotal))} / ${formatBytes(knownTotal)} (${pct}%)`, fraction);
         } else {
             report(label, formatBytes(received), null);
         }
