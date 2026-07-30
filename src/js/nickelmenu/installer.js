@@ -10,6 +10,42 @@ import { removeExcludeSyncFoldersLine, revertableConfSettings, setConfSetting, s
 import { menuItemPosition } from './features/menu-order.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
 import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../kobo/sync-exclusions.js';
+import { resolveMenuCustomization } from './customization.js';
+import { cloneTabsCustomization } from './features/simplify-tabs/customization.js';
+import { resolveSelectedFamilyIds } from './features/additional-fonts/customization.js';
+
+function bytesToBase64(data) {
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+    }
+    return globalThis.btoa(binary);
+}
+
+function savedConfiguration(features, { menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
+    const selected = new Set(features.map((feature) => feature.id));
+    const configuration = {};
+
+    if (selected.has('custom-menu')) {
+        const resolved = resolveMenuCustomization(menuCustomization);
+        configuration.menu = { label: resolved.label };
+        if (resolved.iconFile) {
+            configuration.menu.icon = {
+                mimeType: resolved.iconFile.path.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+                data: bytesToBase64(resolved.iconFile.data),
+            };
+        }
+    }
+    if (selected.has('simplify-tabs')) {
+        configuration.tabs = cloneTabsCustomization(tabsCustomization);
+    }
+    if (selected.has('additional-fonts')) {
+        configuration.fonts = { families: resolveSelectedFamilyIds(fontsCustomization) };
+    }
+
+    return configuration;
+}
 
 export function getExcludeSyncFoldersLine(features = []) {
     return buildExcludeSyncFoldersLine({
@@ -260,7 +296,11 @@ export class NickelMenuInstaller {
         }
 
         // Write the install manifest
-        const manifest = this.buildManifest(features, collectedFiles, featureFiles, device.deviceInfo, audit);
+        const manifest = this.buildManifest(features, collectedFiles, featureFiles, device.deviceInfo, audit, {
+            menuCustomization,
+            tabsCustomization,
+            fontsCustomization,
+        });
         if (manifest) {
             await this.writeManifest(device, manifest);
         }
@@ -305,7 +345,11 @@ export class NickelMenuInstaller {
 
         // Include the install manifest so the downloaded archive carries the same
         // definitional info about the chosen features that a USB install writes.
-        const manifest = this.buildManifest(features, collectedFiles, featureFiles, deviceInfo, null);
+        const manifest = this.buildManifest(features, collectedFiles, featureFiles, deviceInfo, null, {
+            menuCustomization,
+            tabsCustomization,
+            fontsCustomization,
+        });
         if (manifest) {
             const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
             zip.file(nickelMenuManifestPath.join('/'), data);
@@ -428,7 +472,7 @@ export class NickelMenuInstaller {
         }
     }
 
-    buildManifest(features, collectedFiles, featureFiles, deviceInfo, audit) {
+    buildManifest(features, collectedFiles, featureFiles, deviceInfo, audit, customizations = {}) {
         const selected = features.map((f) => f.id);
         const settingsCtx = { deviceInfo, features };
         const manifestFeatures = {};
@@ -465,6 +509,7 @@ export class NickelMenuInstaller {
         return {
             selected,
             features: manifestFeatures,
+            configuration: savedConfiguration(features, customizations),
             meta: {
                 writer: { name: 'kobopatch-webui', version },
                 installed: { timestamp, firmware, channel },

@@ -55,6 +55,15 @@ function makeHider({ id, title, description, flag }) {
         title,
         description,
         default: false,
+        // The shared directory only proves NickelHome is installed; this flag
+        // identifies which individual hider is active.
+        installedConfig: {
+            paths: [
+                ['.adds', 'nickel-home', 'config'],
+                ['.adds', 'nickelhome', 'config'],
+            ],
+            key: flag,
+        },
 
         // Ship the shared toggle script (de-duplicated by path in the installer,
         // so it lands once however many hiders are selected). It goes under
@@ -135,7 +144,7 @@ export const homeHiders = HIDERS.map(makeHider);
 // irrelevant. Removing NickelHome's config folder is what makes the mod finish uninstalling itself
 // on the next reboot (its NickelHook uninstall flag is the folder). Covers both the current
 // .adds/nickel-home and the pre-v0.6 .adds/nickelhome (older installs) for backward compatibility.
-homeHiders[0].cleanup = {
+const nickelHomeCleanup = {
     mode: 'optional',
     title: 'NickelHome',
     removeLabel: 'Remove NickelHome (.adds/nickel-home)',
@@ -150,3 +159,5 @@ homeHiders[0].cleanup = {
         { path: ['.adds', 'nickelhome'], recursive: true },
     ],
 };
+for (const hider of homeHiders) hider.modifyCleanup = nickelHomeCleanup;
+homeHiders[0].cleanup = nickelHomeCleanup;

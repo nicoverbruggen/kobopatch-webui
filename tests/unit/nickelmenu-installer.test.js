@@ -110,6 +110,14 @@ test('installToDevice writes customized NickelMenu tab icon and label', async ()
     assert.match(items, /^experimental :menu_main_15505_label :Read$/m);
     assert.match(items, new RegExp(`^experimental :menu_main_15505_icon :/mnt/onboard/${NM_MENU_ICON_CUSTOM_PNG_PATH}$`, 'm'));
     assert.deepEqual(device.writeFor(NM_MENU_ICON_CUSTOM_PNG_PATH).data, png);
+    const manifest = JSON.parse(text(device.writeFor('.kobopatch-webui/nickelmenu.json').data));
+    assert.deepEqual(manifest.configuration.menu, {
+        label: 'Read',
+        icon: {
+            mimeType: 'image/png',
+            data: btoa('png data'),
+        },
+    });
 });
 
 test('installToDevice uses the calibre sync exclusion when exclude-calibre is selected', async () => {

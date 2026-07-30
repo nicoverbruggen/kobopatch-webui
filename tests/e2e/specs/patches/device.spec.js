@@ -95,7 +95,7 @@ async function gotoManualPatchesStep(page) {
 test.describe('Custom patches', () => {
     test('with device — incompatible version 5.x shows error', async ({ page }) => {
         await page.goto('/');
-        await injectMockDevice(page, { firmware: '5.0.0' });
+        await injectMockDevice(page, { firmware: '5.18.0' });
         await page.click('#btn-connect');
         await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
         await page.click('#btn-connect-ready');
@@ -104,7 +104,7 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#step-device')).not.toBeHidden();
         await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
         await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
-        await expect(page.locator('#device-firmware')).toHaveText('5.0.0');
+        await expect(page.locator('#device-firmware')).toHaveText('5.18.0');
         await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
         // Status message should say the version is too new, not too old

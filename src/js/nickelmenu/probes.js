@@ -3,6 +3,7 @@ import { getConfSetting, revertableConfSettings } from '../kobo/configuration.js
 import { countKoboUsers } from '../kobo/signin.js';
 import { TL } from '../shell/strings.js';
 import { nickelMenuManifestPath } from './constants.js';
+import { parsePreviousNickelMenuConfiguration } from './previous-configuration.js';
 
 export const NM_PRESET_CONFLICTS = [
     { id: 'nickeldbus', path: ['.adds', 'nickeldbus'], label: 'nickeldbus (.adds/nickeldbus)' },
@@ -44,6 +45,122 @@ export async function readPreviousNickelMenuSelections(state) {
 }
 
 /**
+ * Read the full previous preset configuration. A referenced custom icon is
+ * copied into memory so reinstalling can preserve it without another upload.
+ */
+export async function readPreviousNickelMenuConfiguration(state) {
+    if (state.manualMode || !state.device?.directoryHandle) return null;
+
+    try {
+        const [manifestText, presetText] = await Promise.all([
+            state.device.readFile(nickelMenuManifestPath),
+            state.device.readFile(['.adds', 'nm', 'webui-preset']),
+        ]);
+        const configuration = parsePreviousNickelMenuConfiguration(manifestText, presetText);
+        if (!configuration) return null;
+
+        if (configuration.menuIconPath) {
+            const data = await state.device.readFileBytes(configuration.menuIconPath.split('/'));
+            if (data) {
+                const isSvg = configuration.menuIconPath.toLowerCase().endsWith('.svg');
+                configuration.menuCustomization.icon = {
+                    type: 'upload',
+                    name: configuration.menuIconPath.split('/').pop(),
+                    mimeType: isSvg ? 'image/svg+xml' : 'image/png',
+                    data,
+                };
+            }
+        }
+
+        return configuration;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Detect the features that are currently installed. On-device markers are
+ * authoritative; features without a reliable marker fall back to the manifest
+ * only while the generated preset itself is still present.
+ */
+export async function detectInstalledNickelMenuFeatureIds(state, previousFeatureIds = [], webuiPresetPresent = false) {
+    if (state.manualMode || !state.device?.directoryHandle) return [];
+
+    let conf = '';
+    try {
+        conf = (await state.device.readFile(['.kobo', 'Kobo', 'Kobo eReader.conf'])) || '';
+    } catch {}
+
+    const previous = new Set(previousFeatureIds);
+    const installed = [];
+    const installedConfigCache = new Map();
+    for (const feature of NICKELMENU_FEATURES) {
+        if (feature.installedConfig) {
+            let present = false;
+            for (const path of feature.installedConfig.paths) {
+                const cacheKey = path.join('/');
+                if (!installedConfigCache.has(cacheKey)) {
+                    try {
+                        installedConfigCache.set(cacheKey, (await state.device.readFile(path)) || '');
+                    } catch {
+                        installedConfigCache.set(cacheKey, '');
+                    }
+                }
+                const line = installedConfigCache
+                    .get(cacheKey)
+                    .split(/\r?\n/)
+                    .find((candidate) => candidate.trim().startsWith(`${feature.installedConfig.key}:`));
+                // A zero value means the feature is installed but temporarily
+                // switched off through its NickelMenu toggle.
+                if (line) {
+                    present = true;
+                    break;
+                }
+            }
+            if (present) installed.push(feature.id);
+            continue;
+        }
+
+        const directoryPaths = (feature.directories || []).map((path) => (Array.isArray(path) ? path : path.split('/')));
+        const detectionPaths = feature.installedDetect || feature.cleanup?.detect || [];
+        const hasDetection =
+            directoryPaths.length > 0 ||
+            detectionPaths.length > 0 ||
+            revertableConfSettings(feature, {
+                deviceInfo: state.device?.deviceInfo,
+                features: [],
+            }).length > 0;
+
+        if (!hasDetection) {
+            if (webuiPresetPresent && previous.has(feature.id)) installed.push(feature.id);
+            continue;
+        }
+
+        let present = false;
+        for (const path of directoryPaths) {
+            if (await state.device.pathExists(path)) {
+                present = true;
+                break;
+            }
+        }
+        if (!present && feature.installedDetect) {
+            for (const path of feature.installedDetect) {
+                if (await state.device.pathExists(path)) {
+                    present = true;
+                    break;
+                }
+            }
+        }
+        if (!present && feature.cleanup) {
+            present = await isOptionalCleanupPresent(state, feature, conf);
+        }
+        if (present) installed.push(feature.id);
+    }
+
+    return installed;
+}
+
+/**
  * Inspect the connected device for an existing NickelMenu install and update the
  * "remove" option + preset title accordingly. Detection results are reported via
  * the supplied callbacks so the flow keeps ownership of its DOM/state.
@@ -72,7 +189,7 @@ export async function checkNickelMenuInstalled(
         removeOption.classList.remove('selection-card--danger');
         removeDesc.textContent =
             'Shows instructions for manually removing NickelMenu from a Kobo. After following the removal steps, safely eject your Kobo and let it restart — NickelMenu will remove itself during startup.';
-        return;
+        return { installed: false, webuiPresetPresent: false };
     }
 
     removeOption.classList.add('selection-card--danger');
@@ -111,7 +228,7 @@ export async function checkNickelMenuInstalled(
             if (onLegacyItemsDetected) {
                 await detectLegacyItemsFile(nmDir, onLegacyItemsDetected);
             }
-            return;
+            return { installed: true, webuiPresetPresent };
         } catch {}
     }
 
@@ -119,6 +236,7 @@ export async function checkNickelMenuInstalled(
     removeOption.classList.add('selection-card--disabled');
     removeOption.classList.add('selection-card--danger');
     removeDesc.textContent = TL.STATUS.NM_REMOVAL_DISABLED;
+    return { installed: false, webuiPresetPresent: false };
 }
 
 export async function detectLegacyItemsFile(nmDir, onResult) {

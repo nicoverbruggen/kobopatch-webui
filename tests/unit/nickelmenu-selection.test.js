@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
     featuresToInstall,
+    featuresToRemove,
     featureDisabledReason,
     optionalCleanupToRemove,
     optionalCleanupKept,
@@ -20,6 +21,7 @@ function session(overrides = {}) {
         nickelMenuOption: 'preset',
         selectedFeatureIds: [],
         nmOptionalCleanupIds: [],
+        installedNickelMenuFeatureIds: [],
         ...overrides,
     };
 }
@@ -41,6 +43,33 @@ test('featuresToInstall includes selected optional features and excludes unselec
     const ids = result.map((f) => f.id);
     assert.ok(ids.includes('screensaver'), 'a selected feature is installed');
     assert.ok(!ids.includes('koreader'), 'an unselected feature is not installed');
+});
+
+test('featuresToRemove reconciles deselected installed features with cleanup support', () => {
+    const removed = featuresToRemove(
+        session({
+            selectedFeatureIds: [],
+            installedNickelMenuFeatureIds: ['screensaver', 'simplify-tabs'],
+        }),
+        { firmware: '4.40.0' },
+    );
+    assert.deepEqual(
+        removed.map((feature) => feature.id),
+        ['screensaver'],
+        'generated preset entries need no separate cleanup, but owned files do',
+    );
+});
+
+test('featuresToRemove schedules the shared NickelHome cleanup once when hiders are deselected', () => {
+    const removed = featuresToRemove(
+        session({
+            selectedFeatureIds: [],
+            installedNickelMenuFeatureIds: ['hide-recommendations', 'hide-row2col2', 'hide-notices'],
+        }),
+        { firmware: '4.40.0' },
+    );
+    assert.equal(removed.length, 1);
+    assert.equal((removed[0].modifyCleanup || removed[0].cleanup).title, 'NickelHome');
 });
 
 test('featuresToInstall gates a feature below its minimum firmware', () => {
@@ -219,5 +248,6 @@ test('nmReviewModel (preset) lists the install features including required ones'
     assert.equal(model.mode, 'preset');
     const ids = model.installFeatures.map((f) => f.id);
     assert.ok(ids.includes('custom-menu') && ids.includes('screensaver'));
+    assert.deepEqual(model.removedFeatures, []);
     assert.ok(Array.isArray(model.notices));
 });

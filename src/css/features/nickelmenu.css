@@ -5,6 +5,10 @@
     gap: 0.9rem;
 }
 
+.nm-previous-configuration-actions {
+    margin: 0.8rem 0 1.1rem;
+}
+
 /* Space between the "not signed in" recommendation and the feature list. */
 #nm-sideloaded-banner {
     margin-bottom: 1.25rem;
@@ -251,6 +255,10 @@
     flex-shrink: 0;
     color: var(--text-secondary);
     line-height: 1;
+}
+
+.nm-config-previous--installed .nm-config-previous-icon {
+    color: var(--success-text);
 }
 
 /* "Experimental" pill for features still considered unstable. Right-aligned so

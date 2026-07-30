@@ -22,9 +22,10 @@ import {
 } from '../nickelmenu/customization.js';
 import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
+    detectInstalledNickelMenuFeatureIds,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
-    readPreviousNickelMenuSelections,
+    readPreviousNickelMenuConfiguration,
 } from '../nickelmenu/probes.js';
 import { nmReviewModel, featureDisabledReason } from '../nickelmenu/selection.js';
 import {
@@ -68,6 +69,8 @@ export function initNickelMenuFlow(state) {
         'step-nm-backup': stepNmBackup,
         'step-nm-done': stepNmDone,
         'nm-config-options': nmConfigOptions,
+        'nm-previous-configuration-actions': nmPreviousConfigurationActions,
+        'btn-nm-use-previous-configuration': btnNmUsePreviousConfiguration,
         'nm-uninstall-options': nmUninstallOptions,
         'btn-nm-back': btnNmBack,
         'btn-nm-next': btnNmNext,
@@ -132,6 +135,8 @@ export function initNickelMenuFlow(state) {
         'step-nm-backup',
         'step-nm-done',
         'nm-config-options',
+        'nm-previous-configuration-actions',
+        'btn-nm-use-previous-configuration',
         'nm-uninstall-options',
         'btn-nm-back',
         'btn-nm-next',
@@ -207,12 +212,14 @@ export function initNickelMenuFlow(state) {
     setupCardRadios(stepNickelMenu, 'selection-card--selected');
 
     const NM_PRESET_TITLE_INSTALL = nmOptionPresetTitle.textContent;
-    const NM_PRESET_TITLE_REINSTALL = '(Re)install with preset (and customize)';
+    const NM_PRESET_TITLE_REINSTALL = 'Modify current setup (and customize)';
 
     let detectedOptionalCleanupFeatures = [];
     let detectedPresetConflictsList = [];
     let legacyItemsDetected = false;
     let legacyItemsWasOurs = false;
+    let webuiPresetInstalled = false;
+    let previousConfigurationApplied = false;
     let nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
     let nmCustomizationSession = 0;
     let nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
@@ -267,6 +274,9 @@ export function initNickelMenuFlow(state) {
             navIndex: 3,
             back: () => 'config',
             onEnter: async () => {
+                if (webuiPresetInstalled && !previousConfigurationApplied) {
+                    restorePreviousConfiguration(true, false);
+                }
                 renderFeatureCheckboxes();
                 updateSideloadedRecommendation().catch(() => {});
             },
@@ -353,7 +363,12 @@ export function initNickelMenuFlow(state) {
                 } else {
                     summary.hidden = true;
                     summary.textContent = '';
-                    keptCard.hidden = true;
+                    populateList(
+                        keptList,
+                        model.removedFeatures.map((f) => (f.modifyCleanup || f.cleanup).title),
+                    );
+                    keptLabel.textContent = 'These currently installed features will be removed:';
+                    keptCard.hidden = model.removedFeatures.length === 0;
                     listLabel.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
                     populateList(list, [TL.STATUS.NM_NICKEL_ROOT_TGZ, ...model.installFeatures.map((f) => f.title)]);
                     btnNmWrite.hidden = false;
@@ -456,9 +471,10 @@ export function initNickelMenuFlow(state) {
                 hint: f.hint,
                 experimental: f.experimental === true,
                 previouslySelected: state.previousNickelMenuFeatureIds.includes(f.id),
+                currentlyInstalled: state.installedNickelMenuFeatureIds.includes(f.id),
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
-                checked: state.selectedFeatureIds.includes(f.id) && !unavailable,
+                checked: state.selectedFeatureIds.includes(f.id),
                 disabled: f.required || !meetsMinimum || Boolean(unsupportedReason) || unavailable,
                 disabledReason: featureDisabledReason(f, deviceInfo),
                 actionLabel: f.customization?.actionLabel,
@@ -574,6 +590,10 @@ export function initNickelMenuFlow(state) {
         state.nickelMenuOption = null;
         state.selectedFeatureIds = [];
         state.previousNickelMenuFeatureIds = [];
+        state.previousNickelMenuConfiguration = null;
+        state.installedNickelMenuFeatureIds = [];
+        webuiPresetInstalled = false;
+        previousConfigurationApplied = false;
         state.nmOptionalCleanupIds = [];
         state.nmKeepLegacyConfig = false;
         $('nm-sideloaded-banner').hidden = true;
@@ -591,6 +611,8 @@ export function initNickelMenuFlow(state) {
         state.nickelMenuFontsCustomization = createDefaultFontsCustomization();
         nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
         nmConfigOptions.innerHTML = '';
+        nmPreviousConfigurationActions.hidden = true;
+        $('nm-installed-features-note').hidden = true;
         updateMenuCustomizationSummary(state);
         updateTabsCustomizationSummary(state);
         updateFontsCustomizationSummary(state);
@@ -609,7 +631,7 @@ export function initNickelMenuFlow(state) {
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
-        const [, previousSelections] = await Promise.all([
+        const [installedState, previousConfiguration] = await Promise.all([
             probeCheckNickelMenuInstalled(state, {
                 presetTitleEl: nmOptionPresetTitle,
                 removeOption,
@@ -631,9 +653,14 @@ export function initNickelMenuFlow(state) {
                     legacyItemsWasOurs = wasOurs;
                 },
             }),
-            readPreviousNickelMenuSelections(state),
+            readPreviousNickelMenuConfiguration(state),
         ]);
-        state.previousNickelMenuFeatureIds = previousSelections;
+        state.previousNickelMenuConfiguration = previousConfiguration;
+        state.previousNickelMenuFeatureIds = previousConfiguration?.selectedFeatureIds || [];
+        webuiPresetInstalled = installedState.webuiPresetPresent;
+        state.installedNickelMenuFeatureIds = await detectInstalledNickelMenuFeatureIds(state, state.previousNickelMenuFeatureIds, webuiPresetInstalled);
+        $('nm-installed-features-note').hidden = !installedState.installed;
+        nmPreviousConfigurationActions.hidden = !previousConfiguration || webuiPresetInstalled;
     }
 
     async function detectHasPresetConflicts() {
@@ -719,6 +746,42 @@ export function initNickelMenuFlow(state) {
     btnNmFeaturesBack.addEventListener('click', async () => {
         const target = flow.back(state);
         if (target) await flow.go(target, state);
+    });
+
+    function restorePreviousConfiguration(useInstalledState = false, render = true) {
+        const previous = state.previousNickelMenuConfiguration;
+        if (!previous && !useInstalledState) return false;
+
+        const previousIds = new Set(useInstalledState ? state.installedNickelMenuFeatureIds : previous.selectedFeatureIds);
+        state.selectedFeatureIds = NICKELMENU_FEATURES.filter((feature) => !feature.hidden && (feature.required || previousIds.has(feature.id))).map(
+            (feature) => feature.id,
+        );
+
+        if (previous?.menuCustomization) {
+            const previousIcon = previous.menuCustomization.icon;
+            if (previousIcon?.type === 'upload' && previousIcon.data && !previousIcon.previewUrl) {
+                previousIcon.previewUrl = URL.createObjectURL(new Blob([previousIcon.data], { type: previousIcon.mimeType }));
+            }
+            state.nickelMenuCustomization = cloneMenuCustomization(previous.menuCustomization);
+            nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
+            nmCustomizationSession++;
+        }
+        if (previous?.tabsCustomization && previousIds.has('simplify-tabs')) {
+            state.nickelMenuTabsCustomization = cloneTabsCustomization(previous.tabsCustomization);
+            nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
+        }
+        if (previous?.fontsCustomization && previousIds.has('additional-fonts')) {
+            state.nickelMenuFontsCustomization = cloneFontsCustomization(previous.fontsCustomization);
+            nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
+        }
+
+        previousConfigurationApplied = true;
+        if (render) renderFeatureCheckboxes();
+        return true;
+    }
+
+    btnNmUsePreviousConfiguration.addEventListener('click', () => {
+        restorePreviousConfiguration(false);
     });
 
     btnNmFeaturesNext.addEventListener('click', async () => {

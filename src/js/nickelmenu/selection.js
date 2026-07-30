@@ -26,6 +26,28 @@ export function featuresToInstall(session, deviceInfo) {
     });
 }
 
+/** Installed, user-visible features that will be removed by the desired setup. */
+export function featuresToRemove(session, deviceInfo) {
+    const desired = new Set(featuresToInstall(session, deviceInfo).map((feature) => feature.id));
+    const cleanupGroups = new Set();
+    return NICKELMENU_FEATURES.filter(
+        (feature) =>
+            !feature.hidden &&
+            feature.available !== false &&
+            !feature.disabled &&
+            meetsMinimumVersion(deviceInfo?.firmware, feature.minimumVersion) &&
+            !feature.unsupportedDeviceReason?.(deviceInfo) &&
+            session.installedNickelMenuFeatureIds?.includes(feature.id) &&
+            !desired.has(feature.id) &&
+            (feature.modifyCleanup || feature.cleanup),
+    ).filter((feature) => {
+        const cleanup = feature.modifyCleanup || feature.cleanup;
+        if (cleanupGroups.has(cleanup)) return false;
+        cleanupGroups.add(cleanup);
+        return true;
+    });
+}
+
 /**
  * The reason a feature's checkbox is disabled in the config step, or `undefined`
  * when it is selectable. Ordered by authority: a maintainer kill switch
@@ -96,6 +118,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
     return {
         mode: session.nickelMenuOption,
         installFeatures,
+        removedFeatures: featuresToRemove(session, deviceInfo),
         notices: featureReviewNotices(installFeatures, deviceInfo),
     };
 }
