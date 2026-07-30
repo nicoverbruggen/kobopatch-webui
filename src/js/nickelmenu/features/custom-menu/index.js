@@ -3,6 +3,7 @@ import { resolveMenuCustomization, NM_MENU_ICON_DEFAULT_PATH } from '../../custo
 import { loadBundledAsset } from '../assets.js';
 
 export const CUSTOM_MENU_ICON_URL = new URL('./.cog.png', import.meta.url).href;
+export const TOGGLE_SCREENSHOTS_SCRIPT_URL = new URL('./scripts/toggle_screenshots.sh', import.meta.url).href;
 
 // Sets up the "Toggle" tab and its base NickelMenu entries (the tab header, plus
 // screenshots, auto-USB, rescan, invert, sleep, reboot, and a device-conditional
@@ -51,15 +52,21 @@ export default {
         ];
     },
 
-    // Ship the Toggle menu icon.
+    // Ship the Toggle menu icon and the script which explains the resulting
+    // screenshot state after NickelMenu toggles it.
     async install(ctx = {}) {
         const resolved = resolveMenuCustomization(ctx.menuCustomization);
+        const screenshotsScript = ctx.bundledAsset
+            ? await ctx.bundledAsset(TOGGLE_SCREENSHOTS_SCRIPT_URL)
+            : await loadBundledAsset(TOGGLE_SCREENSHOTS_SCRIPT_URL);
+        const files = [{ path: '.adds/nm/scripts/toggle_screenshots.sh', data: screenshotsScript }];
+
         if (resolved.iconFile) {
-            return [resolved.iconFile];
+            return [resolved.iconFile, ...files];
         }
 
         const data = ctx.bundledAsset ? await ctx.bundledAsset(CUSTOM_MENU_ICON_URL) : await loadBundledAsset(CUSTOM_MENU_ICON_URL);
-        return [{ path: NM_MENU_ICON_DEFAULT_PATH, data }];
+        return [{ path: NM_MENU_ICON_DEFAULT_PATH, data }, ...files];
     },
 
     // Contribute the base Toggle-menu entries: the tab header first, then the
@@ -71,7 +78,13 @@ export default {
                 id: 'tweak-header',
                 lines: [`experimental :menu_main_15505_label :${resolved.label}`, `experimental :menu_main_15505_icon :/mnt/onboard/${resolved.iconPath}`],
             },
-            { id: 'screenshots', lines: ['menu_item :main :Screenshots :nickel_setting :toggle :screenshots'] },
+            {
+                id: 'screenshots',
+                lines: [
+                    'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
+                    '    chain_success :cmd_output :1000 :/mnt/onboard/.adds/nm/scripts/toggle_screenshots.sh',
+                ],
+            },
             { id: 'auto-usb', lines: ['menu_item :main :Auto USB :nickel_setting :toggle :auto_usb_gadget'] },
             {
                 id: 'rescan-books',

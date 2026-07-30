@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 import JSZip from 'jszip';
 
-import customMenu, { CUSTOM_MENU_ICON_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
+import customMenu, { CUSTOM_MENU_ICON_URL, TOGGLE_SCREENSHOTS_SCRIPT_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import cadmus from '../../src/js/nickelmenu/features/cadmus/index.js';
 import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
@@ -553,6 +554,21 @@ test('custom menu includes the Dark Mode item on supported devices', () => {
     assert.deepEqual(darkMode.lines, ['menu_item :reader :Dark Mode        :nickel_setting     :toggle :dark_mode']);
 });
 
+test('custom menu screenshot toggle reports the resulting state', () => {
+    const screenshots = customMenu.menuItems().find((entry) => entry.id === 'screenshots');
+    assert.deepEqual(screenshots.lines, [
+        'menu_item :main :Screenshots :nickel_setting :toggle :screenshots',
+        '    chain_success :cmd_output :1000 :/mnt/onboard/.adds/nm/scripts/toggle_screenshots.sh',
+    ]);
+
+    const script = readFileSync(new URL(TOGGLE_SCREENSHOTS_SCRIPT_URL), 'utf8');
+    assert.match(script, /Screenshots are ready!/);
+    assert.match(script, /Press the power button to take a screenshot\./);
+    assert.match(script, /Important: the button cannot lock or wake your Kobo in this mode\. Remember to select Screenshots again when you're done\./);
+    assert.match(script, /Screenshots are now disabled!/);
+    assert.match(script, /Your power button works normally again and can be used to lock or wake up your device\./);
+});
+
 test('custom menu includes the Dark Mode item when the device is unknown (manual mode)', () => {
     const ids = customMenu.menuItems({}).map((e) => e.id);
     assert.ok(ids.includes('dark-mode'));
@@ -605,7 +621,7 @@ test('custom menu reviewNotices warns only on unsupported devices', () => {
     assert.match(notices[0].paragraphs[0], /Kobo Aura HD/);
 });
 
-test('custom menu install ships only the menu icon when no hiders are selected', async () => {
+test('custom menu install ships the menu icon and screenshot toggle script', async () => {
     const requested = [];
     const ctx = {
         features: [],
@@ -617,10 +633,10 @@ test('custom menu install ships only the menu icon when no hiders are selected',
 
     const files = await customMenu.install(ctx);
 
-    assert.deepEqual(requested, [CUSTOM_MENU_ICON_URL]);
+    assert.deepEqual(requested, [TOGGLE_SCREENSHOTS_SCRIPT_URL, CUSTOM_MENU_ICON_URL]);
     assert.deepEqual(
         files.map((file) => file.path),
-        ['.adds/nm/.cog.png'],
+        ['.adds/nm/.cog.png', '.adds/nm/scripts/toggle_screenshots.sh'],
     );
 });
 

@@ -80,6 +80,8 @@ test.describe('NickelMenu — install', () => {
 
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
         expect(itemsContent).toContain('menu_item:main:Open Cadmus');
+        expect(itemsContent).toContain('chain_success :cmd_output :1000 :/mnt/onboard/.adds/nm/scripts/toggle_screenshots.sh');
+        expect(zipFiles).toContainEqual('.adds/nm/scripts/toggle_screenshots.sh');
     });
 
     test('no device — NickelClock merges into KoboRoot.tgz preserving original files', async ({ page }) => {
@@ -622,11 +624,13 @@ test.describe('NickelMenu — install', () => {
         await page.click('#btn-nm-write');
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
 
-        // The toggle is inserted directly below Screenshots, and the sample
-        // screensaver image is written.
+        // The toggle is inserted directly after the complete Screenshots item
+        // (including its state-alert chain), and the sample image is written.
         const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
         expect(items).toContain('menu_item :main :Screensaver :cmd_output');
-        expect(items).toMatch(/menu_item :main :Screenshots[^\n]*\n\nmenu_item :main :Screensaver/);
+        expect(items).toMatch(
+            /menu_item :main :Screenshots[^\n]*\n +chain_success :cmd_output :1000 :\/mnt\/onboard\/\.adds\/nm\/scripts\/toggle_screenshots\.sh\n\nmenu_item :main :Screensaver/,
+        );
         expect(await mockPathExists(page, '.kobo', 'screensaver', 'moon.png')).toBe(true);
     });
 
