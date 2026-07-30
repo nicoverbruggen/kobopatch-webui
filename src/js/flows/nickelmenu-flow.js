@@ -344,6 +344,7 @@ export function initNickelMenuFlow(state) {
 
                 const model = nmReviewModel(state, detectedOptionalCleanupFeatures, state.device.deviceInfo);
                 $('step-nm-review').classList.toggle('review--removal', model.mode === 'remove');
+                keptCard.classList.toggle('review-summary--pending-removals', model.mode !== 'remove' && model.removedFeatures.length > 0);
 
                 if (model.mode === 'remove') {
                     summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;

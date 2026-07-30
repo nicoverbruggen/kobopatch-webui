@@ -919,6 +919,10 @@
     color: var(--error-text);
 }
 
+#step-nm-review .review-summary--pending-removals .review-list li::before {
+    color: var(--error-text);
+}
+
 #step-nm-review.review--removal #btn-nm-write {
     background: var(--danger-solid);
     border-color: var(--danger-solid);
