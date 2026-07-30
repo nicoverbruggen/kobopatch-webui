@@ -1,6 +1,9 @@
 /** The path (relative to the Kobo onboard root) where the generated NickelMenu config file is written. */
 export const NM_ITEMS_FILE = '.adds/nm/webui-preset';
 
+/** The persisted feature-selection manifest written by KoboPatch Web UI installs. */
+export const nickelMenuManifestPath = ['.kobopatch-webui', 'nickelmenu.json'];
+
 /**
  * The path (relative to the Kobo onboard root) of NickelHome's config file. The home-content hiders
  * write the selected `hide_home_*_enabled` flags here; NickelHome reads it at boot. Writing it also

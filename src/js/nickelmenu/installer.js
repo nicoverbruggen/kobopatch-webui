@@ -1,5 +1,5 @@
-import { AUDIT_LOG_DIRECTORY, writeAuditLog } from '../kobo/audit-log.js';
-import { NM_ITEMS_FILE } from './constants.js';
+import { writeAuditLog } from '../kobo/audit-log.js';
+import { NM_ITEMS_FILE, nickelMenuManifestPath } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
 import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.js';
@@ -308,7 +308,7 @@ export class NickelMenuInstaller {
         const manifest = this.buildManifest(features, collectedFiles, featureFiles, deviceInfo, null);
         if (manifest) {
             const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-            zip.file(`${AUDIT_LOG_DIRECTORY}/nickelmenu.json`, data);
+            zip.file(nickelMenuManifestPath.join('/'), data);
         }
 
         // Bundle the same manual-install guidance the wizard shows on screen,
@@ -474,6 +474,6 @@ export class NickelMenuInstaller {
 
     async writeManifest(device, manifest) {
         const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
-        await device.writeFile([AUDIT_LOG_DIRECTORY, 'nickelmenu.json'], data);
+        await device.writeFile(nickelMenuManifestPath, data);
     }
 }

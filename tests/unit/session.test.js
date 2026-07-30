@@ -12,6 +12,7 @@ test('a new Session starts with default wizard data', () => {
     assert.equal(s.patchesLoaded, false);
     assert.equal(s.isRestore, false);
     assert.deepEqual(s.selectedFeatureIds, []);
+    assert.deepEqual(s.previousNickelMenuFeatureIds, []);
     assert.deepEqual(s.nickelMenuCustomization, createDefaultMenuCustomization());
 });
 
@@ -60,6 +61,7 @@ test('resetDeviceContext clears device-derived fields but keeps mode/feature cho
     const s = new Session();
     s.manualMode = true;
     s.selectedFeatureIds = ['x'];
+    s.previousNickelMenuFeatureIds = ['previous'];
     s.selectedChannel = 'kobo9';
     s.firmwareURL = 'https://dl/fw.zip';
     s.firmwareVersion = '4.45.23646';
@@ -73,6 +75,7 @@ test('resetDeviceContext clears device-derived fields but keeps mode/feature cho
     assert.equal(s.firmwareVersion, null);
     assert.equal(s.patchesLoaded, false);
     assert.equal(s.resultTgz, null);
+    assert.deepEqual(s.previousNickelMenuFeatureIds, []);
     // Mode and feature selections survive a device-context reset.
     assert.equal(s.manualMode, true);
     assert.deepEqual(s.selectedFeatureIds, ['x']);

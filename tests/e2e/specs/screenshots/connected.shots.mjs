@@ -23,7 +23,14 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
         await page.click('#btn-mobile-continue');
     }
     await expect(page.locator('#step-connect')).not.toBeHidden();
-    await injectMockDevice(page);
+    await injectMockDevice(page, {
+        extraRootFiles: [
+            {
+                path: ['.kobopatch-webui', 'nickelmenu.json'],
+                content: JSON.stringify({ selected: ['simplify-tabs', 'hide-notices', 'additional-fonts'] }),
+            },
+        ],
+    });
     await shot(page, dir, '01-connect', testInfo);
 
     // Connection instructions

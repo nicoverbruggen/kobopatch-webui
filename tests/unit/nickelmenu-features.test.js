@@ -562,11 +562,14 @@ test('custom menu screenshot toggle reports the resulting state', () => {
     ]);
 
     const script = readFileSync(new URL(TOGGLE_SCREENSHOTS_SCRIPT_URL), 'utf8');
-    assert.match(script, /Screenshots are ready!/);
+    assert.match(script, /Screenshot mode is ON!/);
     assert.match(script, /Press the power button to take a screenshot\./);
-    assert.match(script, /Important: the button cannot lock or wake your Kobo in this mode\. Remember to select Screenshots again when you're done\./);
-    assert.match(script, /Screenshots are now disabled!/);
-    assert.match(script, /Your power button works normally again and can be used to lock or wake up your device\./);
+    assert.match(script, /Important: the button cannot lock or wake your/);
+    assert.match(script, /Kobo in this mode\. Remember to select Screenshots/);
+    assert.match(script, /again when you're done\./);
+    assert.match(script, /Screenshot mode is OFF!/);
+    assert.match(script, /Your power button works normally again and can/);
+    assert.match(script, /be used to lock or wake up your device\./);
 });
 
 test('custom menu includes the Dark Mode item when the device is unknown (manual mode)', () => {

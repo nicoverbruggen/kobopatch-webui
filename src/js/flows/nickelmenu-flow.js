@@ -24,6 +24,7 @@ import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
+    readPreviousNickelMenuSelections,
 } from '../nickelmenu/probes.js';
 import { nmReviewModel, featureDisabledReason } from '../nickelmenu/selection.js';
 import {
@@ -454,6 +455,7 @@ export function initNickelMenuFlow(state) {
                 description: f.description,
                 hint: f.hint,
                 experimental: f.experimental === true,
+                previouslySelected: state.previousNickelMenuFeatureIds.includes(f.id),
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
                 checked: state.selectedFeatureIds.includes(f.id) && !unavailable,
@@ -571,6 +573,7 @@ export function initNickelMenuFlow(state) {
         state.koboUserCount = undefined;
         state.nickelMenuOption = null;
         state.selectedFeatureIds = [];
+        state.previousNickelMenuFeatureIds = [];
         state.nmOptionalCleanupIds = [];
         state.nmKeepLegacyConfig = false;
         $('nm-sideloaded-banner').hidden = true;
@@ -606,27 +609,31 @@ export function initNickelMenuFlow(state) {
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
-        await probeCheckNickelMenuInstalled(state, {
-            presetTitleEl: nmOptionPresetTitle,
-            removeOption,
-            removeRadio,
-            removeDesc,
-            presetTitleInstall: NM_PRESET_TITLE_INSTALL,
-            presetTitleReinstall: NM_PRESET_TITLE_REINSTALL,
-            // Detect only on first visit so back-navigation preserves the user's
-            // cleanup checkbox selections (re-rendering would wipe them).
-            onOptionalCleanupDetected:
-                detectedOptionalCleanupFeatures.length === 0
-                    ? (detected) => {
-                          detectedOptionalCleanupFeatures.push(...detected);
-                          renderCleanupCheckboxes();
-                      }
-                    : undefined,
-            onLegacyItemsDetected: ({ detected, wasOurs }) => {
-                legacyItemsDetected = detected;
-                legacyItemsWasOurs = wasOurs;
-            },
-        });
+        const [, previousSelections] = await Promise.all([
+            probeCheckNickelMenuInstalled(state, {
+                presetTitleEl: nmOptionPresetTitle,
+                removeOption,
+                removeRadio,
+                removeDesc,
+                presetTitleInstall: NM_PRESET_TITLE_INSTALL,
+                presetTitleReinstall: NM_PRESET_TITLE_REINSTALL,
+                // Detect only on first visit so back-navigation preserves the user's
+                // cleanup checkbox selections (re-rendering would wipe them).
+                onOptionalCleanupDetected:
+                    detectedOptionalCleanupFeatures.length === 0
+                        ? (detected) => {
+                              detectedOptionalCleanupFeatures.push(...detected);
+                              renderCleanupCheckboxes();
+                          }
+                        : undefined,
+                onLegacyItemsDetected: ({ detected, wasOurs }) => {
+                    legacyItemsDetected = detected;
+                    legacyItemsWasOurs = wasOurs;
+                },
+            }),
+            readPreviousNickelMenuSelections(state),
+        ]);
+        state.previousNickelMenuFeatureIds = previousSelections;
     }
 
     async function detectHasPresetConflicts() {

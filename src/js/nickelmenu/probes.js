@@ -2,6 +2,7 @@ import { NICKELMENU_FEATURES } from './features/index.js';
 import { getConfSetting, revertableConfSettings } from '../kobo/configuration.js';
 import { countKoboUsers } from '../kobo/signin.js';
 import { TL } from '../shell/strings.js';
+import { nickelMenuManifestPath } from './constants.js';
 
 export const NM_PRESET_CONFLICTS = [
     { id: 'nickeldbus', path: ['.adds', 'nickeldbus'], label: 'nickeldbus (.adds/nickeldbus)' },
@@ -9,6 +10,38 @@ export const NM_PRESET_CONFLICTS = [
 ];
 
 export const LEGACY_ITEMS_HEURISTIC_PATTERNS = ['Legibility Status', 'Toggle Typography'];
+
+/**
+ * Extract the feature ids from a persisted NickelMenu install manifest.
+ * Invalid, older, or partially written files are treated as having no usable
+ * selection history; duplicate ids are collapsed while preserving order.
+ */
+export function parsePreviousNickelMenuSelections(text) {
+    if (!text) return [];
+
+    try {
+        const selected = JSON.parse(text)?.selected;
+        if (!Array.isArray(selected)) return [];
+        return [...new Set(selected.filter((id) => typeof id === 'string' && id.length > 0))];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Read the previous NickelMenu feature selection from a connected Kobo.
+ * This history is only a UI hint, so a missing/unreadable manifest must never
+ * block the install flow.
+ */
+export async function readPreviousNickelMenuSelections(state) {
+    if (state.manualMode || !state.device?.directoryHandle) return [];
+
+    try {
+        return parsePreviousNickelMenuSelections(await state.device.readFile(nickelMenuManifestPath));
+    } catch {
+        return [];
+    }
+}
 
 /**
  * Inspect the connected device for an existing NickelMenu install and update the

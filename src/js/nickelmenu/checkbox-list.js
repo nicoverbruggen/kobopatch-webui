@@ -40,7 +40,7 @@ const SECTION_ICONS = {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, hint?: string, experimental?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, hint?: string, experimental?: boolean, previouslySelected?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -129,6 +129,16 @@ export function renderNmCheckboxList(container, items) {
             titleSpan.append(version);
         }
 
+        let previous = null;
+        if (item.previouslySelected) {
+            previous = document.createElement('span');
+            previous.className = 'nm-config-previous';
+            const previousIcon = document.createElement('span');
+            previousIcon.className = 'nm-config-previous-icon';
+            previousIcon.innerHTML = svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>');
+            previous.append(previousIcon, document.createTextNode('You selected this last time'));
+        }
+
         const descId = item.name + '-desc';
         const descSpan = document.createElement('span');
         descSpan.id = descId;
@@ -147,6 +157,8 @@ export function renderNmCheckboxList(container, items) {
             reason.textContent = item.disabledReason;
             textDiv.appendChild(reason);
         }
+
+        if (previous) textDiv.appendChild(previous);
 
         label.appendChild(input);
         label.appendChild(textDiv);

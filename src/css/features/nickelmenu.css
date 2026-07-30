@@ -221,6 +221,38 @@
     white-space: nowrap;
 }
 
+/* Connected installs can read the previous run's manifest. A compact neutral
+   pill below the description keeps that history visible without competing with
+   the option name. */
+.nm-config-previous {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.12rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+/* Explicitly suppress the earlier pseudo-element icon so hot-reloaded styles
+   cannot leave it beside the real clock icon. */
+.nm-config-previous::before {
+    content: none;
+}
+
+.nm-config-previous-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    line-height: 1;
+}
+
 /* "Experimental" pill for features still considered unstable. Right-aligned so
    it sits just before the "?" hint badge, in muted amber to read as a caution
    without the alarm of red. */
