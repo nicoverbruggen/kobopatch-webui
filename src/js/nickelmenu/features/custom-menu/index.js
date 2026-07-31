@@ -26,6 +26,7 @@ export default {
     default: true,
     required: true,
     customization: {
+        type: 'menu',
         actionLabel: 'Customize',
         actionAriaLabel: 'Customize NickelMenu preset tab',
     },

@@ -19,6 +19,7 @@ export default [
                 TextEncoder: 'readonly',
                 TextDecoder: 'readonly',
                 Event: 'readonly',
+                AbortController: 'readonly',
                 DOMException: 'readonly',
                 HTMLElement: 'readonly',
                 Worker: 'readonly',

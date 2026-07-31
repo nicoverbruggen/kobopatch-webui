@@ -1,7 +1,7 @@
 /**
  * nickelmenu-execute.js — Executes the NickelMenu install/remove writes.
  *
- * The NickelMenu flow (nickelmenu-flow.js) owns the wizard UI; this module runs
+ * The NickelMenu flow (flows/nickelmenu/) owns the wizard UI; this module runs
  * the actual device writes (or builds the download ZIP) once the user commits,
  * and renders the final "done" screen for each outcome (remove / write / download).
  */
@@ -23,7 +23,38 @@ function trackFeatures(features) {
     for (const event of featureAnalyticsEvents(features)) track(event);
 }
 
-export async function executeNmInstall({ state, flow, dom, showError }) {
+/**
+ * Run the NickelMenu install, removal, or download build.
+ *
+ * The four values taken from the device probe are passed as plain values rather
+ * than as the `DetectedInstallation` itself, so each is read when the button is
+ * pressed rather than at some point inside this async function. That is the same
+ * rule Phase 2a applied to the two it already extracted.
+ *
+ * @param {object} opts
+ * @param {object} opts.state - the shared wizard session, for the device and installer
+ * @param {object} opts.selection - the user's NickelMenu choices
+ * @param {object} opts.outcome - written here: which path ran, and the built ZIP
+ * @param {object} opts.flow - the step machine flow, for the installing/done transitions
+ * @param {object|null} opts.previousConfiguration - the previous preset configuration, for feature reconciles
+ * @param {string[]} opts.installedFeatureIds - feature ids the device probe found installed
+ * @param {object[]} opts.optionalCleanupFeatures - optional cleanups the device probe found
+ * @param {boolean} opts.legacyItemsDetected - a pre-existing `.adds/nm/items` file was found
+ * @param {{progress: HTMLElement, progressDetail: HTMLElement, writeToDevice: boolean}} opts.dom
+ * @param {function} opts.showError
+ */
+export async function executeNmInstall({
+    state,
+    selection,
+    outcome,
+    flow,
+    previousConfiguration,
+    installedFeatureIds,
+    optionalCleanupFeatures,
+    legacyItemsDetected,
+    dom,
+    showError,
+}) {
     const progressFn = (msg, detail = null, fraction = null) => {
         dom.progress.textContent = msg;
         setProgressDetail(dom.progressDetail, detail, fraction);
@@ -36,13 +67,13 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
     await flow.go('installing', state);
 
     try {
-        if (state.nickelMenuOption === 'remove') {
+        if (selection.option === 'remove') {
             audit = new AuditLog('remove-nickelmenu', new Date(), state.device);
             const writer = new DeviceWriter(state.device);
             await executeNickelMenuRemoval({
                 device: writer,
                 installer: state.nmInstaller,
-                cleanupFeatures: [...alwaysCleanupFeatures(), ...optionalCleanupToRemove(state, dom.detectedOptionalCleanupFeatures)],
+                cleanupFeatures: [...alwaysCleanupFeatures(), ...optionalCleanupToRemove(selection, optionalCleanupFeatures)],
                 shouldRemoveSyncExclusions: async () => {
                     const entries = await state.device.listDirectory(['.adds']);
                     return !entries.some((entry) => entry.kind === 'directory' && entry.name !== 'nm');
@@ -50,12 +81,12 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
                 onProgress: progressFn,
                 audit,
             });
-            state._nmDoneMode = 'remove';
+            outcome.mode = 'remove';
             await flow.go('done', state);
             return;
         }
 
-        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
+        const features = selection.option === 'preset' ? featuresToInstall(selection, state.device.deviceInfo) : [];
         trackFeatures(features);
 
         if (dom.writeToDevice && state.device.directoryHandle) {
@@ -63,7 +94,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             audit = new AuditLog('install-nickelmenu', new Date(), state.device);
             await executeNickelMenuFeatureCleanups({
                 device: writer,
-                features: featuresToRemove(state, state.device.deviceInfo),
+                features: featuresToRemove(selection, installedFeatureIds, state.device.deviceInfo),
                 onProgress: progressFn,
                 audit,
             });
@@ -74,15 +105,15 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
                     device: writer,
                     deviceInfo: state.device.deviceInfo,
                     features,
-                    previousConfiguration: state.previousNickelMenuConfiguration,
-                    menuCustomization: state.nickelMenuCustomization,
-                    tabsCustomization: state.nickelMenuTabsCustomization,
-                    fontsCustomization: state.nickelMenuFontsCustomization,
+                    previousConfiguration,
+                    menuCustomization: selection.menuCustomization,
+                    tabsCustomization: selection.tabsCustomization,
+                    fontsCustomization: selection.fontsCustomization,
                     audit,
                 });
             }
-            if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
-                if (!state.nmKeepLegacyConfig) {
+            if (legacyItemsDetected && selection.option === 'preset') {
+                if (!selection.keepLegacyConfig) {
                     try {
                         await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
                     } catch {}
@@ -96,20 +127,20 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             } catch {}
             await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
-                menuCustomization: state.nickelMenuCustomization,
-                tabsCustomization: state.nickelMenuTabsCustomization,
-                fontsCustomization: state.nickelMenuFontsCustomization,
+                menuCustomization: selection.menuCustomization,
+                tabsCustomization: selection.tabsCustomization,
+                fontsCustomization: selection.fontsCustomization,
             });
-            state._nmDoneMode = 'written';
+            outcome.mode = 'written';
             await flow.go('done', state);
         } else {
-            state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
-                menuCustomization: state.nickelMenuCustomization,
-                tabsCustomization: state.nickelMenuTabsCustomization,
-                fontsCustomization: state.nickelMenuFontsCustomization,
-                isPreset: state.nickelMenuOption === 'preset',
+            outcome.zip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
+                menuCustomization: selection.menuCustomization,
+                tabsCustomization: selection.tabsCustomization,
+                fontsCustomization: selection.fontsCustomization,
+                isPreset: selection.option === 'preset',
             });
-            state._nmDoneMode = 'download';
+            outcome.mode = 'download';
             await flow.go('done', state);
         }
     } catch (err) {
@@ -124,7 +155,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             connectionTips: configReadFailed,
             configReadFailed,
             auditLog: audit,
-            title: state.nickelMenuOption === 'remove' ? TL.ERROR.NM_REMOVE_FAILED_TITLE : TL.ERROR.NM_INSTALL_FAILED_TITLE,
+            title: selection.option === 'remove' ? TL.ERROR.NM_REMOVE_FAILED_TITLE : TL.ERROR.NM_INSTALL_FAILED_TITLE,
         });
     }
 }
@@ -134,31 +165,40 @@ function getFeatureConfSettings(features, deviceInfo, fontsCustomization = null)
     return features.flatMap((feature) => (feature.confSettings ? feature.confSettings(ctx) : []));
 }
 
-export function renderNmDoneStatus(state, terminal, dom) {
+/**
+ * Render the done screen for whichever path `executeNmInstall` took.
+ *
+ * @param {object} state - the shared wizard session, for the device info
+ * @param {object} selection - the user's NickelMenu choices
+ * @param {object} outcome - what the run produced
+ * @param {object} terminal - the flow's terminal, for the end event and feedback
+ * @param {object} dom - the done screen's elements
+ */
+export function renderNmDoneStatus(state, selection, outcome, terminal, dom) {
     dom.doneStatus.textContent = '';
     dom.writeInstructions.hidden = true;
     dom.downloadInstructions.hidden = true;
     dom.rebootInstructions.hidden = true;
 
-    if (state._nmDoneMode === 'remove') {
+    if (outcome.mode === 'remove') {
         dom.doneStatus.textContent = TL.STATUS.NM_REMOVED_ON_REBOOT;
         dom.rebootInstructions.hidden = false;
         terminal.end('nm-remove');
-    } else if (state._nmDoneMode === 'written') {
+    } else if (outcome.mode === 'written') {
         dom.doneStatus.textContent = TL.STATUS.NM_INSTALLED;
         dom.writeInstructions.hidden = false;
         terminal.end('nm-write');
     } else {
         dom.doneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
-        triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
+        triggerDownload(outcome.zip, 'NickelMenu-install.zip', 'application/zip');
         dom.downloadInstructions.hidden = false;
-        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
+        const features = selection.option === 'preset' ? featuresToInstall(selection, state.device.deviceInfo) : [];
         const hasExcludeCalibre = features.some((f) => f.id === 'exclude-calibre');
-        dom.downloadConfStep.hidden = state.nickelMenuOption !== 'preset';
-        dom.downloadRebootStep.hidden = state.nickelMenuOption !== 'preset';
+        dom.downloadConfStep.hidden = selection.option !== 'preset';
+        dom.downloadRebootStep.hidden = selection.option !== 'preset';
         dom.downloadConfLine.textContent = getExcludeSyncFoldersLine(features);
         dom.downloadConfDesc.textContent = hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT;
-        const confSettings = getFeatureConfSettings(features, state.device.deviceInfo, state.nickelMenuFontsCustomization);
+        const confSettings = getFeatureConfSettings(features, state.device.deviceInfo, selection.fontsCustomization);
         renderDownloadConfSettings(dom.downloadConfSettings, confSettings);
         dom.downloadConfSettingsStep.hidden = confSettings.length === 0;
         terminal.end('nm-download');

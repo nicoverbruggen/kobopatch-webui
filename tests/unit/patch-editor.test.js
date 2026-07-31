@@ -35,7 +35,10 @@ function makeStatusEls() {
 const dialog = () => document.getElementById('patch-editor-dialog');
 const editorTextarea = () => dialog().querySelector('.patch-editor-textarea');
 const editorStatus = () => dialog().querySelector('.patch-editor-status');
-const footerButton = (cls) => dialog().querySelector(`.${cls}`);
+// Scoped to the footer, which is where patch-editor.js binds its click delegate.
+// The header's close "x" also carries `patch-editor-cancel` but sits outside the
+// footer, so an unscoped query would return a button the handler never sees.
+const footerButton = (cls) => dialog().querySelector(`.modal-footer .${cls}`);
 
 test('validatePatchEdit accepts a well-formed single-patch mapping', () => {
     const { textarea, statusEl } = makeStatusEls();

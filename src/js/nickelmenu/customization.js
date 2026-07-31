@@ -91,6 +91,20 @@ export function createDefaultMenuCustomization() {
     };
 }
 
+/**
+ * A working copy of a menu customization, falling back field by field so a
+ * partial or absent value still yields a complete object. The icon is a shallow
+ * copy, so `data` is shared by reference while `previewUrl` travels with it.
+ */
+export function cloneMenuCustomization(customization) {
+    const fallback = createDefaultMenuCustomization();
+    const source = customization || fallback;
+    return {
+        label: source.label || fallback.label,
+        icon: { ...(source.icon || fallback.icon) },
+    };
+}
+
 export function sanitizeMenuLabel(value) {
     return String(value ?? '')
         .replace(/[^A-Za-z0-9]/g, '')

@@ -203,6 +203,11 @@ async function injectMockDevice(page, opts = {}) {
 
         window.__mockFS = filesystem;
         window.__mockWrittenFiles = {};
+        // Raw bytes of every written file, kept losslessly alongside the text
+        // `content` the rest of the mock exposes. A written archive is binary, and
+        // decoding it to a string would mangle it, so assertions about what the app
+        // actually wrote read from here.
+        window.__mockWrittenBytes = {};
         window.__mockRemovedEntries = [];
         window.__mockFailReadPaths = new Set(config.failReadPaths || []);
         window.__mockFailWritePaths = new Set(config.failWritePaths || []);
@@ -245,7 +250,12 @@ async function injectMockDevice(page, opts = {}) {
                             const bytes = first instanceof Uint8Array ? first : new TextEncoder().encode(String(first));
                             if (!dirNode[fileName]) dirNode[fileName] = { _type: 'file' };
                             dirNode[fileName].content = new TextDecoder().decode(bytes);
+                            // Keep the raw bytes too. A real device reads back exactly
+                            // what was written; storing only the text decoding corrupts
+                            // any binary file, and `getFile` prefers `bytes` when set.
+                            dirNode[fileName].bytes = bytes;
                             window.__mockWrittenFiles[fullPath] = true;
+                            window.__mockWrittenBytes[fullPath] = bytes;
                         },
                     };
                 },
@@ -405,6 +415,27 @@ async function getRemovedEntries(page) {
     return page.evaluate(() => window.__mockRemovedEntries);
 }
 
+/**
+ * Raw bytes of a file the app wrote, as a Buffer. Use this rather than
+ * `readMockFile` whenever the file is binary — `readMockFile` returns the text
+ * decoding, which is lossy for anything that is not UTF-8 text.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} fullPath - mock path including the drive, e.g.
+ *   `KOBOeReader/.kobopatch-webui/custom-patches-files.tgz`
+ * @returns {Promise<Buffer|null>}
+ */
+async function getWrittenFileBytes(page, fullPath) {
+    const base64 = await page.evaluate((p) => {
+        const bytes = window.__mockWrittenBytes[p];
+        if (!bytes) return null;
+        let binary = '';
+        for (const b of bytes) binary += String.fromCharCode(b);
+        return btoa(binary);
+    }, fullPath);
+    return base64 === null ? null : Buffer.from(base64, 'base64');
+}
+
 module.exports = {
     injectMockDevice,
     connectMockDevice,
@@ -413,5 +444,6 @@ module.exports = {
     readMockFile,
     mockPathExists,
     getWrittenFiles,
+    getWrittenFileBytes,
     getRemovedEntries,
 };

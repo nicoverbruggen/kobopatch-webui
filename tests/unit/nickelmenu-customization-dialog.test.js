@@ -24,8 +24,12 @@ async function withDom(run) {
     });
 
     try {
-        const mod = await import(`../../src/js/nickelmenu/customization-dialog.js?t=${Date.now()}`);
-        await run({ document: dom.window.document, ...mod });
+        // Split across two modules in Phase 5: the preset grid lives with the
+        // dialog, the image pipeline next door.
+        const stamp = Date.now();
+        const dialogMod = await import(`../../src/js/nickelmenu/features/custom-menu/MenuCustomizationDialog.js?t=${stamp}`);
+        const imageMod = await import(`../../src/js/nickelmenu/features/custom-menu/MenuIconImages.js?t=${stamp}`);
+        await run({ document: dom.window.document, ...dialogMod, ...imageMod });
     } finally {
         if (previousWindowDescriptor) Object.defineProperty(globalThis, 'window', previousWindowDescriptor);
         else delete globalThis.window;

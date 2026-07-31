@@ -7,7 +7,15 @@ const JSZip = require('jszip');
 
 const { FIRMWARE_PATH, paths, getOriginalTgzSha1 } = require('../../support/paths');
 const { hasFirmwareZip } = require('../../support/assets');
-const { injectMockDevice, connectMockDevice, overrideFirmwareURLs, goToManualMode, readMockFile, getWrittenFiles } = require('../../support/mock-device');
+const {
+    injectMockDevice,
+    connectMockDevice,
+    overrideFirmwareURLs,
+    goToManualMode,
+    readMockFile,
+    getWrittenFiles,
+    getWrittenFileBytes,
+} = require('../../support/mock-device');
 const { parseTar } = require('../../support/tar');
 
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
@@ -189,6 +197,112 @@ test.describe('Custom patches', () => {
         await page.click('#btn-write');
         await expect(page.locator('#write-instructions')).toBeVisible();
         await expect(page.locator('#write-conf-settings-note')).toBeHidden();
+    });
+
+    test('with device — the written manifest checksum describes the archive written beside it', async ({ page }) => {
+        // The one thing no other test checks: that the sha256 the app records is
+        // computed over the exact bytes it writes next to it. Building the archive
+        // and hashing it must stay a single paired operation — `buildTarGz` stamps
+        // the current second into every tar header and the entries carry no mtime,
+        // so two builds a second apart differ. Splitting, caching or memoizing the
+        // pair yields a manifest that can never verify, and the failure is silent:
+        // the reload banner still appears, the reload still reports success, and
+        // the user's Additional Files are unrestorable forever.
+        //
+        // The existing assertion (`typeof sha256 === 'string'`, length 64) cannot
+        // see this — a hash over the wrong bytes is still a 64-character string.
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await buildAdditionalFilesOnlyToDone(page);
+        await page.click('#btn-write');
+        await expect(page.locator('#write-instructions')).toBeVisible();
+
+        const manifest = JSON.parse(await readMockFile(page, '.kobopatch-webui', 'custom-patches.json'));
+        const archiveBytes = await getWrittenFileBytes(page, 'KOBOeReader/.kobopatch-webui/custom-patches-files.tgz');
+
+        expect(archiveBytes).not.toBeNull();
+        expect(manifest.additionalFilesArchive.size).toBe(archiveBytes.length);
+        expect(crypto.createHash('sha256').update(archiveBytes).digest('hex')).toBe(manifest.additionalFilesArchive.sha256);
+
+        // And the round trip: the app's own reader accepts the app's own bytes.
+        // `readAdditionalFilesArchive` is what the reload path parses with, and the
+        // manifest's `files[]` paths must be the keys it finds.
+        const { readAdditionalFilesArchive, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
+        expect(await sha256Hex(new Uint8Array(archiveBytes))).toBe(manifest.additionalFilesArchive.sha256);
+
+        const archive = await readAdditionalFilesArchive(new Uint8Array(archiveBytes));
+        const recordedPaths = manifest.files.filter((f) => f.type === 'additional-file').map((f) => f.path);
+        expect(recordedPaths).toEqual(['extra.txt']);
+        expect(recordedPaths.map((p) => (archive.get(p) ? Buffer.from(archive.get(p)).toString() : null))).toEqual(['hi!!']);
+    });
+
+    test('with device — a second build pairs its own archive with its own checksum, not the earlier one', async ({ page }) => {
+        // The companion to the test above, and the half it cannot see. That one
+        // clicks write once, so `buildManifestArtifacts` runs once and any cache
+        // populated on that call is trivially self-consistent. The failure this
+        // guards is the one that survives it: caching `archiveInfo` from the write
+        // path and rebuilding the bytes for the download path. The manifest then
+        // records the *first* build's checksum against the *second* build's
+        // archive, `readReloadAdditionalFiles` rejects it on every future reload,
+        // and the user's Additional Files are unrestorable forever with no error.
+        //
+        // Both invocations come from the same done screen, so this exercises one
+        // DoneStep instance — which is where such a cache would live.
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await buildAdditionalFilesOnlyToDone(page);
+
+        // First build: write to the device.
+        await page.click('#btn-write');
+        await expect(page.locator('#write-instructions')).toBeVisible();
+        const writtenManifest = JSON.parse(await readMockFile(page, '.kobopatch-webui', 'custom-patches.json'));
+        const writtenArchive = await getWrittenFileBytes(page, 'KOBOeReader/.kobopatch-webui/custom-patches-files.tgz');
+        expect(writtenArchive).not.toBeNull();
+        expect(crypto.createHash('sha256').update(writtenArchive).digest('hex')).toBe(writtenManifest.additionalFilesArchive.sha256);
+        expect(writtenManifest.additionalFilesArchive.size).toBe(writtenArchive.length);
+
+        // `buildTarGz` stamps `Math.floor(Date.now() / 1000)` into every tar header
+        // and the entries carry no mtime, so two builds inside the same second are
+        // byte-identical and a stale checksum would still match. Waiting past that
+        // granularity forces the second build to differ; the assertion below proves
+        // it actually did, so this test cannot quietly become vacuous.
+        await page.waitForTimeout(1100);
+
+        // Second build: download the ZIP, which contains its own manifest and its
+        // own archive, both from that one invocation.
+        const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-download')]);
+        const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+        const zippedManifest = JSON.parse(await zip.file('.kobopatch-webui/custom-patches.json').async('string'));
+        const zippedArchive = await zip.file('.kobopatch-webui/custom-patches-files.tgz').async('nodebuffer');
+
+        expect(zippedArchive.equals(writtenArchive)).toBe(false);
+
+        // The checksum first: it is the assertion that carries the meaning, and a
+        // size mismatch is only a symptom that a future change could stop producing.
+        expect(crypto.createHash('sha256').update(zippedArchive).digest('hex')).toBe(zippedManifest.additionalFilesArchive.sha256);
+        expect(zippedManifest.additionalFilesArchive.size).toBe(zippedArchive.length);
+    });
+
+    test('with device — a failed manifest write degrades silently and still reports success', async ({ page }) => {
+        // The manifest and its archive are written with `optional: true`, so a
+        // failure is warned about and skipped while KoboRoot.tgz still counts as a
+        // success. Dropping that flag turns a soft degradation — the user simply
+        // gets no reload offer next time — into a device-write error screen.
+        await connectMockDevice(page, {
+            hasNickelMenu: false,
+            failWritePaths: ['KOBOeReader/.kobopatch-webui/custom-patches.json'],
+        });
+
+        await buildAdditionalFilesOnlyToDone(page);
+        await page.click('#btn-write');
+
+        await expect(page.locator('#write-instructions')).toBeVisible();
+        await expect(page.locator('#step-error')).toBeHidden();
+
+        // The mandatory write landed; the optional one did not.
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles).toContainEqual(expect.stringContaining('.kobo/KoboRoot.tgz'));
+        expect(writtenFiles).not.toContainEqual(expect.stringContaining('.kobopatch-webui/custom-patches.json'));
     });
 
     test('with device — apply patches and verify checksums', async ({ page }) => {

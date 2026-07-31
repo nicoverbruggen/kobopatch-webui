@@ -15,18 +15,93 @@ export const $q = (sel, ctx = document) => ctx.querySelector(sel);
 export const $qa = (sel, ctx = document) => ctx.querySelectorAll(sel);
 
 /**
- * Collect multiple elements by ID in one call, returning a frozen object.
- * Throws loudly on any missing id so typos fail at init time instead of
- * producing silent `null` references mid-flow.
+ * Look up a screen's elements from an alias -> id map.
+ *
+ * Returns a frozen object with the same keys as `map`, each holding the matching
+ * element. Throws on the first missing id, naming the id, so markup/JS drift
+ * fails at init time instead of producing a silent `null` mid-flow.
+ *
+ * The return type is keyed on `map` itself, not on `string`. That is what makes a
+ * misspelled alias at a use site an error once TypeScript lands; a plain
+ * `Record<string, HTMLElement>` would type every key as an element, typos included.
+ *
+ * @template {Record<string, string>} M
+ * @param {M} map - alias (camelCase) -> element id (kebab-case)
+ * @returns {Readonly<Record<keyof M, HTMLElement>>}
  */
-export function collect(ids) {
-    const els = {};
-    for (const id of ids) {
+export function bindElements(map) {
+    const bound = {};
+    for (const [name, id] of Object.entries(map)) {
         const el = document.getElementById(id);
         if (!el) throw new Error(`Element #${id} not found`);
-        els[id] = el;
+        bound[name] = el;
     }
-    return Object.freeze(els);
+    return Object.freeze(bound);
+}
+
+/**
+ * Look up one required element by id.
+ *
+ * Same guarantee as `bindElements`: a missing element throws at lookup time and
+ * the message names the id, so markup/JS drift fails where it can be found
+ * instead of turning into a `null` that breaks somewhere else much later. This
+ * is the single-element form used by step classes, which declare their elements
+ * as fields rather than as one map.
+ *
+ * @param {string} id
+ * @returns {HTMLElement}
+ */
+export function requireElement(id) {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Element #${id} not found`);
+    return el;
+}
+
+/**
+ * The three typed variants below assert the element's tag on top of the
+ * existence check. They exist so a field can be declared as the subtype the code
+ * actually uses — `.checked`, `.disabled`, `.showModal()` — which the plain
+ * `HTMLElement` return cannot express.
+ *
+ * A wrong assertion throws at app start, so only use one when the tag is
+ * certain. `requireElement` is always the safe answer.
+ */
+function requireTag(id, ctor, tagName) {
+    const el = requireElement(id);
+    if (!(el instanceof ctor)) throw new Error(`Element #${id} is not a <${tagName}>`);
+    return el;
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLInputElement}
+ */
+export function requireInput(id) {
+    return requireTag(id, window.HTMLInputElement, 'input');
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLButtonElement}
+ */
+export function requireButton(id) {
+    return requireTag(id, window.HTMLButtonElement, 'button');
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLDialogElement}
+ */
+export function requireDialog(id) {
+    return requireTag(id, window.HTMLDialogElement, 'dialog');
+}
+
+/**
+ * @param {string} id
+ * @returns {HTMLSelectElement}
+ */
+export function requireSelect(id) {
+    return requireTag(id, window.HTMLSelectElement, 'select');
 }
 
 /** Format a byte count as a human-readable "X.X MB" string. */
@@ -78,11 +153,11 @@ export function trapFocus(dialog) {
     dialog.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
 
-        const elements = dialog.querySelectorAll(focusable);
-        if (elements.length === 0) return;
+        const focusables = dialog.querySelectorAll(focusable);
+        if (focusables.length === 0) return;
 
-        const first = elements[0];
-        const last = elements[elements.length - 1];
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
 
         if (e.shiftKey && document.activeElement === first) {
             e.preventDefault();

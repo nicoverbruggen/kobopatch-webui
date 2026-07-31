@@ -16,14 +16,19 @@ import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 // "test real feature modules" rule); the rest are pure over their arguments, so
 // we exercise them with fabricated detected-cleanup objects.
 
-function session(overrides = {}) {
+/** A `NickelMenuSelection`-shaped object: the user's choices only. */
+function selection(overrides = {}) {
     return {
-        nickelMenuOption: 'preset',
+        option: 'preset',
         selectedFeatureIds: [],
-        nmOptionalCleanupIds: [],
-        installedNickelMenuFeatureIds: [],
+        optionalCleanupIds: [],
         ...overrides,
     };
+}
+
+/** A `DetectedInstallation`-shaped object: what probing the device turned up. */
+function detectedInstallation(overrides = {}) {
+    return { installedFeatureIds: [], optionalCleanupFeatures: [], ...overrides };
 }
 
 function fakeCleanup(id, title, notices = []) {
@@ -31,7 +36,7 @@ function fakeCleanup(id, title, notices = []) {
 }
 
 test('featuresToInstall always includes required features, even when nothing is selected', () => {
-    const result = featuresToInstall(session({ selectedFeatureIds: [] }), { firmware: '4.40.0' });
+    const result = featuresToInstall(selection({ selectedFeatureIds: [] }), { firmware: '4.40.0' });
     assert.ok(
         result.some((f) => f.id === 'custom-menu'),
         'required custom-menu is always installed',
@@ -39,20 +44,14 @@ test('featuresToInstall always includes required features, even when nothing is 
 });
 
 test('featuresToInstall includes selected optional features and excludes unselected ones', () => {
-    const result = featuresToInstall(session({ selectedFeatureIds: ['screensaver'] }), { firmware: '4.40.0' });
+    const result = featuresToInstall(selection({ selectedFeatureIds: ['screensaver'] }), { firmware: '4.40.0' });
     const ids = result.map((f) => f.id);
     assert.ok(ids.includes('screensaver'), 'a selected feature is installed');
     assert.ok(!ids.includes('koreader'), 'an unselected feature is not installed');
 });
 
 test('featuresToRemove reconciles deselected installed features with cleanup support', () => {
-    const removed = featuresToRemove(
-        session({
-            selectedFeatureIds: [],
-            installedNickelMenuFeatureIds: ['screensaver', 'simplify-tabs'],
-        }),
-        { firmware: '4.40.0' },
-    );
+    const removed = featuresToRemove(selection({ selectedFeatureIds: [] }), ['screensaver', 'simplify-tabs'], { firmware: '4.40.0' });
     assert.deepEqual(
         removed.map((feature) => feature.id),
         ['screensaver'],
@@ -61,19 +60,13 @@ test('featuresToRemove reconciles deselected installed features with cleanup sup
 });
 
 test('featuresToRemove schedules the shared NickelHome cleanup once when hiders are deselected', () => {
-    const removed = featuresToRemove(
-        session({
-            selectedFeatureIds: [],
-            installedNickelMenuFeatureIds: ['hide-recommendations', 'hide-row2col2', 'hide-notices'],
-        }),
-        { firmware: '4.40.0' },
-    );
+    const removed = featuresToRemove(selection({ selectedFeatureIds: [] }), ['hide-recommendations', 'hide-row2col2', 'hide-notices'], { firmware: '4.40.0' });
     assert.equal(removed.length, 1);
     assert.equal((removed[0].modifyCleanup || removed[0].cleanup).title, 'NickelHome');
 });
 
 test('featuresToInstall gates a feature below its minimum firmware', () => {
-    const sess = session({ selectedFeatureIds: ['sideloaded-mode'] });
+    const sess = selection({ selectedFeatureIds: ['sideloaded-mode'] });
     const old = featuresToInstall(sess, { firmware: '4.20.0' }).map((f) => f.id);
     const recent = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
     assert.ok(!old.includes('sideloaded-mode'), 'excluded below minimumVersion 4.31');
@@ -81,7 +74,7 @@ test('featuresToInstall gates a feature below its minimum firmware', () => {
 });
 
 test('featuresToInstall does not gate when firmware is unknown (manual mode)', () => {
-    const result = featuresToInstall(session({ selectedFeatureIds: ['sideloaded-mode'] }), null);
+    const result = featuresToInstall(selection({ selectedFeatureIds: ['sideloaded-mode'] }), null);
     assert.ok(
         result.some((f) => f.id === 'sideloaded-mode'),
         'no firmware floor blindly applied',
@@ -92,7 +85,7 @@ test('featuresToInstall drops a feature marked disabled, even when selected', ()
     // `disabled: true` is a maintainer's temporary kill switch, independent of
     // asset availability (screensaver has no `available` flag at all).
     const screensaver = NICKELMENU_FEATURES.find((f) => f.id === 'screensaver');
-    const sess = session({ selectedFeatureIds: ['screensaver'] });
+    const sess = selection({ selectedFeatureIds: ['screensaver'] });
     assert.ok(featuresToInstall(sess, { firmware: '4.40.0' }).some((f) => f.id === 'screensaver'));
 
     screensaver.disabled = true;
@@ -109,7 +102,7 @@ test('featuresToInstall drops a feature hidden from the install catalogue, even 
     const originalAvailable = nickelCoverFix.available;
     nickelCoverFix.available = true;
     try {
-        const ids = featuresToInstall(session({ selectedFeatureIds: ['nickelcoverfix'] }), null).map((f) => f.id);
+        const ids = featuresToInstall(selection({ selectedFeatureIds: ['nickelcoverfix'] }), null).map((f) => f.id);
         assert.ok(!ids.includes('nickelcoverfix'), 'a hidden feature is never installed');
     } finally {
         nickelCoverFix.available = originalAvailable;
@@ -123,7 +116,7 @@ test('featuresToInstall drops a disabled feature even when its asset is availabl
     const originalAvailable = nickelCoverFix.available;
     const originalDisabled = nickelCoverFix.disabled;
     const originalHidden = nickelCoverFix.hidden;
-    const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
+    const sess = selection({ selectedFeatureIds: ['nickelcoverfix'] });
 
     nickelCoverFix.available = true;
     delete nickelCoverFix.hidden; // establish a visible baseline (it may ship hidden)
@@ -147,7 +140,7 @@ test('featuresToInstall also drops a feature disabled with a string reason', () 
     const originalAvailable = nickelCoverFix.available;
     const originalDisabled = nickelCoverFix.disabled;
     const originalHidden = nickelCoverFix.hidden;
-    const sess = session({ selectedFeatureIds: ['nickelcoverfix'] });
+    const sess = selection({ selectedFeatureIds: ['nickelcoverfix'] });
 
     nickelCoverFix.available = true;
     delete nickelCoverFix.hidden;
@@ -182,14 +175,14 @@ test('featureDisabledReason surfaces the right message for each disabled cause',
 });
 
 test('optionalCleanupToRemove / optionalCleanupKept partition detected by the checked ids', () => {
-    const detected = [fakeCleanup('a', 'A'), fakeCleanup('b', 'B'), fakeCleanup('c', 'C')];
-    const sess = session({ nmOptionalCleanupIds: ['a', 'c'] });
+    const cleanupFeatures = [fakeCleanup('a', 'A'), fakeCleanup('b', 'B'), fakeCleanup('c', 'C')];
+    const sel = selection({ optionalCleanupIds: ['a', 'c'] });
     assert.deepEqual(
-        optionalCleanupToRemove(sess, detected).map((f) => f.id),
+        optionalCleanupToRemove(sel, cleanupFeatures).map((f) => f.id),
         ['a', 'c'],
     );
     assert.deepEqual(
-        optionalCleanupKept(sess, detected).map((f) => f.id),
+        optionalCleanupKept(sel, cleanupFeatures).map((f) => f.id),
         ['b'],
     );
 });
@@ -226,8 +219,8 @@ test('featureReviewNotices de-duplicates identical notices (shared across featur
 });
 
 test('nmReviewModel (remove) reports removed vs kept from the detected cleanups', () => {
-    const detected = [fakeCleanup('a', 'A'), fakeCleanup('b', 'B')];
-    const model = nmReviewModel(session({ nickelMenuOption: 'remove', nmOptionalCleanupIds: ['a'] }), detected, {
+    const detected = detectedInstallation({ optionalCleanupFeatures: [fakeCleanup('a', 'A'), fakeCleanup('b', 'B')] });
+    const model = nmReviewModel(selection({ option: 'remove', optionalCleanupIds: ['a'] }), detected, {
         firmware: '4.40.0',
     });
     assert.equal(model.mode, 'remove');
@@ -242,7 +235,7 @@ test('nmReviewModel (remove) reports removed vs kept from the detected cleanups'
 });
 
 test('nmReviewModel (preset) lists the install features including required ones', () => {
-    const model = nmReviewModel(session({ nickelMenuOption: 'preset', selectedFeatureIds: ['screensaver'] }), [], {
+    const model = nmReviewModel(selection({ option: 'preset', selectedFeatureIds: ['screensaver'] }), detectedInstallation(), {
         firmware: '4.40.0',
     });
     assert.equal(model.mode, 'preset');

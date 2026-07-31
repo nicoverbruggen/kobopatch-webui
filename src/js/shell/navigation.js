@@ -116,18 +116,28 @@ export function showNav() {
  * Used for the mode selection cards and NickelMenu option cards.
  * When a radio inside a <label> is checked, the label gets `selectedClass`;
  * all sibling labels lose it.
+ *
+ * @param {HTMLElement} container
+ * @param {string} selectedClass
+ * @param {?function} [onChange] - called with the radio that was checked
+ * @param {{signal?: AbortSignal}} [options] - `signal` detaches these listeners,
+ *   which a caller that may be constructed more than once needs.
  */
-export function setupCardRadios(container, selectedClass, onChange) {
+export function setupCardRadios(container, selectedClass, onChange, { signal } = {}) {
     const labels = $qa('label', container);
     for (const label of labels) {
         const radio = $q('input[type="radio"]', label);
         if (!radio) continue;
-        radio.addEventListener('change', () => {
-            for (const l of labels) {
-                if ($q('input[type="radio"]', l)) l.classList.remove(selectedClass);
-            }
-            if (radio.checked) label.classList.add(selectedClass);
-            if (onChange) onChange(radio);
-        });
+        radio.addEventListener(
+            'change',
+            () => {
+                for (const l of labels) {
+                    if ($q('input[type="radio"]', l)) l.classList.remove(selectedClass);
+                }
+                if (radio.checked) label.classList.add(selectedClass);
+                if (onChange) onChange(radio);
+            },
+            { signal },
+        );
     }
 }

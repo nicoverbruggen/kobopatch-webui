@@ -1,11 +1,15 @@
 import { NICKELMENU_FEATURES } from './features/index.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 
-// Pure derivations of the NickelMenu flow's decisions from the session. None of
-// these touch the DOM: selections live in the session (the checkboxes are a view
-// that writes into it), so "what gets installed / removed / reviewed" can be
+// Pure derivations of the NickelMenu flow's decisions. None of these touch the
+// DOM: the choices live in a `NickelMenuSelection` (the checkboxes are a view
+// that writes into it) and what the device already has lives in a
+// `DetectedInstallation`, so "what gets installed / removed / reviewed" can be
 // unit-tested without a browser. Mirrors the role PatchUI plays for the patches
 // flow.
+//
+// These take the two objects rather than the session because that is all they
+// read — narrowing them was the point of the Phase 3 split.
 
 /**
  * The features that will actually be installed for the current session: the
@@ -15,20 +19,26 @@ import { meetsMinimumVersion } from '../kobo/version.js';
  * module), needs a newer firmware than the connected device runs, or does not
  * support the connected device (a feature's `unsupportedDeviceReason`).
  */
-export function featuresToInstall(session, deviceInfo) {
+export function featuresToInstall(selection, deviceInfo) {
     const firmware = deviceInfo?.firmware;
     return NICKELMENU_FEATURES.filter((f) => {
         if (f.hidden || f.available === false || f.disabled) return false;
         if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
         if (f.unsupportedDeviceReason?.(deviceInfo)) return false;
         if (f.required) return true;
-        return session.selectedFeatureIds.includes(f.id);
+        return selection.selectedFeatureIds.includes(f.id);
     });
 }
 
-/** Installed, user-visible features that will be removed by the desired setup. */
-export function featuresToRemove(session, deviceInfo) {
-    const desired = new Set(featuresToInstall(session, deviceInfo).map((feature) => feature.id));
+/**
+ * Installed, user-visible features that will be removed by the desired setup.
+ *
+ * @param {object} selection - the user's NickelMenu choices
+ * @param {string[]} installedFeatureIds - what the device probe found installed
+ * @param {object} deviceInfo
+ */
+export function featuresToRemove(selection, installedFeatureIds, deviceInfo) {
+    const desired = new Set(featuresToInstall(selection, deviceInfo).map((feature) => feature.id));
     const cleanupGroups = new Set();
     return NICKELMENU_FEATURES.filter(
         (feature) =>
@@ -37,7 +47,7 @@ export function featuresToRemove(session, deviceInfo) {
             !feature.disabled &&
             meetsMinimumVersion(deviceInfo?.firmware, feature.minimumVersion) &&
             !feature.unsupportedDeviceReason?.(deviceInfo) &&
-            session.installedNickelMenuFeatureIds?.includes(feature.id) &&
+            installedFeatureIds?.includes(feature.id) &&
             !desired.has(feature.id) &&
             (feature.modifyCleanup || feature.cleanup),
     ).filter((feature) => {
@@ -74,13 +84,13 @@ export function alwaysCleanupFeatures() {
 }
 
 /** Of the detected optional cleanups, the ones the user checked for removal. */
-export function optionalCleanupToRemove(session, detected) {
-    return detected.filter((f) => session.nmOptionalCleanupIds.includes(f.id));
+export function optionalCleanupToRemove(selection, cleanupFeatures) {
+    return cleanupFeatures.filter((f) => selection.optionalCleanupIds.includes(f.id));
 }
 
 /** Of the detected optional cleanups, the ones the user left unchecked (kept). */
-export function optionalCleanupKept(session, detected) {
-    return detected.filter((f) => !session.nmOptionalCleanupIds.includes(f.id));
+export function optionalCleanupKept(selection, cleanupFeatures) {
+    return cleanupFeatures.filter((f) => !selection.optionalCleanupIds.includes(f.id));
 }
 
 /** Review notices contributed by a set of features, for the connected device. */
@@ -102,23 +112,28 @@ export function featureReviewNotices(features, deviceInfo) {
 /**
  * The structured model the review step renders. Returns data (feature objects,
  * notices) rather than display strings — the flow maps those to copy and DOM.
+ *
+ * @param {object} selection - the user's NickelMenu choices
+ * @param {object} detected - what probing the device turned up
+ * @param {object} deviceInfo
  */
-export function nmReviewModel(session, detected, deviceInfo) {
-    if (session.nickelMenuOption === 'remove') {
+export function nmReviewModel(selection, detected, deviceInfo) {
+    const cleanupFeatures = detected.optionalCleanupFeatures;
+    if (selection.option === 'remove') {
         return {
             mode: 'remove',
-            removedFeatures: optionalCleanupToRemove(session, detected),
-            keptFeatures: optionalCleanupKept(session, detected),
+            removedFeatures: optionalCleanupToRemove(selection, cleanupFeatures),
+            keptFeatures: optionalCleanupKept(selection, cleanupFeatures),
         };
     }
 
     // The only remaining install option is the preset (the "NickelMenu only" barebones option was
     // removed); a preset install always carries its curated feature set.
-    const installFeatures = featuresToInstall(session, deviceInfo);
+    const installFeatures = featuresToInstall(selection, deviceInfo);
     return {
-        mode: session.nickelMenuOption,
+        mode: selection.option,
         installFeatures,
-        removedFeatures: featuresToRemove(session, deviceInfo),
+        removedFeatures: featuresToRemove(selection, detected.installedFeatureIds, deviceInfo),
         notices: featureReviewNotices(installFeatures, deviceInfo),
     };
 }

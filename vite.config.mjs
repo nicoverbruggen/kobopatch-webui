@@ -3,6 +3,7 @@ import { extname, join, relative, sep } from 'node:path';
 import { defineConfig, transformWithEsbuild } from 'vite';
 import JSZip from 'jszip';
 import { generateVersion } from './scripts/version-generate.mjs';
+import { expandIncludes } from './scripts/html-includes.mjs';
 
 const appDir = import.meta.dirname;
 const srcDir = join(appDir, 'src');
@@ -27,14 +28,6 @@ function patchBlacklistUpdatedAt() {
     const blacklistPath = join(appDir, 'patches', 'blacklist.json');
     if (!existsSync(blacklistPath)) return null;
     return statSync(blacklistPath).mtime.toISOString();
-}
-
-function expandIncludes(html) {
-    const includeRe = /<!--\s*include:\s*([\w./-]+)\s*-->/g;
-    while (includeRe.test(html)) {
-        html = html.replace(includeRe, (_, path) => readFileSync(join(srcDir, 'html', path), 'utf-8'));
-    }
-    return html;
 }
 
 function sendFile(res, filePath, contentType) {
@@ -150,7 +143,7 @@ function koboHtmlPlugin({ versionStr, versionLink, isDev }) {
         transformIndexHtml: {
             order: 'pre',
             async handler(html) {
-                html = expandIncludes(html);
+                html = expandIncludes(html, htmlDir);
 
                 const criticalCss = readFileSync(join(srcDir, 'css', 'critical.css'), 'utf-8');
                 const { code } = await transformWithEsbuild(criticalCss, 'critical.css', {

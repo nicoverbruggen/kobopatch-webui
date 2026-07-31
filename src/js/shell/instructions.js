@@ -19,7 +19,7 @@ import { firstUnsupportedFirmware, minimumSupportedFirmware } from '../kobo/vers
 export const KOBO_RESET_HELP_URL = 'https://help.kobo.com/hc/en-us/articles/360017605314';
 
 // Description shown under the ExcludeSyncFolders config step. Kept here so the
-// on-screen step (nickelmenu-flow.js) and the instructions.txt stay identical.
+// on-screen step (flows/nickelmenu/DoneStep.js) and the instructions.txt stay identical.
 export const CONF_DESC_EXCLUDE_CALIBRE =
     "This prevents new books in the calibre folder from showing up in Kobo's list of books. " + 'Move Calibre-transferred books into a "calibre" folder first.';
 export const CONF_DESC_DEFAULT = 'This prevents the Kobo from incorrectly identifying certain files as books in your library.';
