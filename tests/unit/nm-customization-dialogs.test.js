@@ -231,3 +231,132 @@ test('every summary chip carries its own container id', (t) => {
     assert.match(dialogs.summaryItem('tabs').summaryLabel, /^\d+ tabs$/);
     assert.match(dialogs.summaryItem('fonts').summaryLabel, /^\d+ fonts$/);
 });
+
+/**
+ * Let `renderPresetSvgToPng` run for real, but under this test's control.
+ *
+ * jsdom loads no images and implements no canvas, so the real helper hangs on
+ * `loadImage` forever. Stubbing the two DOM primitives it reaches for is what
+ * makes the await in the dialog's preset callback finish exactly when the test
+ * says so, which is the whole point of a race test.
+ */
+function controlPresetRendering(t) {
+    const pending = [];
+    const realImage = window.Image;
+    const realCreate = document.createElement.bind(document);
+
+    window.Image = class {
+        set src(_value) {
+            pending.push(this);
+        }
+    };
+    document.createElement = (tag, ...rest) => {
+        if (String(tag).toLowerCase() !== 'canvas') return realCreate(tag, ...rest);
+        return {
+            width: 0,
+            height: 0,
+            getContext: () => ({ clearRect() {}, drawImage() {} }),
+            toBlob: (cb) => cb(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' })),
+        };
+    };
+    t.after(() => {
+        window.Image = realImage;
+        document.createElement = realCreate;
+    });
+
+    return {
+        /** Complete the render that is waiting, then let its continuations run. */
+        async finish() {
+            assert.equal(pending.length, 1, 'exactly one preset render should be in flight');
+            pending.pop().onload();
+            for (let i = 0; i < 10; i++) await Promise.resolve();
+        },
+        /** Fail the render that is waiting, the way an unreadable image would. */
+        async fail() {
+            assert.equal(pending.length, 1, 'exactly one preset render should be in flight');
+            pending.pop().onerror();
+            for (let i = 0; i < 10; i++) await Promise.resolve();
+        },
+    };
+}
+
+test('a preset render that lands after the dialog reopens is ignored', async (t) => {
+    // The upload path alongside this one checks `shouldApply` at three points.
+    // The preset path checked nothing, so a render still in flight when the
+    // dialog was reopened repainted the new dialog from the previous session's
+    // draft. The saved value was never at risk — reopening mints a new draft
+    // object, so the stale write landed on a discarded one — but the user saw
+    // the icon and status text of a session they had already left.
+    const { dialogs } = makeRegistry(t);
+    const menu = dialogs.byType.get('menu');
+    const render = controlPresetRendering(t);
+
+    dialogs.open('menu', trigger());
+    menu.presets.querySelector('[data-icon-id="book"]').click();
+
+    // The reopen is what invalidates the token: `open` seeds a new draft object
+    // and installs it through `setMenu`.
+    menu.close();
+    dialogs.open('menu', trigger());
+    const reopened = menu.draft;
+    const statusAfterReopen = menu.status.textContent;
+
+    await render.finish();
+
+    assert.equal(menu.draft, reopened, 'the reopened draft must still be the live one');
+    assert.equal(menu.draft.icon.type, 'default', 'the stale render must not write an icon into the new session');
+    assert.equal(menu.status.textContent, statusAfterReopen, 'the stale render must not repaint the new dialog’s status line');
+    menu.close();
+});
+
+test('a preset render that lands while its own dialog is still open does apply', async (t) => {
+    // The other half. Without it the test above would pass just as well against a
+    // guard that rejected everything.
+    const { dialogs } = makeRegistry(t);
+    const menu = dialogs.byType.get('menu');
+    const render = controlPresetRendering(t);
+
+    dialogs.open('menu', trigger());
+    menu.presets.querySelector('[data-icon-id="book"]').click();
+    await render.finish();
+
+    assert.equal(menu.draft.icon.type, 'preset');
+    assert.equal(menu.draft.icon.id, 'book');
+    assert.deepEqual(menu.draft.icon.data, new Uint8Array([1, 2, 3]));
+    menu.close();
+});
+
+test('a preset render that fails after the dialog reopens does not report into it', async (t) => {
+    // The catch arm needs its own guard for the same reason as the success path:
+    // it writes to the status line of whichever dialog is open now. Reachable in
+    // practice — an image that will not decode, or `toBlob` handing back null.
+    const { dialogs } = makeRegistry(t);
+    const menu = dialogs.byType.get('menu');
+    const render = controlPresetRendering(t);
+
+    dialogs.open('menu', trigger());
+    menu.presets.querySelector('[data-icon-id="book"]').click();
+
+    menu.close();
+    dialogs.open('menu', trigger());
+    const statusAfterReopen = menu.status.textContent;
+
+    await render.fail();
+
+    assert.equal(menu.status.textContent, statusAfterReopen, 'the stale failure must not report into the new session');
+    menu.close();
+});
+
+test('a preset render that fails while its own dialog is still open does report', async (t) => {
+    const { dialogs } = makeRegistry(t);
+    const menu = dialogs.byType.get('menu');
+    const render = controlPresetRendering(t);
+
+    dialogs.open('menu', trigger());
+    menu.presets.querySelector('[data-icon-id="book"]').click();
+    await render.fail();
+
+    assert.equal(menu.status.textContent, 'Could not read that image.');
+    assert.equal(menu.draft.icon.type, 'default', 'a failed render must not leave a half-written icon');
+    menu.close();
+});

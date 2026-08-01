@@ -9,6 +9,7 @@ import { CustomizationDrafts } from '../../src/js/flows/nickelmenu/Customization
 import { NickelMenuSelection } from '../../src/js/flows/nickelmenu/NickelMenuSelection.js';
 import { CustomizationDialogs } from '../../src/js/flows/nickelmenu/CustomizationDialogs.js';
 import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/MenuCustomization.js';
+import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 
 // Baseline for every expectation here is `nickelmenu-flow.js` at `e18299f`:
 // the features step's onEnter (276-282), `restorePreviousConfiguration`
@@ -259,6 +260,32 @@ test('the sideload recommendation opens the section its feature lives in', async
     );
     assert.ok(advanced, 'the Advanced section should have been rendered');
     assert.equal(advanced.open, true, 'Advanced is collapsed by default and must be opened for the recommendation');
+});
+
+test('a missing sideloaded-mode feature hides the banner instead of throwing', async () => {
+    // Unreachable while the feature ships, and worth pinning anyway: the caller
+    // is `updateSideloadedRecommendation().catch(() => {})`, so if this throws
+    // the banner just never appears and nothing is logged anywhere. A silent
+    // failure is the kind this test exists to make loud.
+    //
+    // `meetsMinimumVersion` does not stand in for the existence check. It reads
+    // a missing minimum as "no floor" and returns true, so without an explicit
+    // guard the missing feature reaches the bare `sideloaded.section` read.
+    const session = makeSession({ koboUserCount: 0 });
+    const { step } = makeStep(session);
+    step.sideloadedBanner.hidden = false; // the document is shared, so prove it gets hidden
+
+    const index = NICKELMENU_FEATURES.findIndex((f) => f.id === 'sideloaded-mode');
+    assert.notEqual(index, -1, 'the feature must exist for removing it to prove anything');
+    const [removed] = NICKELMENU_FEATURES.splice(index, 1);
+    try {
+        step.renderFeatureCheckboxes();
+        await step.updateSideloadedRecommendation();
+    } finally {
+        NICKELMENU_FEATURES.splice(index, 0, removed);
+    }
+
+    assert.equal(step.sideloadedBanner.hidden, true);
 });
 
 test('the sideload banner stays hidden when the device has a Kobo account', async () => {

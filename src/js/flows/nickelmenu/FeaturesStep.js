@@ -195,7 +195,13 @@ export class FeaturesStep extends NickelMenuStep {
         const banner = this.sideloadedBanner;
         const firmware = this.session.device?.deviceInfo?.firmware;
         const sideloaded = NICKELMENU_FEATURES.find((f) => f.id === 'sideloaded-mode');
-        if (!meetsMinimumVersion(firmware, sideloaded?.minimumVersion)) {
+        // The feature has to exist before anything is asked about it, and
+        // `meetsMinimumVersion` is not that check: a missing minimum means "no
+        // floor", so it answers true for a feature that is not there and lets
+        // execution fall through to the bare `sideloaded.section` read below.
+        // The `?.` this replaces made the code look guarded while routing the
+        // missing case to the throw.
+        if (!sideloaded || !meetsMinimumVersion(firmware, sideloaded.minimumVersion)) {
             banner.hidden = true;
             return;
         }

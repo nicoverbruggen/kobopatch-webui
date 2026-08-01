@@ -35,9 +35,9 @@ function makeStatusEls() {
 const dialog = () => document.getElementById('patch-editor-dialog');
 const editorTextarea = () => dialog().querySelector('.patch-editor-textarea');
 const editorStatus = () => dialog().querySelector('.patch-editor-status');
-// Scoped to the footer, which is where patch-editor.js binds its click delegate.
-// The header's close "x" also carries `patch-editor-cancel` but sits outside the
-// footer, so an unscoped query would return a button the handler never sees.
+// Scoped to the footer so each of these tests clicks the button it names. The
+// header's x carries `patch-editor-cancel` too, so an unscoped query would
+// return whichever comes first in the markup rather than the footer one.
 const footerButton = (cls) => dialog().querySelector(`.modal-footer .${cls}`);
 
 test('validatePatchEdit accepts a well-formed single-patch mapping', () => {
@@ -117,6 +117,23 @@ test('the Validate button reports status without closing or applying', () => {
     assert.equal(dialog().open, true);
     assert.equal(ui.patchFiles[FILE].raw, RAW);
     dialog().close();
+});
+
+test('the header close button closes the dialog without applying changes', () => {
+    // The x lives in `.modal-header`, and the delegate used to be bound to
+    // `.modal-footer`, so it did nothing at all. Covered unconditionally here
+    // because both E2E tests for it sit behind a firmware-fixture skip, and a
+    // cache miss in CI would skip them without anything noticing.
+    openPatchEditor(ui, patchNamed('Alpha'), FILE, document.createElement('div'));
+
+    editorTextarea().value = 'Alpha:\n  - Enabled: no\n';
+    const close = dialog().querySelector('.modal-header .modal-close');
+    assert.ok(close, 'the dialog header must have a close button for this to prove anything');
+    close.click();
+
+    assert.equal(dialog().open, false);
+    assert.equal(ui.patchFiles[FILE].raw, RAW);
+    assert.equal(ui.isModified(FILE, 'Alpha'), false);
 });
 
 test('Cancel closes the dialog without applying changes', () => {

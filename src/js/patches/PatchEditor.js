@@ -163,9 +163,11 @@ function ensureEditorBound(ui, dialog) {
 
     const textarea = dialog.querySelector('.patch-editor-textarea');
     const statusEl = dialog.querySelector('.patch-editor-status');
-    const footer = dialog.querySelector('.modal-footer');
+    // Bound to the whole content, not just the footer: the header's × carries
+    // `patch-editor-cancel` too, and a footer-only delegate never saw it.
+    const content = dialog.querySelector('.modal-content');
 
-    footer.addEventListener('click', (e) => {
+    content.addEventListener('click', (e) => {
         const btn = e.target.closest('button');
         if (!btn || !editing) return;
 

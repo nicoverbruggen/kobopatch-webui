@@ -232,13 +232,14 @@ export class MenuCustomizationDialog extends CustomizationDialog {
                 return;
             }
 
+            // Taken before the await, like the upload path alongside. Without it,
+            // a render still in flight when the dialog is reopened repaints the
+            // new dialog from the previous session's draft.
+            const token = this.drafts.menuToken();
             try {
                 this.status.textContent = 'Preparing preset icon...';
                 const data = await renderPresetSvgToPng(icon.svg);
-                // No staleness check here, unlike the upload path. Pre-existing:
-                // reopening the dialog while a preset render is in flight lets
-                // this repaint the new dialog from the old draft. Preserved
-                // deliberately; see PHASE-5-REPORT.md.
+                if (!this.drafts.isCurrentMenu(token)) return;
                 draft.icon = {
                     type: 'preset',
                     id: icon.id,
@@ -247,6 +248,9 @@ export class MenuCustomizationDialog extends CustomizationDialog {
                 };
                 this.#refreshDerived(draft, 'Preset icon prepared as 48x48 PNG.');
             } catch (err) {
+                // Guarded for the same reason: this writes to the status line of
+                // whichever dialog is open now, not the one that started the render.
+                if (!this.drafts.isCurrentMenu(token)) return;
                 this.status.textContent = err.message;
             }
         });

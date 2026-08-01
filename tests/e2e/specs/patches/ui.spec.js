@@ -159,7 +159,41 @@ test.describe('Custom patches', () => {
         const tips = dialog.locator('.patch-editor-tips');
         await expect(tips).toBeVisible();
         await expect(tips.locator('li').first()).toContainText('ReplaceFloat');
+        // `.first()` is the header's ×. This click was already here and asserted
+        // nothing, which is how the × stayed dead: the test touched the bug and
+        // could not see it.
         await dialog.locator('.patch-editor-cancel').first().click();
+        await expect(dialog).not.toBeVisible();
+    });
+
+    test('every way out of the patch editor closes it', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await gotoManualPatchesStep(page);
+
+        const patchName = page.locator('.patch-name', { hasText: 'My 10 line spacing values' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
+        const item = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]');
+        const dialog = page.locator('#patch-editor-dialog');
+
+        // The × in the header. Its handler used to be bound to the footer only,
+        // so it did nothing at all and the user had to find Cancel or press Escape.
+        await item.locator('.patch-edit-btn').click();
+        await expect(dialog).toBeVisible();
+        await page.locator('#patch-editor-close').click();
+        await expect(dialog).not.toBeVisible();
+
+        // The footer Cancel, which always worked.
+        await item.locator('.patch-edit-btn').click();
+        await expect(dialog).toBeVisible();
+        await dialog.locator('.modal-footer .patch-editor-cancel').click();
+        await expect(dialog).not.toBeVisible();
+
+        // Escape, which always worked.
+        await item.locator('.patch-edit-btn').click();
+        await expect(dialog).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(dialog).not.toBeVisible();
     });
 
     test('patch search filters by name and clears', async ({ page }) => {
