@@ -38,6 +38,11 @@ const koboHardwareIds = {
 
 const minimumSupportedFirmware = '4.23';
 
+// Kobo's 5.x line is not supported yet, which is why parseKoboVersion rejects
+// every major version other than 4. Shown to the user in the manual
+// instructions, where there is no device to check.
+const firstUnsupportedFirmware = '5.0';
+
 function serialPrefixMatch(expectedPrefix, rawPrefix) {
     const expected = String(expectedPrefix || '').substring(0, 4);
     const actual = String(rawPrefix || '').substring(0, 4);
@@ -154,4 +159,4 @@ function meetsMinimumVersion(firmware, minimum) {
     return compareFirmware(firmware, minimum) >= 0;
 }
 
-export { koboHardwareIds, minimumSupportedFirmware, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };
+export { koboHardwareIds, minimumSupportedFirmware, firstUnsupportedFirmware, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };

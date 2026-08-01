@@ -86,6 +86,20 @@
     }
 }
 
+/* Note about which software versions the surrounding steps apply to. Not a
+   banner: two of the three places it appears are already inside a bordered card,
+   where another rounded, bordered box reads as a card within a card. The fill
+   carries the meaning on its own. The info tint keeps it in the page's own
+   colour rather than reading as an error the user caused. */
+.step .version-note {
+    margin: 0 0 0.9rem;
+    padding: 0.5rem 0.7rem;
+    background: var(--info-bg);
+    color: var(--info-text);
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
 /* --- Context-specific margins --- */
 
 #step-connect p.intro { margin-bottom: 1.5rem; }
