@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 
 import { NickelMenuFlow } from '../../src/js/flows/nickelmenu/NickelMenuFlow.js';
 import { PatchesFlow } from '../../src/js/flows/patches/PatchesFlow.js';
-import { isDefaultMenuCustomization } from '../../src/js/nickelmenu/customization.js';
+import { isDefaultMenuCustomization } from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // Phase 3 moved the wizard's data off `Session` into per-flow objects, which
 // makes the two resets — the flow restart and the device reconnect — testable for

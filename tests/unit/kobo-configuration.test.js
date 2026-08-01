@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../../src/js/kobo/sync-exclusions.js';
+import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../../src/js/kobo/SyncExclusions.js';
 import {
     createExcludeSyncFoldersMatcher,
     getConfSetting,
@@ -11,7 +11,7 @@ import {
     setConfSetting,
     setExcludeSyncFoldersLine,
     validateExcludeSyncFoldersLine,
-} from '../../src/js/kobo/configuration.js';
+} from '../../src/js/kobo/Configuration.js';
 
 test('buildExcludeSyncFoldersLine returns the expected default regex line', () => {
     assert.equal(buildExcludeSyncFoldersLine(), String.raw`ExcludeSyncFolders=(\\.(?!kobo|adobe).+|([^.][^/]*/)+\\..+)`);

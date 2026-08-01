@@ -9,7 +9,7 @@
  * is the only subclass that talks to `CustomizationDrafts`' generation counter.
  */
 
-import { requireElement, requireInput } from '../../../shell/dom.js';
+import { requireElement, requireInput } from '../../../shell/DOM.js';
 import { CustomizationDialog } from '../../CustomizationDialog.js';
 import {
     cloneMenuCustomization,
@@ -21,7 +21,7 @@ import {
     NM_MENU_PRESET_ICONS,
     normalizeMenuLabel,
     sanitizeMenuLabel,
-} from '../../customization.js';
+} from '../../MenuCustomization.js';
 import { handleNmIconUpload, renderPresetSvgToPng } from './MenuIconImages.js';
 import { CUSTOM_MENU_ICON_URL } from './index.js';
 

@@ -9,7 +9,7 @@ import {
     optionalCleanupKept,
     featureReviewNotices,
     nmReviewModel,
-} from '../../src/js/nickelmenu/selection.js';
+} from '../../src/js/nickelmenu/Selection.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 
 // `featuresToInstall` reads the real NICKELMENU_FEATURES catalog (per the

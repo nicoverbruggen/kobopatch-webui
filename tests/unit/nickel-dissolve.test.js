@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 import nickelDissolve, { nickelDissolveSupport } from '../../src/js/nickelmenu/features/nickel-dissolve/index.js';
 import nickelclock from '../../src/js/nickelmenu/features/nickelclock/index.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
-import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
-import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
-import { isOptionalCleanupPresent } from '../../src/js/nickelmenu/probes.js';
-import { featuresToInstall } from '../../src/js/nickelmenu/selection.js';
+import { buildTarGz } from '../../src/js/nickelmenu/Archive.js';
+import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/Uninstaller.js';
+import { isOptionalCleanupPresent } from '../../src/js/nickelmenu/Probes.js';
+import { featuresToInstall } from '../../src/js/nickelmenu/Selection.js';
 import { RecordingDevice, bytes, createInstaller, createProgressRecorder } from './test-helpers.js';
 
 // The mod's published KoboRoot.tgz layout: the NickelHook plugin plus the

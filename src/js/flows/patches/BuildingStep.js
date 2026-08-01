@@ -11,7 +11,7 @@
  * they are defined, so a transient screen leaves it alone.
  */
 
-import { requireElement } from '../../shell/dom.js';
+import { requireElement } from '../../shell/DOM.js';
 import { Step } from '../Step.js';
 
 export class BuildingStep extends Step {

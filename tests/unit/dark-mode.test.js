@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { darkModeSupport, darkModeUnsupportedHardwareIds } from '../../src/js/kobo/dark-mode.js';
-import { koboHardwareIds, parseKoboVersion } from '../../src/js/kobo/version.js';
+import { darkModeSupport, darkModeUnsupportedHardwareIds } from '../../src/js/kobo/DarkMode.js';
+import { koboHardwareIds, parseKoboVersion } from '../../src/js/kobo/Version.js';
 
 const AURA_HD_UUID = '00000000-0000-0000-0000-000000000350'; // N204, no Dark mode
 const LIBRA_COLOUR_UUID = '00000000-0000-0000-0000-000000000390'; // N428, supports Dark mode

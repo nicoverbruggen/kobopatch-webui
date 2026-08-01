@@ -2,9 +2,9 @@ import './dom-harness.js'; // installs document/window + the #patch-editor-dialo
 import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { openPatchEditor, validatePatchEdit } from '../../src/js/patches/patch-editor.js';
-import { PatchUI } from '../../src/js/patches/ui.js';
-import { parsePatchYAML } from '../../src/js/patches/patch-yaml.js';
+import { openPatchEditor, validatePatchEdit } from '../../src/js/patches/PatchEditor.js';
+import { PatchUI } from '../../src/js/patches/PatchUI.js';
+import { parsePatchYAML } from '../../src/js/patches/PatchYAML.js';
 
 const FILE = 'src/nickel.yaml';
 const RAW = 'Alpha:\n  - Enabled: yes\n  - FindReplaceString: a\nBeta:\n  - Enabled: no\n';

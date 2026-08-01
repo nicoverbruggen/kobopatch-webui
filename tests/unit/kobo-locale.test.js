@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { localeLanguage, isEnglishLocale, readUiLocale, localeDisplayName } from '../../src/js/kobo/locale.js';
+import { localeLanguage, isEnglishLocale, readUiLocale, localeDisplayName } from '../../src/js/kobo/Locale.js';
 
 test('localeLanguage extracts the lower-cased language subtag', () => {
     assert.equal(localeLanguage('en'), 'en');

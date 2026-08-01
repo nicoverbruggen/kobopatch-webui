@@ -1,8 +1,8 @@
-import { loadBundledAsset } from '../assets.js';
-import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
-import { isFontFamilySelected } from '../additional-fonts/customization.js';
+import { loadBundledAsset } from '../Assets.js';
+import { parseTarGz } from '../../Archive.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../Installables.js';
+import { isFontFamilySelected } from '../additional-fonts/FontsCustomization.js';
 
 export const TOGGLE_TYPOGRAPHY_SCRIPT_URL = new URL('./scripts/toggle_typography.sh', import.meta.url).href;
 

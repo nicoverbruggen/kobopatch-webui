@@ -2,8 +2,8 @@ import './dom-harness.js'; // installs document/window the renderer needs
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PatchUI } from '../../src/js/patches/ui.js';
-import { openBlacklistDialog } from '../../src/js/patches/patch-list-view.js';
+import { PatchUI } from '../../src/js/patches/PatchUI.js';
+import { openBlacklistDialog } from '../../src/js/patches/PatchListView.js';
 
 const FILE = 'src/nickel.yaml';
 

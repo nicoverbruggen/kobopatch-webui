@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { shouldOfferNmBackup, buildBackupFilename } from '../../src/js/flows/nickelmenu-backup.js';
+import { shouldOfferNmBackup, buildBackupFilename } from '../../src/js/flows/nickelmenu/BackupPlan.js';
 
 test('shouldOfferNmBackup only offers for a connected device in non-manual mode', () => {
     assert.equal(shouldOfferNmBackup({ manualMode: false, device: { directoryHandle: {} } }), true);

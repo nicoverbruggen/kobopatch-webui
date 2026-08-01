@@ -7,7 +7,7 @@ import {
     CONF_DESC_DEFAULT,
     CONF_DESC_EXCLUDE_CALIBRE,
     KOBO_RESET_HELP_URL,
-} from '../../src/js/shell/instructions.js';
+} from '../../src/js/shell/Instructions.js';
 
 // A fixed timestamp so the rendered header is deterministic.
 const DATE = new Date(Date.UTC(2026, 5, 14, 13, 45));

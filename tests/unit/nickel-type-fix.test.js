@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import betterTypography, { includesNickelTypeFix } from '../../src/js/nickelmenu/features/better-typography/index.js';
-import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
-import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
+import { buildTarGz } from '../../src/js/nickelmenu/Archive.js';
+import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/Uninstaller.js';
 import { RecordingDevice, bytes, createInstaller, createProgressRecorder } from './test-helpers.js';
 
 // The mod's published KoboRoot.tgz layout: the NickelHook plugin plus the

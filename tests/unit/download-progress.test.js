@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { downloadProgress, fetchWithProgress } from '../../src/js/shell/dom.js';
+import { downloadProgress, fetchWithProgress } from '../../src/js/shell/Transfer.js';
 
 const MB = 1024 * 1024;
 

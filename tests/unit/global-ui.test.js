@@ -69,7 +69,7 @@ async function withChromeDom(hostname, run) {
     window.__ANALYTICS_ENABLED = false;
 
     try {
-        const { initGlobalUI } = await import(`../../src/js/shell/global-ui.js?host=${hostname}&t=${Date.now()}`);
+        const { initGlobalUI } = await import(`../../src/js/shell/GlobalUI.js?host=${hostname}&t=${Date.now()}`);
         initGlobalUI();
         await run(dom.window.document);
     } finally {

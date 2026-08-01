@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { countTableRows, bytesRange } from '../../src/js/kobo/sqlite-count.js';
-import { countKoboUsers } from '../../src/js/kobo/signin.js';
+import { countTableRows, bytesRange } from '../../src/js/kobo/SQLiteCount.js';
+import { countKoboUsers } from '../../src/js/kobo/SignIn.js';
 
 const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'e2e', 'support', 'fixtures');
 const fixture = (name) => new Uint8Array(readFileSync(join(fixturesDir, name)));

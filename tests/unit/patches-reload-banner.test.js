@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { ReloadBanner } from '../../src/js/flows/patches/ReloadBanner.js';
-import { buildAdditionalFilesTgz, sha256Hex } from '../../src/js/patches/additional-files.js';
+import { buildAdditionalFilesTgz, sha256Hex } from '../../src/js/patches/AdditionalFiles.js';
 
 // Baseline for every expectation here is `patches-flow.js` at `e18299f`:
 // `maybeOfferReload` (266-291) and `readReloadAdditionalFiles` (298-325).

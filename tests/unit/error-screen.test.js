@@ -4,10 +4,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { ErrorScreen } from '../../src/js/shell/ErrorScreen.js';
-import { stepHistory } from '../../src/js/shell/navigation.js';
-import { createFlow, deactivateFlow } from '../../src/js/shell/step-machine.js';
-import { $ } from '../../src/js/shell/dom.js';
-import { TL } from '../../src/js/shell/strings.js';
+import { resetHistory, showStep } from '../../src/js/shell/Navigation.js';
+import { createFlow } from '../../src/js/shell/StepMachine.js';
+import { $ } from '../../src/js/shell/DOM.js';
+import { TL } from '../../src/js/shell/Strings.js';
 
 // `showError`'s five-branch decision table is what a user sees when a device
 // write fails, and it had no unit coverage at all. Each branch picks a different
@@ -16,13 +16,17 @@ import { TL } from '../../src/js/shell/strings.js';
 // which outranks a recovery target. These tests assert the *rendered outcome*
 // rather than which branch ran, so they survive the code being restructured.
 
+// The wizard the screen under test reads. `activeFlow` lives on it now rather
+// than in a module global, so each test drives it through this stub.
+let nav;
+
 function freshScreen() {
-    // `showError` pushes `step-error` onto the module-global history, and the
-    // `hasBackStep` branch keys on that same array, so each test starts from the
-    // initial one-element state rather than inheriting the previous test's.
-    stepHistory.length = 1;
-    deactivateFlow();
-    const screen = new ErrorScreen({ session: {} });
+    // `showError` pushes `step-error` onto the back-stack, and the `hasBackStep`
+    // branch keys on the same stack, so each test starts from the initial
+    // one-element state rather than inheriting the previous test's.
+    resetHistory();
+    nav = { session: {}, activeFlow: null };
+    const screen = new ErrorScreen(nav);
     return (...args) => screen.showError(...args);
 }
 
@@ -56,9 +60,12 @@ function activateFlowWithRecovery() {
     const flow = createFlow({
         id: 'error-screen-test',
         steps: [
-            { id: 'a', domId: 'step-test-a', recoveryStep: 'b' },
-            { id: 'b', domId: 'step-test-b' },
+            { id: 'a', domId: 'step-nickelmenu', recoveryStep: 'b' },
+            { id: 'b', domId: 'step-nm-review' },
         ],
+        onActivate: (active) => {
+            nav.activeFlow = active;
+        },
     });
     return flow.go('a', {});
 }
@@ -137,13 +144,13 @@ test('a recoverable flow step offers Back and marks Retry as destructive', () =>
         assert.equal(ui.hintHidden, false);
         assert.equal(ui.backHidden, false);
         assert.equal(ui.retryIsDanger, true, 'Retry reloads the page, so it is flagged when a safe Back exists');
-        deactivateFlow();
+        nav.activeFlow = null;
     });
 });
 
 test('a patches step in the history offers Back even with no active flow', () => {
     const showError = freshScreen();
-    stepHistory.push($('step-patches'));
+    showStep($('step-patches')); // puts it on the back-stack the way the app does
 
     showError('build failed');
 

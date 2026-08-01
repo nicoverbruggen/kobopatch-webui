@@ -12,7 +12,7 @@
  * element and decides when to show it.
  */
 
-import { formatBytes, requireElement } from '../../shell/dom.js';
+import { formatBytes, requireElement } from '../../shell/DOM.js';
 
 const DESTINATION_PLACEHOLDER = 'usr/local/Trolltech/QtEmbedded-4.6.2-arm/lib/fonts/Font.ttf';
 

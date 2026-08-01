@@ -13,11 +13,11 @@
  * and there is no `destroy()` here to forget to chain to. See `Step`.
  */
 
-import { AUDIT_LOG_DIRECTORY } from '../../kobo/audit-log.js';
-import { requireButton, requireDialog, requireElement } from '../../shell/dom.js';
-import { TL } from '../../shell/strings.js';
-import { getPatchMeta } from '../../patches/patch-metadata.js';
-import { additionalFilesArchiveName, patchManifestName, readAdditionalFilesArchive, sha256Hex } from '../../patches/additional-files.js';
+import { AUDIT_LOG_DIRECTORY } from '../../kobo/AuditLog.js';
+import { requireButton, requireDialog, requireElement } from '../../shell/DOM.js';
+import { TL } from '../../shell/Strings.js';
+import { getPatchMeta } from '../../patches/PatchMetadata.js';
+import { additionalFilesArchiveName, patchManifestName, readAdditionalFilesArchive, sha256Hex } from '../../patches/AdditionalFiles.js';
 
 export class ReloadBanner {
     /**

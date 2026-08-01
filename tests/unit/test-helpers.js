@@ -1,4 +1,4 @@
-import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
+import { NickelMenuInstaller } from '../../src/js/nickelmenu/NickelMenuInstaller.js';
 import { CUSTOM_MENU_ICON_URL, TOGGLE_SCREENSHOTS_SCRIPT_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import { TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 

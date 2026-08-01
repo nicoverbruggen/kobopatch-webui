@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PatchUI } from '../../src/js/patches/ui.js';
-import { parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/patch-yaml.js';
-import { buildPatchesManifest } from '../../src/js/flows/patches-execute.js';
+import { PatchUI } from '../../src/js/patches/PatchUI.js';
+import { parsePatchYAML, replacePatchLines, yamlScalar } from '../../src/js/patches/PatchYAML.js';
+import { buildPatchesManifest } from '../../src/js/flows/patches/BuildExecutor.js';
 
 /**
  * Build a PatchUI seeded with one file's worth of patches and their pristine

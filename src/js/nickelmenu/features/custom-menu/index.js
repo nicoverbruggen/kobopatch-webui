@@ -1,6 +1,6 @@
-import { darkModeSupport } from '../../../kobo/dark-mode.js';
-import { resolveMenuCustomization, NM_MENU_ICON_DEFAULT_PATH } from '../../customization.js';
-import { loadBundledAsset } from '../assets.js';
+import { darkModeSupport } from '../../../kobo/DarkMode.js';
+import { resolveMenuCustomization, NM_MENU_ICON_DEFAULT_PATH } from '../../MenuCustomization.js';
+import { loadBundledAsset } from '../Assets.js';
 
 export const CUSTOM_MENU_ICON_URL = new URL('./.cog.png', import.meta.url).href;
 export const TOGGLE_SCREENSHOTS_SCRIPT_URL = new URL('./scripts/toggle_screenshots.sh', import.meta.url).href;

@@ -6,7 +6,7 @@
  * directory prompt.
  */
 
-import { requireButton, requireElement } from './dom.js';
+import { requireButton, requireElement } from './DOM.js';
 import { ShellScreen } from './ShellScreen.js';
 
 export class ConnectInstructionsScreen extends ShellScreen {

@@ -13,7 +13,7 @@ const { parseTar } = require('../../support/tar');
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
 // does, so a seeded manifest can reference bytes the app will accept on reload.
 async function buildPatchFilesArchive(entries) {
-    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
+    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/AdditionalFiles.js'));
     const archiveBytes = await buildAdditionalFilesTgz(entries);
     const sha256 = await sha256Hex(archiveBytes);
     return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };
@@ -108,14 +108,16 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
         // Status message should say the version is too new, not too old
-        await expect(page.locator('#device-status')).toContainText('Kobo software 5 and newer cannot be modded here yet');
-        await expect(page.locator('#device-status')).toContainText('You may be able to downgrade to version 4.');
+        await expect(page.locator('#device-status strong')).toHaveText(
+            "You are currently on a software version that's too recent and not supported by this tool yet.",
+        );
+        await expect(page.locator('#device-status')).toContainText('More > Settings > Device Information > Revert to previous version');
         await expect(page.locator('#device-status')).not.toContainText('4.23 or newer is required');
         await expect(page.locator('#device-status')).toHaveClass(/error/);
 
         // And it should link to Kobo's own guide for installing a software version
         const helpLink = page.locator('#device-status a');
-        await expect(helpLink).toHaveText('Learn more');
+        await expect(helpLink).toHaveText('official documentation');
         await expect(helpLink).toHaveAttribute('href', /help\.kobo\.com/);
         await expect(helpLink).toHaveAttribute('target', '_blank');
 

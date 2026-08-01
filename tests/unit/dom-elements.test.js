@@ -19,7 +19,7 @@ async function withDom(html, run) {
     Object.defineProperty(globalThis, 'window', { configurable: true, writable: true, value: dom.window });
 
     try {
-        const dommod = await import('../../src/js/shell/dom.js');
+        const dommod = await import('../../src/js/shell/DOM.js');
         await run(dommod, dom.window.document);
     } finally {
         if (previousDocument) Object.defineProperty(globalThis, 'document', previousDocument);

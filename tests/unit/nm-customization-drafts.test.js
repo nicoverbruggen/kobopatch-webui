@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { CustomizationDrafts } from '../../src/js/flows/nickelmenu/CustomizationDrafts.js';
-import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/customization.js';
+import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // The menu customize dialog can have a slow icon upload in flight while the user
 // closes, reopens, resets or saves. `CustomizationDrafts` carries the two-part

@@ -42,7 +42,7 @@ class FakeWorker {
 globalThis.window ??= {};
 globalThis.Worker = FakeWorker;
 
-const { KoboPatchRunner } = await import('../../src/js/patches/runner.js');
+const { KoboPatchRunner } = await import('../../src/js/patches/KoboPatchRunner.js');
 
 /** Start a run and return both the promise and the worker the runner created. */
 function startRun(runner, { onProgress } = {}) {

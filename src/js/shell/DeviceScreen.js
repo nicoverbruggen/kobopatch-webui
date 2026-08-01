@@ -6,14 +6,14 @@
  * unknown-model acknowledgement, and the "restore original" shortcut.
  */
 
-import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
-import { localeDisplayName } from '../kobo/locale.js';
-import { minimumSupportedFirmware } from '../kobo/version.js';
-import { requireButton, requireElement, requireInput } from './dom.js';
-import { setNavLabels, setNavStep } from './navigation.js';
-import { TL } from './strings.js';
-import { latestPatchVersionForFamily } from '../patches/catalog.js';
-import { patchManifestName } from '../patches/additional-files.js';
+import { AUDIT_LOG_DIRECTORY } from '../kobo/AuditLog.js';
+import { localeDisplayName } from '../kobo/Locale.js';
+import { minimumSupportedFirmware } from '../kobo/Version.js';
+import { requireButton, requireElement, requireInput } from './DOM.js';
+import { setNavLabels, setNavStep } from './Navigation.js';
+import { TL } from './Strings.js';
+import { latestPatchVersionForFamily } from '../patches/Catalog.js';
+import { patchManifestName } from '../patches/AdditionalFiles.js';
 import { ShellScreen } from './ShellScreen.js';
 
 const VERIFICATION_HINTS = {

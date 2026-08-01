@@ -10,7 +10,7 @@ const { goToManualMode } = require('../../support/mock-device');
 
 // The committed catalogue the app itself uses, so expectations track the pinned
 // ebook-fonts release instead of hardcoding family counts.
-const cataloguePath = path.join(__dirname, '..', '..', '..', '..', 'src', 'js', 'nickelmenu', 'features', 'additional-fonts', 'catalogue.js');
+const cataloguePath = path.join(__dirname, '..', '..', '..', '..', 'src', 'js', 'nickelmenu', 'features', 'additional-fonts', 'FontCatalogue.js');
 
 /** @type {Array<{id: string, name: string, collection: string, files: string[]}>} */
 let FONT_FAMILIES;

@@ -16,7 +16,7 @@
  * signal and owns no `AbortController`.
  */
 
-import { requireButton, requireDialog, requireElement, trapFocus, $ } from '../shell/dom.js';
+import { requireButton, requireDialog, requireElement, trapFocus, $ } from '../shell/DOM.js';
 
 export class CustomizationDialog {
     /**

@@ -7,15 +7,15 @@
  * screen's class. This file only wires the two together.
  */
 
-import { KoboDevice } from './kobo/device.js';
-import { loadSoftwareUrls, getSoftwareUrl } from './kobo/software-urls.js';
-import { PatchUI } from './patches/ui.js';
-import { scanAvailablePatches } from './patches/catalog.js';
-import { KoboPatchRunner } from './patches/runner.js';
-import { NickelMenuInstaller } from './nickelmenu/installer.js';
-import { Session } from './shell/session.js';
-import { $ } from './shell/dom.js';
-import { initGlobalUI } from './shell/global-ui.js';
+import { KoboDevice } from './kobo/KoboDevice.js';
+import { loadSoftwareUrls, getSoftwareUrl } from './kobo/SoftwareURLs.js';
+import { PatchUI } from './patches/PatchUI.js';
+import { scanAvailablePatches } from './patches/Catalog.js';
+import { KoboPatchRunner } from './patches/KoboPatchRunner.js';
+import { NickelMenuInstaller } from './nickelmenu/NickelMenuInstaller.js';
+import { Session } from './shell/Session.js';
+import { $ } from './shell/DOM.js';
+import { initGlobalUI } from './shell/GlobalUI.js';
 import { Wizard } from './Wizard.js';
 
 const patchUI = new PatchUI();

@@ -484,7 +484,7 @@ createServer((req, res) => {
         }
 
         // Content-Length (vs. chunked) lets the browser report download progress
-        // for large assets — see fetchWithProgress in src/js/shell/dom.js. When a
+        // for large assets — see fetchWithProgress in src/js/shell/Transfer.js. When a
         // precompressed sibling is served it reflects the on-wire (compressed) size.
         headers['Content-Length'] = serveStat.size;
         if (picked) headers['Content-Encoding'] = picked.encoding;

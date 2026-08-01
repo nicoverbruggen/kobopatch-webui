@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { ModeScreen } from '../../src/js/shell/ModeScreen.js';
-import { $, $q } from '../../src/js/shell/dom.js';
+import { $, $q } from '../../src/js/shell/DOM.js';
 
 // `goToModeSelection` decides whether custom patches are offered at all, and it
 // is the shared re-entry point three different places come back to. The gating
@@ -24,6 +24,7 @@ function makeScreen(sessionOverrides = {}) {
             selectedMode: null,
             ...sessionOverrides,
         },
+        deactivateFlow: () => {},
         nickelMenu: { resetNickelMenuState: () => calls.push('resetNickelMenuState') },
         goToConnectStep: () => calls.push('connect'),
         goToDeviceStep: () => calls.push('device'),

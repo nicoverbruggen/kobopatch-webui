@@ -21,7 +21,7 @@ const { parseTar } = require('../../support/tar');
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
 // does, so a seeded manifest can reference bytes the app will accept on reload.
 async function buildPatchFilesArchive(entries) {
-    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
+    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/AdditionalFiles.js'));
     const archiveBytes = await buildAdditionalFilesTgz(entries);
     const sha256 = await sha256Hex(archiveBytes);
     return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };
@@ -227,7 +227,7 @@ test.describe('Custom patches', () => {
         // And the round trip: the app's own reader accepts the app's own bytes.
         // `readAdditionalFilesArchive` is what the reload path parses with, and the
         // manifest's `files[]` paths must be the keys it finds.
-        const { readAdditionalFilesArchive, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
+        const { readAdditionalFilesArchive, sha256Hex } = await import(paths.src('js/patches/AdditionalFiles.js'));
         expect(await sha256Hex(new Uint8Array(archiveBytes))).toBe(manifest.additionalFilesArchive.sha256);
 
         const archive = await readAdditionalFilesArchive(new Uint8Array(archiveBytes));

@@ -6,8 +6,8 @@
  * `renderNmDoneStatus`; this step owns the elements it writes into.
  */
 
-import { requireElement } from '../../shell/dom.js';
-import { renderNmDoneStatus } from '../nickelmenu-execute.js';
+import { requireElement } from '../../shell/DOM.js';
+import { renderNmDoneStatus } from './InstallExecutor.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 export class DoneStep extends NickelMenuStep {

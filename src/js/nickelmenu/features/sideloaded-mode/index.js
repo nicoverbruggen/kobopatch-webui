@@ -1,4 +1,4 @@
-import { NM_ITEMS_FILE } from '../../constants.js';
+import { NM_ITEMS_FILE } from '../../Constants.js';
 
 // Sideload Mode. A Kobo that has been factory reset and never signed into a
 // Kobo account can still be used for reading sideloaded books by setting

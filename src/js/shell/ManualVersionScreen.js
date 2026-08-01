@@ -7,11 +7,11 @@
  * manual download.
  */
 
-import { getChannelsForVersion } from '../kobo/software-urls.js';
-import { populateSelect, requireButton, requireElement, requireSelect } from './dom.js';
-import { setNavStep } from './navigation.js';
-import { TL } from './strings.js';
-import { latestPatchVersionForFamily } from '../patches/catalog.js';
+import { getChannelsForVersion } from '../kobo/SoftwareURLs.js';
+import { populateSelect, requireButton, requireElement, requireSelect } from './DOM.js';
+import { setNavStep } from './Navigation.js';
+import { TL } from './Strings.js';
+import { latestPatchVersionForFamily } from '../patches/Catalog.js';
 import { ShellScreen } from './ShellScreen.js';
 
 export class ManualVersionScreen extends ShellScreen {

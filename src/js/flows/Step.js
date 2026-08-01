@@ -45,11 +45,16 @@
 
 export class Step {
     /**
-     * `navIndex` and `navLabels` are constructor-assigned fields, never methods.
-     * The step machine reads them off the step and calls them detached
-     * (`step-machine.js:61-68` and `:128-135`), so a prototype method would lose
-     * `this` and throw at navigation time. `onEnter` and `back` are called as
-     * methods (`:75` and `:89`) and are normal overrides.
+     * `navIndex` and `navLabels` may be a plain value, a constructor-assigned
+     * function, or a prototype method — the step machine reads and calls them in
+     * one expression, so `this` binds either way. They were constructor-only
+     * until Phase 6, because the machine read them into a local first and a
+     * prototype method lost `this`; that was a rule which failed silently when
+     * forgotten, so the machine was fixed rather than the rule restated. The
+     * existing fields were left alone: changing them is churn with no gain.
+     *
+     * Omitting both is meaningful — the step machine leaves the breadcrumb
+     * untouched, which is what the transient build screen relies on.
      *
      * @param {object} owner - the flow assembler that constructed this step
      * @param {object} config

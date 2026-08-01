@@ -7,9 +7,9 @@
  * call into.
  */
 
-import { requireElement } from '../../shell/dom.js';
-import { createFlow } from '../../shell/step-machine.js';
-import { createTerminal } from '../../shell/terminal.js';
+import { requireElement } from '../../shell/DOM.js';
+import { createFlow } from '../../shell/StepMachine.js';
+import { createTerminal } from '../../shell/Terminal.js';
 import { PatchesBuild } from './PatchesBuild.js';
 import { PatchesStep } from './PatchesStep.js';
 import { FirmwareStep } from './FirmwareStep.js';
@@ -44,7 +44,7 @@ export class PatchesFlow {
         this.done = new DoneStep(this);
         this.steps = [this.patches, this.firmware, this.building, this.done];
 
-        this.flow = createFlow({ id: 'patches', steps: this.steps });
+        this.flow = createFlow({ id: 'patches', steps: this.steps, onActivate: (flow) => nav.setActiveFlow(flow) });
 
         // Assigned last: the callback reaches a step, so every step must exist.
         // Nothing calls it during construction.

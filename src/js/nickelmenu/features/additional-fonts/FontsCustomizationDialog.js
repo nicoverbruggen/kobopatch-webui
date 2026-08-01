@@ -8,10 +8,10 @@
  * ./customization.js and the catalogue in ./catalogue.js.
  */
 
-import { requireButton, requireElement } from '../../../shell/dom.js';
+import { requireButton, requireElement } from '../../../shell/DOM.js';
 import { CustomizationDialog } from '../../CustomizationDialog.js';
-import { FONT_FAMILIES } from './catalogue.js';
-import { createDefaultFontsCustomization, resolveSelectedFamilyIds } from './customization.js';
+import { FONT_FAMILIES } from './FontCatalogue.js';
+import { createDefaultFontsCustomization, resolveSelectedFamilyIds } from './FontsCustomization.js';
 
 // A small "type specimen" glyph for the summary chip. Uses currentColor so it
 // follows the chip's text colour in both light and dark themes.

@@ -6,14 +6,14 @@ import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 
 // screensaver is used as the stand-in for "an optional feature with files to
 // remove" in the removal tests (better-typography's cleanup is now conf-only).
-import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../../src/js/kobo/sync-exclusions.js';
+import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../../src/js/kobo/SyncExclusions.js';
 import {
     executeNickelMenuFeatureCleanups,
     executeNickelMenuRemoval,
     hasAddsDirectoriesRequiringSyncExclusions,
     nickelMenuUninstallMarkerPath,
-} from '../../src/js/nickelmenu/uninstaller.js';
-import { AuditLog } from '../../src/js/kobo/audit-log.js';
+} from '../../src/js/nickelmenu/Uninstaller.js';
+import { AuditLog } from '../../src/js/kobo/AuditLog.js';
 import { RecordingDevice, createInstaller, createProgressRecorder, koboEReaderConfPath, koboRootTgzPath, text } from './test-helpers.js';
 
 function createWarnRecorder() {

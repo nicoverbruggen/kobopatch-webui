@@ -10,7 +10,7 @@
 import { expect } from '@playwright/test';
 import { injectMockDevice, overrideFirmwareURLs } from './mock-device.js';
 import { hasFirmwareZip } from './assets.js';
-import { buildAdditionalFilesTgz, sha256Hex } from '../../../src/js/patches/additional-files.js';
+import { buildAdditionalFilesTgz, sha256Hex } from '../../../src/js/patches/AdditionalFiles.js';
 
 export const THEMES = ['light', 'dark'];
 

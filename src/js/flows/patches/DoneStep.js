@@ -8,13 +8,13 @@
  * each call them fresh.
  */
 
-import { AUDIT_LOG_DIRECTORY } from '../../kobo/audit-log.js';
-import { formatBytes, renderDownloadConfSettings, requireButton, requireElement } from '../../shell/dom.js';
-import { buildPatchesInstructions } from '../../shell/instructions.js';
-import { TL } from '../../shell/strings.js';
-import { buildPatchesManifest, checkExistingTgz } from '../patches-execute.js';
-import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../../patches/side-effects.js';
-import { additionalFilesArchiveName, buildAdditionalFilesTgz, patchManifestName, sha256Hex } from '../../patches/additional-files.js';
+import { AUDIT_LOG_DIRECTORY } from '../../kobo/AuditLog.js';
+import { formatBytes, renderDownloadConfSettings, requireButton, requireElement } from '../../shell/DOM.js';
+import { buildPatchesInstructions } from '../../shell/Instructions.js';
+import { TL } from '../../shell/Strings.js';
+import { buildPatchesManifest, checkExistingTgz } from './BuildExecutor.js';
+import { applyPatchSideEffectConfSettings, patchSideEffectConfSettings } from '../../patches/SideEffects.js';
+import { additionalFilesArchiveName, buildAdditionalFilesTgz, patchManifestName, sha256Hex } from '../../patches/AdditionalFiles.js';
 import { Step } from '../Step.js';
 
 const CONF_PATH = ['.kobo', 'Kobo', 'Kobo eReader.conf'];

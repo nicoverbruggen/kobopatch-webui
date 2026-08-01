@@ -8,7 +8,7 @@ import { DetectedInstallation } from '../../src/js/flows/nickelmenu/DetectedInst
 import { CustomizationDrafts } from '../../src/js/flows/nickelmenu/CustomizationDrafts.js';
 import { NickelMenuSelection } from '../../src/js/flows/nickelmenu/NickelMenuSelection.js';
 import { CustomizationDialogs } from '../../src/js/flows/nickelmenu/CustomizationDialogs.js';
-import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/customization.js';
+import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // Baseline for every expectation here is `nickelmenu-flow.js` at `e18299f`:
 // the features step's onEnter (276-282), `restorePreviousConfiguration`

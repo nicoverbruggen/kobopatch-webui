@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 
 import JSZip from 'jszip';
 
-import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/constants.js';
-import { NM_MENU_ICON_CUSTOM_PNG_PATH } from '../../src/js/nickelmenu/customization.js';
-import { NickelMenuInstaller } from '../../src/js/nickelmenu/installer.js';
-import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
-import { AuditLog } from '../../src/js/kobo/audit-log.js';
+import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/Constants.js';
+import { NM_MENU_ICON_CUSTOM_PNG_PATH } from '../../src/js/nickelmenu/MenuCustomization.js';
+import { NickelMenuInstaller } from '../../src/js/nickelmenu/NickelMenuInstaller.js';
+import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/Archive.js';
+import { AuditLog } from '../../src/js/kobo/AuditLog.js';
 import customMenu, { CUSTOM_MENU_ICON_URL, TOGGLE_SCREENSHOTS_SCRIPT_URL } from '../../src/js/nickelmenu/features/custom-menu/index.js';
 import excludeCalibre from '../../src/js/nickelmenu/features/exclude-calibre/index.js';
 import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';

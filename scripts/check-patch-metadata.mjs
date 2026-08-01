@@ -15,8 +15,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { parsePatchYAML } from '../src/js/patches/patch-yaml.js';
-import { PATCH_META, PATCH_CATEGORIES, OTHER_CATEGORY } from '../src/js/patches/patch-metadata.js';
+import { parsePatchYAML } from '../src/js/patches/PatchYAML.js';
+import { PATCH_META, PATCH_CATEGORIES, OTHER_CATEGORY } from '../src/js/patches/PatchMetadata.js';
 
 const appDir = join(import.meta.dirname, '..');
 const patchesDir = join(appDir, 'patches');
@@ -70,7 +70,7 @@ if (orphans.length > 0) {
 if (errors.length > 0) {
     console.error(`\n✗ Patch metadata check failed (${errors.length} issue${errors.length === 1 ? '' : 's'}):`);
     for (const err of errors) console.error(`  - ${err}`);
-    console.error('\nAdd an entry with a "category" to src/js/patches/patch-metadata.js for each patch above.');
+    console.error('\nAdd an entry with a "category" to src/js/patches/PatchMetadata.js for each patch above.');
     process.exit(1);
 }
 

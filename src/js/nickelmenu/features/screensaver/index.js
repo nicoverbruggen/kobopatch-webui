@@ -1,4 +1,4 @@
-import { loadBundledAsset } from '../assets.js';
+import { loadBundledAsset } from '../Assets.js';
 
 export const SCREENSAVER_MOON_URL = new URL('./moon.png', import.meta.url).href;
 

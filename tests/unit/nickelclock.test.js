@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import JSZip from 'jszip';
 
 import nickelclock, { TOGGLE_NICKELCLOCK_SCRIPT_URL } from '../../src/js/nickelmenu/features/nickelclock/index.js';
-import { menuItemPosition } from '../../src/js/nickelmenu/features/menu-order.js';
-import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
-import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
+import { menuItemPosition } from '../../src/js/nickelmenu/features/MenuOrder.js';
+import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/Archive.js';
+import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/Uninstaller.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 import { RecordingDevice, createInstaller, createProgressRecorder, koboRootTgzPath } from './test-helpers.js';
 

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
-import { createTerminal } from '../../src/js/shell/terminal.js';
-import { AUDIT_LOG_DIRECTORY } from '../../src/js/kobo/audit-log.js';
+import { createTerminal } from '../../src/js/shell/Terminal.js';
+import { AUDIT_LOG_DIRECTORY } from '../../src/js/kobo/AuditLog.js';
 import { RecordingDevice, bytes, text } from './test-helpers.js';
 
 async function withDom(run) {

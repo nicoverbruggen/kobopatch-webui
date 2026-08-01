@@ -8,7 +8,7 @@
  * here, and the mechanics come from `CustomizationDialog`.
  */
 
-import { requireElement, requireInput } from '../../../shell/dom.js';
+import { requireElement, requireInput } from '../../../shell/DOM.js';
 import { CustomizationDialog } from '../../CustomizationDialog.js';
 import {
     createDefaultTabsCustomization,
@@ -18,7 +18,7 @@ import {
     visibleTabCount,
     TAB_LABEL_KEYS,
     TAB_VISIBILITY_KEYS,
-} from './customization.js';
+} from './TabsCustomization.js';
 import { defaultTabLabels } from './index.js';
 
 // A minimal bottom-navigation glyph for the summary chip. Uses currentColor so

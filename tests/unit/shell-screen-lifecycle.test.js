@@ -48,6 +48,7 @@ function makeNav() {
             updatePatchCount: record('updatePatchCount'),
             configureFirmwareStep: record('configureFirmwareStep'),
         },
+        deactivateFlow: () => {},
         nickelMenu: { resetNickelMenuState: record('resetNickelMenuState') },
         showError: record('showError'),
         goToModeSelection: record('goToModeSelection'),

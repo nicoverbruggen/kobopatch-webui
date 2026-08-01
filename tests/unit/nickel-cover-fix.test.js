@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 
 import nickelCoverFix from '../../src/js/nickelmenu/features/nickel-cover-fix/index.js';
 import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
-import { buildTarGz } from '../../src/js/nickelmenu/archive.js';
-import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
-import { isOptionalCleanupPresent } from '../../src/js/nickelmenu/probes.js';
+import { buildTarGz } from '../../src/js/nickelmenu/Archive.js';
+import { executeNickelMenuRemoval } from '../../src/js/nickelmenu/Uninstaller.js';
+import { isOptionalCleanupPresent } from '../../src/js/nickelmenu/Probes.js';
 import { RecordingDevice, bytes, createInstaller, createProgressRecorder } from './test-helpers.js';
 
 // The mod's published KoboRoot.tgz layout: the NickelHook plugin plus the

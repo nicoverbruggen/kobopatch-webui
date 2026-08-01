@@ -3,8 +3,8 @@
  * device's key files, and the "keep my existing NickelMenu config" question.
  */
 
-import { $qa, requireButton, requireElement, requireInput } from '../../shell/dom.js';
-import { prepareNmBackup, shouldOfferNmBackup } from '../nickelmenu-backup.js';
+import { $qa, requireButton, requireElement, requireInput } from '../../shell/DOM.js';
+import { prepareNmBackup, shouldOfferNmBackup } from './BackupPlan.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 const BACKUP_INTRO_AUTOMATIC =

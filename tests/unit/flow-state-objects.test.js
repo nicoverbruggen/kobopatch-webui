@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { NickelMenuSelection } from '../../src/js/flows/nickelmenu/NickelMenuSelection.js';
 import { NickelMenuOutcome } from '../../src/js/flows/nickelmenu/NickelMenuOutcome.js';
 import { PatchesBuild } from '../../src/js/flows/patches/PatchesBuild.js';
-import { isDefaultMenuCustomization } from '../../src/js/nickelmenu/customization.js';
+import { isDefaultMenuCustomization } from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // The three state objects Phase 3 split out of `Session`. What matters about each
 // is its *lifetime* — which reset clears it and which deliberately does not —

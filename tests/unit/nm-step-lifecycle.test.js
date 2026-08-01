@@ -8,7 +8,7 @@ import { DetectedInstallation } from '../../src/js/flows/nickelmenu/DetectedInst
 import { NickelMenuSelection } from '../../src/js/flows/nickelmenu/NickelMenuSelection.js';
 import { CustomizationDialogs } from '../../src/js/flows/nickelmenu/CustomizationDialogs.js';
 import { CustomizationDrafts } from '../../src/js/flows/nickelmenu/CustomizationDrafts.js';
-import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/customization.js';
+import { createDefaultMenuCustomization } from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // A step wires listeners onto markup that outlives it, so constructing one twice
 // without discarding the first leaves both sets attached and a single user

@@ -15,7 +15,7 @@ import {
     NM_MENU_ICON_CUSTOM_PNG_PATH,
     NM_MENU_ICON_CUSTOM_SVG_PATH,
     NM_MENU_PRESET_ICONS,
-} from '../../src/js/nickelmenu/customization.js';
+} from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // A NickelMenu config line is ':'-delimited and newline-terminated, so a label written into it
 // must never be able to smuggle a ':' (extra field) or a newline (forged directive). Every label

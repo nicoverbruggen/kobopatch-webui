@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { koboHardwareIds, minimumSupportedFirmware, parseKoboVersion, compareFirmware, meetsMinimumVersion } from '../../src/js/kobo/version.js';
+import { koboHardwareIds, minimumSupportedFirmware, parseKoboVersion, compareFirmware, meetsMinimumVersion } from '../../src/js/kobo/Version.js';
 
 const HARDWARE_ID = '00000000-0000-0000-0000-000000000390';
 const UNKNOWN_HARDWARE_ID = '00000000-0000-0000-0000-999999999999';

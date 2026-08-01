@@ -8,7 +8,7 @@
 // Why it exists: the real kobopatch (native binary + WASM) needs a config file
 // with the file→target map. In production the browser never writes one — it
 // synthesizes the config in-memory at runtime via PatchUI.generateConfig()
-// (src/js/patches/ui.js). The test harnesses drive the real kobopatch directly,
+// (src/js/patches/PatchUI.js). The test harnesses drive the real kobopatch directly,
 // so they regenerate the equivalent config on demand from patches/index.json
 // (the single source of truth, since the source dirs no longer ship a
 // kobopatch.yaml).

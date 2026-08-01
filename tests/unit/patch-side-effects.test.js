@@ -6,7 +6,7 @@ import {
     applyPatchSideEffectConfSettings,
     patchSideEffectConfSettings,
     selectedPatchSideEffects,
-} from '../../src/js/patches/side-effects.js';
+} from '../../src/js/patches/SideEffects.js';
 
 test('selectedPatchSideEffects returns no effects for unrelated patches', () => {
     assert.deepEqual(selectedPatchSideEffects(['Remove footer (row3) on new home screen']), []);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getSoftwareUrl, getChannelsForVersion, compareFirmwareChannelsDescending } from '../../src/js/kobo/software-urls.js';
+import { getSoftwareUrl, getChannelsForVersion, compareFirmwareChannelsDescending } from '../../src/js/kobo/SoftwareURLs.js';
 
 // The getters read the manifest from window.FIRMWARE_DOWNLOADS (set by
 // loadSoftwareUrls in the app). Seed that global directly here so the lookups

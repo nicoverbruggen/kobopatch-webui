@@ -4,8 +4,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { DeviceScreen } from '../../src/js/shell/DeviceScreen.js';
-import { $q } from '../../src/js/shell/dom.js';
-import { TL } from '../../src/js/shell/strings.js';
+import { $q } from '../../src/js/shell/DOM.js';
+import { TL } from '../../src/js/shell/Strings.js';
 
 // Driven through `connectAndShow()` rather than by poking the private renderers,
 // so these assert what a user ends up looking at. The serial masking in

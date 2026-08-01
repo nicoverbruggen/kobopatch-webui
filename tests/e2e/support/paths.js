@@ -22,7 +22,7 @@ const paths = {
     repo: (...segments) => path.join(REPO_ROOT, ...segments),
 
     // Dynamic-import specifier for an app ESM module under `src/`, e.g.
-    //   await import(paths.src('js/patches/patch-metadata.js'))
+    //   await import(paths.src('js/patches/PatchMetadata.js'))
     // Keeps the `import()` explicit at the call site while avoiding the brittle
     // `../../../../src` specifiers whose depth silently breaks when a spec moves.
     src: (relPath) => pathToFileURL(path.join(SRC_DIR, relPath)).href,

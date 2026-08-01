@@ -1,6 +1,6 @@
-import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { parseTarGz } from '../../Archive.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../Installables.js';
 
 // Installs Cadmus, an alternative Kobo reader app, from its Kobo tarball.
 // The upstream archive is rooted at the app directory contents, so each file is

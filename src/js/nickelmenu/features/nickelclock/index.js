@@ -1,9 +1,9 @@
 import JSZip from 'jszip';
 
-import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
-import { loadBundledAsset } from '../assets.js';
+import { parseTarGz } from '../../Archive.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../Installables.js';
+import { loadBundledAsset } from '../Assets.js';
 
 export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclock.sh', import.meta.url).href;
 

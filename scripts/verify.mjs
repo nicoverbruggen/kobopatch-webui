@@ -196,6 +196,20 @@ const allPhases = [
         },
     },
     { name: 'Screenshots (Playwright)', quick: true, task: () => run(join(e2eDir, 'scripts/run-screenshots.sh'), []) },
+    // Last on purpose: this is a whole-repo consistency assertion rather than a
+    // fast fail-early check, and `verify` halts on the first failure. Running it
+    // ahead of the suites would hide every real test result behind it.
+    // The selftest runs first and takes a second. It plants a failure against each
+    // of the three checks, so a check that has quietly stopped working fails here
+    // rather than passing silently for the rest of the project's life.
+    {
+        name: 'Check imports',
+        quick: true,
+        task: async () => {
+            await run('node', ['scripts/check-imports.mjs', '--selftest']);
+            await run('node', ['scripts/check-imports.mjs']);
+        },
+    },
 ];
 
 for (const phaseDef of allPhases) {

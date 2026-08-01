@@ -50,16 +50,7 @@ export const STEP_IDS = [
     'step-building',
     'step-done',
     'step-error',
-    'step-test-a',
-    'step-test-b',
-    'step-test-building',
-    'step-test-done',
 ];
-
-// The step ids the step-machine specs invent for their own test flows. The rest
-// of STEP_IDS comes from the real markup, so only these have to be synthesized.
-const SYNTHETIC_STEP_IDS = STEP_IDS.filter((id) => id.startsWith('step-test-'));
-const syntheticStepDivs = SYNTHETIC_STEP_IDS.map((id) => `<div id="${id}" hidden></div>`).join('');
 
 // `src/index.html` with its step partials expanded. Every id and every element
 // relationship matches the shipped page; the build additionally substitutes the
@@ -68,7 +59,7 @@ const syntheticStepDivs = SYNTHETIC_STEP_IDS.map((id) => `<div id="${id}" hidden
 // constructors and throw when one is missing, so a stub skeleton cannot host
 // them — and building from the real markup means deleting an id from a partial
 // now breaks a unit test instead of only an E2E run.
-const dom = new JSDOM(readIndexHtml().replace('</body>', `${syntheticStepDivs}</body>`), {
+const dom = new JSDOM(readIndexHtml(), {
     pretendToBeVisual: true,
 });
 

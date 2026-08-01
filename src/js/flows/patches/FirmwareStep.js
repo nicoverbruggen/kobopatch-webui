@@ -7,10 +7,10 @@
  * elements (which `BuildingStep` owns) and hands off to `done`.
  */
 
-import { formatBytes, populateList, requireButton, requireElement } from '../../shell/dom.js';
-import { TL } from '../../shell/strings.js';
-import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher } from '../patches-execute.js';
-import { buildAdditionalFilesTgz, mergeAdditionalFilesIntoTgz } from '../../patches/additional-files.js';
+import { formatBytes, populateList, requireButton, requireElement } from '../../shell/DOM.js';
+import { TL } from '../../shell/Strings.js';
+import { appendLog, downloadFirmware, extractOriginalTgz, runPatcher } from './BuildExecutor.js';
+import { buildAdditionalFilesTgz, mergeAdditionalFilesIntoTgz } from '../../patches/AdditionalFiles.js';
 import { Step } from '../Step.js';
 
 const WAIT_HINT_RESTORE = 'Please wait while the original software is being downloaded and extracted...';

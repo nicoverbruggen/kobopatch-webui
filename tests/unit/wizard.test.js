@@ -4,9 +4,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { Wizard } from '../../src/js/Wizard.js';
-import { Session } from '../../src/js/shell/session.js';
-import { $ } from '../../src/js/shell/dom.js';
-import { stepHistory } from '../../src/js/shell/navigation.js';
+import { Session } from '../../src/js/shell/Session.js';
+import { $ } from '../../src/js/shell/DOM.js';
+import { hideAllStepsExcept, resetHistory } from '../../src/js/shell/Navigation.js';
+import { TL } from '../../src/js/shell/Strings.js';
 
 // The wizard owns every screen and flow *and* is handed to each of them. That
 // cycle closes only because no constructor reads a sibling field — the rule in
@@ -36,6 +37,7 @@ function makeSession() {
             getEnabledCount: () => 0,
             getAdditionalFileCount: () => 0,
             getAdditionalFiles: () => [],
+            getEnabledPatches: () => [],
             validateAdditionalFiles: () => ({ ok: true, message: '' }),
             hasEdits: () => false,
         },
@@ -75,7 +77,7 @@ test('every screen and flow receives the wizard itself, not a copy', () => {
 });
 
 test('start() shows the landing screen with the breadcrumb hidden', () => {
-    stepHistory.length = 1;
+    resetHistory();
     const wizard = new Wizard(makeSession());
 
     wizard.start();
@@ -172,6 +174,78 @@ test('device-Back leaves the breadcrumb on step 1 for the next screen to reveal'
 
     assert.equal($('step-nav').hidden, true);
     assert.equal(markedStep(), 1, 'the persisted breadcrumb must be step 1');
+    wizard.destroy();
+});
+
+test('the wizard tracks which flow is being navigated', async () => {
+    // `activeFlow` was a module global in `step-machine.js`. It is a wizard field
+    // now, fed from inside `createFlow`'s `go()` — so it updates on *every*
+    // navigation, including the ones that do not go through a flow class's own
+    // `go()` wrapper.
+    const wizard = new Wizard(makeSession());
+    assert.equal(wizard.activeFlow, null, 'nothing is active before the first navigation');
+
+    await wizard.patches.goToPatches();
+    assert.equal(wizard.activeFlow, wizard.patches.flow, 'entering the patches flow marks it active');
+
+    await wizard.nickelMenu.goToNickelMenuConfig();
+    assert.equal(wizard.activeFlow, wizard.nickelMenu.flow, 'and the last flow to navigate wins');
+
+    wizard.deactivateFlow();
+    assert.equal(wizard.activeFlow, null, 'returning to mode selection clears it');
+    wizard.destroy();
+});
+
+test('entering the patches flow by its shortcut also marks it active', async () => {
+    // `goToPatches` and `goToBuild` call the raw `flow.go` rather than the
+    // class's own `go()`, so a hook placed in the wrapper would miss both. This
+    // is the normal entry from mode selection, not an edge case.
+    const wizard = new Wizard(makeSession());
+
+    await wizard.patches.goToBuild();
+
+    assert.equal(wizard.activeFlow, wizard.patches.flow);
+    wizard.destroy();
+});
+
+test('every flow step is an element navigation knows how to hide', () => {
+    // The step machine used to keep its own hide-list, rebuilt by accumulating
+    // each `domId` registered with `createFlow`. There is one list now, owned by
+    // `navigation.js` — which is only equivalent while every flow step is in it.
+    // A step whose element navigation does not know would simply never be hidden,
+    // leaving two screens on top of each other.
+    const wizard = new Wizard(makeSession());
+    const steps = [...wizard.patches.steps, ...wizard.nickelMenu.steps];
+    assert.ok(steps.length >= 12, `expected both flows' steps, got ${steps.length}`);
+
+    // Every `.step` ships with `hidden` already set, so reading it straight from
+    // the harness document proves nothing: a step the hide-list never touches
+    // keeps the `hidden` it was born with. Make them all visible first, so only
+    // an element `hideAllStepsExcept` actually reached ends up hidden.
+    for (const step of steps) $(step.domId).hidden = false;
+    hideAllStepsExcept($('step-error'));
+    const notHidden = steps.map((step) => step.domId).filter((domId) => $(domId).hidden === false);
+
+    assert.deepEqual(notHidden, [], "these step elements are missing from navigation.js's list");
+    wizard.destroy();
+});
+
+test('the NickelMenu breadcrumb reads both the option and manual mode', async () => {
+    // `nickelMenuNavLabels(option, manualMode)` takes two arguments while the
+    // step machine calls `navLabels(ctx)` with one; `NickelMenuStep` bridges them
+    // with an arrow of the right arity. Break that bridge and `manualMode` is
+    // `undefined`, so the manual-remove branch never fires and every removal gets
+    // the connected-device breadcrumb — a wrong label set that looks plausible
+    // and only shows up on the screen after.
+    const wizard = new Wizard(makeSession());
+    wizard.session.manualMode = true;
+    wizard.nickelMenu.selection.option = 'remove';
+
+    await wizard.nickelMenu.go('manual-remove');
+
+    const labels = [...document.querySelectorAll('#step-nav li')].map((li) => li.textContent);
+    assert.deepEqual(labels, TL.NAV_NICKELMENU_MANUAL_REMOVE);
+    assert.notDeepEqual(labels, TL.NAV_NICKELMENU_REMOVE, 'the connected-device removal set is the wrong one here');
     wizard.destroy();
 });
 

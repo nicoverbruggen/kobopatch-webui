@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parsePreviousNickelMenuConfiguration } from '../../src/js/nickelmenu/previous-configuration.js';
-import { FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/catalogue.js';
+import { parsePreviousNickelMenuConfiguration } from '../../src/js/nickelmenu/PreviousConfiguration.js';
+import { FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/FontCatalogue.js';
 
 function familyFiles(...ids) {
     return FONT_FAMILIES.filter((family) => ids.includes(family.id)).flatMap((family) => family.files.map((file) => ({ path: `fonts/${file}`, type: 'file' })));

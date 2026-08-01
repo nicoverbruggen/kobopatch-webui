@@ -8,11 +8,11 @@
  * the flow, and tearing it down when the user leaves for mode selection.
  */
 
-import { requireElement } from '../../shell/dom.js';
-import { createFlow } from '../../shell/step-machine.js';
-import { createTerminal } from '../../shell/terminal.js';
+import { requireElement } from '../../shell/DOM.js';
+import { createFlow } from '../../shell/StepMachine.js';
+import { createTerminal } from '../../shell/Terminal.js';
 import { NICKELMENU_FEATURES } from '../../nickelmenu/features/index.js';
-import { installablesManifest } from '../../nickelmenu/installables.js';
+import { installablesManifest } from '../../nickelmenu/Installables.js';
 import { DetectedInstallation } from './DetectedInstallation.js';
 import { NickelMenuSelection } from './NickelMenuSelection.js';
 import { NickelMenuOutcome } from './NickelMenuOutcome.js';
@@ -83,7 +83,7 @@ export class NickelMenuFlow {
         this.manualRemove = new ManualRemoveStep(this);
         this.steps = [this.config, this.presetConflict, this.features, this.backup, this.review, this.installing, this.done, this.manualRemove];
 
-        this.flow = createFlow({ id: 'nickelmenu', steps: this.steps });
+        this.flow = createFlow({ id: 'nickelmenu', steps: this.steps, onActivate: (flow) => nav.setActiveFlow(flow) });
     }
 
     /**

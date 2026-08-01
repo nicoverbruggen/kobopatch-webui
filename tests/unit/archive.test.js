@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildTar, buildTarGz, parseTar, parseTarGz } from '../../src/js/nickelmenu/archive.js';
+import { buildTar, buildTarGz, parseTar, parseTarGz } from '../../src/js/nickelmenu/Archive.js';
 
 function bytes(value) {
     return new TextEncoder().encode(value);

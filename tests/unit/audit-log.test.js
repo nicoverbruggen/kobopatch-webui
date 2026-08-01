@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { AuditLog, auditLogFileName } from '../../src/js/kobo/audit-log.js';
+import { AuditLog, auditLogFileName } from '../../src/js/kobo/AuditLog.js';
 import { RecordingDevice, text } from './test-helpers.js';
 
 test('auditLogFileName formats the run start time and type as yy-mm-dd_hh-mm-type.log', () => {

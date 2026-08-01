@@ -1,8 +1,8 @@
-import { appendToNickelHomeConfig } from '../helpers.js';
-import { loadBundledAsset } from '../assets.js';
-import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { appendToNickelHomeConfig } from '../Helpers.js';
+import { loadBundledAsset } from '../Assets.js';
+import { parseTarGz } from '../../Archive.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../Installables.js';
 
 export const TOGGLE_HIDDEN_HOME_SCRIPT_URL = new URL('./scripts/toggle_hidden_home.sh', import.meta.url).href;
 

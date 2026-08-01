@@ -10,9 +10,9 @@
  * separate from `DetectedInstallation`, which is reset by both.
  */
 
-import { createDefaultMenuCustomization } from '../../nickelmenu/customization.js';
-import { createDefaultTabsCustomization } from '../../nickelmenu/features/simplify-tabs/customization.js';
-import { createDefaultFontsCustomization } from '../../nickelmenu/features/additional-fonts/customization.js';
+import { createDefaultMenuCustomization } from '../../nickelmenu/MenuCustomization.js';
+import { createDefaultTabsCustomization } from '../../nickelmenu/features/simplify-tabs/TabsCustomization.js';
+import { createDefaultFontsCustomization } from '../../nickelmenu/features/additional-fonts/FontsCustomization.js';
 
 export class NickelMenuSelection {
     constructor() {

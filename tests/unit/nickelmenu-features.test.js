@@ -24,12 +24,12 @@ import {
     normalizeTabLabel,
     sanitizeTabLabel,
     visibleTabCount,
-} from '../../src/js/nickelmenu/features/simplify-tabs/customization.js';
+} from '../../src/js/nickelmenu/features/simplify-tabs/TabsCustomization.js';
 import sideloadedMode from '../../src/js/nickelmenu/features/sideloaded-mode/index.js';
-import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/constants.js';
-import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/customization.js';
-import { FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/catalogue.js';
-import { revertableConfSettings } from '../../src/js/kobo/configuration.js';
+import { NM_ITEMS_FILE, NICKELHOME_CONFIG_FILE } from '../../src/js/nickelmenu/Constants.js';
+import { isValidMenuLabel, NM_MENU_ICON_CUSTOM_PNG_PATH, sanitizeMenuLabel } from '../../src/js/nickelmenu/MenuCustomization.js';
+import { FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/FontCatalogue.js';
+import { revertableConfSettings } from '../../src/js/kobo/Configuration.js';
 import { createResponse, text } from './test-helpers.js';
 
 const hideNotices = homeHiders.find((f) => f.id === 'hide-notices');

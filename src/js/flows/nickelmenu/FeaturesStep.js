@@ -4,12 +4,12 @@
  * recommendation banner.
  */
 
-import { $q, $qa, requireButton, requireElement } from '../../shell/dom.js';
-import { renderNmCheckboxList } from '../../nickelmenu/checkbox-list.js';
+import { $q, $qa, requireButton, requireElement } from '../../shell/DOM.js';
+import { renderNmCheckboxList } from '../../nickelmenu/CheckboxList.js';
 import { NICKELMENU_FEATURES } from '../../nickelmenu/features/index.js';
-import { featureDisabledReason } from '../../nickelmenu/selection.js';
-import { getKoboUserCount as probeGetKoboUserCount } from '../../nickelmenu/probes.js';
-import { meetsMinimumVersion } from '../../kobo/version.js';
+import { featureDisabledReason } from '../../nickelmenu/Selection.js';
+import { getKoboUserCount as probeGetKoboUserCount } from '../../nickelmenu/Probes.js';
+import { meetsMinimumVersion } from '../../kobo/Version.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 const COLLAPSED_SECTIONS = new Set(['Alternative reading apps', 'Advanced', 'Legacy']);

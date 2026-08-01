@@ -13,8 +13,8 @@ import {
     readAdditionalFilesArchive,
     sha256Hex,
     validateAdditionalFileDestination,
-} from '../../src/js/patches/additional-files.js';
-import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
+} from '../../src/js/patches/AdditionalFiles.js';
+import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/Archive.js';
 
 function bytes(value) {
     return new TextEncoder().encode(value);

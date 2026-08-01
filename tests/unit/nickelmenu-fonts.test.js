@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
-import { FONT_COLLECTIONS, FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/catalogue.js';
+import { FONT_COLLECTIONS, FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/FontCatalogue.js';
 import {
     cloneFontsCustomization,
     createDefaultFontsCustomization,
@@ -12,7 +12,7 @@ import {
     resolveSelectedFamilyIds,
     selectedFontCount,
     selectedFontFamilies,
-} from '../../src/js/nickelmenu/features/additional-fonts/customization.js';
+} from '../../src/js/nickelmenu/features/additional-fonts/FontsCustomization.js';
 
 const coreIds = FONT_FAMILIES.filter((family) => family.collection === 'core').map((family) => family.id);
 

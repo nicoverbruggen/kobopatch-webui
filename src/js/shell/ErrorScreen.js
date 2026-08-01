@@ -6,16 +6,16 @@
  * unexpected failures on the same screen.
  *
  * The global handling stays here rather than in its own module because
- * `#handleUnexpectedError` calls `showError` and shares its re-entrancy flag —
+ * `#handleUnexpectedError` calls `showError` and shares its guard flag —
  * splitting the file would cut a genuine coupling. It is no longer a constructor
  * side effect, though: `installGlobalHandlers()` is explicit, so the point at
  * which the app starts catching unexpected errors is findable and orderable.
  */
 
-import { TL } from './strings.js';
-import { $, triggerDownload, requireButton, requireElement } from './dom.js';
-import { showStep, showNav, hideNav, stepHistory } from './navigation.js';
-import { getActiveFlow } from './step-machine.js';
+import { TL } from './Strings.js';
+import { $, requireButton, requireElement } from './DOM.js';
+import { triggerDownload } from './Transfer.js';
+import { showStep, showNav, hideNav, historyIncludes, unwindHistoryTo } from './Navigation.js';
 import { ShellScreen } from './ShellScreen.js';
 
 export class ErrorScreen extends ShellScreen {
@@ -24,9 +24,13 @@ export class ErrorScreen extends ShellScreen {
         super(nav, 'step-error');
 
         // `step-patches` is not this screen's element. It is bound because the
-        // back-out path unwinds `navigation.js`'s module-global `stepHistory` by
-        // element identity, and that array holds elements rather than ids. Both
-        // globals are Phase 6's to untangle; until then this reach is deliberate.
+        // back-out path unwinds the shared back-stack by element identity, and
+        // that stack holds elements rather than ids. Phase 6 made the stack
+        // private and named the two operations (`historyIncludes`,
+        // `unwindHistoryTo`), so this is a call rather than raw array surgery —
+        // but the error screen still has to name another screen's element, and
+        // removing that means an owned `Navigation` instance threaded through 62
+        // call sites. That belongs with the TypeScript conversion.
         this.stepPatches = requireElement('step-patches');
 
         this.btnRetry = requireButton('btn-retry');
@@ -77,9 +81,9 @@ export class ErrorScreen extends ShellScreen {
             this.log.hidden = true;
         }
 
-        const flow = getActiveFlow();
+        const flow = this.nav.activeFlow;
         const hasRecovery = flow && flow.recoveryTarget() && flow.current();
-        const hasBackStep = stepHistory.includes(this.stepPatches);
+        const hasBackStep = historyIncludes(this.stepPatches);
 
         // Ordered: a device-write failure outranks an explicit title, which
         // outranks a recovery target. Do not reorder — each branch picks a
@@ -179,7 +183,7 @@ export class ErrorScreen extends ShellScreen {
             'click',
             () => {
                 this.unexpectedErrorShown = false;
-                const flow = getActiveFlow();
+                const flow = this.nav.activeFlow;
                 const recoveryDomId = flow && flow.recoveryTarget();
 
                 if (recoveryDomId) {
@@ -199,10 +203,7 @@ export class ErrorScreen extends ShellScreen {
                 this.btnDownloadLog.hidden = true;
                 this.auditLog = null;
                 this.btnRetry.classList.remove('danger');
-                stepHistory.pop();
-                while (stepHistory.length > 0 && stepHistory[stepHistory.length - 1] !== this.stepPatches) {
-                    stepHistory.pop();
-                }
+                unwindHistoryTo(this.stepPatches);
                 showNav();
                 showStep(this.stepPatches);
             },

@@ -4,10 +4,10 @@
  * Download buttons that start the install.
  */
 
-import { populateList, requireButton, requireElement } from '../../shell/dom.js';
-import { nmReviewModel } from '../../nickelmenu/selection.js';
-import { TL } from '../../shell/strings.js';
-import { executeNmInstall, renderReviewNotices } from '../nickelmenu-execute.js';
+import { populateList, requireButton, requireElement } from '../../shell/DOM.js';
+import { nmReviewModel } from '../../nickelmenu/Selection.js';
+import { TL } from '../../shell/Strings.js';
+import { executeNmInstall, renderReviewNotices } from './InstallExecutor.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 export class ReviewStep extends NickelMenuStep {

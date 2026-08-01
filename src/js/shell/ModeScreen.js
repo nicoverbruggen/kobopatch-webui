@@ -7,10 +7,9 @@
  * NickelMenu flows all come back to.
  */
 
-import { $q, $qa, requireButton, requireElement } from './dom.js';
-import { setNavLabels, setNavStep, setupCardRadios } from './navigation.js';
-import { deactivateFlow } from './step-machine.js';
-import { TL } from './strings.js';
+import { $q, $qa, requireButton, requireElement } from './DOM.js';
+import { setNavLabels, setNavStep, setupCardRadios } from './Navigation.js';
+import { TL } from './Strings.js';
 import { ShellScreen } from './ShellScreen.js';
 
 export class ModeScreen extends ShellScreen {
@@ -30,7 +29,7 @@ export class ModeScreen extends ShellScreen {
      * card when the connected device has none available.
      */
     goToModeSelection() {
-        deactivateFlow();
+        this.nav.deactivateFlow();
         this.nav.nickelMenu.resetNickelMenuState();
         this.btnNext.disabled = true;
 

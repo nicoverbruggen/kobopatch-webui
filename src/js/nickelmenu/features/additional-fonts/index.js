@@ -1,8 +1,8 @@
 import JSZip from 'jszip';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAssetUrl, installableSize } from '../../installables.js';
-import { FONT_FAMILIES } from './catalogue.js';
-import { fontCollectionsToDownload, selectedFontFamilies } from './customization.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableAssetUrl, installableSize } from '../../Installables.js';
+import { FONT_FAMILIES } from './FontCatalogue.js';
+import { fontCollectionsToDownload, selectedFontFamilies } from './FontsCustomization.js';
 
 // Installs font families from the ebook-fonts collection (the Kobo-optimized KF
 // builds) so they appear in the in-book font dropdown. The collection ships as

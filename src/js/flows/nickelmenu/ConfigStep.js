@@ -8,16 +8,16 @@
  * flow's `DetectedInstallation`.
  */
 
-import { $q, $qa, requireButton, requireElement } from '../../shell/dom.js';
-import { setupCardRadios } from '../../shell/navigation.js';
-import { renderNmCheckboxList } from '../../nickelmenu/checkbox-list.js';
+import { $q, $qa, requireButton, requireElement } from '../../shell/DOM.js';
+import { setupCardRadios } from '../../shell/Navigation.js';
+import { renderNmCheckboxList } from '../../nickelmenu/CheckboxList.js';
 import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
     detectInstalledNickelMenuFeatureIds,
     detectPresetConflicts as probeDetectPresetConflicts,
     readPreviousNickelMenuConfiguration,
-} from '../../nickelmenu/probes.js';
-import { track } from '../../shell/analytics.js';
+} from '../../nickelmenu/Probes.js';
+import { track } from '../../shell/Analytics.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 const PRESET_TITLE_REINSTALL = 'Modify current setup (and customize)';

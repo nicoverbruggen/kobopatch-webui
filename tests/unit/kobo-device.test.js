@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { bytes, text } from './test-helpers.js';
 
 globalThis.window = {};
-const { KoboDevice } = await import('../../src/js/kobo/device.js');
+const { KoboDevice } = await import('../../src/js/kobo/KoboDevice.js');
 
 function copyBytes(data) {
     return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);

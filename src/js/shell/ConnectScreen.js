@@ -7,10 +7,10 @@
  * was the one element-ownership violation the conversion fixes.
  */
 
-import { KoboDevice } from '../kobo/device.js';
-import { requireButton, requireElement } from './dom.js';
-import { showNav } from './navigation.js';
-import { track } from './analytics.js';
+import { KoboDevice } from '../kobo/KoboDevice.js';
+import { requireButton, requireElement } from './DOM.js';
+import { showNav } from './Navigation.js';
+import { track } from './Analytics.js';
 import { ShellScreen } from './ShellScreen.js';
 
 export class ConnectScreen extends ShellScreen {

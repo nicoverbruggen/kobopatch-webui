@@ -1,6 +1,6 @@
-import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { parseTarGz } from '../../Archive.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../Installables.js';
 
 // Installs NickelDissolve (https://github.com/nicoverbruggen/NickelDissolve),
 // an experimental mod that gives page turns a Kindle-style directional wipe

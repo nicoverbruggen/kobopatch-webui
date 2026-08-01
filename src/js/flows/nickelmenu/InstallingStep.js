@@ -7,7 +7,7 @@
  * An error recovers to the review step.
  */
 
-import { requireElement } from '../../shell/dom.js';
+import { requireElement } from '../../shell/DOM.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 export class InstallingStep extends NickelMenuStep {

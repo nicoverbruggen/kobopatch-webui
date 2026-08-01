@@ -5,8 +5,9 @@
  * mode, error — are shown with `showStep()` from `navigation.js`, not with
  * `flow.go()`. They have no step id, no breadcrumb index of their own, no
  * `onEnter`, no back target and no recovery step, because nothing consumes
- * those: `step-machine.js`'s `SHELL_STEP_IDS` lists their DOM ids only so a flow
- * transition hides them. It is a hide-list, not a step registry.
+ * those. A flow transition hides them along with everything else, because
+ * `navigation.js` owns the one list of step elements and both `showStep` and
+ * `flow.go` hide through it.
  *
  * So this is a **sibling** of `Step`, not a subclass. A shell screen carrying
  * `id`/`domId`/`navIndex`/`onEnter` would be claiming the step-machine
@@ -23,8 +24,8 @@
  * borrow its signal, and nothing else owns a controller.
  */
 
-import { requireElement } from './dom.js';
-import { showStep } from './navigation.js';
+import { requireElement } from './DOM.js';
+import { showStep } from './Navigation.js';
 
 export class ShellScreen {
     /**

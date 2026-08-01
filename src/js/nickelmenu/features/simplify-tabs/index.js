@@ -1,7 +1,7 @@
-import { prependToNmConfig } from '../helpers.js';
-import { loadBundledAsset } from '../assets.js';
-import { localeLanguage } from '../../../kobo/locale.js';
-import { normalizeTabLabel, resolveTabVisibility } from './customization.js';
+import { prependToNmConfig } from '../Helpers.js';
+import { loadBundledAsset } from '../Assets.js';
+import { localeLanguage } from '../../../kobo/Locale.js';
+import { normalizeTabLabel, resolveTabVisibility } from './TabsCustomization.js';
 
 export const TOGGLE_TABS_SCRIPT_URL = new URL('./scripts/toggle_tabs.sh', import.meta.url).href;
 

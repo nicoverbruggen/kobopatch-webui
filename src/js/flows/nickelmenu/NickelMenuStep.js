@@ -6,7 +6,7 @@
  */
 
 import { Step } from '../Step.js';
-import { TL } from '../../shell/strings.js';
+import { TL } from '../../shell/Strings.js';
 
 /**
  * Breadcrumb labels for every NickelMenu screen; the remove path has its own set,
@@ -30,11 +30,11 @@ export function nickelMenuNavLabels(option, manualMode) {
 /** A NickelMenu wizard screen: a Step carrying the flow's shared breadcrumb rule. */
 export class NickelMenuStep extends Step {
     /**
-     * `navLabels` is assigned as a closure over the owning flow, not as a
-     * prototype method. The step machine reads it off the step and calls it
-     * detached (`step-machine.js:63` and `:130`), so a method would lose `this`;
-     * an arrow captured here keeps working. It reads `owner.selection` when it
-     * runs rather than when it is created, so construction order does not matter.
+     * `navLabels` is a closure over the owning flow. A prototype method would
+     * work too since Phase 6 — the step machine reads and calls in one
+     * expression, so `this` binds — but this form is kept because it reads
+     * `owner.selection` when it runs rather than when it is created, which is
+     * what lets a step be built before the selection it will describe.
      *
      * @param {object} owner - the NickelMenuFlow that constructed this step
      * @param {object} config - as `Step`, minus `navLabels`

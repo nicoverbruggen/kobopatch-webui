@@ -12,9 +12,9 @@
  * a file asynchronously. That is baseline behavior, not an oversight to correct.
  */
 
-import { cloneMenuCustomization } from '../../nickelmenu/customization.js';
-import { cloneTabsCustomization } from '../../nickelmenu/features/simplify-tabs/customization.js';
-import { cloneFontsCustomization } from '../../nickelmenu/features/additional-fonts/customization.js';
+import { cloneMenuCustomization } from '../../nickelmenu/MenuCustomization.js';
+import { cloneTabsCustomization } from '../../nickelmenu/features/simplify-tabs/TabsCustomization.js';
+import { cloneFontsCustomization } from '../../nickelmenu/features/additional-fonts/FontsCustomization.js';
 
 export class CustomizationDrafts {
     /** @param {import('./NickelMenuSelection.js').NickelMenuSelection} selection */

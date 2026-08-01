@@ -5,8 +5,8 @@
  * Read-only apart from the acknowledgement checkbox, which gates Continue.
  */
 
-import { populateList, requireButton, requireElement, requireInput } from '../../shell/dom.js';
-import { TL } from '../../shell/strings.js';
+import { populateList, requireButton, requireElement, requireInput } from '../../shell/DOM.js';
+import { TL } from '../../shell/Strings.js';
 import { NickelMenuStep } from './NickelMenuStep.js';
 
 export class PresetConflictStep extends NickelMenuStep {

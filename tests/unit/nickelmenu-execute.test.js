@@ -3,9 +3,10 @@ import './dom-harness.js'; // renderNmDoneStatus writes into real markup
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { executeNmInstall, renderNmDoneStatus } from '../../src/js/flows/nickelmenu-execute.js';
+import { executeNmInstall, renderNmDoneStatus } from '../../src/js/flows/nickelmenu/InstallExecutor.js';
 import { RecordingDevice, createInstaller, useCustomMenuAssetFetch } from './test-helpers.js';
-import { TL } from '../../src/js/shell/strings.js';
+import { createFlow } from '../../src/js/shell/StepMachine.js';
+import { TL } from '../../src/js/shell/Strings.js';
 
 // `nickelmenu-execute.js` performs the NickelMenu install and removal device
 // writes and had no unit test at all until this file. CONVENTIONS §5 requires the
@@ -101,6 +102,40 @@ test.beforeEach(() => {
 });
 test.afterEach(() => {
     restoreFetch();
+});
+
+// --- the active-flow hook on the raw navigation path ------------------------
+
+test('navigating from inside the installer still reports the active flow', async () => {
+    // `executeNmInstall` is handed the *raw* step-machine flow and calls
+    // `flow.go('installing')` / `flow.go('done')` directly, bypassing
+    // `NickelMenuFlow.go()`. The wizard learns which flow is active from a hook
+    // inside `createFlow`'s `go()` for exactly that reason — set it in the
+    // wrapper instead and a device-write failure would leave the error screen
+    // with a stale flow and the wrong recovery affordance.
+    const activated = [];
+    const flow = createFlow({
+        id: 'nickelmenu',
+        steps: [
+            { id: 'installing', domId: 'step-nm-installing', transient: true, recoveryStep: 'review' },
+            { id: 'review', domId: 'step-nm-review' },
+            { id: 'done', domId: 'step-nm-done' },
+        ],
+        onActivate: (active) => activated.push(active),
+    });
+
+    const device = createDevice({ failWritePath: KOBO_ROOT_TGZ });
+    await runInstall({
+        state: createState(device),
+        selection: createSelection({ option: 'remove' }),
+        outcome: createOutcome(),
+        flow,
+        dom: domFor(true),
+        showError: createErrorRecorder(),
+    });
+
+    assert.equal(activated.at(-1), flow, 'the flow that navigated is the one reported');
+    assert.equal(flow.recoveryTarget(), 'step-nm-review', 'so the error screen can offer a way back');
 });
 
 // --- the three exit paths ---------------------------------------------------

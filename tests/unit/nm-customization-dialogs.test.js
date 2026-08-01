@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { CustomizationDialogs } from '../../src/js/flows/nickelmenu/CustomizationDialogs.js';
 import { CustomizationDrafts } from '../../src/js/flows/nickelmenu/CustomizationDrafts.js';
 import { NickelMenuSelection } from '../../src/js/flows/nickelmenu/NickelMenuSelection.js';
-import { NM_MENU_DEFAULT_LABEL } from '../../src/js/nickelmenu/customization.js';
+import { NM_MENU_DEFAULT_LABEL } from '../../src/js/nickelmenu/MenuCustomization.js';
 
 // The three subclasses, through the registry that owns them. What is worth
 // pinning here is the per-feature behavior the base deliberately does not know

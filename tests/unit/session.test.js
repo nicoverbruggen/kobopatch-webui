@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { Session } from '../../src/js/shell/session.js';
+import { Session } from '../../src/js/shell/Session.js';
 
 const SERVICES = {
     device: { name: 'device' },
@@ -87,22 +87,6 @@ test('Session carries only shared wizard state — per-flow data lives on the fl
     for (const key of moved) {
         assert.equal(key in s, false, `${key} should no longer live on Session`);
     }
-});
-
-test('reset() restores wizard data without clearing the wired services', () => {
-    const s = newSession();
-    s.device = { connected: true };
-    s.manualMode = true;
-    s.selectedMode = 'patches';
-    s.isRestore = true;
-
-    s.reset();
-
-    assert.equal(s.manualMode, false);
-    assert.equal(s.selectedMode, null);
-    assert.equal(s.isRestore, false);
-    // reset() only clears wizard data; the service the app wired stays put.
-    assert.deepEqual(s.device, { connected: true });
 });
 
 test('resetDeviceContext clears device-derived fields but keeps the wizard mode', () => {

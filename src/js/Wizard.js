@@ -33,14 +33,25 @@ import { ManualVersionScreen } from './shell/ManualVersionScreen.js';
 import { ModeScreen } from './shell/ModeScreen.js';
 import { NickelMenuFlow } from './flows/nickelmenu/NickelMenuFlow.js';
 import { PatchesFlow } from './flows/patches/PatchesFlow.js';
-import { track } from './shell/analytics.js';
-import { setNavLabels, setNavStep } from './shell/navigation.js';
-import { TL } from './shell/strings.js';
+import { track } from './shell/Analytics.js';
+import { setNavLabels, setNavStep } from './shell/Navigation.js';
+import { TL } from './shell/Strings.js';
 
 export class Wizard {
-    /** @param {import('./shell/session.js').Session} session */
+    /** @param {import('./shell/Session.js').Session} session */
     constructor(session) {
         this.session = session;
+
+        /**
+         * The flow currently being navigated, or null after a return to mode
+         * selection. Set from inside `createFlow`'s `go()` via `onActivate`, so
+         * every navigation updates it including the ones that bypass the flow
+         * classes' own wrappers. Read by the error screen to decide whether it
+         * can offer a recovery target.
+         *
+         * @type {object|null}
+         */
+        this.activeFlow = null;
 
         // Constructed first: everything else needs its `showError`. Its
         // constructor is side-effect-free — the global handlers are installed
@@ -67,6 +78,16 @@ export class Wizard {
     }
 
     // ---- navigation edges ----
+
+    /** Record which flow is being navigated. Called by the step machine, not by screens. */
+    setActiveFlow(flow) {
+        this.activeFlow = flow;
+    }
+
+    /** Forget the active flow, so the error screen stops offering its recovery target. */
+    deactivateFlow() {
+        this.activeFlow = null;
+    }
 
     /** Show the error screen. See `ErrorScreen.showError` for the options. */
     showError(message, log, options) {

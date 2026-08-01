@@ -6,8 +6,8 @@ import {
     parsePreviousNickelMenuSelections,
     readPreviousNickelMenuConfiguration,
     readPreviousNickelMenuSelections,
-} from '../../src/js/nickelmenu/probes.js';
-import { nickelMenuManifestPath } from '../../src/js/nickelmenu/constants.js';
+} from '../../src/js/nickelmenu/Probes.js';
+import { nickelMenuManifestPath } from '../../src/js/nickelmenu/Constants.js';
 
 test('parsePreviousNickelMenuSelections returns unique valid feature ids', () => {
     const text = JSON.stringify({

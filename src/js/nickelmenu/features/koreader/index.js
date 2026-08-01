@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { fetchWithProgress, downloadProgress } from '../../../shell/Transfer.js';
+import { installableVersion, installableAssetUrl, installableSize } from '../../Installables.js';
 
 // Installs KOReader, an alternative e-book reader, alongside the built-in Kobo
 // reader (it does not replace it). The app is downloaded as a release zip at

@@ -64,14 +64,14 @@ scripts/
 The JS source lives in `src/js/` as ES modules, organized by role:
 
 - **`app.js`** — the orchestrator: creates the shared `Session` plus the long-lived services bag, handles device connection, mode selection, error recovery, and dialogs.
-- **`shell/`** — app-shell helpers shared by multiple flows: the declarative step machine (`step-machine.js`), the wizard `Session` (`session.js`), the shared result terminal (`terminal.js`), navigation/breadcrumb rendering, DOM helpers, strings, and analytics.
+- **`shell/`** — app-shell helpers shared by multiple flows: the declarative step machine (`StepMachine.js`), the wizard `Session` (`Session.js`), the shared result terminal (`Terminal.js`), navigation/breadcrumb rendering, DOM helpers, strings, and analytics.
 - **`flows/`** — the two main user journeys: NickelMenu and custom patches. Each declares its steps to the step machine and routes its build→write/download tail through the terminal.
-- **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`audit-log.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
+- **`kobo/`** — Kobo device and software metadata modules: File System Access wrapper, firmware URL lookup, version/model parsing, `Kobo eReader.conf` editing helpers, and the on-device audit log (`AuditLog.js`) that records install/removal steps to `.kobopatch-webui/log-yy-mm-dd_hh-mm.log` on the connected Kobo.
 - **`patches/`** — custom patch UI and runner modules.
-- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, installed-feature, preset-conflict, legacy-items, optional-cleanup, previous-configuration, and Kobo-user-count probes) live in `probes.js`; pure recovery of historical feature, menu, tab, and font choices from `.kobopatch-webui/nickelmenu.json` plus the generated preset lives in `previous-configuration.js`. Connected installs are a modify flow: live feature markers are authoritative, currently installed features are preselected, and deselecting one schedules its feature-owned cleanup before the desired setup is written. Markerless generated-config features fall back to the manifest only while `.adds/nm/webui-preset` is present. The historical manifest remains separate: it supplies customizations and a manual “Use last configuration” action after removal. It embeds normalized custom-icon bytes so that configuration remains recoverable after NickelMenu removal deletes `.adds/nm`. The menu-icon customization dialog and its image processing (canvas resize, SVG→PNG rendering) live in `customization-dialog.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock, or Better typography and fixes's bundled rendering-fix mod) declare a `koboRootEntries` hook; `installer.js` merges those tar entries into NickelMenu's base archive (`archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
+- **`nickelmenu/`** — NickelMenu domain logic and feature modules. The device-domain reads the flow needs (existing-install, installed-feature, preset-conflict, legacy-items, optional-cleanup, previous-configuration, and Kobo-user-count probes) live in `Probes.js`; pure recovery of historical feature, menu, tab, and font choices from `.kobopatch-webui/nickelmenu.json` plus the generated preset lives in `PreviousConfiguration.js`. Connected installs are a modify flow: live feature markers are authoritative, currently installed features are preselected, and deselecting one schedules its feature-owned cleanup before the desired setup is written. Markerless generated-config features fall back to the manifest only while `.adds/nm/webui-preset` is present. The historical manifest remains separate: it supplies customizations and a manual “Use last configuration” action after removal. It embeds normalized custom-icon bytes so that configuration remains recoverable after NickelMenu removal deletes `.adds/nm`. Each customizable feature owns its "customize" dialog, subclassing `nickelmenu/CustomizationDialog.js` inside its own feature directory; the menu-icon dialog and its image processing (canvas resize, SVG→PNG rendering) are `features/custom-menu/MenuCustomizationDialog.js` and `MenuIconImages.js`. The generated config file (written to `.adds/nm/webui-preset`, defined by `NM_ITEMS_FILE`) is assembled at install time from each selected feature's `menuItems` hook (ordered entries), rather than shipped as a static asset; features still inject `experimental:` NickelMenu config lines and device-conditional tweaks via `postProcess`. Features that ship their own KoboRoot.tgz payload (e.g. NickelClock, or Better typography and fixes's bundled rendering-fix mod) declare a `koboRootEntries` hook; `NickelMenuInstaller.js` merges those tar entries into NickelMenu's base archive (`Archive.js` `parseTarGz`/`buildTarGz`, modes preserved) so the device receives one combined `.kobo/KoboRoot.tgz`.
 - **`workers/`** — Web Worker files loaded at runtime.
 
-The wizard's mutable state is a `Session` (`shell/session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/step-machine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/terminal.js`), which both flows construct and configure. Vite bundles the app into `dist/bundle.js`.
+The wizard's mutable state is a `Session` (`shell/Session.js`) with a declared shape and a single `reset()`/`resetDeviceContext()`; `app.js` augments one instance with the long-lived services (`device`, `patchUI`, `runner`, `nmInstaller`) and the `showError`/`goToModeSelection` callbacks, then passes it to each flow by reference. Flows drive navigation through the step machine (`shell/StepMachine.js`): a flow declares an ordered list of step descriptors (`id`, `domId`, `navIndex`, `navLabels`, optional `onEnter`/`back`/`transient`/`recoveryStep`), and `flow.go(id)` / `flow.back()` own the visible step, the back-stack, and the breadcrumb — there are no hand-assembled `setNavStep` + `setNavLabels` + `showStep` triples. `navIndex`/`navLabels` may be functions of the session so a step's breadcrumb position adapts to the active label set (e.g. the shorter manual-removal variant), and the config step calls `flow.refreshNav()` when a radio changes the label set without advancing. The error screen asks the active flow for its `recoveryTarget()` rather than special-casing one step. The build→result tail — feedback wiring, `flow-end` analytics, ZIP bundling, and the device-write + audit-log + error-routing sequence — is shared via the terminal (`shell/Terminal.js`), which both flows construct and configure. Vite bundles the app into `dist/bundle.js`.
 
 ## File System Access write restrictions
 
@@ -155,7 +155,7 @@ npm run update:installables    # like `npm update`: resolve latest upstream, rew
   the updated lock**; a rebuild + redeploy then ships the new versions. Use `--only=<name>` to
   bump one. Set `GITHUB_TOKEN` if you hit GitHub's unauthenticated rate limit. It finishes by
   regenerating the committed font catalogue
-  (`src/js/nickelmenu/features/additional-fonts/catalogue.js`) from the two ebook-fonts archives via
+  (`src/js/nickelmenu/features/additional-fonts/FontCatalogue.js`) from the two ebook-fonts archives via
   `tools/installables/generate-font-catalogue.mjs` — **commit that too**; `verify`/`test` run the
   generator with `--check` and fail when the catalogue no longer matches the locked archives.
 
@@ -173,7 +173,7 @@ container (it conflicted with the immutable, version-suffixed asset URLs the CDN
 The build derives a **build-time manifest** from the lock — each id's pinned `version` plus whether
 its asset is present (`vite.config.mjs` → `installablesManifest()`) — and injects it into the
 bundle via Vite `define` (`globalThis.__INSTALLABLES__`). The app reads it through
-`src/js/nickelmenu/installables.js` (`installableVersion`/`installableAvailable`/`installableAssetUrl`):
+`src/js/nickelmenu/Installables.js` (`installableVersion`/`installableAvailable`/`installableAssetUrl`):
 add-on availability and the on-screen version come from the bundle with **no runtime metadata
 fetch** — the per-asset `*-release.json` files no longer exist. Asset downloads use
 `/assets/<file>?v=<version>` so the URL changes with the pinned version (see Production Serving).
@@ -268,7 +268,7 @@ injection, so the server is kept but made production-grade. The behaviour and *w
 
 - **`Content-Length` on every static response.** Node would otherwise chunk piped streams with no
   length, leaving the browser unable to compute download progress. The asset download-progress UI
-  (`fetchWithProgress` in `src/js/shell/dom.js`) depends on this header — without it, progress
+  (`fetchWithProgress` in `src/js/shell/DOM.js`) depends on this header — without it, progress
   silently degrades to the no-percentage fallback.
 - **Build-time precompression, not on-the-fly.** After Vite writes the production bundle, `scripts/build.mjs` writes `.br`/`.gz` siblings for
   compressible types (`PRECOMPRESS_EXT`); the server negotiates them via `Accept-Encoding` (brotli
@@ -324,7 +324,7 @@ uses Vite's dev server instead.
 ## Analytics
 
 The hosted build sends a small number of anonymous events to [Umami](https://umami.is) via the
-`track()` wrapper in `src/js/shell/analytics.js`. Tracking is a no-op unless Umami is injected
+`track()` wrapper in `src/js/shell/Analytics.js`. Tracking is a no-op unless Umami is injected
 server-side (`serve-dist.mjs`), and no personal identifiers are ever sent. The user-facing summary
 lives in the "What is tracked" modal in `src/index.html` — keep it in sync with this list.
 
@@ -349,7 +349,7 @@ Events currently emitted:
 | `flow-end` | `{ result }` | When a flow completes (write / download / remove). |
 | `feedback` | `{ vote }` | When the user submits the thumbs feedback. |
 
-Failures are deliberately **not** tracked. The error screen (`shell/error-screen.js`) reports nothing;
+Failures are deliberately **not** tracked. The error screen (`shell/ErrorScreen.js`) reports nothing;
 error reporting is meant to move to a dedicated tool rather than ride along on the analytics events.
 
 The `add-*` events fire only when that add-on is actually included in the install (in

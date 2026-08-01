@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import JSZip from 'jszip';
 
-import { parseTar } from '../src/js/nickelmenu/archive.js';
+import { parseTar } from '../src/js/nickelmenu/Archive.js';
 
 const require = createRequire(import.meta.url);
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');

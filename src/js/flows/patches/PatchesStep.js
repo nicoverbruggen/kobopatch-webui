@@ -8,9 +8,9 @@
  * step constructs both and is the only thing that talks to them.
  */
 
-import { requireButton, requireElement, requireInput } from '../../shell/dom.js';
-import { TL } from '../../shell/strings.js';
-import { openBlacklistDialog } from '../../patches/patch-list-view.js';
+import { requireButton, requireElement, requireInput } from '../../shell/DOM.js';
+import { TL } from '../../shell/Strings.js';
+import { openBlacklistDialog } from '../../patches/PatchListView.js';
 import { Step } from '../Step.js';
 import { AdditionalFilesList } from './AdditionalFilesList.js';
 import { ReloadBanner } from './ReloadBanner.js';
