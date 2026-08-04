@@ -17,10 +17,10 @@
     },
     "koreader": {
       "asset": "koreader-kobo.zip",
-      "version": "v2026.07",
-      "url": "https://github.com/koreader/koreader/releases/download/v2026.07/koreader-kobo-v2026.07.zip",
-      "sha256": "12673c2f9ccda01ebd22ed9562ea66f7b7f8501088bba86f826d6f84c427677b",
-      "size": 42272554
+      "version": "v2026.07.1",
+      "url": "https://github.com/koreader/koreader/releases/download/v2026.07.1/koreader-kobo-v2026.07.1.zip",
+      "sha256": "0f36a62ce73b12516f969e4ad7862cc06920afb03c7bd4db29a0d990bdd84b2f",
+      "size": 42370936
     },
     "cadmus": {
       "asset": "cadmus-kobo.tar.gz",
@@ -35,13 +35,6 @@
       "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.7/KoboRoot.tgz",
       "sha256": "0ee155a09b0d8c7780ef0eba4c0f0778824e3ce5921135a987dddeed80c97688",
       "size": 27563
-    },
-    "nickelcoverfix": {
-      "asset": "NickelCoverFix.tgz",
-      "version": "v0.2",
-      "url": "https://github.com/nicoverbruggen/NickelCoverFix/releases/download/v0.2/KoboRoot.tgz",
-      "sha256": "96f3f10fc7c1fa34cc9798e0d25cdf815ead717701717a526309a1f94f96c622",
-      "size": 42874
     },
     "nickeldissolve": {
       "asset": "NickelDissolve.tgz",
