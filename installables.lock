@@ -52,17 +52,17 @@
     },
     "ebook-fonts-core": {
       "asset": "kobo-core-fonts.zip",
-      "version": "v2026.07.21",
-      "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.07.21/kobo-core-fonts.zip",
-      "sha256": "b2cfa49afaa37c4aeebe31efa11ee61f0a4cde65219d78a6792af30626c8b46a",
-      "size": 5812348
+      "version": "v2026.08.05",
+      "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.08.05/kobo-core-fonts.zip",
+      "sha256": "1be75f10d19d68f790716105a7b42c1481f35ee911e132e32182a98c0cc875f3",
+      "size": 5812011
     },
     "ebook-fonts-extra": {
       "asset": "kobo-extra-fonts.zip",
-      "version": "v2026.07.21",
-      "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.07.21/kobo-extra-fonts.zip",
-      "sha256": "b492c9d2487e4c764397e8583b08f6e1351ea4dabb36e126cb63dcc7cb62676e",
-      "size": 22528606
+      "version": "v2026.08.05",
+      "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.08.05/kobo-extra-fonts.zip",
+      "sha256": "990e060e37b251f2045e2bd9542d246c7aaf14b4ad5573187e02f8d06a5bd1af",
+      "size": 22528615
     }
   }
 }
