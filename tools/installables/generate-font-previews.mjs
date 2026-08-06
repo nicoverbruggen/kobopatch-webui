@@ -41,7 +41,7 @@ const TILE_SIZE = 1.62;
 const TILE_TOP = -1.16;
 
 async function loadCatalogue() {
-    return import(join(APP_DIR, 'src', 'js', 'nickelmenu', 'features', 'additional-fonts', 'catalogue.js'));
+    return import(join(APP_DIR, 'src', 'js', 'nickelmenu', 'features', 'additional-fonts', 'FontCatalogue.js'));
 }
 
 async function lockedVersion() {

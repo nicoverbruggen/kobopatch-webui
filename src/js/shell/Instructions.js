@@ -12,7 +12,7 @@
  * tested directly. `date` defaults to "now" but is injectable for tests.
  */
 
-import { firstUnsupportedFirmware, minimumSupportedFirmware } from '../kobo/version.js';
+import { firstUnsupportedFirmware, minimumSupportedFirmware } from '../kobo/Version.js';
 
 // Where to learn how to recover a hard-locked / bricked device. Mirrors the
 // "manually reset your Kobo" link in the on-screen Disclaimer.
