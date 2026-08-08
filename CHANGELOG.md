@@ -4,5 +4,4 @@
 
 ### What's changed
 
-- KOReader has been updated to v2026.07.1.
-- Extra warnings have been added to point out that this website doesn't work on 5.x software yet.
+- The bundled ebook fonts have been updated to v2026.08.05.
