@@ -4,4 +4,4 @@
 
 ### What's changed
 
-- The bundled ebook fonts have been updated to v2026.08.05.
+- A connected Kobo running software version 5 is now told that its version is too new, instead of being told that Kobo software 4.23 or newer is required.

@@ -268,6 +268,13 @@ test('incompatible firmware', async ({ page }, testInfo) => {
     await shot(page, dir, 'incompatible-firmware', testInfo);
 });
 
+// A version below the 4.23 floor gets different wording than a 5.x device.
+test('outdated firmware', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    await connectToDeviceScreen(page, { firmware: '4.22.99999' });
+    await shot(page, dir, 'outdated-firmware', testInfo);
+});
+
 test('Sideload Mode too old os', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeNickelMenu;
     await page.goto('/');

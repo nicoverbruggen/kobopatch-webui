@@ -25,6 +25,7 @@ test('parseKoboVersion reads known 4-character device prefixes', () => {
         serialPrefixMatches: true,
         isRefurbished: false,
         isIncompatible: false,
+        incompatibleReason: null,
     });
 });
 
@@ -317,4 +318,13 @@ test('parseKoboVersion treats any non-4 major as incompatible regardless of the 
     assert.equal(parseKoboVersion(versionLine('N428000000000', '5.0.0')).isIncompatible, true);
     assert.equal(parseKoboVersion(versionLine('N428000000000', '3.99.99999')).isIncompatible, true);
     assert.equal(parseKoboVersion(versionLine('N428000000000', 'x.50.0')).isIncompatible, true); // non-numeric major => 0
+});
+
+test('parseKoboVersion reports why an incompatible version was rejected', () => {
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.45.23646')).incompatibleReason, null);
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '4.22.99999')).incompatibleReason, 'too-old');
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '3.99.99999')).incompatibleReason, 'too-old');
+    assert.equal(parseKoboVersion(versionLine('N428000000000', 'x.50.0')).incompatibleReason, 'too-old'); // non-numeric major => 0
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '5.0.0')).incompatibleReason, 'too-new');
+    assert.equal(parseKoboVersion(versionLine('N428000000000', '5.15.245253')).incompatibleReason, 'too-new');
 });

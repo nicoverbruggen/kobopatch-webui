@@ -22,6 +22,17 @@ export const TL = {
 
     STATUS: {
         DEVICE_RECOGNIZED: 'Your device has been recognized. You can continue to the next step!',
+        // Shown on the device step when the connected Kobo runs a software
+        // version the mods cannot handle. The two cases read very differently,
+        // so they get their own wording: too old is a device that can be
+        // updated, too new is a device nothing can be installed on yet.
+        DEVICE_FIRMWARE_TOO_OLD: (minimum) =>
+            'You seem to have an incompatible Kobo software version installed. ' +
+            `Kobo software ${minimum} or newer is required for NickelMenu, and the custom patches are incompatible with this version.`,
+        DEVICE_FIRMWARE_TOO_NEW: (firstUnsupportedMajor) =>
+            `Your Kobo runs a software version that is not supported yet. Kobo software ${firstUnsupportedMajor} and newer cannot be modded here yet: ` +
+            'neither NickelMenu nor the custom patches work on it, and the mods may not be updated yet. You may be able to downgrade to version 4.',
+        DEVICE_FIRMWARE_TOO_NEW_LINK: 'Learn more',
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
         NM_INSTALLED: 'NickelMenu has been installed on your Kobo. To complete the installation, follow the instructions below.',
         NM_DOWNLOAD_READY: 'Your NickelMenu package is ready to download. After downloading, a list of installation steps will be displayed.',

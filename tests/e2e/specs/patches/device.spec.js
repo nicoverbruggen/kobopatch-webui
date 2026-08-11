@@ -107,10 +107,17 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#device-firmware')).toHaveText('5.0.0');
         await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
-        // Status message should show incompatibility warning
-        await expect(page.locator('#device-status')).toContainText('incompatible');
-        await expect(page.locator('#device-status')).toContainText('Kobo software 4.23 or newer is required for NickelMenu');
+        // Status message should say the version is too new, not too old
+        await expect(page.locator('#device-status')).toContainText('Kobo software 5 and newer cannot be modded here yet');
+        await expect(page.locator('#device-status')).toContainText('You may be able to downgrade to version 4.');
+        await expect(page.locator('#device-status')).not.toContainText('4.23 or newer is required');
         await expect(page.locator('#device-status')).toHaveClass(/error/);
+
+        // And it should link to Kobo's own guide for installing a software version
+        const helpLink = page.locator('#device-status a');
+        await expect(helpLink).toHaveText('Learn more');
+        await expect(helpLink).toHaveAttribute('href', /help\.kobo\.com/);
+        await expect(helpLink).toHaveAttribute('target', '_blank');
 
         // Continue and restore buttons should be hidden, but Back should be visible
         await expect(page.locator('#btn-device-next')).toBeHidden();

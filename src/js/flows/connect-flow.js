@@ -11,13 +11,18 @@
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { localeDisplayName } from '../kobo/locale.js';
-import { minimumSupportedFirmware } from '../kobo/version.js';
+import { firstUnsupportedFirmwareMajor, minimumSupportedFirmware } from '../kobo/version.js';
 import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { latestPatchVersionForFamily } from '../patches/catalog.js';
 import { patchManifestName } from '../patches/additional-files.js';
+
+// Kobo's page about the software release that introduced the accessibility
+// features, which also covers restoring the previous software version. Linked
+// from the "your software is too new" banner as the route back to 4.x.
+const KOBO_FIRMWARE_HELP_URL = 'https://help.kobo.com/hc/en-us/articles/32246787707799-Kobo-eReader-Accessibility-Features-Support';
 
 export function initConnectFlow(state, { patches }) {
     const {
@@ -202,6 +207,25 @@ export function initConnectFlow(state, { patches }) {
         deviceStatus.appendChild(document.createTextNode(' so the developer can add or correct this device.'));
     }
 
+    function renderIncompatibleStatus(reason) {
+        deviceStatus.textContent = '';
+
+        if (reason !== 'too-new') {
+            deviceStatus.textContent = TL.STATUS.DEVICE_FIRMWARE_TOO_OLD(minimumSupportedFirmware);
+            return;
+        }
+
+        deviceStatus.appendChild(document.createTextNode(TL.STATUS.DEVICE_FIRMWARE_TOO_NEW(firstUnsupportedFirmwareMajor) + ' '));
+
+        const link = document.createElement('a');
+        link.href = KOBO_FIRMWARE_HELP_URL;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = TL.STATUS.DEVICE_FIRMWARE_TOO_NEW_LINK;
+        deviceStatus.appendChild(link);
+        deviceStatus.appendChild(document.createTextNode('.'));
+    }
+
     async function hasCustomPatchesManifest() {
         if (!state.device?.directoryHandle) return false;
         try {
@@ -236,9 +260,7 @@ export function initConnectFlow(state, { patches }) {
             displayDeviceInfo(info);
 
             if (info.isIncompatible) {
-                deviceStatus.textContent =
-                    'You seem to have an incompatible Kobo software version installed. ' +
-                    `Kobo software ${minimumSupportedFirmware} or newer is required for NickelMenu, and the custom patches are incompatible with this version.`;
+                renderIncompatibleStatus(info.incompatibleReason);
                 deviceStatus.classList.add('banner', 'banner--error');
                 btnDeviceNext.hidden = true;
                 btnDeviceRestore.hidden = true;
