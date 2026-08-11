@@ -31,11 +31,24 @@ const state = Object.assign(new Session(), {
 });
 
 // Async resources shared across flows; awaited where needed.
-state.softwareUrlsReady = loadSoftwareUrls();
-state.availablePatchesReady = scanAvailablePatches().then((p) => {
-    state.availablePatches = p;
-});
-state.blacklistReady = state.patchUI.loadBlacklist();
+//
+// Each is started here and awaited much later, in whichever flow needs it. In
+// between, a rejection has nobody watching: the browser fires
+// `unhandledrejection`, the global safety net reads that as the app crashing,
+// and the user gets "Something went wrong" during boot for a resource they had
+// not asked for yet. `held` attaches an empty catch purely to mark the
+// rejection handled — the promise still rejects for whoever awaits it, so the
+// flow that actually needs the resource still reports the failure with a
+// message that means something.
+const held = (promise) => (promise.catch(() => {}), promise);
+
+state.softwareUrlsReady = held(loadSoftwareUrls());
+state.availablePatchesReady = held(
+    scanAvailablePatches().then((p) => {
+        state.availablePatches = p;
+    }),
+);
+state.blacklistReady = held(state.patchUI.loadBlacklist());
 
 // Flows and shell screens. Order matters only for the explicit dependency
 // injection below; all cross-flow navigation goes through `state.*` callbacks.

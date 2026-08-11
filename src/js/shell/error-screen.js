@@ -10,18 +10,6 @@ import { TL } from './strings.js';
 import { $, collect, triggerDownload } from './dom.js';
 import { showStep, showNav, hideNav, stepHistory } from './navigation.js';
 import { getActiveFlow } from './step-machine.js';
-import { track } from './analytics.js';
-
-// Map an error's showError options to a coarse analytics category. Only this
-// controlled label is ever reported — never the error message, stack trace, or
-// any device path. Callers can pass an explicit `options.category`; otherwise it
-// is derived from the same signals that pick the error screen's copy.
-function errorCategory(options) {
-    if (options.category) return options.category;
-    if (options.deviceWrite) return options.writeProbe ? 'probe' : 'write';
-    if (options.configReadFailed) return 'config-read';
-    return 'unknown';
-}
 
 export function initErrorScreen(state) {
     const {
@@ -51,12 +39,6 @@ export function initErrorScreen(state) {
     let errorAuditLog = null;
 
     function showError(message, log, options = {}) {
-        // Report only *unexpected* failures for analytics, as a coarse category
-        // (no message text or stack). Expected errors — ones that are a normal
-        // outcome of user input or unsupported data, e.g. building incompatible
-        // patches, an unsupported firmware version, or a denied device-access
-        // prompt — pass `options.expected` and are never reported.
-        if (!options.expected) track('error', { value: errorCategory(options) });
         errorAuditLog = options.auditLog || null;
         errorMessage.textContent = message;
         btnErrorDownloadLog.hidden = !errorAuditLog;
@@ -123,23 +105,41 @@ export function initErrorScreen(state) {
 
     state.showError = showError;
 
-    let handlingUnexpectedError = false;
+    // The safety net stays down once it has caught something. It used to guard
+    // only re-entrancy, which is no guard at all against a failure that repeats:
+    // each rejection arrives in its own task, so the flag was always back to
+    // false by the time the next one came in, and the screen could be rebuilt
+    // dozens of times a second for as long as the tab stayed open. Cleared when
+    // the user leaves the screen through the back button; the retry button
+    // reloads the page, which resets it anyway.
+    let unexpectedErrorShown = false;
     function handleUnexpectedError(err) {
-        if (handlingUnexpectedError) return;
+        if (unexpectedErrorShown) return;
         if (err && err.name === 'AbortError') return;
-        handlingUnexpectedError = true;
+        unexpectedErrorShown = true;
         try {
             const detail = err ? err.stack || err.message || String(err) : 'Unknown error';
             showError(TL.ERROR.UNEXPECTED_MESSAGE, detail, { title: TL.ERROR.UNEXPECTED_TITLE });
         } catch (e) {
             console.error('Failed to display the error screen:', e);
-        } finally {
-            handlingUnexpectedError = false;
         }
+    }
+
+    // Whether a script belongs to this app. Browser extensions run injected page
+    // scripts in the page's own context, so their exceptions reach this handler
+    // looking exactly like ours — and an extension that throws on every DOM
+    // change turns the error screen itself into the thing that keeps it
+    // throwing. A cross-origin script reports an empty filename and the opaque
+    // "Script error." message, which we cannot attribute either. Neither is the
+    // app failing, so neither should put a screen in front of the user.
+    function isOwnScript(filename) {
+        if (!filename) return false;
+        return filename.startsWith(window.location.origin + '/');
     }
 
     window.addEventListener('error', (event) => {
         if (!event.error) return;
+        if (!isOwnScript(event.filename)) return;
         handleUnexpectedError(event.error);
     });
     window.addEventListener('unhandledrejection', (event) => {
@@ -147,6 +147,7 @@ export function initErrorScreen(state) {
     });
 
     btnErrorBack.addEventListener('click', () => {
+        unexpectedErrorShown = false;
         const flow = getActiveFlow();
         const recoveryDomId = flow && flow.recoveryTarget();
 

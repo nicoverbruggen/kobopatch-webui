@@ -183,12 +183,15 @@ test('unexpected error safety net', async ({ page }, testInfo) => {
 
     await page.goto('/');
     await dismissMobileModal(page);
-    // An exception escaping every explicit handler still surfaces a screen.
+    // An exception escaping every explicit handler still surfaces a screen. The
+    // filename has to be one of ours: the handler ignores anything from another
+    // origin, so a browser extension cannot put this screen up.
     await page.evaluate(() => {
         window.dispatchEvent(
             new ErrorEvent('error', {
                 error: new Error('Something exploded'),
                 message: 'Something exploded',
+                filename: window.location.origin + '/bundle.js',
             }),
         );
     });

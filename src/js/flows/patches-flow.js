@@ -590,7 +590,7 @@ export function initPatchesFlow(state) {
             }
 
             if (!state.firmwareURL) {
-                state.showError(TL.STATUS.NO_FIRMWARE_URL, null, { expected: true }); // no firmware mapping for this version
+                state.showError(TL.STATUS.NO_FIRMWARE_URL, null); // no firmware mapping for this version
                 return;
             }
 
@@ -612,9 +612,7 @@ export function initPatchesFlow(state) {
 
             await flow.go('done', state);
         } catch (err) {
-            // A build failure is usually a user-selected incompatible patch set —
-            // an expected outcome, not a tool malfunction, so it is not reported.
-            state.showError('Build failed: ' + err.message, buildLog.textContent, { expected: true });
+            state.showError('Build failed: ' + err.message, buildLog.textContent);
         }
     });
 

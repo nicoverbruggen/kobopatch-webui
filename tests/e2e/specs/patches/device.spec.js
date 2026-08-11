@@ -188,9 +188,8 @@ test.describe('Custom patches', () => {
         // Connection tips are shown inline now, not behind a disclosure panel.
         await expect(page.locator('#error-device-write-help')).toContainText('Copy the files yourself');
 
-        // The error is reported to analytics as a coarse category (write probe),
-        // never the message or stack.
-        await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({ eventName: 'error', data: { value: 'probe' } });
+        // Failures are never reported to analytics.
+        expect(await page.evaluate(() => window.__trackedEvents.filter((e) => e.eventName === 'error'))).toEqual([]);
     });
 
     test('connect — blocked drive permission shows a friendly error screen', async ({ page }) => {
@@ -214,8 +213,7 @@ test.describe('Custom patches', () => {
         // Not a device-write failure, so the write-recovery steps stay hidden.
         await expect(page.locator('#error-device-write-help')).toBeHidden();
 
-        // A denied device-access prompt is an expected outcome, so no error event
-        // is reported to analytics.
+        // Failures are never reported to analytics.
         expect(await page.evaluate(() => window.__trackedEvents.filter((e) => e.eventName === 'error'))).toEqual([]);
     });
 
@@ -229,6 +227,7 @@ test.describe('Custom patches', () => {
                 new ErrorEvent('error', {
                     error: new Error('boom'),
                     message: 'boom',
+                    filename: window.location.origin + '/bundle.js',
                 }),
             );
         });
@@ -239,9 +238,59 @@ test.describe('Custom patches', () => {
         // The thrown detail is shown in the log area for reporting.
         await expect(page.locator('#error-log')).toContainText('boom');
 
-        // Reported to analytics as the 'unknown' category — the 'boom' detail is
-        // shown on screen for the user but never sent to analytics.
-        await expect.poll(() => page.evaluate(() => window.__trackedEvents)).toContainEqual({ eventName: 'error', data: { value: 'unknown' } });
+        // The 'boom' detail is shown on screen for the user, and nothing about the
+        // failure is sent to analytics.
+        expect(await page.evaluate(() => window.__trackedEvents.filter((e) => e.eventName === 'error'))).toEqual([]);
+    });
+
+    test('errors from outside the app do not surface an error screen', async ({ page }) => {
+        await page.goto('/');
+        // A browser extension's injected page script, and an opaque cross-origin
+        // "Script error." — neither is this app failing, so neither should put a
+        // screen in front of the user.
+        await page.evaluate(() => {
+            window.dispatchEvent(
+                new ErrorEvent('error', {
+                    error: new Error('extension boom'),
+                    message: 'extension boom',
+                    filename: 'moz-extension://ab12cd34/injected.js',
+                }),
+            );
+            window.dispatchEvent(
+                new ErrorEvent('error', {
+                    error: new Error('opaque'),
+                    message: 'Script error.',
+                    filename: '',
+                }),
+            );
+        });
+
+        await expect(page.locator('#step-error')).toBeHidden();
+    });
+
+    test('a repeating failure surfaces the error screen only once', async ({ page }) => {
+        await trackEvents(page);
+        await page.goto('/');
+        // The storm case: a failure that repeats forever must not rebuild the
+        // screen — or report anything — once per occurrence.
+        await page.evaluate(async () => {
+            window.__shownCount = 0;
+            const observer = new MutationObserver(() => {
+                window.__shownCount += 1;
+            });
+            observer.observe(document.getElementById('step-error'), { childList: true, subtree: true, attributes: true });
+            for (let i = 0; i < 200; i++) {
+                Promise.reject(new Error('storm ' + i));
+            }
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            observer.disconnect();
+        });
+
+        await expect(page.locator('#step-error')).not.toBeHidden();
+        await expect(page.locator('#error-log')).toContainText('storm 0');
+        // Only the first rejection got through; the other 199 were swallowed.
+        await expect(page.locator('#error-log')).not.toContainText('storm 199');
+        expect(await page.evaluate(() => window.__trackedEvents.filter((e) => e.eventName === 'error'))).toEqual([]);
     });
 
     test('with device — serial number is masked until revealed', async ({ page }) => {
