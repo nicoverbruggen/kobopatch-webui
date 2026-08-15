@@ -57,8 +57,24 @@ export const PATCH_FILE_LABELS = {
  * - `category` (required): one of the `PATCH_CATEGORIES` ids (or `other`).
  * - `label` (optional): overrides the displayed name only; the YAML key is
  *   unchanged, so it stays the patch's stable identity.
- * - `author` (optional): shown in the notes. Only set where the YAML actually
- *   credits someone — don't invent attribution.
+ * - `author` (optional): shown in the notes. Credit whoever actually wrote the
+ *   code that ships here, and leave it out when that can't be established.
+ *   The `# The following patch(es) are by X` comments in the YAML are NOT a
+ *   reliable source: the upstream collection groups patches into per-author
+ *   blocks, and later contributions get appended to whichever block they were
+ *   pasted into, so a patch can sit under a name that never touched it. Check
+ *   the MobileRead thread the patch was posted in before adding or keeping a
+ *   name here. A wrong name here makes someone answerable for code they have
+ *   never read. Where a patch was later rewritten by someone else, credit both
+ *   (`Original, updated by Other`).
+ *
+ *   Every credit below was checked against pgaskin/kobopatch-patches. That repo
+ *   does split patches into real per-author files: under each version, a patch
+ *   file is a directory holding `geoffr.yaml`, `jackie_w.yaml`, `sherman.yaml`
+ *   and so on. Re-run the check there. It confirms 95 of the credits, and those
+ *   need no comment. The patches it does not cover, because they were written
+ *   later or because it credits someone else, carry a comment naming the post
+ *   or issue the credit came from. Add one when you introduce such a patch.
  * - `description` (optional): replaces the displayed blurb. Falls back to the
  *   parsed YAML `Description:` when absent.
  * - `note` (optional): short extra context (a caveat, "no effect on X", etc.)
@@ -68,10 +84,14 @@ export const PATCH_FILE_LABELS = {
  */
 export const PATCH_META = {
     // ── Typography & Fonts ────────────────────────────────────────────────
+    // Written by jackie_w as an unofficial patch, and pgaskin agreed to ship
+    // that version if anyone wanted font-size control. The collection files it
+    // under GeoffR, who did not write it.
+    // https://github.com/pgaskin/kobopatch-patches/issues/55
     'test Pop-up footnote main text font-size': {
         category: 'typography',
         label: 'Pop-up footnote text size',
-        author: 'GeoffR',
+        author: 'jackie_w',
         description: 'Changes the font size of the main text shown in pop-up footnotes.',
         tips: ['Edit the `font-size` value in the `Replace` line (default `34px`).'],
     },
@@ -94,7 +114,7 @@ export const PATCH_META = {
     },
     'Custom font sizes': {
         category: 'typography',
-        author: 'GeoffR',
+        author: 'GeoffR, rewritten by shermp',
         description: 'Reshapes the font-size slider so there are more small sizes and fewer large ones, allowing finer adjustment of small text.',
         note: 'The very largest font sizes are no longer selectable.',
         tips: ['Adjust the `ReplaceInt` values; see the per-device size tables in the patch comments.'],
@@ -392,16 +412,26 @@ export const PATCH_META = {
         author: 'pgaskin (geek1011)',
         description: 'Removes the Kobo Plus, wishlist, and Super Points SmartLinks from the home-screen rotation.',
     },
+    // pgaskin's "Increase size of kepub chapter progress chart", extended by
+    // jackie_w to cover audiobooks and to drop the BaseAddress that had to be
+    // re-found every firmware, which is also why the name changed. jackie_w
+    // quoted in the release thread:
+    // https://www.mobileread.com/forums/showpost.php?p=4590569
     'Increase size of kepub/audio chapter progress chart': {
         category: 'home',
-        author: 'pgaskin (geek1011)',
+        author: 'pgaskin (geek1011), extended by jackie_w',
         description: 'Increases the size of the KePub and audiobook chapter progress bar charts in the reading menu.',
     },
+    // By jackie_w, written because the byte-patch variant below (which is
+    // pgaskin's) has no effect on the Clara BW. Not part of the upstream
+    // collection; it reached this project via Phil_C, who posted it here:
+    // https://www.mobileread.com/forums/showpost.php?p=4593597
     'Remove line from bottom tab bar via CSS': {
         category: 'home',
         label: 'Remove line from bottom tab bar via CSS',
-        author: 'pgaskin (geek1011)',
+        author: 'jackie_w',
         description: 'Removes the line along the top of the bottom navigation tab bar (CSS-based). This variant only works on newer devices and uses CSS.',
+        note: 'Use this variant on the Clara BW, where the byte-patch variant has no effect.',
     },
     'Remove line from bottom tab bar': {
         category: 'home',
@@ -518,14 +548,14 @@ export const PATCH_META = {
     'Cyrillic Keyboard (GloHD/ClaraHD/AuraOne/H2O2)': {
         category: 'keyboards',
         label: 'Cyrillic keyboard',
-        author: 'GeoffR',
+        author: 'GeoffR, updated by Bald Eagle',
         description: 'Replaces the Extended Latin keypad keys with Cyrillic alternatives.',
         note: 'Keys may show as blank squares until the first book is opened; long-press of Extended Latin keys no longer works.',
     },
     'Greek Keyboard (GloHD/ClaraHD/AuraOne/H2O2)': {
         category: 'keyboards',
         label: 'Greek keyboard',
-        author: 'GeoffR',
+        author: 'GeoffR, updated by Bald Eagle',
         description: 'Replaces the Extended Latin keypad keys with Greek alternatives.',
         note: 'Keys may show as blank squares until the first book is opened; long-press of Extended Latin keys no longer works.',
     },
@@ -544,11 +574,17 @@ export const PATCH_META = {
         author: 'NiLuJe',
         description: 'Stops Nickel from grabbing exclusive access to the input device, so third-party tools (e.g. MiniClock) can read page-turn buttons.',
     },
+    // pgaskin's original stopped working on recent firmware; the code shipped
+    // here is a new implementation by xor_. It sits under the "by pgaskin
+    // (geek1011)" comment in the YAML only because that is where it was pasted.
+    // 4.38: https://www.mobileread.com/forums/showpost.php?p=4591445
+    // 4.45: https://www.mobileread.com/forums/showpost.php?p=4591446
     'Both page turn buttons go next': {
         category: 'input',
         label: 'Both physical buttons go to next page',
-        author: 'pgaskin (geek1011)',
+        author: 'xor_',
         description: 'Makes both physical page-turn buttons go to the next page (the touchscreen tap zones are unaffected).',
+        note: 'Also affects the Kobo Remote: both of its buttons go to the next page, leaving no way to page backwards with the remote.',
     },
     'Both page turn sides go next': {
         category: 'input',
@@ -562,14 +598,18 @@ export const PATCH_META = {
         description: 'Increases the number of navigation-history dots shown on the scrubber.',
         tips: ['Set the `Replace` value (must be greater than 1).'],
     },
+    // Both swipe patches were written by xor_ in June 2026. They sit under the
+    // "made by sherman" comment in the YAML because they were appended to that
+    // block. The only patch shermp wrote there is "Unify font sizes".
+    // https://www.mobileread.com/forums/showpost.php?p=4591445
     'Disable forward/backward swipe Gestures': {
         category: 'input',
-        author: 'shermp',
+        author: 'xor_',
         description: 'Disables the forward/backward page-turn swipe gestures in the reader.',
     },
     'Disable menu swipe gesture': {
         category: 'input',
-        author: 'shermp',
+        author: 'xor_',
         description: 'Disables the swipe-to-open-menu gesture in the reader.',
     },
     'Allow rotation on all devices': {
