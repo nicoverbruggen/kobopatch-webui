@@ -200,7 +200,10 @@ test('the log pane is shown only when log text is passed', () => {
     assert.equal($('error-log').hidden, true);
 });
 
-test('errorCategory derives a coarse label, and an explicit category wins', () => {
+test('the error screen reports nothing at all, whatever the failure', () => {
+    // This is a privacy guarantee, not a nicety. The screen used to report a
+    // coarse category for unexpected failures; it now reports nothing, and
+    // error reporting is meant to move to a dedicated tool instead.
     const showError = freshScreen();
     const events = captureTracking();
 
@@ -208,34 +211,10 @@ test('errorCategory derives a coarse label, and an explicit category wins', () =
         showError('m', null, { deviceWrite: true, writeProbe: true });
         showError('m', null, { deviceWrite: true });
         showError('m', null, { configReadFailed: true, title: 't' });
-        showError('m', null, {});
-        showError('m', null, { category: 'download', deviceWrite: true });
-
-        assert.deepEqual(
-            events.map((e) => e.data.value),
-            ['probe', 'write', 'config-read', 'unknown', 'download'],
-        );
-        assert.ok(
-            events.every((e) => e.name === 'error'),
-            'every report is the `error` event',
-        );
-    } finally {
-        clearTracking();
-    }
-});
-
-test('an expected error reports nothing at all — no event, not even a category', () => {
-    // This is a privacy guarantee, not a nicety: expected failures are normal
-    // outcomes of user input and must not reach analytics.
-    const showError = freshScreen();
-    const events = captureTracking();
-
-    try {
-        showError('user declined the prompt', null, { expected: true, title: TL.ERROR.PERMISSION_DENIED_TITLE });
-        assert.deepEqual(events, []);
-
+        showError('user declined the prompt', null, { title: TL.ERROR.PERMISSION_DENIED_TITLE });
         showError('a real failure', null, {});
-        assert.equal(events.length, 1, 'an unexpected error still reports');
+
+        assert.deepEqual(events, []);
     } finally {
         clearTracking();
     }

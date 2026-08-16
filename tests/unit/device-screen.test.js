@@ -145,6 +145,21 @@ test('an incompatible device hides both Next and Restore', async () => {
     screen.destroy();
 });
 
+test('the incompatible message follows the reason, not the exact major', async () => {
+    // A 6.x device is too new for the mods exactly as a 5.x one is. The branch
+    // used to string-match the major against "5", which sent everything above
+    // it to the too-old copy telling the user to update to 4.23.
+    const tooNew = makeScreen({ info: { isIncompatible: true, firmware: '6.1.0', incompatibleReason: 'too-new' } });
+    await tooNew.screen.connectAndShow();
+    assert.match(tooNew.screen.status.textContent, /too recent/);
+    tooNew.screen.destroy();
+
+    const tooOld = makeScreen({ info: { isIncompatible: true, firmware: '4.22.99999', incompatibleReason: 'too-old' } });
+    await tooOld.screen.connectAndShow();
+    assert.match(tooOld.screen.status.textContent, /4\.23 or newer is required/);
+    tooOld.screen.destroy();
+});
+
 test('the restore shortcut appears only when the device carries a patches manifest', async () => {
     // It needs patches loaded, a firmware URL, *and* a manifest on the device.
     const without = makeScreen();
@@ -178,7 +193,7 @@ test('resetDeviceContext drops the manifest flag so the shortcut cannot fire for
     screen.destroy();
 });
 
-test('a declined permission prompt is reported as expected, and an abort is silent', async () => {
+test('a declined permission prompt shows the permission message, and an abort is silent', async () => {
     const aborted = makeScreen();
     aborted.nav.session.device.connect = async () => {
         const err = new Error('aborted');
@@ -198,7 +213,7 @@ test('a declined permission prompt is reported as expected, and an abort is sile
     await denied.screen.connectAndShow();
     const [reported] = denied.nav.calls;
     assert.equal(reported.showError[0], TL.ERROR.PERMISSION_DENIED_MESSAGE);
-    assert.equal(reported.showError[2].expected, true, 'a declined prompt is a normal outcome, not a defect to report');
+    assert.equal(reported.showError[2].title, TL.ERROR.PERMISSION_DENIED_TITLE);
     denied.screen.destroy();
 });
 

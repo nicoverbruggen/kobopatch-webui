@@ -18,6 +18,18 @@ import { triggerDownload } from './Transfer.js';
 import { showStep, showNav, hideNav, historyIncludes, unwindHistoryTo } from './Navigation.js';
 import { ShellScreen } from './ShellScreen.js';
 
+// Whether a script belongs to this app. Browser extensions run injected page
+// scripts in the page's own context, so their exceptions reach this handler
+// looking exactly like ours — and an extension that throws on every DOM
+// change turns the error screen itself into the thing that keeps it
+// throwing. A cross-origin script reports an empty filename and the opaque
+// "Script error." message, which we cannot attribute either. Neither is the
+// app failing, so neither should put a screen in front of the user.
+function isOwnScript(filename) {
+    if (!filename) return false;
+    return filename.startsWith(window.location.origin + '/');
+}
+
 export class ErrorScreen extends ShellScreen {
     /** @param {import('../Wizard.js').Wizard} nav */
     constructor(nav) {
@@ -153,6 +165,7 @@ export class ErrorScreen extends ShellScreen {
             'error',
             (event) => {
                 if (!event.error) return;
+                if (!isOwnScript(event.filename)) return;
                 this.#handleUnexpectedError(event.error);
             },
             { signal },

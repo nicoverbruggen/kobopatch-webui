@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
-import { track, isEnabled } from '../../src/js/shell/analytics.js';
+import { track, isEnabled } from '../../src/js/shell/Analytics.js';
 
 /**
  * umami.track is an async function, so it hands back a promise even when it

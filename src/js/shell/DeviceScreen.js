@@ -257,7 +257,7 @@ export class DeviceScreen extends ShellScreen {
     }
 
     #renderIncompatible(info) {
-        if (String(info.firmware).split('.')[0] === '5') {
+        if (info.incompatibleReason === 'too-new') {
             const heading = document.createElement('strong');
             heading.textContent = "You are currently on a software version that's too recent and not supported by this tool yet.";
             const documentation = document.createElement('a');
