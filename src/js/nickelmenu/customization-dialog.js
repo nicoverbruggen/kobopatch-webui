@@ -353,8 +353,11 @@ export function updateMenuCustomizationDialog(draft, dialogDom, message = '') {
     dialogDom.status.textContent = valid ? message : `Use 1-${NM_MENU_LABEL_MAX_LENGTH} letters or numbers.`;
 }
 
-export function openMenuCustomizeDialog(state, dialogDom, triggerEl) {
+export function openMenuCustomizeDialog(state, dialogDom, triggerEl, shouldApply = () => true) {
     const draft = cloneMenuCustomization(state.nickelMenuCustomization);
+    const session = Symbol('menu-customization-session');
+    dialogDom._menuCustomizationSession = session;
+    const isCurrent = () => dialogDom._menuCustomizationSession === session && shouldApply();
 
     renderNmCustomizationPresets(dialogDom.presets, async (icon) => {
         if (icon.id === 'cog') {
@@ -366,6 +369,7 @@ export function openMenuCustomizeDialog(state, dialogDom, triggerEl) {
         try {
             dialogDom.status.textContent = 'Preparing preset icon...';
             const data = await renderPresetSvgToPng(icon.svg);
+            if (!isCurrent()) return;
             draft.icon = {
                 type: 'preset',
                 id: icon.id,
@@ -374,6 +378,7 @@ export function openMenuCustomizeDialog(state, dialogDom, triggerEl) {
             };
             updateMenuCustomizationDialog(draft, dialogDom, 'Preset icon prepared as 48x48 PNG.');
         } catch (err) {
+            if (!isCurrent()) return;
             dialogDom.status.textContent = err.message;
         }
     });

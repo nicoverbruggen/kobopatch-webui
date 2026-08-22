@@ -470,7 +470,14 @@ export function initNickelMenuFlow(state) {
                           } else if (f.customization.type === 'fonts') {
                               nmFontsDraft = openFontsCustomizeDialog(state, fontsDialogDom, triggerEl);
                           } else {
-                              nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, triggerEl);
+                              nmCustomizationSession++;
+                              const session = nmCustomizationSession;
+                              nmCustomizationDraft = openMenuCustomizeDialog(
+                                  state,
+                                  customizationDialogDom,
+                                  triggerEl,
+                                  () => session === nmCustomizationSession,
+                              );
                           }
                       }
                     : undefined,

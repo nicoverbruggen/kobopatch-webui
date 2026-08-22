@@ -85,3 +85,121 @@ test('handleNmIconUpload ignores stale async completions', async () => {
         }
     });
 });
+
+function makeMenuDialog(document) {
+    const dialog = document.createElement('dialog');
+    dialog.showModal = () => {
+        dialog.open = true;
+    };
+    return {
+        dialog,
+        labelInput: document.createElement('input'),
+        counter: document.createElement('span'),
+        presets: document.createElement('div'),
+        uploadPreview: document.createElement('div'),
+        uploadName: document.createElement('span'),
+        save: document.createElement('button'),
+        status: document.createElement('span'),
+    };
+}
+
+function controlPresetRendering(window, document) {
+    const pending = [];
+    const realImage = window.Image;
+    const realCreateElement = document.createElement.bind(document);
+
+    window.Image = class {
+        set src(_value) {
+            pending.push(this);
+        }
+    };
+    document.createElement = (tag, ...rest) => {
+        if (String(tag).toLowerCase() !== 'canvas') return realCreateElement(tag, ...rest);
+        return {
+            width: 0,
+            height: 0,
+            getContext: () => ({ clearRect() {}, drawImage() {} }),
+            toBlob: (callback) => callback(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' })),
+        };
+    };
+
+    return {
+        restore() {
+            window.Image = realImage;
+            document.createElement = realCreateElement;
+        },
+        async finish() {
+            assert.equal(pending.length, 1);
+            pending.pop().onload();
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+        },
+        async fail() {
+            assert.equal(pending.length, 1);
+            pending.pop().onerror();
+            for (let index = 0; index < 10; index++) await Promise.resolve();
+        },
+    };
+}
+
+test('a preset render that finishes after the menu dialog reopens is ignored', async () => {
+    await withDom(async ({ document, openMenuCustomizeDialog }) => {
+        const dialogDom = makeMenuDialog(document);
+        const rendering = controlPresetRendering(window, document);
+        const state = { nickelMenuCustomization: { label: 'Toggle', icon: { type: 'default' } } };
+
+        try {
+            openMenuCustomizeDialog(state, dialogDom, null);
+            dialogDom.presets.querySelector('[data-icon-id="book"]').click();
+
+            const reopenedDraft = openMenuCustomizeDialog(state, dialogDom, null);
+            const reopenedStatus = dialogDom.status.textContent;
+            await rendering.finish();
+
+            assert.equal(reopenedDraft.icon.type, 'default');
+            assert.equal(dialogDom.status.textContent, reopenedStatus);
+        } finally {
+            rendering.restore();
+        }
+    });
+});
+
+test('a preset render that finishes in its original menu session still applies', async () => {
+    await withDom(async ({ document, openMenuCustomizeDialog }) => {
+        const dialogDom = makeMenuDialog(document);
+        const rendering = controlPresetRendering(window, document);
+        const state = { nickelMenuCustomization: { label: 'Toggle', icon: { type: 'default' } } };
+
+        try {
+            const draft = openMenuCustomizeDialog(state, dialogDom, null);
+            dialogDom.presets.querySelector('[data-icon-id="book"]').click();
+            await rendering.finish();
+
+            assert.equal(draft.icon.type, 'preset');
+            assert.equal(draft.icon.id, 'book');
+            assert.deepEqual(draft.icon.data, new Uint8Array([1, 2, 3]));
+        } finally {
+            rendering.restore();
+        }
+    });
+});
+
+test('a stale preset-render failure does not overwrite the reopened dialog status', async () => {
+    await withDom(async ({ document, openMenuCustomizeDialog }) => {
+        const dialogDom = makeMenuDialog(document);
+        const rendering = controlPresetRendering(window, document);
+        const state = { nickelMenuCustomization: { label: 'Toggle', icon: { type: 'default' } } };
+
+        try {
+            openMenuCustomizeDialog(state, dialogDom, null);
+            dialogDom.presets.querySelector('[data-icon-id="book"]').click();
+
+            openMenuCustomizeDialog(state, dialogDom, null);
+            const reopenedStatus = dialogDom.status.textContent;
+            await rendering.fail();
+
+            assert.equal(dialogDom.status.textContent, reopenedStatus);
+        } finally {
+            rendering.restore();
+        }
+    });
+});
