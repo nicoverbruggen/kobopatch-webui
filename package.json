@@ -31,7 +31,8 @@
     "test:unit:coverage": "node --test --experimental-test-coverage tests/unit/*.test.js",
     "test:wasm": "bash tools/kobopatch-wasm/test-integration.sh",
     "validate:dist": "node scripts/validate-dist.mjs",
-    "version:generate": "node scripts/version-generate.mjs"
+    "version:generate": "node scripts/version-generate.mjs",
+    "check:imports": "node scripts/check-imports.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

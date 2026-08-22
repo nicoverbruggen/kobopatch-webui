@@ -196,6 +196,16 @@ const allPhases = [
         },
     },
     { name: 'Screenshots (Playwright)', quick: true, task: () => run(join(e2eDir, 'scripts/run-screenshots.sh'), []) },
+    // Last on purpose: this whole-repo consistency assertion should not hide
+    // the useful test results if it fails. Its self-test proves each arm can fail.
+    {
+        name: 'Check imports',
+        quick: true,
+        task: async () => {
+            await run('node', ['scripts/check-imports.mjs', '--selftest']);
+            await run('node', ['scripts/check-imports.mjs']);
+        },
+    },
 ];
 
 for (const phaseDef of allPhases) {
