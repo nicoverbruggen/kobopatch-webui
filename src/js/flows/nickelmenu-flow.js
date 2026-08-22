@@ -706,8 +706,8 @@ export function initNickelMenuFlow(state) {
     async function updateSideloadedRecommendation() {
         const banner = $('nm-sideloaded-banner');
         const firmware = state.device?.deviceInfo?.firmware;
-        const sideloaded = NICKELMENU_FEATURES.find((f) => f.id === 'sideloaded-mode');
-        if (!meetsMinimumVersion(firmware, sideloaded?.minimumVersion)) {
+        const sideloaded = supportedSideloadedModeFeature(NICKELMENU_FEATURES, firmware);
+        if (!sideloaded) {
             banner.hidden = true;
             return;
         }
@@ -903,4 +903,9 @@ export function initNickelMenuFlow(state) {
     });
 
     return { goToNickelMenuConfig, resetNickelMenuState };
+}
+
+export function supportedSideloadedModeFeature(features, firmware) {
+    const feature = features.find((candidate) => candidate.id === 'sideloaded-mode');
+    return feature && meetsMinimumVersion(firmware, feature.minimumVersion) ? feature : null;
 }
