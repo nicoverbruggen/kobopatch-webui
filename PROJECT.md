@@ -321,6 +321,31 @@ injection, so the server is kept but made production-grade. The behaviour and *w
 runner — so this behaviour is exercised by the E2E suite, not just in production. `npm run dev`
 uses Vite's dev server instead.
 
+### Docker / Coolify deployment
+
+Production uses the repository's multi-stage `Dockerfile`. The build image contains Node, Git,
+curl, and the downloaded Go toolchain needed to build the WASM patcher. The runtime image stays
+small and non-root: it contains only Node, `dist/`, and the two production-server scripts. Keep
+using `serve-dist.mjs` in the container rather than replacing it with nginx; the server owns the
+runtime analytics injection, generated CSP, content-hash ETags, precompressed-file negotiation,
+and the archive `Content-Length` behavior described above.
+
+In Coolify:
+
+- select the **Dockerfile** build pack with `/Dockerfile` and expose port `8888`;
+- mount persistent storage at `/app/storage` and keep `STORAGE_DIR=/app/storage` (the image's
+  default) so crash logs survive container replacement;
+- configure `UMAMI_WEBSITE_ID`, `UMAMI_SCRIPT_URL`, `REDIRECT_URL`, and `CSP_REPORT_ONLY` as
+  runtime variables when needed; do not bake them into the image;
+- enable **Include Source Commit in Build** so Coolify passes `SOURCE_COMMIT` and the generated
+  footer links to the deployed revision.
+
+The installable archives are fetched from `installables.lock`, never from an unpinned "latest"
+URL. Their download is deliberately placed in an early Docker layer keyed by the lockfile and
+installer tooling, so a normal source-only redeploy reuses Docker's build cache. Coolify's runtime
+volume is not mounted during `docker build`, so `/app/storage` cannot provide this build cache;
+disabling Coolify's Docker build cache will cause the pinned archives to be downloaded again.
+
 ## Analytics
 
 The hosted build sends a small number of anonymous events to [Umami](https://umami.is) via the
