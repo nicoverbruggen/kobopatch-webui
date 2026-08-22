@@ -44,13 +44,18 @@ const stepDivs = STEP_IDS.map((id) => `<div id="${id}" hidden></div>`).join('');
 // The patch editor dialog skeleton, matching the selectors patch-editor.js queries.
 const editorDialog = `
 <dialog id="patch-editor-dialog">
-  <h2 class="patch-editor-title"></h2>
-  <textarea class="patch-editor-textarea"></textarea>
-  <p class="patch-editor-status"></p>
-  <div class="modal-footer">
-    <button type="button" class="patch-editor-validate">Validate</button>
-    <button type="button" class="patch-editor-save">Save</button>
-    <button type="button" class="patch-editor-cancel">Cancel</button>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="patch-editor-title"></h2>
+      <button type="button" class="modal-close patch-editor-cancel">Close</button>
+    </div>
+    <textarea class="patch-editor-textarea"></textarea>
+    <p class="patch-editor-status"></p>
+    <div class="modal-footer">
+      <button type="button" class="patch-editor-validate">Validate</button>
+      <button type="button" class="patch-editor-save">Save</button>
+      <button type="button" class="patch-editor-cancel">Cancel</button>
+    </div>
   </div>
 </dialog>`;
 

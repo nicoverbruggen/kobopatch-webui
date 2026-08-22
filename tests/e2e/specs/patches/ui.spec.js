@@ -160,6 +160,7 @@ test.describe('Custom patches', () => {
         await expect(tips).toBeVisible();
         await expect(tips.locator('li').first()).toContainText('ReplaceFloat');
         await dialog.locator('.patch-editor-cancel').first().click();
+        await expect(dialog).not.toBeVisible();
     });
 
     test('patch search filters by name and clears', async ({ page }) => {

@@ -35,7 +35,7 @@ function makeStatusEls() {
 const dialog = () => document.getElementById('patch-editor-dialog');
 const editorTextarea = () => dialog().querySelector('.patch-editor-textarea');
 const editorStatus = () => dialog().querySelector('.patch-editor-status');
-const footerButton = (cls) => dialog().querySelector(`.${cls}`);
+const footerButton = (cls) => dialog().querySelector(`.modal-footer .${cls}`);
 
 test('validatePatchEdit accepts a well-formed single-patch mapping', () => {
     const { textarea, statusEl } = makeStatusEls();
@@ -114,6 +114,17 @@ test('the Validate button reports status without closing or applying', () => {
     assert.equal(dialog().open, true);
     assert.equal(ui.patchFiles[FILE].raw, RAW);
     dialog().close();
+});
+
+test('the header close button closes the dialog without applying changes', () => {
+    openPatchEditor(ui, patchNamed('Alpha'), FILE, document.createElement('div'));
+
+    editorTextarea().value = 'Alpha:\n  - Enabled: no\n';
+    dialog().querySelector('.modal-header .patch-editor-cancel').click();
+
+    assert.equal(dialog().open, false);
+    assert.equal(ui.patchFiles[FILE].raw, RAW);
+    assert.equal(ui.isModified(FILE, 'Alpha'), false);
 });
 
 test('Cancel closes the dialog without applying changes', () => {
