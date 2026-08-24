@@ -227,6 +227,13 @@ test('connected nickelmenu removal', async ({ page }, testInfo) => {
     await expect(nmDone).not.toBeHidden();
     await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
     await shot(page, dir, '03-removal-done', testInfo);
+
+    // Ejecting swaps the card to the reboot wording plus the glitchy-line note.
+    await page.evaluate(() => {
+        window.__mockEjected = true;
+    });
+    await expect(page.locator('#nm-eject-glitch-note')).toBeVisible({ timeout: 15_000 });
+    await shot(page, dir, '04-removal-disconnected', testInfo);
 });
 
 // Variant: every cleanup checkbox left checked, so the review has no "kept" card.
@@ -463,10 +470,18 @@ test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) =
     await expect(page.locator('#nm-review-notices')).toContainText('Home tab is hidden');
     await shot(page, dir, '03-review', testInfo);
 
-    // Write to device → done.
+    // Write to device → done. The done step now has two states: it waits for the
+    // Kobo to be ejected, then reports the disconnect and asks for feedback.
     await page.click('#btn-nm-write');
     await expect(page.locator('#step-nm-done')).not.toBeHidden();
-    await shot(page, dir, '04-done', testInfo);
+    await expect(page.locator('#nm-eject-waiting')).toBeVisible();
+    await shot(page, dir, '04-done-waiting-for-eject', testInfo);
+
+    await page.evaluate(() => {
+        window.__mockEjected = true;
+    });
+    await expect(page.locator('#nm-eject-status')).toContainText('disconnected', { timeout: 15_000 });
+    await shot(page, dir, '05-done-disconnected', testInfo);
 });
 
 // Edge case: Kobo software older than Sideload Mode's 4.31 minimum. The option

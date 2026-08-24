@@ -54,7 +54,8 @@ function useNickelDissolveAssetFetch() {
 test('nickeldissolve is a Reading Experience feature registered in the NickelMenu feature list', () => {
     assert.ok(NICKELMENU_FEATURES.includes(nickelDissolve));
     assert.equal(nickelDissolve.section, 'Reading Experience');
-    assert.equal(nickelDissolve.experimental, true);
+    // No longer flagged experimental; the mechanism stays for other features.
+    assert.equal(nickelDissolve.experimental, false);
     assert.equal(nickelDissolve.default, false);
     // Hidden until the runtime manifest marks the shipped asset available.
     assert.equal(nickelDissolve.available, false);

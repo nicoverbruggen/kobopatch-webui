@@ -34,6 +34,21 @@ export const TL = {
             'neither NickelMenu nor the custom patches work on it, and the mods may not be updated yet. You may be able to downgrade to version 4.',
         DEVICE_FIRMWARE_TOO_NEW_LINK: 'Learn more',
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
+        // The done step watches for the Kobo to disappear rather than telling
+        // the user to eject and leaving them on a static screen. We cannot tell
+        // a safe eject from a pulled cable, so the wording says "disconnected"
+        // and hedges what follows with "should be".
+        NM_WAITING_FOR_EJECT: 'Waiting for you to eject your Kobo\u2026',
+        // Once the Kobo is gone the eject instruction and the "follow the
+        // instructions below" tail of NM_INSTALLED are both stale, so the title
+        // collapses to the plain fact.
+        NM_INSTALLED_DISCONNECTED: 'NickelMenu has been installed on your Kobo.',
+        // "on next reboot" is right up until the reboot starts; once the Kobo is
+        // gone it is happening now.
+        NM_REMOVED_DISCONNECTED: 'NickelMenu will now be removed.',
+        NM_DISCONNECTED_INSTALL: 'Your Kobo has disconnected and should be restarting and updating.',
+        NM_DISCONNECTED_REMOVE: 'Your Kobo has disconnected and should be restarting and removing NickelMenu.',
+        NM_DISCONNECTED_DETAIL: 'This usually takes about a minute. The screen may flicker or go blank while it works.',
         NM_INSTALLED: 'NickelMenu has been installed on your Kobo. To complete the installation, follow the instructions below.',
         NM_DOWNLOAD_READY: 'Your NickelMenu package is ready to download. After downloading, a list of installation steps will be displayed.',
         NM_WILL_BE_REMOVED:

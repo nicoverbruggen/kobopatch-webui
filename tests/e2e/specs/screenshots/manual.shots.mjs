@@ -46,14 +46,6 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
     await shotNickelMenuFontsModal(page, dir, '03c-nickelmenu-fonts-modal', testInfo);
 
-    // Hover the "Experimental" badge (on Page turn animations) to show its popover.
-    await page
-        .locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickeldissolve"]') })
-        .locator('.nm-config-experimental')
-        .hover();
-    await expect(page.locator('.nm-config-experimental[data-tooltip]').first()).toBeVisible();
-    await shot(page, dir, '03b1-nickelmenu-experimental-tooltip', testInfo);
-
     // The "Alternative reading apps" section (collapsed by default) holds KOReader
     // and Cadmus.
     await openNmFeatureSection(page, 'Alternative reading apps');

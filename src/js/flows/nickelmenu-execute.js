@@ -16,6 +16,7 @@ import { featuresToInstall, alwaysCleanupFeatures, optionalCleanupToRemove } fro
 import { featureAnalyticsEvents } from '../nickelmenu/features/index.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
 import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
+import { watchForEject } from '../kobo/eject-watch.js';
 
 const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
 
@@ -114,20 +115,80 @@ function getFeatureConfSettings(features, deviceInfo, fontsCustomization = null)
     return features.flatMap((feature) => (feature.confSettings ? feature.confSettings(ctx) : []));
 }
 
+/**
+ * Watch a connected Kobo for the moment it disappears, and swap the done step
+ * from "waiting for you to eject" to "disconnected, restarting".
+ *
+ * Only the two connected outcomes use this; the download path has no device to
+ * watch. The feedback widget is deliberately withheld until the device is gone
+ * (or the watch gives up), because asking "did it work?" while the Kobo is
+ * still sitting in the file manager collects a vote on nothing. See
+ * `eject-watch.js` on why the copy says "disconnected" rather than "ejected".
+ */
+function startEjectWatch(state, terminal, dom, mode) {
+    // onEnter is re-entrant, so drop any watch left over from a previous visit.
+    state._nmEjectWatch?.stop();
+    state._nmEjectWatch = null;
+
+    const device = state.device;
+    if (!device || !dom.ejectWatch) {
+        terminal.wireFeedback();
+        return;
+    }
+
+    dom.ejectWatch.hidden = false;
+    dom.ejectWaitingText.textContent = TL.STATUS.NM_WAITING_FOR_EJECT;
+    dom.ejectWaiting.hidden = false;
+    dom.ejectStatus.textContent = '';
+    dom.ejectDetail.hidden = true;
+    dom.ejectGlitchNote.hidden = true;
+
+    const settle = (statusText) => {
+        state._nmEjectWatch = null;
+        dom.ejectWaiting.hidden = true;
+        if (statusText) {
+            // The "safely eject" line and the "follow the instructions below"
+            // tail of the title have both been overtaken by events.
+            dom.writeInstructions.hidden = true;
+            dom.rebootInstructions.hidden = true;
+            dom.doneStatus.textContent = mode === 'remove' ? TL.STATUS.NM_REMOVED_DISCONNECTED : TL.STATUS.NM_INSTALLED_DISCONNECTED;
+            dom.ejectStatus.textContent = statusText;
+            dom.ejectDetail.textContent = TL.STATUS.NM_DISCONNECTED_DETAIL;
+            dom.ejectDetail.hidden = false;
+            dom.ejectGlitchNote.hidden = mode !== 'remove';
+        } else {
+            dom.ejectWatch.hidden = true;
+        }
+        terminal.wireFeedback();
+    };
+
+    state._nmEjectWatch = watchForEject(device, {
+        onGone: () => settle(mode === 'remove' ? TL.STATUS.NM_DISCONNECTED_REMOVE : TL.STATUS.NM_DISCONNECTED_INSTALL),
+        // Still plugged in after the timeout. Say nothing about the device, but
+        // release the feedback widget so the vote is not lost entirely.
+        onGiveUp: () => settle(null),
+    });
+}
+
 export function renderNmDoneStatus(state, terminal, dom) {
     dom.doneStatus.textContent = '';
     dom.writeInstructions.hidden = true;
     dom.downloadInstructions.hidden = true;
     dom.rebootInstructions.hidden = true;
+    if (dom.ejectWatch) dom.ejectWatch.hidden = true;
 
     if (state._nmDoneMode === 'remove') {
         dom.doneStatus.textContent = TL.STATUS.NM_REMOVED_ON_REBOOT;
         dom.rebootInstructions.hidden = false;
         terminal.end('nm-remove');
+        startEjectWatch(state, terminal, dom, 'remove');
+        return;
     } else if (state._nmDoneMode === 'written') {
         dom.doneStatus.textContent = TL.STATUS.NM_INSTALLED;
         dom.writeInstructions.hidden = false;
         terminal.end('nm-write');
+        startEjectWatch(state, terminal, dom, 'written');
+        return;
     } else {
         dom.doneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
         triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');

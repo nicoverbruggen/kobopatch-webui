@@ -207,6 +207,7 @@ async function injectMockDevice(page, opts = {}) {
         window.__mockFailReadPaths = new Set(config.failReadPaths || []);
         window.__mockFailWritePaths = new Set(config.failWritePaths || []);
         window.__mockFailRemovePaths = new Set(config.failRemovePaths || []);
+        window.__mockEjected = false;
 
         function makeFileHandle(dirNode, fileName, pathPrefix) {
             const fullPath = pathPrefix ? pathPrefix + '/' + fileName : fileName;
@@ -258,6 +259,9 @@ async function injectMockDevice(page, opts = {}) {
                 name: name,
                 kind: 'directory',
                 getDirectoryHandle: async (childName, opts2) => {
+                    if (window.__mockEjected) {
+                        throw new DOMException('Not found: ' + childName, 'NotFoundError');
+                    }
                     if (node[childName] && node[childName]._type === 'dir') {
                         return makeDirHandle(node[childName], childName, currentPath);
                     }
@@ -271,6 +275,9 @@ async function injectMockDevice(page, opts = {}) {
                     throw new DOMException('Not found: ' + childName, 'NotFoundError');
                 },
                 getFileHandle: async (childName, opts2) => {
+                    if (window.__mockEjected) {
+                        throw new DOMException('Not found: ' + childName, 'NotFoundError');
+                    }
                     if (node[childName] && node[childName]._type === 'file') {
                         return makeFileHandle(node, childName, currentPath);
                     }
@@ -405,6 +412,16 @@ async function getRemovedEntries(page) {
     return page.evaluate(() => window.__mockRemovedEntries);
 }
 
+/**
+ * Simulate the user ejecting (or unplugging) the Kobo: every handle lookup
+ * starts failing, which is all the app can observe when a volume goes away.
+ */
+async function ejectMockDevice(page) {
+    await page.evaluate(() => {
+        window.__mockEjected = true;
+    });
+}
+
 module.exports = {
     injectMockDevice,
     connectMockDevice,
@@ -414,4 +431,5 @@ module.exports = {
     mockPathExists,
     getWrittenFiles,
     getRemovedEntries,
+    ejectMockDevice,
 };

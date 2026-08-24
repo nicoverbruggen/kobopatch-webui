@@ -29,8 +29,15 @@
                 </div>
                 <p id="nm-reboot-instructions" class="done-card-detail" hidden>
                     <strong>Safely eject your Kobo and let it reboot.</strong> Please be patient, NickelMenu will be automatically removed during the reboot.
-                    A "glitchy" horizontal line may briefly appear on screen after restarting — this is normal, as NickelMenu removes itself.
                 </p>
+                <div id="nm-eject-watch" class="eject-watch" hidden>
+                    <p id="nm-eject-waiting" class="eject-watch-waiting"><span class="spinner" aria-hidden="true"></span><span id="nm-eject-waiting-text"></span></p>
+                    <p id="nm-eject-status" class="done-card-detail eject-watch-status" role="status" aria-live="polite"></p>
+                    <p id="nm-eject-detail" class="done-card-detail eject-watch-detail" hidden></p>
+                    <p id="nm-eject-glitch-note" class="done-card-detail eject-watch-detail" hidden>
+                        (Keep in mind that a "glitchy" horizontal line may briefly appear on screen while NickelMenu removes itself. This is normal, don't worry!)
+                    </p>
+                </div>
             </div>
             <p class="restart-hint">You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.</p>
             <!-- include: partials/feedback.html -->

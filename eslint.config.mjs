@@ -23,6 +23,8 @@ export default [
                 HTMLElement: 'readonly',
                 Worker: 'readonly',
                 requestAnimationFrame: 'readonly',
+                setTimeout: 'readonly',
+                clearTimeout: 'readonly',
                 location: 'readonly',
                 navigator: 'readonly',
                 // JSZip loaded via script tag

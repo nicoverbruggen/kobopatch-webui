@@ -396,6 +396,12 @@ export function initNickelMenuFlow(state) {
                     downloadConfDesc: $('nm-download-conf-desc'),
                     downloadConfSettings: $('nm-download-conf-settings'),
                     downloadConfSettingsStep: $('nm-download-conf-settings-step'),
+                    ejectWatch: $('nm-eject-watch'),
+                    ejectWaiting: $('nm-eject-waiting'),
+                    ejectWaitingText: $('nm-eject-waiting-text'),
+                    ejectStatus: $('nm-eject-status'),
+                    ejectDetail: $('nm-eject-detail'),
+                    ejectGlitchNote: $('nm-eject-glitch-note'),
                 });
             },
         },
@@ -572,6 +578,8 @@ export function initNickelMenuFlow(state) {
     }
 
     function resetNickelMenuState() {
+        state._nmEjectWatch?.stop();
+        state._nmEjectWatch = null;
         detectedOptionalCleanupFeatures = [];
         detectedPresetConflictsList = [];
         legacyItemsDetected = false;

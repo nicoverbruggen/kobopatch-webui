@@ -51,6 +51,40 @@
     color: var(--text-secondary);
 }
 
+/* Eject watch — the live "waiting / disconnected" pair on the NickelMenu done
+   step. The waiting row carries the spinner; once the Kobo goes away the row is
+   hidden and the status line below it takes over. */
+.done-card .eject-watch {
+    margin-top: 0.75rem;
+    width: 100%;
+}
+
+.done-card .eject-watch-waiting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.done-card .eject-watch-waiting .spinner {
+    width: 15px;
+    height: 15px;
+    border-width: 2px;
+}
+
+.done-card .eject-watch-status {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.done-card .eject-watch-detail {
+    margin-top: 0.25rem;
+}
+
 .done-card .error-card-message {
     max-width: 100%;
 }

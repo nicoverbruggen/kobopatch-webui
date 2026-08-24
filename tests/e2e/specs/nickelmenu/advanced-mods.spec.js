@@ -40,19 +40,16 @@ test.describe('NickelMenu — Advanced mods', () => {
         // directly below NickelClock.
         const clockRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickelclock"]') });
         const dissolveRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-nickeldissolve"]') });
-        const dissolveBadge = dissolveRow.locator('.nm-config-experimental');
         await expect(dissolveRow).toBeVisible();
-        await expect(dissolveBadge).toHaveText(/experimental/i);
-        // The badge carries the hover/focus explanation, and reveals it on hover.
-        await expect(dissolveBadge).toHaveAttribute('data-tooltip', /haven't been tested extensively.*filing a bug report/);
-        await dissolveBadge.hover();
-        await expect(dissolveBadge).toBeVisible();
+        // No longer flagged experimental. The badge mechanism itself stays in
+        // place for whichever feature needs it next.
+        await expect(dissolveRow.locator('.nm-config-experimental')).toHaveCount(0);
 
         const clockBox = await clockRow.boundingBox();
         const dissolveBox = await dissolveRow.boundingBox();
         expect(dissolveBox.y).toBeGreaterThan(clockBox.y);
 
-        // A non-experimental Reading Experience feature does not get the badge.
+        // No feature in this section carries the badge right now.
         const fontsRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-additional-fonts"]') });
         await expect(fontsRow.locator('.nm-config-experimental')).toHaveCount(0);
 
