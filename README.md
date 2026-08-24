@@ -63,6 +63,7 @@ If you want to install **NickelMenu**:
 
 If you want to apply **custom patches**:
 
+- Software **4.46.x**: Kobo Libra Colour, Kobo Clara Colour, Kobo Clara BW
 - Software **4.45.x**: Kobo Libra Colour, Kobo Clara Colour, Kobo Clara BW
 - Software **4.38.x**: Kobo Clara 2E, Kobo Libra 2, Kobo Elipsa 2E, Kobo Sage, Kobo Elipsa
 

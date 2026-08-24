@@ -75,7 +75,7 @@ function tgzContentSignature(tgzBytes) {
 }
 
 /**
- * Drive the manual flow up to a loaded patches step for 4.45.23646 / kobo13.
+ * Drive the manual flow up to a loaded patches step for 4.46.23836 / kobo13.
  * Collapses the version → channel → confirm sequence that nearly every patch
  * test repeats. Leaves the page on #step-patches with sections rendered.
  */
@@ -85,7 +85,7 @@ async function gotoManualPatchesStep(page) {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
     await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-version', '4.46.23836');
     await page.selectOption('#manual-model', 'kobo13');
     await page.click('#btn-manual-confirm');
     await expect(page.locator('#step-patches')).not.toBeHidden();
@@ -426,7 +426,7 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#step-device')).not.toBeHidden();
         await expect(page.locator('#device-model')).toContainText('Unknown');
         await expect(page.locator('#device-model .device-identification-badge')).toHaveCount(0);
-        await expect(page.locator('#device-firmware')).toHaveText('4.45.23646');
+        await expect(page.locator('#device-firmware')).toHaveText('4.46.23836');
 
         // Warning should be visible with GitHub link
         await expect(page.locator('#device-unknown-warning')).not.toBeHidden();

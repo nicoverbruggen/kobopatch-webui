@@ -107,10 +107,12 @@ hand, which the File System Access API restriction does not touch.
 
 ## Adding a Software Version
 
-1. Add the patch sources to `patches/<version>/` and update `patches/index.json`.
+1. Add the patch sources to `patches/<version>/` and update `patches/index.json`. A new family starts as a copy of the family it succeeds; the compatibility sweep below is what tells you which patches no longer apply.
 2. Add download URLs to `patches/downloads.json` keyed by version and firmware channel (`kobo12`, `kobo13`, etc.).
 3. The Kobo CDN prefix per device family, such as `kobo12` or `kobo13`, is stable; the date path segment changes per release.
-4. Update `tests/e2e/config/firmware-config.js` to use the latest builds.
+4. Update `tests/e2e/config/firmware-config.js`. `primary` is the build the WASM integration test and the E2E suite patch against, `secondary` is the older-device line, and `all` lists every family `patches/index.json` still serves, newest first.
+5. Keep a superseded family in `all` for as long as `index.json` offers it. `patches/blacklist.json` is rebuilt from scratch by `npm run test:patches`, so a family dropped from `all` loses its entry while devices are still offered its patches, and `npm run test:patches:check` then fails on the diff.
+6. Run `npm run test:patches` to regenerate `patches/blacklist.json`. This is the compatibility check: it downloads each configured build, runs the real kobopatch against it, and records the patches that no longer apply.
 
 ## Build And Assets
 

@@ -65,7 +65,7 @@ function tgzContentSignature(tgzBytes) {
 }
 
 /**
- * Drive the manual flow up to a loaded patches step for 4.45.23646 / kobo13.
+ * Drive the manual flow up to a loaded patches step for 4.46.23836 / kobo13.
  * Collapses the version → channel → confirm sequence that nearly every patch
  * test repeats. Leaves the page on #step-patches with sections rendered.
  */
@@ -75,7 +75,7 @@ async function gotoManualPatchesStep(page) {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
     await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-version', '4.46.23836');
     await page.selectOption('#manual-model', 'kobo13');
     await page.click('#btn-manual-confirm');
     await expect(page.locator('#step-patches')).not.toBeHidden();
@@ -203,6 +203,9 @@ test.describe('Custom patches', () => {
     test('blacklisted patches are marked "known to fail" but remain enableable', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
+        // Pinned to 4.45 rather than the current family: 4.45 is the only family
+        // with more than one build, so it is the only one where the dialog's
+        // "tested against" version and the device's own version differ.
         const blacklist = JSON.parse(fs.readFileSync(paths.repo('patches', 'blacklist.json'), 'utf-8'));
         const version45 = blacklist['4.45'];
         test.skip(!version45, 'No 4.45 blacklist entries found');
@@ -211,7 +214,7 @@ test.describe('Custom patches', () => {
         const { getPatchMeta } = await import(paths.src('js/patches/patch-metadata.js'));
         const displayName = (name) => getPatchMeta(name).label || name;
 
-        await connectMockDevice(page, { hasNickelMenu: false, overrideFirmware: true });
+        await connectMockDevice(page, { hasNickelMenu: false, firmware: '4.45.23646', overrideFirmware: true });
 
         // Navigate to Custom Patches
         await page.click('#btn-device-next');

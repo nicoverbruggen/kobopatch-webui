@@ -4,11 +4,16 @@
     "https://help.kobo.com/hc/en-us/articles/35059171032727-Manually-Updating-your-Kobo-eReader-device-Firmware"
   ],
   "_corrections": [
-    "The official Kobo help article above maps the `kobo12` and `kobo13` firmware channels to the WRONG models for the 4.45 line. It lists kobo12 as Kobo Libra Colour (N428) and kobo13 as Kobo Clara BW/Colour (N365/N367); these are reversed.",
+    "The official Kobo help article above maps the `kobo12` and `kobo13` firmware channels to the WRONG models for the modern-device lines (4.45 and 4.46). It lists kobo12 as Kobo Libra Colour (N428) and kobo13 as Kobo Clara BW/Colour (N365/N367); these are reversed.",
     "Verified by downloading the archives and reading the per-channel board codes: kobo12 = mt8113t E60T00 (6in Clara BW/Colour, no stylus), kobo13 = mt8113t E70T00 (7in Libra Colour, ships the MyScript handwriting + Foxit PDF stylus stack). This file therefore INTENTIONALLY deviates from the official docs for N428/N365/N367 and uses the corrected channels.",
     "All other channels match the official docs and were verified correct: kobo14 = E60V00 (Clara BW P365), kobo8 = E80P00 + EA0P10 (Sage + Elipsa), kobo9 = E70K10 (Libra 2), kobo10 = E60K20 (Clara 2E), kobo11 = EA0T00 (Elipsa 2E)."
   ],
   "_newer_devices": ["newer devices below"],
+  "4.46.23836": {
+    "kobo14": "https://ereaderfiles.kobo.com/firmwares/kobo14/Aug2026/kobo-update-4.46.23836.zip",
+    "kobo13": "https://ereaderfiles.kobo.com/firmwares/kobo13/Aug2026/kobo-update-4.46.23836.zip",
+    "kobo12": "https://ereaderfiles.kobo.com/firmwares/kobo12/Aug2026/kobo-update-4.46.23836.zip"
+  },
   "4.45.23697": {
     "kobo14": "https://ereaderfiles.kobo.com/firmwares/kobo14/May2026/kobo-update-4.45.23697.zip",
     "kobo13": "https://ereaderfiles.kobo.com/firmwares/kobo13/May2026/kobo-update-4.45.23697.zip",

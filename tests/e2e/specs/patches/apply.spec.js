@@ -65,7 +65,7 @@ function tgzContentSignature(tgzBytes) {
 }
 
 /**
- * Drive the manual flow up to a loaded patches step for 4.45.23646 / kobo13.
+ * Drive the manual flow up to a loaded patches step for 4.46.23836 / kobo13.
  * Collapses the version → channel → confirm sequence that nearly every patch
  * test repeats. Leaves the page on #step-patches with sections rendered.
  */
@@ -75,7 +75,7 @@ async function gotoManualPatchesStep(page) {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
     await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-version', '4.46.23836');
     await page.selectOption('#manual-model', 'kobo13');
     await page.click('#btn-manual-confirm');
     await expect(page.locator('#step-patches')).not.toBeHidden();
@@ -224,7 +224,7 @@ test.describe('Custom patches', () => {
 
         // Build step
         await expect(page.locator('#step-firmware')).not.toBeHidden();
-        await expect(page.locator('#firmware-version-label')).toHaveText('4.45.23646');
+        await expect(page.locator('#firmware-version-label')).toHaveText('4.46.23836');
         await expect(page.locator('#firmware-device-label')).toHaveText('Kobo Libra Colour');
 
         await page.click('#btn-build');
@@ -541,7 +541,7 @@ test.describe('Custom patches', () => {
 
         // Build step — firmware/model should be set by device info
         await expect(page.locator('#step-firmware')).not.toBeHidden();
-        await expect(page.locator('#firmware-version-label')).toHaveText('4.45.23646');
+        await expect(page.locator('#firmware-version-label')).toHaveText('4.46.23836');
         await expect(page.locator('#firmware-device-label')).toHaveText('Kobo Libra Colour');
 
         // Build
@@ -582,7 +582,7 @@ test.describe('Custom patches', () => {
         const manifest = JSON.parse(manifestText);
         expect(manifest.files.some((f) => f.path === '.kobo/KoboRoot.tgz')).toBe(true);
         expect(manifest.meta.writer.name).toBe('kobopatch-webui');
-        expect(manifest.meta.installed.firmware).toBe('4.45.23646');
+        expect(manifest.meta.installed.firmware).toBe('4.46.23836');
         expect(manifest.meta.installed.channel).toBe('kobo13');
 
         // Verify audit log written under .kobopatch-webui/logs/

@@ -336,7 +336,7 @@ test.describe('NickelMenu — install', () => {
         expect(manifest.features['simplify-tabs'].files.some((f) => f.path === '.adds/nm/scripts/toggle_tabs.sh')).toBe(true);
         expect(manifest.features['exclude-calibre']).toBeDefined();
         expect(manifest.meta.writer.name).toBe('kobopatch-webui');
-        expect(manifest.meta.installed.firmware).toBe('4.45.23646');
+        expect(manifest.meta.installed.firmware).toBe('4.46.23836');
         expect(manifest.meta.installed.channel).toBe('kobo13');
     });
 

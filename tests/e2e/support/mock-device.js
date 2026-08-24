@@ -20,12 +20,12 @@ const READING_DEFAULTS = '[Reading]\nreadingAlignment=\nreadingFontFamily=\n';
 /**
  * Inject a mock File System Access API into the page, simulating a Kobo Libra Color.
  * The mock provides:
- *   - .kobo/version file with serial N4280A0000000 and firmware 4.45.23646
+ *   - .kobo/version file with serial N4280A0000000 and firmware 4.46.23836
  *   - Optionally a .adds/nm/ directory (to simulate NickelMenu being installed)
  *   - In-memory filesystem that tracks all writes for verification
  */
 const defaultConfig = {
-    firmware: '4.45.23646',
+    firmware: '4.46.23836',
     serial: 'N4280A0000000',
     hardwareId: '00000000-0000-0000-0000-000000000390',
     hasNickelMenu: false,
@@ -339,7 +339,7 @@ async function connectMockDevice(page, opts = {}) {
     await page.click('#btn-connect-ready');
     await expect(page.locator('#step-device')).not.toBeHidden();
     await expect(page.locator('#device-model')).toHaveText(opts.expectedModel ?? 'Kobo Libra Colour');
-    await expect(page.locator('#device-firmware')).toHaveText(opts.firmware ?? '4.45.23646');
+    await expect(page.locator('#device-firmware')).toHaveText(opts.firmware ?? '4.46.23836');
     await expect(page.locator('#device-status')).toContainText('recognized');
 }
 

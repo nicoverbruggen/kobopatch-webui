@@ -414,7 +414,7 @@ test.describe('NickelMenu — install', () => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasNickelTypeFixAssets(), 'NickelTypeFix assets not found (run npm run setup:installables)');
 
-        // The default mock firmware (4.45) is above the app's NickelMenu floor.
+        // The default mock firmware (4.46) is above the app's NickelMenu floor.
         await connectMockDevice(page, { hasNickelMenu: false });
 
         await page.click('#btn-device-next');

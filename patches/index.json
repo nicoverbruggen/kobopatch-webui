@@ -1,5 +1,19 @@
 [
     {
+        "filename": "patches_4.46.zip",
+        "versions": [
+            "4.46.23836"
+        ],
+        "patches": {
+            "src/nickel.yaml": "usr/local/Kobo/nickel",
+            "src/nickel_custom.yaml": "usr/local/Kobo/nickel",
+            "src/libadobe.so.yaml": "usr/local/Kobo/libadobe.so",
+            "src/libnickel.so.1.0.0.yaml": "usr/local/Kobo/libnickel.so.1.0.0",
+            "src/librmsdk.so.1.0.0.yaml": "usr/local/Kobo/librmsdk.so.1.0.0",
+            "src/cloud_sync.yaml": "usr/local/Kobo/libnickel.so.1.0.0"
+        }
+    },
+    {
         "filename": "patches_4.45.zip",
         "versions": [
             "4.45.23697",

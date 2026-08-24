@@ -65,7 +65,7 @@ function tgzContentSignature(tgzBytes) {
 }
 
 /**
- * Drive the manual flow up to a loaded patches step for 4.45.23646 / kobo13.
+ * Drive the manual flow up to a loaded patches step for 4.46.23836 / kobo13.
  * Collapses the version → channel → confirm sequence that nearly every patch
  * test repeats. Leaves the page on #step-patches with sections rendered.
  */
@@ -75,7 +75,7 @@ async function gotoManualPatchesStep(page) {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
     await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-version', '4.46.23836');
     await page.selectOption('#manual-model', 'kobo13');
     await page.click('#btn-manual-confirm');
     await expect(page.locator('#step-patches')).not.toBeHidden();
@@ -147,7 +147,7 @@ test.describe('Custom patches', () => {
     });
 
     test('with device — legacy manifest with no stored archive cannot restore its additional files', async ({ page }) => {
-        // Manifest recorded for the device's own firmware (4.45.23646), carrying a
+        // Manifest recorded for the device's own firmware (4.46.23836), carrying a
         // manual edit and an additional file but NO `additionalFilesArchive` (an
         // older install that predates the stored archive). The edit is still
         // restored as-is and noted; the additional file cannot be restored, so the
@@ -164,7 +164,7 @@ test.describe('Custom patches', () => {
                 { path: '.kobo/KoboRoot.tgz', type: 'file' },
                 { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
             ],
-            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.45.23646', channel: 'kobo12' } },
+            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.46.23836', channel: 'kobo12' } },
         };
 
         await connectMockDevice(page, {
@@ -202,7 +202,7 @@ test.describe('Custom patches', () => {
                 { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
             ],
             additionalFilesArchive: { path: '.kobopatch-webui/custom-patches-files.tgz', sha256, size: archiveBytes.length },
-            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.45.23646', channel: 'kobo12' } },
+            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.46.23836', channel: 'kobo12' } },
         };
 
         await connectMockDevice(page, {
@@ -255,7 +255,7 @@ test.describe('Custom patches', () => {
             ],
             // Deliberately wrong checksum for the seeded archive bytes.
             additionalFilesArchive: { path: '.kobopatch-webui/custom-patches-files.tgz', sha256: WRONG_SHA, size: archiveBytes.length },
-            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.45.23646', channel: 'kobo12' } },
+            meta: { writer: { name: 'kobopatch-webui', version: 'test' }, installed: { firmware: '4.46.23836', channel: 'kobo12' } },
         };
 
         await connectMockDevice(page, {

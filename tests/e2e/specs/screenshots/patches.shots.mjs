@@ -168,7 +168,7 @@ test('restore summary — compatible patch', async ({ page }, testInfo) => {
         overrides: { 'src/nickel.yaml': { 'Increase library cover size': true } },
         customized: {},
         files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
-        meta: restoreMeta('4.45.23646'),
+        meta: restoreMeta('4.46.23836'),
     });
     await shot(page, SCREENSHOT_DIRS.edgeRestore, '01-no-notices', testInfo);
 });
@@ -180,7 +180,7 @@ test('restore summary — incompatible patch', async ({ page }, testInfo) => {
         overrides: { 'src/libnickel.so.1.0.0.yaml': { 'Allow rotation on all devices': true } },
         customized: {},
         files: [{ path: '.kobo/KoboRoot.tgz', type: 'file' }],
-        meta: restoreMeta('4.45.23646'),
+        meta: restoreMeta('4.46.23836'),
     });
     await expect(page.locator('#patch-reload-dialog-footnote')).toBeVisible();
     await expect(page.locator('#patch-reload-dialog-footnote')).toContainText('marked as known to fail');
@@ -212,7 +212,7 @@ test('restore summary — additional files unavailable', async ({ page }, testIn
             { path: '.kobo/KoboRoot.tgz', type: 'file' },
             { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
         ],
-        meta: restoreMeta('4.45.23646'),
+        meta: restoreMeta('4.46.23836'),
     });
     await expect(page.locator('#patch-reload-dialog-additional-note')).toContainText('could not be restored');
     await shot(page, SCREENSHOT_DIRS.edgeRestore, '04-additional-files-unavailable', testInfo);
@@ -234,7 +234,7 @@ test('restore summary — additional files restored', async ({ page }, testInfo)
                 { path: '.adds/extra.txt', type: 'additional-file', sourceName: 'extra.txt', size: 4 },
             ],
             additionalFilesArchive: { path: '.kobopatch-webui/custom-patches-files.tgz', sha256: await sha256Hex(archiveBytes), size: archiveBytes.length },
-            meta: restoreMeta('4.45.23646'),
+            meta: restoreMeta('4.46.23836'),
         },
         [{ path: ['.kobopatch-webui', 'custom-patches-files.tgz'], base64 }],
     );

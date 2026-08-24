@@ -125,7 +125,7 @@ if (!quick) {
     await run('node', [join(toolsDir, 'installables/installables.mjs'), '--check']);
 }
 
-const missing = [firmwareConfig.primary, firmwareConfig.secondary]
+const missing = firmwareConfig.all
     .map(({ version, url }) => ({ version, url, file: join(cachedAssets, `kobo-update-${version}.zip`) }))
     .filter(({ file }) => !existsSync(file));
 

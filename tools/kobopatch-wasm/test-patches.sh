@@ -2,8 +2,10 @@
 set -euo pipefail
 
 # Test all patches against cached firmware using kobopatch -t.
-# Iterates over all firmware versions in tests/e2e/config/firmware-config.js,
-# builds the native kobopatch binary, and generates blacklist.json.
+# Iterates over every patch family in tests/e2e/config/firmware-config.js (its
+# `all` list), builds the native kobopatch binary, and generates blacklist.json.
+# The file is rebuilt from scratch, so every family index.json still serves has
+# to be in that list or it silently loses its entry.
 #
 # Usage:
 #   test-patches.sh          # regenerate patches/blacklist.json in place
@@ -50,8 +52,8 @@ echo "Built kobopatch successfully."
 # Start with an empty blacklist.
 echo "{}" > "$BLACKLIST_FILE"
 
-# Iterate over all firmware versions in the config (primary + secondary).
-CONFIGS=$(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify([c.primary, c.secondary]))")
+# Iterate over every patch family in the config.
+CONFIGS=$(node -e "var c=require('$FIRMWARE_CONFIG'); console.log(JSON.stringify(c.all))")
 COUNT=$(echo "$CONFIGS" | jq 'length')
 
 for i in $(seq 0 $((COUNT - 1))); do

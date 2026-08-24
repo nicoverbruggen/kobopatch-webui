@@ -165,7 +165,7 @@ test('manual patches', async ({ page }, testInfo) => {
     await shot(page, dir, '02-version-selection', testInfo);
 
     // Select firmware version and channel
-    await page.selectOption('#manual-version', '4.45.23646');
+    await page.selectOption('#manual-version', '4.46.23836');
     await expect(page.locator('#manual-model')).not.toBeHidden();
     await page.selectOption('#manual-model', 'kobo13');
     await shot(page, dir, '02a-version-channel-selected', testInfo);
