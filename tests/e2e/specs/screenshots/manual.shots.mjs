@@ -53,7 +53,7 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
 
     // The Advanced section (collapsed by default) holds the power-user mods —
     // Sideload Mode and NickelCoverFix (experimental; currently temporarily
-    // disabled via its maintainer kill switch).
+    // hidden via its maintainer kill switch).
     await openNmFeatureSection(page, 'Advanced');
     await shot(page, dir, '03d-nickelmenu-features-advanced', testInfo);
 

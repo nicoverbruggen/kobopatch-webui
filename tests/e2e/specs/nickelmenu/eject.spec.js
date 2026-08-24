@@ -49,7 +49,7 @@ test.describe('NickelMenu eject watch', () => {
 
         // Disconnected: never claims a *safe* eject, since a pulled cable looks
         // identical from here.
-        await expect(page.locator('#nm-eject-status')).toContainText('disconnected and should be restarting and updating', { timeout: 15_000 });
+        await expect(page.locator('#nm-eject-status')).toContainText('should be restarting and updating', { timeout: 15_000 });
         await expect(page.locator('#nm-eject-waiting')).toBeHidden();
         await expect(page.locator('#nm-eject-detail')).toContainText('about a minute');
         await expect(page.locator('#nm-eject-status')).not.toContainText('Ejected');
@@ -90,7 +90,7 @@ test.describe('NickelMenu eject watch', () => {
 
         await ejectMockDevice(page);
 
-        await expect(page.locator('#nm-eject-status')).toContainText('removing NickelMenu', { timeout: 15_000 });
+        await expect(page.locator('#nm-eject-status')).toContainText('uninstalling NickelMenu', { timeout: 15_000 });
         await expect(page.locator('#nm-eject-detail')).toContainText('about a minute');
         await expect(page.locator('#nm-reboot-instructions')).toBeHidden();
         // "on next reboot" gives way to "now" once the reboot is under way.

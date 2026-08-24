@@ -233,6 +233,16 @@ bash tests/e2e/scripts/run-e2e.sh --headed --slow -- --grep "NickelMenu"
 
 `npm run screenshots` (→ `tests/e2e/scripts/run-screenshots.sh`) captures a PNG of every wizard step for visual review. It also runs as the final phase of `npm run verify` and `npm run test`. It reuses the Playwright E2E infrastructure: `config/screenshots.config.js` runs the `specs/screenshots/*.shots.mjs` specs (`testMatch: '**/*.shots.mjs'`) against two viewport projects — `desktop` (1280×900) first, then `mobile` (393×852) — and serves the built `dist/` via `scripts/serve-dist.mjs` on port 8889 (reusing an already-running server if present, so build `dist` first).
 
+**Iterating on one screenshot.** `npm run screenshots` reinstalls dependencies, refreshes installables and rebuilds `dist` before Playwright starts, which dominates its runtime — a full pass is ~45s where the capture itself is ~4s. When `dist` is already current, call Playwright directly instead:
+
+```bash
+source tests/e2e/scripts/env.sh
+cd tests/e2e && ../../node_modules/.bin/playwright test --config config/screenshots.config.js \
+    --grep "connected nickelmenu removal$" --reporter=list --project=desktop
+```
+
+Three traps. **Run it from `tests/e2e/`**, as the wrapper does: `shot()` calls `page.screenshot({ path: 'screenshots/...' })` with a cwd-relative path, so invoking Playwright from the repo root silently writes a stray `screenshots/` there instead (the root-level `screenshots/` line in `.gitignore` exists only to catch that). Pass `--grep` straight through: `run-screenshots.sh -- --grep ...` sends `--` to Playwright first, which turns `--grep` into a filename filter and captures everything anyway. And `run-screenshots.sh` starts with `rm -rf screenshots`, so a filtered run *through the script* leaves only the images it captured; calling Playwright directly updates in place and leaves the rest alone. Run the full `npm run screenshots` before committing either way.
+
 Each test in `specs/screenshots/` (one `.shots.mjs` file per journey — `connected`, `manual`, `patches`, `edge-cases`) walks one flow end to end and calls the `shot(page, folder, name, testInfo)` helper at each point of interest; `shot` writes a full-page PNG to `screenshots/<project>/<folder>/<name>.png`. The flows mirror the real journeys — manual vs. connected × NickelMenu vs. patches — plus grouped edge cases. Device state is faked with `injectMockDevice` (pass `serial`/`firmware` to simulate a specific model, e.g. an older Kobo, or `signedIn: true|false` to swap in a real KoboReader.sqlite fixture so sign-in detection has genuine bytes to read). Add-on availability comes from the baked installables manifest, and firmware-dependent flows skip when the firmware zip is absent.
 
 Output lands under `tests/e2e/screenshots/{mobile,desktop}/` and is gitignored; the directory is wiped at the start of each run. Top-level groups are `manual/`, `connected/`, and `edge-cases/`. Edge cases are split by concern (`connection/`, `device-write/`, `download/`, `compatibility/`, `dialogs/`, `nickelmenu/`) so unusual recovery states do not pile into one folder. File names are prefixed with an order number (`05-…`, `08b-…`) so they sort in flow order. To capture a new state, add or extend a test and drop a `shot(...)` call where you want the frame.

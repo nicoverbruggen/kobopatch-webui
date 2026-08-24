@@ -46,9 +46,10 @@ export const TL = {
         // "on next reboot" is right up until the reboot starts; once the Kobo is
         // gone it is happening now.
         NM_REMOVED_DISCONNECTED: 'NickelMenu will now be removed.',
-        NM_DISCONNECTED_INSTALL: 'Your Kobo has disconnected and should be restarting and updating.',
-        NM_DISCONNECTED_REMOVE: 'Your Kobo has disconnected and should be restarting and removing NickelMenu.',
-        NM_DISCONNECTED_DETAIL: 'This usually takes about a minute. The screen may flicker or go blank while it works.',
+        NM_DISCONNECTED_INSTALL: 'Your Kobo should be restarting and updating.',
+        NM_DISCONNECTED_REMOVE: 'Your Kobo should be restarting and uninstalling NickelMenu.',
+        NM_DISCONNECTED_DETAIL:
+            'This usually takes about a minute on newer devices. During this process, the screen may flicker or go blank. Please be patient.',
         NM_INSTALLED: 'NickelMenu has been installed on your Kobo. To complete the installation, follow the instructions below.',
         NM_DOWNLOAD_READY: 'Your NickelMenu package is ready to download. After downloading, a list of installation steps will be displayed.',
         NM_WILL_BE_REMOVED:

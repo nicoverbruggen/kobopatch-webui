@@ -480,7 +480,7 @@ test('connected nickelmenu factory reset sideload', async ({ page }, testInfo) =
     await page.evaluate(() => {
         window.__mockEjected = true;
     });
-    await expect(page.locator('#nm-eject-status')).toContainText('disconnected', { timeout: 15_000 });
+    await expect(page.locator('#nm-eject-status')).toContainText('restarting', { timeout: 15_000 });
     await shot(page, dir, '05-done-disconnected', testInfo);
 });
 
