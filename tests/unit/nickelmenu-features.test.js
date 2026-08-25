@@ -294,7 +294,7 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
     assert.deepEqual(koreader.menuItems(), [
         {
             id: 'koreader',
-            lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+            lines: ['menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
         },
     ]);
 });

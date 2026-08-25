@@ -489,8 +489,8 @@ test.describe('NickelMenu — install', () => {
 
         // The file is regenerated from scratch: exactly one KOReader entry, and the
         // stale sentinel from the prior install is gone (overwritten, not appended).
-        const koreaderEntries = items.split('\n').filter((line) => line.startsWith('menu_item:main:Open KOReader'));
-        expect(koreaderEntries, 'exactly one Open KOReader menu entry').toHaveLength(1);
+        const koreaderEntries = items.split('\n').filter((line) => line.startsWith('menu_item:main:KOReader'));
+        expect(koreaderEntries, 'exactly one KOReader menu entry').toHaveLength(1);
         expect(items, 'stale prior-install entry must be overwritten').not.toContain('Sentinel Stale Entry');
     });
 

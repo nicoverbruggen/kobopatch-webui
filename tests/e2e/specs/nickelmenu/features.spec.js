@@ -280,9 +280,9 @@ test.describe('NickelMenu — install', () => {
         // KOReader launcher should be the first menu item, just below the Tweak
         // tab header (first in MENU_ITEM_ORDER after the header).
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
-        expect(itemsContent).toContain('menu_item:main:Open KOReader');
+        expect(itemsContent).toContain('menu_item:main:KOReader');
         const firstMenuItem = itemsContent.split('\n').find((line) => line.startsWith('menu_item'));
-        expect(firstMenuItem.startsWith('menu_item:main:Open KOReader')).toBe(true);
+        expect(firstMenuItem.startsWith('menu_item:main:KOReader')).toBe(true);
     });
 
     test('no device — the manual download bundles KOReader together with its plugin', async ({ page }) => {
@@ -333,7 +333,7 @@ test.describe('NickelMenu — install', () => {
         // The reader gets a Toggle entry; a plugin is launched from inside it, so
         // it contributes none.
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
-        expect(itemsContent).toContain('menu_item:main:Open KOReader');
+        expect(itemsContent).toContain('menu_item:main:KOReader');
         expect(itemsContent).not.toContain('Simple UI');
     });
 
@@ -432,7 +432,7 @@ test.describe('NickelMenu — install', () => {
         // The reader gets a Toggle entry; a plugin is launched from inside it, so
         // it contributes none.
         const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
-        expect(items).toContain('menu_item:main:Open KOReader');
+        expect(items).toContain('menu_item:main:KOReader');
         expect(items).not.toContain('Simple UI');
     });
 

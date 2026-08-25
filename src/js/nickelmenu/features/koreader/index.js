@@ -38,7 +38,7 @@ export default {
         mode: 'optional',
         title: 'KOReader',
         removeLabel: 'Remove the KOReader app (.adds/koreader)',
-        description: 'Removes the KOReader app directory (.adds/koreader/).',
+        description: 'Removes the KOReader app directory (.adds/koreader/), and with it any plugins installed inside it.',
         detect: [['.adds', 'koreader']],
         paths: [{ path: ['.adds', 'koreader'], recursive: true }],
     },
@@ -76,7 +76,7 @@ export default {
         return [
             {
                 id: 'koreader',
-                lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+                lines: ['menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
             },
         ];
     },
