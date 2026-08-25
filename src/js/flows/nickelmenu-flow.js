@@ -71,6 +71,7 @@ export function initNickelMenuFlow(state) {
         'nm-config-options': nmConfigOptions,
         'nm-previous-configuration-actions': nmPreviousConfigurationActions,
         'btn-nm-use-previous-configuration': btnNmUsePreviousConfiguration,
+        'btn-nm-previous-configuration-dismiss': btnNmPreviousConfigurationDismiss,
         'nm-uninstall-options': nmUninstallOptions,
         'btn-nm-back': btnNmBack,
         'btn-nm-next': btnNmNext,
@@ -137,6 +138,7 @@ export function initNickelMenuFlow(state) {
         'nm-config-options',
         'nm-previous-configuration-actions',
         'btn-nm-use-previous-configuration',
+        'btn-nm-previous-configuration-dismiss',
         'nm-uninstall-options',
         'btn-nm-back',
         'btn-nm-next',
@@ -372,7 +374,7 @@ export function initNickelMenuFlow(state) {
                     );
                     keptLabel.textContent = 'These currently installed features will be removed:';
                     keptCard.hidden = model.removedFeatures.length === 0;
-                    listLabel.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
+                    listLabel.textContent = state.nmWebuiPresetInstalled ? TL.STATUS.NM_WILL_BE_INSTALLED_MODIFY : TL.STATUS.NM_WILL_BE_INSTALLED;
                     populateList(list, [TL.STATUS.NM_NICKEL_ROOT_TGZ, ...model.installFeatures.map((f) => f.title)]);
                     btnNmWrite.hidden = false;
                     btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
@@ -858,6 +860,15 @@ export function initNickelMenuFlow(state) {
 
     btnNmUsePreviousConfiguration.addEventListener('click', () => {
         restorePreviousConfiguration(false);
+        // The offer has been taken: the ticked boxes are the confirmation, so the
+        // banner has nothing left to say.
+        nmPreviousConfigurationActions.hidden = true;
+    });
+
+    // Dismissing only hides the banner for as long as the user stays on the step:
+    // checkNmInstalledState() decides again on the next visit.
+    btnNmPreviousConfigurationDismiss.addEventListener('click', () => {
+        nmPreviousConfigurationActions.hidden = true;
     });
 
     btnNmFeaturesNext.addEventListener('click', async () => {

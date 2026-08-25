@@ -65,13 +65,11 @@ export default {
         return [
             {
                 type: 'info',
-                title: 'NickelDissolve',
-                paragraphs: [
-                    'NickelDissolve adds a Kindle-style wipe animation to page turns. Applied on the reboot after install. On an unsupported device it stays inert (no animation, no risk).',
-                ],
-                link: {
-                    label: 'NickelDissolve on GitHub',
+                mod: {
+                    name: 'NickelDissolve',
                     href: 'https://github.com/nicoverbruggen/NickelDissolve',
+                    summary: 'adds a Kindle-style wipe animation to page turns.',
+                    detail: 'You can turn this page turn animation off in Settings, you do not need to remove the mod entirely.',
                 },
             },
         ];

@@ -5,8 +5,39 @@
     gap: 0.9rem;
 }
 
-.nm-previous-configuration-actions {
-    margin: 0.8rem 0 1.1rem;
+.nm-previous-configuration-banner {
+    display: block;
+    margin-bottom: 1rem;
+    font-size: 0.82rem;
+}
+
+/* Same understated card as the patches restore offer, not the loud info-blue. */
+.nm-previous-configuration-banner.banner--info {
+    background: var(--card-bg);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
+}
+
+.nm-previous-configuration-banner span {
+    display: block;
+}
+
+/* Sized down like the patches restore button: the offer is a suggestion, so it
+   must not compete with the step's own Continue button. */
+.nm-previous-configuration-banner #btn-nm-use-previous-configuration {
+    flex-shrink: 0;
+    margin-top: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-color: var(--border-light);
+    box-shadow: none;
+
+    &:hover {
+        color: var(--text);
+        border-color: var(--border);
+        background: var(--bg);
+    }
 }
 
 /* Space between the "not signed in" recommendation and the feature list. */
@@ -1025,4 +1056,41 @@
         background: var(--danger-solid-hover);
         border-color: var(--danger-solid-hover);
     }
+}
+
+/* The bundled mods inside a single review notice. Separated by the same dotted
+   rule as the review list above them rather than bullets, which read as clutter
+   against the notice's own tinted card. */
+.review-notice-mods {
+    margin: 0.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.review-notice-mods li {
+    position: relative;
+    padding: 0.45rem 0 0.45rem 1.1rem;
+    border-top: 1px dotted var(--border);
+}
+
+.review-notice-mods li:first-child {
+    border-top: 0;
+}
+
+/* A square marker in the theme colour, drawn rather than typed: a glyph bullet
+   sits differently in every font, and this one has to line up with the first
+   line of a paragraph that wraps. */
+.review-notice-mods li::before {
+    content: '';
+    position: absolute;
+    left: 0.15rem;
+    top: calc(0.45rem + 0.72em - 3px);
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 1px;
+}
+
+.review-notice-mods a {
+    font-weight: 600;
 }

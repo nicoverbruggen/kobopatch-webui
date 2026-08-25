@@ -165,8 +165,20 @@ test('subFeatures lists the features that declare a given parent', () => {
 
 test('parentIsCovered is true when the parent is selected or already on the device', () => {
     assert.equal(parentIsCovered('koreader', session({ selectedFeatureIds: ['koreader'] })), true);
-    assert.equal(parentIsCovered('koreader', session({ installedNickelMenuFeatureIds: ['koreader'] })), true);
+    assert.equal(
+        parentIsCovered('koreader', session({ nmWebuiPresetInstalled: false, installedNickelMenuFeatureIds: ['koreader'] })),
+        true,
+        'a KOReader this tool did not install still hosts a plugin',
+    );
     assert.equal(parentIsCovered('koreader', session()), false, 'nothing to plug into');
+});
+
+test('parentIsCovered is false for an installed parent the user unticked in a modify run', () => {
+    // The list is preselected from the device there, so an unticked KOReader is
+    // being removed. Treating it as coverage kept the plugin ticked and wrote it
+    // into a directory the same run was deleting.
+    const sess = session({ nmWebuiPresetInstalled: true, installedNickelMenuFeatureIds: ['koreader'], selectedFeatureIds: [] });
+    assert.equal(parentIsCovered('koreader', sess), false);
 });
 
 test('featuresToInstall drops a subitem whose parent is neither selected nor installed', () => {
@@ -185,7 +197,7 @@ test('featuresToInstall keeps a subitem when its parent is part of the same inst
 
 test('featuresToInstall keeps a subitem when its parent is already on the device', () => {
     withReadingAppsAvailable(() => {
-        const sess = session({ selectedFeatureIds: ['simpleui'], installedNickelMenuFeatureIds: ['koreader'] });
+        const sess = session({ nmWebuiPresetInstalled: false, selectedFeatureIds: ['simpleui'], installedNickelMenuFeatureIds: ['koreader'] });
         const ids = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
         assert.ok(ids.includes('simpleui'), 'the plugin can be added on its own');
         assert.ok(!ids.includes('koreader'), 'without reinstalling KOReader');
@@ -322,6 +334,36 @@ test('featureReviewNotices de-duplicates identical notices (shared across featur
     assert.deepEqual(
         notices.map((n) => n.title),
         ['NickelHome', 'other'],
+    );
+});
+
+test('featureReviewNotices folds the bundled mods into one notice, after the warnings', () => {
+    const features = [
+        { reviewNotices: () => [{ type: 'info', mod: { name: 'NickelHome', href: 'h', summary: 'hides widgets.' } }] },
+        { reviewNotices: () => [{ type: 'warning', title: 'Careful' }] },
+        { reviewNotices: () => [{ type: 'info', mod: { name: 'NickelDissolve', href: 'd', summary: 'animates page turns.' } }] },
+    ];
+    const notices = featureReviewNotices(features, {});
+    assert.equal(notices.length, 2, 'two mods make one card, and the warning keeps its own');
+    assert.equal(notices[0].title, 'Careful', 'a warning is not buried under the mods');
+    assert.equal(notices[1].title, 'Selected mods');
+    assert.deepEqual(
+        notices[1].mods.map((m) => m.name),
+        ['NickelHome', 'NickelDissolve'],
+    );
+});
+
+test('featureReviewNotices words the mod notice for a single mod', () => {
+    const features = [{ reviewNotices: () => [{ type: 'info', mod: { name: 'NickelHome', href: 'h', summary: 'hides widgets.' } }] }];
+    const [notice] = featureReviewNotices(features, {});
+    assert.equal(notice.title, 'Selected mod');
+});
+
+test('featureReviewNotices adds no mod notice when no mod is included', () => {
+    const notices = featureReviewNotices([{ reviewNotices: () => [{ type: 'info', title: 'plain' }] }], {});
+    assert.deepEqual(
+        notices.map((n) => n.title),
+        ['plain'],
     );
 });
 

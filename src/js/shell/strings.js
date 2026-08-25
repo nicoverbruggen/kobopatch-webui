@@ -57,6 +57,9 @@ export const TL = {
         NM_SELECTED_REMOVALS: 'Selected removals:',
         NM_KEPT_FEATURES: 'These items and their files will be kept:',
         NM_WILL_BE_INSTALLED: 'The following will be installed on your Kobo:',
+        // A modify run rewrites what is already there alongside anything newly
+        // ticked, so the plain "will be installed" would misdescribe most of the list.
+        NM_WILL_BE_INSTALLED_MODIFY: 'The following will be installed or reinstalled on your Kobo:',
         NM_NICKEL_ROOT_TGZ: 'NickelMenu (KoboRoot.tgz)',
         NM_REMOVAL_NICKELMENU: 'NickelMenu',
         NM_REMOVAL_HINT: 'Removes NickelMenu from your device. Your device will restart automatically.',
@@ -124,7 +127,7 @@ export const TL = {
         BLACKLIST_UNKNOWN_VERSION: 'unknown',
         DISCARD_EDITS_CONFIRM: 'You have unsaved edits to one or more patches. Going back will discard them. Continue?',
         RELOAD_OFFER:
-            'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
+            'You connected a Kobo that has been patched before. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
         RELOAD_APPLIED: 'Previously applied patches have been reloaded, including any manual edits.',
         RELOAD_NONE_MATCHED: 'None of the previously applied patches could be matched to the patches for this software version.',
         RELOAD_SUMMARY_INTRO: 'The following patches have been re-applied:',

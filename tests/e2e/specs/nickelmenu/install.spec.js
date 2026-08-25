@@ -501,7 +501,7 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#nm-custom-menu-summary .nm-config-summary-label')).toHaveText('Read');
         await expect(page.locator('#nm-simplify-tabs-summary .nm-config-summary-label')).toHaveText('4 tabs');
         await expect(page.locator('#nm-fonts-summary .nm-config-summary-label')).toHaveText('3 fonts');
-        await expect(page.getByRole('button', { name: 'Use last configuration' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Restore last configuration' })).toHaveCount(0);
     });
 
     test('with device — deselecting an installed feature is presented as a removal', async ({ page }) => {
@@ -713,7 +713,7 @@ test.describe('NickelMenu — install', () => {
 
         await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).not.toBeChecked();
         await expect(page.locator('input[name="nm-cfg-hide-notices"]')).not.toBeChecked();
-        await page.getByRole('button', { name: 'Use last configuration' }).click();
+        await page.getByRole('button', { name: 'Restore last configuration' }).click();
         await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
         await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
         await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).not.toBeChecked();

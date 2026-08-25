@@ -29,6 +29,41 @@
     margin-bottom: 0.3rem;
 }
 
+/* --- Dismissible --- */
+
+/* The close button sits in the top-right corner, so the banner's own content
+   has to keep clear of it. */
+.banner--dismissible {
+    position: relative;
+    padding-right: 2.5rem;
+}
+
+.banner-dismiss {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    gap: 0;
+    color: inherit;
+    background: none;
+    border-color: transparent;
+    box-shadow: none;
+    opacity: 0.55;
+
+    & svg {
+        width: 0.85rem;
+        height: 0.85rem;
+    }
+
+    &:hover {
+        opacity: 1;
+        background: none;
+        border-color: transparent;
+    }
+}
+
 /* --- Color modifiers --- */
 
 .banner--info {

@@ -85,4 +85,27 @@ select + .fallback-hint {
     margin-top: 1rem;
     font-size: 0.78rem;
     color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+/* Sized to sit under the muted hint it belongs to, not to compete with the
+   step's own buttons. */
+.restart-button {
+    /* A flex container is block-level, so it needs a content-sized width before
+       the auto margins can centre it. */
+    display: flex;
+    width: fit-content;
+    margin-inline: auto;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-color: var(--border-light);
+    background: var(--card-bg);
+    box-shadow: none;
+
+    &:hover {
+        color: var(--text);
+        border-color: var(--border);
+        background: var(--bg);
+    }
 }

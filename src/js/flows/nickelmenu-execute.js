@@ -253,6 +253,23 @@ export function renderReviewNotices(container, notices) {
             banner.appendChild(paragraph);
         }
 
+        if (notice.mods) {
+            const list = document.createElement('ul');
+            list.className = 'review-notice-mods';
+            for (const mod of notice.mods) {
+                const item = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = mod.href;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = mod.name;
+                item.append(link, ` ${mod.summary}`);
+                if (mod.detail) item.append(` ${mod.detail}`);
+                list.appendChild(item);
+            }
+            banner.appendChild(list);
+        }
+
         if (notice.link) {
             const paragraph = document.createElement('p');
             const link = document.createElement('a');

@@ -73,13 +73,10 @@ export default {
         return [
             {
                 type: 'info',
-                title: 'NickelTypeFix',
-                paragraphs: [
-                    'NickelTypeFix is part of the "Better typography" feature, and it repairs some rendering quirks of Kobo\'s optimized text renderer. Applied on the reboot after install.',
-                ],
-                link: {
-                    label: 'NickelTypeFix on GitHub',
+                mod: {
+                    name: 'NickelTypeFix',
                     href: 'https://github.com/nicoverbruggen/NickelTypeFix',
+                    summary: 'comes with the "Better typography" feature and repairs some rendering quirks of Kobo\'s optimized text renderer.',
                 },
             },
         ];

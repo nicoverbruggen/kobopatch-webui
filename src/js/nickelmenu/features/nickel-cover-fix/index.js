@@ -33,13 +33,11 @@ export default {
         return [
             {
                 type: 'info',
-                title: 'NickelCoverFix',
-                paragraphs: [
-                    'NickelCoverFix keeps book covers from turning into the title/author placeholder, and supports custom covers. Applied on the reboot after install. Covers are mirrored automatically as books are shown; with a large library, open "More > Repair Book Covers" on the device once to prepare all covers in one pass.',
-                ],
-                link: {
-                    label: 'NickelCoverFix on GitHub',
+                mod: {
+                    name: 'NickelCoverFix',
                     href: 'https://github.com/nicoverbruggen/NickelCoverFix',
+                    summary: 'keeps book covers from turning into the title/author placeholder, and supports custom covers.',
+                    detail: 'Covers are mirrored automatically as books are shown; with a large library, open "More > Repair Book Covers" on the device once to prepare all covers in one pass.',
                 },
             },
         ];

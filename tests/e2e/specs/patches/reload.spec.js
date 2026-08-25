@@ -109,7 +109,7 @@ test.describe('Custom patches', () => {
         // The reload offer appears because a manifest is present on the device.
         const banner = page.locator('#patch-reload-banner');
         await expect(banner).not.toBeHidden();
-        await expect(banner).toContainText('previously patched');
+        await expect(banner).toContainText('patched before');
 
         const patchName = page.locator('.patch-name', { hasText: 'Increase library cover size' }).first();
         const patchLabel = patchName.locator('xpath=ancestor::label');

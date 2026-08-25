@@ -54,8 +54,12 @@ export function subFeatureCheckboxLabel(feature) {
  * there is something to plug them into.
  */
 export function parentIsCovered(parentId, session, selectedIds = session.selectedFeatureIds || []) {
-    if (session.installedNickelMenuFeatureIds?.includes(parentId)) return true;
-    return selectedIds.includes(parentId);
+    if (selectedIds.includes(parentId)) return true;
+    // Being on the device only counts outside a modify run. In one the list is
+    // preselected from what is installed, so an unticked parent is on its way
+    // out and cannot host an add-on — see `featuresToRemove` for the same guard.
+    if (session.nmWebuiPresetInstalled) return false;
+    return Boolean(session.installedNickelMenuFeatureIds?.includes(parentId));
 }
 
 /**
@@ -167,12 +171,27 @@ export function featureReviewNotices(features, deviceInfo) {
     // hiders) can each contribute the same shared NickelHome notice, but it should
     // appear once.
     const seen = new Set();
-    return all.filter((notice) => {
+    const notices = all.filter((notice) => {
         const key = JSON.stringify(notice);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
     });
+    return combineModNotices(notices);
+}
+
+/**
+ * Fold every bundled-mod notice into one card, listed after the rest.
+ *
+ * Each mod used to get a card of its own, which turned a three-mod install into
+ * a wall of near-identical text. One card gives each chosen mod a line, and the
+ * heading follows the count.
+ */
+function combineModNotices(notices) {
+    const mods = notices.filter((notice) => notice.mod).map((notice) => notice.mod);
+    const rest = notices.filter((notice) => !notice.mod);
+    if (mods.length === 0) return rest;
+    return [...rest, { type: 'info', title: mods.length === 1 ? 'Selected mod' : 'Selected mods', mods }];
 }
 
 /**

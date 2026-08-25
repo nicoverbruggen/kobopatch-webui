@@ -100,13 +100,11 @@ function makeHider({ id, title, description, flag }) {
             return [
                 {
                     type: 'info',
-                    title: 'NickelHome',
-                    paragraphs: [
-                        'NickelHome hides the home-screen widgets you selected. Applied on the reboot after install. You can turn the minimal home on or off any time with the "Minimal Home" menu item.',
-                    ],
-                    link: {
-                        label: 'NickelHome on GitHub',
+                    mod: {
+                        name: 'NickelHome',
                         href: 'https://github.com/nicoverbruggen/NickelHome',
+                        summary: 'hides the home-screen widgets you selected.',
+                        detail: 'You can turn the minimal home on or off any time with the "Minimal Home" menu item.',
                     },
                 },
             ];

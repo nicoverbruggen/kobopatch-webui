@@ -63,8 +63,8 @@ test.describe('NickelMenu — removal', () => {
         await expect(page.locator('#step-nm-manual-remove')).toContainText('long-pressing the power button');
         await expect(page.locator('#step-nm-manual-remove')).not.toContainText('KoboRoot.tgz');
         await expect(page.locator('#step-nm-manual-remove')).toContainText('ExcludeSyncFolders=');
-        await expect(page.locator('#nm-manual-remove-retry')).toBeVisible();
-        await expect(page.locator('#nm-manual-remove-retry')).toHaveText(
+        await expect(page.locator('#step-nm-manual-remove .restart-hint')).toBeVisible();
+        await expect(page.locator('#step-nm-manual-remove .restart-hint')).toHaveText(
             'You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.',
         );
         await expect
@@ -133,7 +133,7 @@ test.describe('NickelMenu — removal', () => {
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
         await expect(page.locator('#nm-done-status')).toContainText('removed');
         await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
-        await expect(page.locator('#nm-manual-remove-retry')).toBeHidden();
+        await expect(page.locator('#step-nm-manual-remove .restart-hint')).toBeHidden();
         await expect
             .poll(() => page.evaluate(() => window.__trackedEvents))
             .toContainEqual({

@@ -164,11 +164,12 @@ test('reviewNotices describes NickelDissolve and links to the repository', () =>
     const notices = nickelDissolve.reviewNotices();
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'info');
-    assert.match(notices[0].title, /NickelDissolve/);
-    // Describes what the mod does and stays inert on unsupported devices (the
-    // "experimental" signal now lives only on the feature's Experimental badge).
-    assert.match(notices[0].paragraphs[0], /wipe animation|reboot|inert/i);
-    assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelDissolve');
+    assert.match(notices[0].mod.name, /NickelDissolve/);
+    // Says what the mod does and that it can be switched off without uninstalling
+    // (the "experimental" signal lives only on the feature's Experimental badge).
+    assert.match(notices[0].mod.summary, /wipe animation/i);
+    assert.match(notices[0].mod.detail, /turn this page turn animation off/i);
+    assert.equal(notices[0].mod.href, 'https://github.com/nicoverbruggen/NickelDissolve');
 });
 
 test('the mod is detected as installed exactly when its uninstall marker exists', async () => {

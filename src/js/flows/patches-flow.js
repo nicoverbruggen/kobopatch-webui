@@ -30,6 +30,7 @@ export function initPatchesFlow(state) {
         'step-done': stepDone,
         'patch-container': patchContainer,
         'patch-reload-banner': patchReloadBanner,
+        'btn-patch-reload-dismiss': btnPatchReloadDismiss,
         'patch-reload-text': patchReloadText,
         'btn-patch-reload': btnPatchReload,
         'patch-reload-dialog': patchReloadDialog,
@@ -83,6 +84,7 @@ export function initPatchesFlow(state) {
         'patch-reload-banner',
         'patch-reload-text',
         'btn-patch-reload',
+        'btn-patch-reload-dismiss',
         'patch-reload-dialog',
         'btn-patch-reload-dialog-close',
         'patch-reload-dialog-intro',
@@ -379,6 +381,12 @@ export function initPatchesFlow(state) {
     btnPatchReloadDialogClose.addEventListener('click', () => patchReloadDialog.close());
     patchReloadDialog.addEventListener('click', (e) => {
         if (e.target === patchReloadDialog) patchReloadDialog.close();
+    });
+
+    // Dismissing only hides the banner for as long as the user stays on the step:
+    // re-entering it runs maybeOfferReload() again, which shows the offer afresh.
+    btnPatchReloadDismiss.addEventListener('click', () => {
+        patchReloadBanner.hidden = true;
     });
 
     btnPatchReload.addEventListener('click', () => {
