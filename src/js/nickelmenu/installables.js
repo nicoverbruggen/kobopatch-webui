@@ -53,6 +53,18 @@ export async function installableSize(id) {
 }
 
 /**
+ * A pinned version as it should be shown to the user. Upstream tags are not
+ * consistent — most carry a `v` prefix, some (SimpleUI's `2.5.0`) do not — so a
+ * version that starts with a digit gets one, keeping the version pills in the
+ * feature list uniform. The lock and the asset URL keep the real tag, since that
+ * is what upstream serves and what the update check compares against.
+ */
+export function displayVersion(version) {
+    if (typeof version !== 'string' || version === '') return version;
+    return /^\d/.test(version) ? `v${version}` : version;
+}
+
+/**
  * Build a version-suffixed, cacheable asset URL: `/assets/<file>?v=<version>`.
  * The `?v=` makes the URL change whenever the pinned version does, so the server
  * (and a CDN) can serve the large archives as `immutable`. Falls back to the bare

@@ -20,6 +20,7 @@ src/js/wasm_exec.js
 src/assets/kobo-core-fonts.zip
 src/assets/kobo-extra-fonts.zip
 src/assets/koreader-kobo.zip
+src/assets/simpleui.koplugin.zip
 src/assets/cadmus-kobo.tar.gz
 src/assets/NickelMenu.tgz
 src/assets/NickelClock.zip

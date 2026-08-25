@@ -12,6 +12,7 @@ const {
     hasNickelClockAssets,
     hasNickelTypeFixAssets,
     hasKOReaderAssets,
+    hasSimpleUIAssets,
     hasCadmusAssets,
     hasFontAssets,
     hasFirmwareZip,
@@ -330,6 +331,101 @@ test.describe('NickelMenu — install', () => {
         // Verify the .adds/koreader directory was created in mock FS
         const koreaderDirExists = await mockPathExists(page, '.adds', 'koreader');
         expect(koreaderDirExists, '.adds/koreader/ should exist').toBe(true);
+    });
+
+    test('no device — a KOReader plugin is a checkbox under it that follows KOReader', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+
+        // The plugin is always visible under KOReader's description, but it
+        // installs inside KOReader, so it says what it is waiting for.
+        const plugin = page.locator('input[name="nm-cfg-simpleui"]');
+        const pluginRow = page.locator('.nm-config-subitem').filter({ hasText: 'Simple UI' });
+        await expect(pluginRow).toBeVisible();
+        await expect(pluginRow).toContainText('Install Simple UI');
+        await expect(pluginRow.locator('.nm-config-subitem-badge')).toHaveText('plugin');
+        await expect(pluginRow.locator('.nm-config-version')).toHaveText('v2.5.0');
+        // Greyed out, with no words: it sits directly under the thing it needs.
+        await expect(plugin).toBeDisabled();
+        await expect(pluginRow).not.toContainText('Requires');
+
+        // Ticking KOReader frees it, in place — the section stays open.
+        await page.check('input[name="nm-cfg-koreader"]');
+        await expect(plugin).toBeEnabled();
+
+        // Its "?" badge links to the plugin upstream, and following it must not
+        // toggle the checkbox it sits beside.
+        const pluginHelp = pluginRow.locator('.nm-config-help');
+        await expect(pluginHelp).toHaveAttribute('href', 'https://github.com/doctorhetfield-cmd/simpleui.koplugin');
+        await expect(pluginHelp).toHaveAttribute('target', '_blank');
+        await pluginHelp.click();
+        await expect(plugin).not.toBeChecked();
+
+        // Clicking the plugin's label must not toggle KOReader above it, and
+        // must not press it either — an add-on inside KOReader's <label> made
+        // its checkbox flash on every click, which is why they are siblings.
+        const koreader = page.locator('input[name="nm-cfg-koreader"]');
+        await pluginRow.click();
+        await expect(plugin).toBeChecked();
+        await expect(koreader).toBeChecked();
+        await expect(pluginRow.locator('input')).toHaveCount(1);
+        await expect(page.locator('.nm-config-item .nm-config-subitem')).toHaveCount(0);
+
+        // Unticking KOReader takes the plugin down with it.
+        await page.uncheck('input[name="nm-cfg-koreader"]');
+        await expect(plugin).toBeDisabled();
+        await expect(plugin).not.toBeChecked();
+    });
+
+    test('with device — SimpleUI installs on its own when KOReader is already on the device', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, { hasNickelMenu: false, hasKOReader: true });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+
+        // The device already has .adds/koreader, so the plugin is selectable
+        // without KOReader being ticked — it can be added on its own, without
+        // redownloading the 42 MB reader.
+        await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
+        await expect(page.locator('input[name="nm-cfg-simpleui"]')).toBeEnabled();
+        // Drop the additional fonts so this run only depends on the SimpleUI asset.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-simpleui"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+        await expect(page.locator('#nm-review-list')).not.toContainText('Install KOReader');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles.some((f) => f.includes('.adds/koreader/plugins/simpleui.koplugin/'))).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin')).toBe(true);
+        // KOReader itself was not part of this install, so nothing else was rewritten.
+        expect(writtenFiles.some((f) => f.includes('.adds/koreader/koreader.sh'))).toBe(false);
     });
 
     test('with device — install with Cadmus extracts its app directory to the device', async ({ page }) => {

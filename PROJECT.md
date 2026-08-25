@@ -137,7 +137,8 @@ npm run build:wasm    # compiles WASM, copies to dist/wasm/ and src/js/
 
 ### Installable assets (lock-pinned)
 
-NickelMenu, NickelHome, NickelClock, NickelTypeFix, the reading apps (KOReader, Cadmus) and the
+NickelMenu, NickelHome, NickelClock, NickelTypeFix, the reading apps (KOReader, Cadmus), the
+KOReader SimpleUI plugin and the
 [ebook-fonts](https://github.com/nicoverbruggen/ebook-fonts) collection (a "core" and an "extra"
 archive of Kobo-optimized KF fonts) are downloaded from upstream GitHub releases, not committed.
 `installables.lock` (committed at the repo root) is the single source of truth — it pins each

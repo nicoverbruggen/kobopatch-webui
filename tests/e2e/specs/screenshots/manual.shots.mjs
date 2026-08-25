@@ -51,6 +51,13 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await openNmFeatureSection(page, 'Alternative reading apps');
     await shot(page, dir, '03c-nickelmenu-features-reading-apps', testInfo);
 
+    // A KOReader plugin is a checkbox under KOReader, disabled until KOReader
+    // itself is ticked. Capture that second state too, then untick so the rest
+    // of the flow is unaffected.
+    await page.check('input[name="nm-cfg-koreader"]');
+    await shot(page, dir, '03c-nickelmenu-features-reading-apps-plugins', testInfo);
+    await page.uncheck('input[name="nm-cfg-koreader"]');
+
     // The Advanced section (collapsed by default) holds the power-user mods —
     // Sideload Mode and NickelCoverFix (experimental; currently temporarily
     // hidden via its maintainer kill switch).

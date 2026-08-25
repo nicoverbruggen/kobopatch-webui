@@ -10,6 +10,10 @@ function hasKOReaderAssets() {
     return fs.existsSync(path.join(WEBROOT, 'assets', 'koreader-kobo.zip'));
 }
 
+function hasSimpleUIAssets() {
+    return fs.existsSync(path.join(WEBROOT, 'assets', 'simpleui.koplugin.zip'));
+}
+
 function hasCadmusAssets() {
     return fs.existsSync(path.join(WEBROOT, 'assets', 'cadmus-kobo.tar.gz'));
 }
@@ -58,6 +62,7 @@ function cleanupFirmwareSymlink() {
 module.exports = {
     hasNickelMenuAssets,
     hasKOReaderAssets,
+    hasSimpleUIAssets,
     hasCadmusAssets,
     hasNickelClockAssets,
     hasNickelTypeFixAssets,

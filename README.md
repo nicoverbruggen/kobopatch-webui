@@ -19,7 +19,7 @@ The project itself currently has a few operational modes, depending on what it i
 
 **This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) and, optionally, a whole selection of standalone mods and a [curated configuration](https://github.com/nicoverbruggen/kobo-config) alongside it.** 
 
-You pick and choose what to apply. On offer: home screen tweaks (via [NickelHome](https://github.com/nicoverbruggen/NickelHome)), a preconfigured NickelMenu, some extra fonts, screensavers, [NickelClock](https://github.com/shermp/NickelClock) (which displays the clock while you're reading), [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) (which repairs typesetting issues like justification and vertical text rendering), and alternative reading apps like KOReader or Cadmus if you'd like. Each is its own mod, so you only get what you select.
+You pick and choose what to apply. On offer: home screen tweaks (via [NickelHome](https://github.com/nicoverbruggen/NickelHome)), a preconfigured NickelMenu, some extra fonts, screensavers, [NickelClock](https://github.com/shermp/NickelClock) (which displays the clock while you're reading), [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) (which repairs typesetting issues like justification and vertical text rendering), and alternative reading apps like KOReader (with the [SimpleUI](https://github.com/doctorhetfield-cmd/simpleui.koplugin) plugin, if you want a home screen for it) or Cadmus if you'd like. Each is its own mod, so you only get what you select.
 
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
@@ -107,6 +107,7 @@ Some of these are bundled with the app (see `installables.lock`) rather than dow
 - [NickelClock](https://github.com/shermp/NickelClock) — a clock on the reading screen. _(MIT)_
 - [KOReader](https://github.com/koreader/koreader) — a feature-rich document and e-book reader. _(AGPL-3.0)_
 - [Cadmus](https://github.com/OGKevin/cadmus) — a reading companion app for Kobo, based on [Plato](https://github.com/baskerville/plato). _(AGPL-3.0)_
+- [SimpleUI](https://github.com/doctorhetfield-cmd/simpleui.koplugin) — a KOReader plugin that adds a home screen, a navigation bar and a status bar. _(MIT)_
 
 **Libraries & tooling**
 

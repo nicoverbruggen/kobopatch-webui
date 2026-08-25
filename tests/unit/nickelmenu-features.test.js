@@ -9,6 +9,7 @@ import customMenu, { CUSTOM_MENU_ICON_URL, TOGGLE_SCREENSHOTS_SCRIPT_URL } from 
 import cadmus from '../../src/js/nickelmenu/features/cadmus/index.js';
 import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
+import simpleui from '../../src/js/nickelmenu/features/simpleui/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
 import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
@@ -354,6 +355,54 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
             assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);
         }),
     );
+});
+
+test("SimpleUI install maps ZIP files into KOReader's plugins directory", async () => {
+    const zipData = await createZip({
+        'simpleui.koplugin/main.lua': 'return {}',
+        'simpleui.koplugin/infra/sui_core.lua': '-- core',
+    });
+    const progressMessages = [];
+
+    await withManifest({ simpleui: { version: '2.5.0', available: true } }, () =>
+        withMockFetch(new Map([['/assets/simpleui.koplugin.zip?v=2.5.0', createResponse(zipData)]]), async () => {
+            const files = await simpleui.install({
+                progress(message) {
+                    progressMessages.push(message);
+                },
+            });
+
+            assert.deepEqual(
+                files.map((file) => file.path),
+                ['.adds/koreader/plugins/simpleui.koplugin/main.lua', '.adds/koreader/plugins/simpleui.koplugin/infra/sui_core.lua'],
+            );
+            assert.equal(text(files[0].data), 'return {}');
+            assert.deepEqual(progressMessages, ['Downloading SimpleUI 2.5.0...', 'Extracting SimpleUI...']);
+        }),
+    );
+});
+
+test('SimpleUI install places a flat archive under the plugin folder KOReader looks for', async () => {
+    // KOReader identifies a plugin by its directory name, so an archive that
+    // ever ships its contents unrooted must still land in simpleui.koplugin/.
+    const zipData = await createZip({ 'main.lua': 'return {}' });
+
+    await withManifest({ simpleui: { version: '2.5.0', available: true } }, () =>
+        withMockFetch(new Map([['/assets/simpleui.koplugin.zip?v=2.5.0', createResponse(zipData)]]), async () => {
+            const files = await simpleui.install({ progress() {} });
+            assert.deepEqual(
+                files.map((file) => file.path),
+                ['.adds/koreader/plugins/simpleui.koplugin/main.lua'],
+            );
+        }),
+    );
+});
+
+test('SimpleUI is a KOReader subitem that adds no menu entry of its own', () => {
+    assert.equal(simpleui.parent, 'koreader');
+    assert.equal(simpleui.section, koreader.section, 'listed alongside the app it plugs into');
+    assert.equal(simpleui.menuItems, undefined, 'a KOReader plugin has no NickelMenu entry');
+    assert.deepEqual(simpleui.directories, ['.adds/koreader/plugins/simpleui.koplugin']);
 });
 
 test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {

@@ -8,11 +8,11 @@
 
 import { $, $q, $qa, collect, populateList } from '../shell/dom.js';
 import { setupCardRadios } from '../shell/navigation.js';
-import { renderNmCheckboxList } from '../nickelmenu/checkbox-list.js';
+import { renderNmCheckboxList, setNmSubItemAvailability } from '../nickelmenu/checkbox-list.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { NICKELMENU_FEATURES } from '../nickelmenu/features/index.js';
-import { installablesManifest } from '../nickelmenu/installables.js';
+import { displayVersion, installablesManifest } from '../nickelmenu/installables.js';
 import {
     createDefaultMenuCustomization,
     isDefaultMenuCustomization,
@@ -22,11 +22,12 @@ import {
 } from '../nickelmenu/customization.js';
 import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
+    detectInstalledParentFeatures as probeDetectInstalledParentFeatures,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
     readPreviousNickelMenuSelections,
 } from '../nickelmenu/probes.js';
-import { nmReviewModel, featureDisabledReason } from '../nickelmenu/selection.js';
+import { nmReviewModel, featureDisabledReason, parentIsCovered, subFeatureCheckboxLabel, subFeatureNoun, subFeatures } from '../nickelmenu/selection.js';
 import {
     cloneMenuCustomization,
     getMenuCustomizationSummaryItem,
@@ -267,6 +268,9 @@ export function initNickelMenuFlow(state) {
             navIndex: 3,
             back: () => 'config',
             onEnter: async () => {
+                // Which parent apps are already on the Kobo decides whether their
+                // subitems can be picked, so this has to land before the render.
+                state.installedParentFeatureIds = await probeDetectInstalledParentFeatures(state);
                 renderFeatureCheckboxes();
                 updateSideloadedRecommendation().catch(() => {});
             },
@@ -429,44 +433,35 @@ export function initNickelMenuFlow(state) {
 
     function renderFeatureCheckboxes() {
         const deviceInfo = state.device?.deviceInfo;
-        const firmware = deviceInfo?.firmware;
         // Hidden add-ons stay in the registry so existing installs can still be
         // detected and removed, but are omitted from the install catalogue.
         // Unavailable or disabled add-ons stay listed with an explanation.
-        const features = NICKELMENU_FEATURES.filter((f) => !f.hidden);
+        // Subitems are not rows at all: they are picked in their parent's dialog.
+        const features = NICKELMENU_FEATURES.filter((f) => !f.hidden && !f.parent);
 
         if (state.selectedFeatureIds.length === 0) {
-            state.selectedFeatureIds = features
-                .filter(
-                    (f) =>
-                        f.available !== false &&
-                        !f.disabled &&
-                        meetsMinimumVersion(firmware, f.minimumVersion) &&
-                        !f.unsupportedDeviceReason?.(deviceInfo) &&
-                        (f.required || f.default),
-                )
-                .map((f) => f.id);
+            state.selectedFeatureIds = features.filter((f) => (f.required || f.default) && !featureDisabledReason(f, deviceInfo)).map((f) => f.id);
         }
 
         const items = features.map((f) => {
-            const unavailable = f.available === false || Boolean(f.disabled);
-            const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
-            // A feature-owned device gate (e.g. NickelDissolve's allowlist):
-            // a returned string disables the checkbox and is shown as the reason.
-            const unsupportedReason = f.unsupportedDeviceReason?.(deviceInfo) || undefined;
+            // Everything that can hold a feature back — a maintainer kill switch,
+            // too-old firmware, a feature-owned device gate, an unbundled asset —
+            // comes back as one reason string.
+            const reason = featureDisabledReason(f, deviceInfo);
             return {
                 name: 'nm-cfg-' + f.id,
                 title: f.title + (f.required ? ' (required)' : ''),
-                version: typeof f.version === 'function' ? f.version() : f.version,
+                version: displayVersion(typeof f.version === 'function' ? f.version() : f.version),
                 description: f.description,
                 hint: f.hint,
                 experimental: f.experimental === true,
                 previouslySelected: state.previousNickelMenuFeatureIds.includes(f.id),
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
-                checked: state.selectedFeatureIds.includes(f.id) && !unavailable,
-                disabled: f.required || !meetsMinimum || Boolean(unsupportedReason) || unavailable,
-                disabledReason: featureDisabledReason(f, deviceInfo),
+                checked: state.selectedFeatureIds.includes(f.id) && !reason,
+                disabled: f.required || Boolean(reason),
+                disabledReason: reason,
+                subItems: subFeatureItems(f, deviceInfo),
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
                 onAction: f.customization
@@ -503,7 +498,66 @@ export function initNickelMenuFlow(state) {
                 } else {
                     state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== feature.id);
                 }
+                refreshSubFeatureSelections();
             });
+        }
+
+        refreshSubFeatureSelections();
+    }
+
+    /**
+     * The add-on checkboxes rendered under a feature's description. An add-on
+     * installs inside its parent, so it is only selectable once the parent is
+     * ticked or already on the device — said on the checkbox itself rather than
+     * hidden, so the option is always visible.
+     */
+    function subFeatureItems(parent, deviceInfo) {
+        return subFeatures(parent.id)
+            .filter((f) => !f.hidden)
+            .map((f) => {
+                // Its own blockers are worth explaining; waiting on the feature
+                // it sits under is not — it is greyed out directly beneath it.
+                const reason = featureDisabledReason(f, deviceInfo);
+                const disabled = Boolean(reason) || !parentIsCovered(parent.id, state);
+                return {
+                    name: 'nm-cfg-' + f.id,
+                    label: subFeatureCheckboxLabel(f),
+                    badge: subFeatureNoun(parent.id),
+                    version: displayVersion(typeof f.version === 'function' ? f.version() : f.version),
+                    hint: f.hint,
+                    checked: state.selectedFeatureIds.includes(f.id) && !disabled,
+                    disabled,
+                    disabledReason: reason,
+                    onChange: (checked) => {
+                        if (checked) {
+                            if (!state.selectedFeatureIds.includes(f.id)) state.selectedFeatureIds.push(f.id);
+                        } else {
+                            state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== f.id);
+                        }
+                    },
+                };
+            });
+    }
+
+    /**
+     * Bring every add-on checkbox in line with its parent. An add-on installs
+     * inside its parent, so it becomes selectable when the parent is ticked and
+     * un-ticks itself when the parent goes away, rather than silently failing to
+     * install. Patched in place rather than re-rendered, so the sections the
+     * user opened stay open.
+     */
+    function refreshSubFeatureSelections() {
+        const deviceInfo = state.device?.deviceInfo;
+
+        for (const feature of NICKELMENU_FEATURES.filter((f) => f.parent && !f.hidden)) {
+            const reason = featureDisabledReason(feature, deviceInfo);
+            const disabled = Boolean(reason) || !parentIsCovered(feature.parent, state);
+
+            const cb = $q(`input[name="nm-cfg-${feature.id}"]`);
+            if (!cb) continue;
+            if (disabled && cb.checked) cb.checked = false;
+            if (disabled) state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== feature.id);
+            setNmSubItemAvailability(cb, disabled, reason);
         }
     }
 
@@ -589,6 +643,7 @@ export function initNickelMenuFlow(state) {
         state.nickelMenuOption = null;
         state.selectedFeatureIds = [];
         state.previousNickelMenuFeatureIds = [];
+        state.installedParentFeatureIds = [];
         state.nmOptionalCleanupIds = [];
         state.nmKeepLegacyConfig = false;
         $('nm-sideloaded-banner').hidden = true;

@@ -30,6 +30,7 @@ const defaultConfig = {
     hardwareId: '00000000-0000-0000-0000-000000000390',
     hasNickelMenu: false,
     hasKOReader: false,
+    hasSimpleUI: false,
     hasNickelDbus: false,
     hasNickelSeries: false,
     hasNickelClock: false,
@@ -106,6 +107,14 @@ async function injectMockDevice(page, opts = {}) {
         if (config.hasKOReader) {
             if (!filesystem['.adds']) filesystem['.adds'] = dir();
             filesystem['.adds']['koreader'] = dir({ 'koreader.sh': file('#!/bin/sh') });
+        }
+
+        if (config.hasSimpleUI) {
+            if (!filesystem['.adds']) filesystem['.adds'] = dir();
+            if (!filesystem['.adds']['koreader']) filesystem['.adds']['koreader'] = dir({ 'koreader.sh': file('#!/bin/sh') });
+            filesystem['.adds']['koreader']['plugins'] = dir({
+                'simpleui.koplugin': dir({ 'main.lua': file('return {}') }),
+            });
         }
 
         if (config.hasNickelDbus) {

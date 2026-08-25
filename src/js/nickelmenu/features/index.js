@@ -14,6 +14,7 @@ import additionalFonts from './additional-fonts/index.js';
 import betterTypography from './better-typography/index.js';
 import cadmus from './cadmus/index.js';
 import koreader from './koreader/index.js';
+import simpleui from './simpleui/index.js';
 import simplifyTabs from './simplify-tabs/index.js';
 import { homeHiders } from './hide-home-content/index.js';
 import screensaver from './screensaver/index.js';
@@ -26,6 +27,8 @@ import nickelDissolve from './nickel-dissolve/index.js';
  * All available NickelMenu features in display order.
  * Features with `required: true` are always included in the preset.
  * Features with `postProcess` modify files produced by other features.
+ * Features with `parent` are subitems of another feature (an add-on to it, such
+ * as a KOReader plugin) and must be listed directly below that parent.
  */
 export const NICKELMENU_FEATURES = [
     customMenu,
@@ -38,6 +41,7 @@ export const NICKELMENU_FEATURES = [
     nickelDissolve, // sits below NickelClock in Reading Experience; merges its own KoboRoot.tgz payload
     // "Alternative reading apps" section — collapsed by default.
     koreader,
+    simpleui, // a KOReader plugin, listed under it via `parent: 'koreader'`
     cadmus,
     // "Advanced" section — less common power-user options, collapsed by default
     // in the feature selection step.

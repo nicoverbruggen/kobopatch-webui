@@ -3,9 +3,11 @@
  *
  * Takes an array of item descriptors and builds the sectioned, collapsible
  * checkbox UI used on the NickelMenu config and uninstall steps: per-item
- * title/version/description, disabled reasons, an optional customization
- * action (with icon/label summary), and a "?" hint badge. The flow owns what
- * the items are; this owns how they look.
+ * title/version/description, any add-on checkboxes under it (one line each,
+ * with the "?" badge carrying the detail), disabled reasons,
+ * an optional customization
+ * action (with icon/label summary), and a "?" hint badge. The flow owns what the
+ * items are; this owns how they look.
  */
 
 import { showHint } from '../shell/dom.js';
@@ -37,10 +39,54 @@ const SECTION_ICONS = {
     Legacy: svgIcon('<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/>'),
 };
 
+function disabledReasonElement(reason) {
+    const el = document.createElement('span');
+    el.className = 'nm-config-disabled-reason';
+    el.textContent = reason;
+    return el;
+}
+
+/**
+ * Update an already rendered add-on checkbox: enable or disable it, and show or
+ * clear the short note saying why. `disabled` and `reason` are separate because
+ * an add-on waiting on the feature it sits under needs no words — it is greyed
+ * out directly below the thing it is waiting for. A reason is for a blocker
+ * that is not visible from the row, such as a missing asset.
+ *
+ * Used when the parent above it is ticked or unticked, so the list never has to
+ * re-render — which would collapse whichever sections the user had opened.
+ *
+ * @param {HTMLInputElement} input  The add-on's checkbox.
+ * @param {boolean} disabled
+ * @param {string} [reason]         Shown only when there is one worth saying.
+ */
+export function setNmSubItemAvailability(input, disabled, reason) {
+    const row = input.closest('.nm-config-subitem');
+    if (!row) return;
+
+    input.disabled = disabled;
+    row.classList.toggle('nm-config-subitem--disabled', disabled);
+
+    const text = row.querySelector('.nm-config-subitem-text');
+    const existing = text?.querySelector('.nm-config-subitem-reason');
+    if (!reason) {
+        existing?.remove();
+        return;
+    }
+    if (existing) {
+        existing.textContent = reason;
+        return;
+    }
+    const note = document.createElement('span');
+    note.className = 'nm-config-subitem-reason';
+    note.textContent = reason;
+    text?.appendChild(note);
+}
+
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, hint?: string, experimental?: boolean, previouslySelected?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, subItems?: Array<{name: string, label: string, badge?: string, version?: string, hint?: string, checked: boolean, disabled?: boolean, disabledReason?: string, onChange: function}>, hint?: string, experimental?: boolean, previouslySelected?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -152,10 +198,7 @@ export function renderNmCheckboxList(container, items) {
         // Explain (in red) why a feature is unavailable, e.g. when the device's
         // Kobo software is older than the feature's minimum supported version.
         if (item.disabledReason) {
-            const reason = document.createElement('span');
-            reason.className = 'nm-config-disabled-reason';
-            reason.textContent = item.disabledReason;
-            textDiv.appendChild(reason);
+            textDiv.appendChild(disabledReasonElement(item.disabledReason));
         }
 
         if (previous) textDiv.appendChild(previous);
@@ -258,5 +301,87 @@ export function renderNmCheckboxList(container, items) {
         }
 
         currentTarget.appendChild(label);
+
+        // Add-ons that install inside this feature (KOReader's plugins), as
+        // small checkboxes below it. They are siblings of the feature's row, not
+        // children of it: a <label> may not contain a second control, and
+        // pressing anywhere inside one also paints its own control pressed —
+        // which made the feature's checkbox flicker whenever an add-on was
+        // clicked. Kept as <span>s that toggle themselves, indented by CSS to
+        // line up under the description.
+        for (const sub of item.subItems || []) {
+            const subRow = document.createElement('span');
+            subRow.className = 'nm-config-subitem';
+            if (sub.disabled) subRow.classList.add('nm-config-subitem--disabled');
+
+            const subInput = document.createElement('input');
+            subInput.type = 'checkbox';
+            subInput.name = sub.name;
+            subInput.checked = sub.checked;
+            subInput.disabled = Boolean(sub.disabled);
+            subInput.setAttribute('aria-label', sub.label);
+            subInput.addEventListener('click', (event) => event.stopPropagation());
+            subInput.addEventListener('change', () => sub.onChange(subInput.checked));
+
+            const subText = document.createElement('span');
+            subText.className = 'nm-config-subitem-text';
+
+            const subLabel = document.createElement('span');
+            subLabel.className = 'nm-config-subitem-label';
+            subLabel.textContent = sub.label;
+
+            if (sub.version) {
+                const version = document.createElement('span');
+                version.className = 'nm-config-version';
+                version.textContent = sub.version;
+                subLabel.append(version);
+            }
+            subText.appendChild(subLabel);
+
+            // What kind of add-on it is, as a marker in front of the checkbox
+            // rather than words in the label — it repeats down a list, so it
+            // reads better as a badge than as part of every name.
+            if (sub.badge) {
+                const badge = document.createElement('span');
+                badge.className = 'nm-config-subitem-badge';
+                badge.textContent = sub.badge;
+                subRow.appendChild(badge);
+            }
+
+            subRow.append(subInput, subText);
+
+            // The same "?" badge the features above carry, linking to the
+            // add-on upstream. Its own click stops there, so following the link
+            // never toggles the checkbox it sits next to.
+            if (sub.hint) {
+                const subHelp = document.createElement('a');
+                subHelp.className = 'nm-config-help';
+                subHelp.textContent = '?';
+                subHelp.href = sub.hint;
+                subHelp.target = '_blank';
+                subHelp.rel = 'noopener';
+                subHelp.title = 'Learn more';
+                subHelp.setAttribute('aria-label', `More about ${sub.label}`);
+                subHelp.addEventListener('click', (event) => event.stopPropagation());
+                subRow.appendChild(subHelp);
+            }
+
+            subRow.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (subInput.disabled || event.target === subInput) return;
+                subInput.checked = !subInput.checked;
+                sub.onChange(subInput.checked);
+            });
+
+            if (sub.disabledReason) {
+                const reason = document.createElement('span');
+                reason.className = 'nm-config-subitem-reason';
+                reason.textContent = sub.disabledReason;
+                subText.appendChild(reason);
+            }
+
+            currentTarget.appendChild(subRow);
+        }
     }
 }

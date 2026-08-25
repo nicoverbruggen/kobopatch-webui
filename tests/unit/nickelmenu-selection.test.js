@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {
     featuresToInstall,
     featureDisabledReason,
+    subFeatures,
+    parentIsCovered,
     optionalCleanupToRemove,
     optionalCleanupKept,
     featureReviewNotices,
@@ -19,6 +21,7 @@ function session(overrides = {}) {
     return {
         nickelMenuOption: 'preset',
         selectedFeatureIds: [],
+        installedParentFeatureIds: [],
         nmOptionalCleanupIds: [],
         ...overrides,
     };
@@ -134,6 +137,76 @@ test('featuresToInstall also drops a feature disabled with a string reason', () 
     }
 });
 
+// SimpleUI is a KOReader plugin: it declares `parent: 'koreader'` and installs
+// into KOReader's own directory, so it only travels with KOReader. Both ship
+// `available: false` (the build manifest flips them at runtime), so these
+// temporarily mark them available, the way the tests above do.
+function withReadingAppsAvailable(run) {
+    const koreader = NICKELMENU_FEATURES.find((f) => f.id === 'koreader');
+    const simpleui = NICKELMENU_FEATURES.find((f) => f.id === 'simpleui');
+    const originals = [koreader.available, simpleui.available];
+    koreader.available = true;
+    simpleui.available = true;
+    try {
+        run(koreader, simpleui);
+    } finally {
+        koreader.available = originals[0];
+        simpleui.available = originals[1];
+    }
+}
+
+test('subFeatures lists the features that declare a given parent', () => {
+    const ids = subFeatures('koreader').map((f) => f.id);
+    assert.deepEqual(ids, ['simpleui'], 'SimpleUI is a subitem of KOReader');
+    assert.deepEqual(subFeatures('simpleui'), [], 'nesting is one level deep');
+});
+
+test('parentIsCovered is true when the parent is selected or already on the device', () => {
+    assert.equal(parentIsCovered('koreader', session({ selectedFeatureIds: ['koreader'] })), true);
+    assert.equal(parentIsCovered('koreader', session({ installedParentFeatureIds: ['koreader'] })), true);
+    assert.equal(parentIsCovered('koreader', session()), false, 'nothing to plug into');
+});
+
+test('featuresToInstall drops a subitem whose parent is neither selected nor installed', () => {
+    withReadingAppsAvailable(() => {
+        const ids = featuresToInstall(session({ selectedFeatureIds: ['simpleui'] }), { firmware: '4.40.0' }).map((f) => f.id);
+        assert.ok(!ids.includes('simpleui'), 'a KOReader plugin without KOReader is not installed');
+    });
+});
+
+test('featuresToInstall keeps a subitem when its parent is part of the same install', () => {
+    withReadingAppsAvailable(() => {
+        const ids = featuresToInstall(session({ selectedFeatureIds: ['koreader', 'simpleui'] }), { firmware: '4.40.0' }).map((f) => f.id);
+        assert.ok(ids.includes('koreader') && ids.includes('simpleui'));
+    });
+});
+
+test('featuresToInstall keeps a subitem when its parent is already on the device', () => {
+    withReadingAppsAvailable(() => {
+        const sess = session({ selectedFeatureIds: ['simpleui'], installedParentFeatureIds: ['koreader'] });
+        const ids = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
+        assert.ok(ids.includes('simpleui'), 'the plugin can be added on its own');
+        assert.ok(!ids.includes('koreader'), 'without reinstalling KOReader');
+    });
+});
+
+test('featuresToInstall drops a subitem when its parent is filtered out for another reason', () => {
+    // KOReader ticked but unavailable in this deployment: the plugin must not
+    // be written into a directory that will not exist.
+    const simpleui = NICKELMENU_FEATURES.find((f) => f.id === 'simpleui');
+    const koreader = NICKELMENU_FEATURES.find((f) => f.id === 'koreader');
+    const originals = [koreader.available, simpleui.available];
+    koreader.available = false;
+    simpleui.available = true;
+    try {
+        const ids = featuresToInstall(session({ selectedFeatureIds: ['koreader', 'simpleui'] }), { firmware: '4.40.0' }).map((f) => f.id);
+        assert.ok(!ids.includes('koreader') && !ids.includes('simpleui'));
+    } finally {
+        koreader.available = originals[0];
+        simpleui.available = originals[1];
+    }
+});
+
 test('featureDisabledReason surfaces the right message for each disabled cause', () => {
     // A string kill switch is shown verbatim; `true` uses the generic text.
     assert.equal(featureDisabledReason({ disabled: 'Being reworked.' }, { firmware: '4.40.0' }), 'Being reworked.');
@@ -145,6 +218,9 @@ test('featureDisabledReason surfaces the right message for each disabled cause',
     assert.equal(featureDisabledReason({ unsupportedDeviceReason: () => 'No good here.' }, { firmware: '4.40.0' }), 'No good here.');
     // A selectable feature has no reason.
     assert.equal(featureDisabledReason({}, { firmware: '4.40.0' }), undefined);
+    // A subitem waiting on its parent is not a reason: the list hides its whole
+    // group instead of showing a greyed-out row.
+    assert.equal(featureDisabledReason({ parent: 'koreader' }, { firmware: '4.40.0' }), undefined);
     // The global kill switch wins over device-specific reasons.
     assert.equal(
         featureDisabledReason({ disabled: 'Off for now.', minimumVersion: '9.99', unsupportedDeviceReason: () => 'nope' }, { firmware: '4.30.0' }),

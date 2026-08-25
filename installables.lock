@@ -63,6 +63,13 @@
       "url": "https://github.com/nicoverbruggen/ebook-fonts/releases/download/v2026.08.05/kobo-extra-fonts.zip",
       "sha256": "990e060e37b251f2045e2bd9542d246c7aaf14b4ad5573187e02f8d06a5bd1af",
       "size": 22528615
+    },
+    "simpleui": {
+      "asset": "simpleui.koplugin.zip",
+      "version": "2.5.0",
+      "url": "https://github.com/doctorhetfield-cmd/simpleui.koplugin/releases/download/2.5.0/simpleui.koplugin.zip",
+      "sha256": "2981b22e01458ae85f5767a394e37e56e237accf7ad4ddf29d8d4877f88a0dac",
+      "size": 1255874
     }
   }
 }

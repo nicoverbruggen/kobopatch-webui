@@ -8,11 +8,11 @@ import { installableVersion, installableAssetUrl, installableSize } from '../../
 // added to launch it. Removal deletes the whole app directory.
 export default {
     id: 'koreader',
+    subFeaturesLabel: 'Plugins', // what its add-ons are called in the feature list
     section: 'Alternative reading apps',
     analyticsEvent: 'add-koreader',
     title: 'Install KOReader',
-    description:
-        'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more. You can launch KOReader from the Toggle menu; it does not replace the built-in reader functionality. Installing takes a while, please be patient.',
+    description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more.',
     default: false,
     available: false, // set to true at runtime if KOReader assets exist
     directories: ['.adds/koreader'],

@@ -16,6 +16,7 @@ const required = [
     'patches/downloads.json',
     'assets/NickelMenu.tgz',
     'assets/koreader-kobo.zip',
+    'assets/simpleui.koplugin.zip',
     'assets/kobo-core-fonts.zip',
     'assets/kobo-extra-fonts.zip',
     'assets/font-previews.json',

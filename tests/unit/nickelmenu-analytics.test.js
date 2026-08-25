@@ -32,6 +32,7 @@ test('the full catalog maps to the expected event set', () => {
         'add-nickeltypefix',
         'add-screensaver',
         'add-sideloaded-mode',
+        'add-simpleui',
     ]);
 });
 

@@ -112,6 +112,87 @@
     }
 }
 
+/* An add-on that installs inside the feature above it (a KOReader plugin), as a
+   compact checkbox under that feature's description. A <span>, not a <label>:
+   the row itself is a label and may not contain a second control, so the click
+   handler does the toggling. */
+/* An add-on row behaves like a feature row — same padding, same pointer, same
+   dimming when it cannot be chosen — but sits indented under the feature it
+   installs into, opened by its own rule. */
+.nm-config-subitem {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    /* Indented to start where the feature's description does, so it reads as
+       belonging to the row above it. */
+    margin-left: 1.75rem;
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border-light);
+    color: var(--text);
+    cursor: pointer;
+
+    & input[type='checkbox'] {
+        flex-shrink: 0;
+        margin: 0;
+        accent-color: var(--primary);
+
+        &:disabled {
+            opacity: 0.6;
+        }
+    }
+
+    & .nm-config-help {
+        margin-left: auto;
+        margin-top: 0;
+    }
+}
+
+.nm-config-subitem--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.nm-config-subitem-text {
+    flex: 1;
+    min-width: 0;
+    user-select: none;
+}
+
+.nm-config-subitem-label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+
+/* An add-on sits between two feature rows, breaking the item-to-item border
+   chain, so the feature after it needs its separator back. */
+.nm-config-subitem + .nm-config-item {
+    border-top: 1px solid var(--border-light);
+}
+
+/* The kind of add-on ("plugin"), as a small marker in front of its checkbox. */
+.nm-config-subitem-badge {
+    flex-shrink: 0;
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.nm-config-subitem-reason {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--error-text);
+}
+
 .nm-config-text {
     flex: 1;
     min-width: 0;

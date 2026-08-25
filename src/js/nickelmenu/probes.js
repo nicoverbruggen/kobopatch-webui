@@ -1,4 +1,5 @@
 import { NICKELMENU_FEATURES } from './features/index.js';
+import { featureById } from './selection.js';
 import { getConfSetting, revertableConfSettings } from '../kobo/configuration.js';
 import { countKoboUsers } from '../kobo/signin.js';
 import { TL } from '../shell/strings.js';
@@ -101,6 +102,10 @@ export async function checkNickelMenuInstalled(
                 const detected = [];
                 for (const feature of NICKELMENU_FEATURES) {
                     if (feature.cleanup?.mode !== 'optional') continue;
+                    // A subitem's files live inside its parent's directory, so
+                    // removing the parent takes them. It is never offered as a
+                    // removal of its own — there is no way to honour keeping it.
+                    if (feature.parent) continue;
                     if (await isOptionalCleanupPresent(state, feature, conf)) {
                         detected.push(feature);
                     }
@@ -145,6 +150,37 @@ export async function detectPresetConflicts(state) {
         }
     }
     return conflicts;
+}
+
+/**
+ * The parent features (features other features declare as their `parent`) that
+ * are already installed on the connected Kobo, detected by the parent's cleanup
+ * `detect` paths. A subitem whose parent is on the device can be added on its
+ * own, without reinstalling the parent app.
+ *
+ * Only a hint for the feature list, so an unreadable device yields no ids rather
+ * than an error — the subitem then simply asks for its parent to be selected.
+ */
+export async function detectInstalledParentFeatures(state) {
+    if (state.manualMode || !state.device?.directoryHandle) return [];
+
+    const parentIds = [...new Set(NICKELMENU_FEATURES.map((f) => f.parent).filter(Boolean))];
+    const installed = [];
+
+    for (const id of parentIds) {
+        for (const detectPath of featureById(id)?.cleanup?.detect || []) {
+            try {
+                if (await state.device.pathExists(detectPath)) {
+                    installed.push(id);
+                    break;
+                }
+            } catch {
+                break;
+            }
+        }
+    }
+
+    return installed;
 }
 
 export async function isOptionalCleanupPresent(state, feature, conf) {

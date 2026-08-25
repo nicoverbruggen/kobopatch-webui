@@ -310,6 +310,39 @@ test.describe('NickelMenu — removal', () => {
         expect(await mockPathExists(page, '.adds', 'cadmus')).toBe(false);
     });
 
+    test('with device — removing KOReader removes its plugins with it', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasKOReader: true,
+            hasSimpleUI: true,
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="remove"]');
+
+        // A plugin lives inside KOReader's directory, so it is never offered as
+        // a removal of its own — there would be no way to honour keeping it.
+        await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+        await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
+        await expect(page.locator('input[name="nm-uninstall-simpleui"]')).toHaveCount(0);
+
+        await page.click('#btn-nm-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('removed');
+
+        expect(await mockPathExists(page, '.adds', 'koreader')).toBe(false);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin')).toBe(false);
+    });
+
     test('with device — remove NickelClock deletes its folder to trigger the xflag self-uninstall', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

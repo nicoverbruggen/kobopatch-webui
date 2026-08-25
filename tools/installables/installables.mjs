@@ -78,6 +78,14 @@ const INSTALLABLES = [
         repo: 'koreader/koreader',
         match: (n) => /^koreader-kobo-.*\.zip$/.test(n),
     },
+    {
+        // A KOReader plugin, not a standalone app: its files land inside
+        // .adds/koreader/plugins/, so it is only useful next to KOReader.
+        name: 'simpleui',
+        asset: 'simpleui.koplugin.zip',
+        repo: 'doctorhetfield-cmd/simpleui.koplugin',
+        match: (n) => n === 'simpleui.koplugin.zip',
+    },
     { name: 'cadmus', asset: 'cadmus-kobo.tar.gz', repo: 'OGKevin/cadmus', match: (n) => n === 'cadmus-kobo.tar.gz' },
     {
         // The Kobo (KF) builds of the ebook-fonts collection, split into the
