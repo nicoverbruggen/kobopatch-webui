@@ -241,7 +241,7 @@ export function renderNmCheckboxList(container, items) {
                 summary.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    item.onAction(event.currentTarget);
+                    item.onAction();
                 });
                 side.appendChild(summary);
             } else {
@@ -253,7 +253,7 @@ export function renderNmCheckboxList(container, items) {
                 action.addEventListener('click', (event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    item.onAction(event.currentTarget);
+                    item.onAction();
                 });
                 side.appendChild(action);
             }

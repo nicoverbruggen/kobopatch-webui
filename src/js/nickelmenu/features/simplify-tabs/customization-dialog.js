@@ -151,10 +151,9 @@ export function seedTabsCustomizeDialog(state, dialogDom, customization) {
     return draft;
 }
 
-export function openTabsCustomizeDialog(state, dialogDom, triggerEl) {
+export function openTabsCustomizeDialog(state, dialogDom) {
     const draft = seedTabsCustomizeDialog(state, dialogDom, state.nickelMenuTabsCustomization);
     dialogDom.status.textContent = '';
-    dialogDom._triggerEl = triggerEl;
     dialogDom.dialog.showModal();
     dialogDom.visibility.stats.focus();
     return draft;
@@ -188,26 +187,12 @@ export function updateTabsCustomizationSummary(state) {
 
 export { createDefaultTabsCustomization, cloneTabsCustomization, isDefaultTabsCustomization };
 
-const _focusReturnWiredDialogs = new Set();
-function wireFocusReturn(dlg) {
-    if (_focusReturnWiredDialogs.has(dlg)) return;
-    _focusReturnWiredDialogs.add(dlg);
-    dlg.addEventListener('close', () => {
-        const trigger = dlg._triggerEl;
-        if (trigger && typeof trigger.focus === 'function') {
-            trigger.focus({ preventScroll: true });
-        }
-    });
-}
-
 function wireDialog() {
     const dlg = $('nm-tabs-dialog');
-    if (dlg) {
-        wireFocusReturn(dlg);
-        trapFocus(dlg);
-    }
+    if (dlg) trapFocus(dlg);
 }
 
-// Wire focus management when the DOM is ready (mirrors the icon dialog).
+// Trap Tab inside the dialog once the DOM is ready. Returning focus to whatever
+// opened it needs no code: the browser restores it when a modal <dialog> closes.
 document.addEventListener('DOMContentLoaded', wireDialog, { once: true });
 if (document.readyState !== 'loading') wireDialog();

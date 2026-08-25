@@ -465,20 +465,15 @@ export function initNickelMenuFlow(state) {
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
                 onAction: f.customization
-                    ? (triggerEl) => {
+                    ? () => {
                           if (f.customization.type === 'tabs') {
-                              nmTabsDraft = openTabsCustomizeDialog(state, tabsDialogDom, triggerEl);
+                              nmTabsDraft = openTabsCustomizeDialog(state, tabsDialogDom);
                           } else if (f.customization.type === 'fonts') {
-                              nmFontsDraft = openFontsCustomizeDialog(state, fontsDialogDom, triggerEl);
+                              nmFontsDraft = openFontsCustomizeDialog(state, fontsDialogDom);
                           } else {
                               nmCustomizationSession++;
                               const session = nmCustomizationSession;
-                              nmCustomizationDraft = openMenuCustomizeDialog(
-                                  state,
-                                  customizationDialogDom,
-                                  triggerEl,
-                                  () => session === nmCustomizationSession,
-                              );
+                              nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, () => session === nmCustomizationSession);
                           }
                       }
                     : undefined,

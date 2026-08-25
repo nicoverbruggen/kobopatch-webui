@@ -148,10 +148,10 @@ test('a preset render that finishes after the menu dialog reopens is ignored', a
         const state = { nickelMenuCustomization: { label: 'Toggle', icon: { type: 'default' } } };
 
         try {
-            openMenuCustomizeDialog(state, dialogDom, null);
+            openMenuCustomizeDialog(state, dialogDom);
             dialogDom.presets.querySelector('[data-icon-id="book"]').click();
 
-            const reopenedDraft = openMenuCustomizeDialog(state, dialogDom, null);
+            const reopenedDraft = openMenuCustomizeDialog(state, dialogDom);
             const reopenedStatus = dialogDom.status.textContent;
             await rendering.finish();
 
@@ -170,7 +170,7 @@ test('a preset render that finishes in its original menu session still applies',
         const state = { nickelMenuCustomization: { label: 'Toggle', icon: { type: 'default' } } };
 
         try {
-            const draft = openMenuCustomizeDialog(state, dialogDom, null);
+            const draft = openMenuCustomizeDialog(state, dialogDom);
             dialogDom.presets.querySelector('[data-icon-id="book"]').click();
             await rendering.finish();
 
@@ -190,10 +190,10 @@ test('a stale preset-render failure does not overwrite the reopened dialog statu
         const state = { nickelMenuCustomization: { label: 'Toggle', icon: { type: 'default' } } };
 
         try {
-            openMenuCustomizeDialog(state, dialogDom, null);
+            openMenuCustomizeDialog(state, dialogDom);
             dialogDom.presets.querySelector('[data-icon-id="book"]').click();
 
-            openMenuCustomizeDialog(state, dialogDom, null);
+            openMenuCustomizeDialog(state, dialogDom);
             const reopenedStatus = dialogDom.status.textContent;
             await rendering.fail();
 
