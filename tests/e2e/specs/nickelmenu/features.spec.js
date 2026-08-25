@@ -569,6 +569,10 @@ test.describe('NickelMenu — install', () => {
         expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin')).toBe(true);
         // KOReader itself was not part of this install, so nothing else was rewritten.
         expect(writtenFiles.some((f) => f.includes('.adds/koreader/koreader.sh'))).toBe(false);
+        // And it is still there. Without this, the test passes even if KOReader
+        // were deleted before the plugin installed — "not written" and "removed"
+        // look identical from the written-files list alone.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'koreader.sh'), 'KOReader must survive a plugin-only install').toBe(true);
     });
 
     test('with device — install with Cadmus extracts its app directory to the device', async ({ page }) => {
