@@ -285,6 +285,58 @@ test.describe('NickelMenu — install', () => {
         expect(firstMenuItem.startsWith('menu_item:main:Open KOReader')).toBe(true);
     });
 
+    test('no device — the manual download bundles KOReader together with its plugin', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+        // Drop the additional fonts so this run only depends on the two assets under test.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-koreader"]');
+        await page.check('input[name="nm-cfg-simpleui"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+
+        const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 120_000 });
+
+        expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
+        const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+        const zipFiles = Object.keys(zip.files);
+
+        // The reader's own files, at the paths the device expects.
+        expect(zipFiles).toContainEqual('.adds/koreader/koreader.sh');
+        expect(zipFiles).toContainEqual('.adds/koreader/defaults.lua');
+
+        // The plugin, nested inside the reader's plugins directory, with the real
+        // archive's bytes rather than an empty placeholder.
+        expect(zipFiles).toContainEqual('.adds/koreader/plugins/simpleui.koplugin/main.lua');
+        const meta = await zip.file('.adds/koreader/plugins/simpleui.koplugin/_meta.lua').async('string');
+        expect(meta).toMatch(/name\s*=\s*"simpleui"/);
+
+        // KOReader ships its own plugins in that same directory; bundling one must
+        // sit alongside them rather than replacing the folder.
+        expect(zipFiles).toContainEqual('.adds/koreader/plugins/SSH.koplugin/main.lua');
+
+        // The reader gets a Toggle entry; a plugin is launched from inside it, so
+        // it contributes none.
+        const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
+        expect(itemsContent).toContain('menu_item:main:Open KOReader');
+        expect(itemsContent).not.toContain('Simple UI');
+    });
+
     test('with device — install with KOReader writes files to device', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
         test.skip(!hasFontAssets(), 'Font assets not found (run npm run setup:installables)');
@@ -331,6 +383,57 @@ test.describe('NickelMenu — install', () => {
         // Verify the .adds/koreader directory was created in mock FS
         const koreaderDirExists = await mockPathExists(page, '.adds', 'koreader');
         expect(koreaderDirExists, '.adds/koreader/ should exist').toBe(true);
+    });
+
+    test('with device — installing KOReader together with its plugin lands both, nested correctly', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+        // Drop the additional fonts so this run only depends on the two assets under test.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-koreader"]');
+        await page.check('input[name="nm-cfg-simpleui"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 120_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        // The reader's own files land under .adds/koreader/.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'koreader.sh')).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'defaults.lua')).toBe(true);
+
+        // The plugin lands nested inside the reader's plugins directory, and its
+        // bytes are the real archive's rather than an empty placeholder.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin', 'main.lua')).toBe(true);
+        const meta = await readMockFile(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin', '_meta.lua');
+        expect(meta).toMatch(/name\s*=\s*"simpleui"/);
+
+        // KOReader ships its own plugins in that same directory; adding one must
+        // sit alongside them rather than replacing the folder.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'SSH.koplugin', 'main.lua')).toBe(true);
+
+        // The reader gets a Toggle entry; a plugin is launched from inside it, so
+        // it contributes none.
+        const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
+        expect(items).toContain('menu_item:main:Open KOReader');
+        expect(items).not.toContain('Simple UI');
     });
 
     test('no device — a KOReader plugin is a checkbox under it that follows KOReader', async ({ page }) => {
