@@ -48,7 +48,7 @@ export default {
         return [
             {
                 id: 'cadmus',
-                lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+                lines: ['menu_item:main:Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
             },
         ];
     },

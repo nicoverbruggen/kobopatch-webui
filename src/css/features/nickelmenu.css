@@ -174,6 +174,15 @@
     border-top: 1px solid var(--border-light);
 }
 
+/* "Currently installed" on an add-on row: the check mark alone, since the row is
+   a single line and has no space for the feature rows' full pill. */
+.nm-config-subitem-installed {
+    display: inline-flex;
+    vertical-align: -2px;
+    margin-left: 0.4rem;
+    color: var(--success-text);
+}
+
 /* The kind of add-on ("plugin"), as a small marker in front of its checkbox. */
 .nm-config-subitem-badge {
     flex-shrink: 0;
@@ -322,7 +331,10 @@
     color: var(--text-secondary);
     font-size: 0.68rem;
     font-weight: 600;
-    line-height: 1.25;
+    /* The label sits ~1.5px lower than the check icon at 1.25: the extra leading
+       is distributed around the glyph band, not around the icon's flex box. A
+       line box the height of the text itself lines the two up. */
+    line-height: 1;
 }
 
 /* Explicitly suppress the earlier pseudo-element icon so hot-reloaded styles

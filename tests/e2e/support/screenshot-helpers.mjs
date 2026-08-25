@@ -40,6 +40,7 @@ export const SCREENSHOT_DIRS = {
     manualNickelMenu: 'manual/nickelmenu',
     manualPatches: 'manual/patches',
     connectedNickelMenu: 'connected/nickelmenu/install',
+    connectedNickelMenuModify: 'connected/nickelmenu/modify',
     connectedNickelMenuRemoval: 'connected/nickelmenu/removal',
     connectedNickelMenuFactory: 'connected/nickelmenu/factory-reset',
     connectedPatches: 'connected/patches',

@@ -54,7 +54,7 @@ export function subFeatureCheckboxLabel(feature) {
  * there is something to plug them into.
  */
 export function parentIsCovered(parentId, session, selectedIds = session.selectedFeatureIds || []) {
-    if (session.installedParentFeatureIds?.includes(parentId)) return true;
+    if (session.installedNickelMenuFeatureIds?.includes(parentId)) return true;
     return selectedIds.includes(parentId);
 }
 
@@ -176,6 +176,19 @@ export function featureReviewNotices(features, deviceInfo) {
 }
 
 /**
+ * The removal list with each feature's installed subitems named after it. A
+ * subitem is never a removal of its own — its files sit inside its parent's
+ * directory and go when that directory does — but the review should say so
+ * rather than leave the user to infer it from the parent's description.
+ */
+function withInstalledSubFeatures(session, removed) {
+    return removed.flatMap((feature) => [
+        feature,
+        ...subFeatures(feature.id).filter((sub) => !sub.hidden && session.installedNickelMenuFeatureIds?.includes(sub.id)),
+    ]);
+}
+
+/**
  * The structured model the review step renders. Returns data (feature objects,
  * notices) rather than display strings — the flow maps those to copy and DOM.
  */
@@ -183,7 +196,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
     if (session.nickelMenuOption === 'remove') {
         return {
             mode: 'remove',
-            removedFeatures: optionalCleanupToRemove(session, detected),
+            removedFeatures: withInstalledSubFeatures(session, optionalCleanupToRemove(session, detected)),
             keptFeatures: optionalCleanupKept(session, detected),
         };
     }

@@ -334,6 +334,9 @@ test.describe('NickelMenu — removal', () => {
         await skipNmBackup(page);
 
         await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+        // The plugin is never its own removal option, but it goes with KOReader,
+        // so the review names it rather than leaving that to be inferred.
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
 
         await page.click('#btn-nm-write');
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });

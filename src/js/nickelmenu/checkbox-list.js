@@ -86,7 +86,7 @@ export function setNmSubItemAvailability(input, disabled, reason) {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, subItems?: Array<{name: string, label: string, badge?: string, version?: string, hint?: string, checked: boolean, disabled?: boolean, disabledReason?: string, onChange: function}>, hint?: string, experimental?: boolean, currentlyInstalled?: boolean, previouslySelected?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, subItems?: Array<{name: string, label: string, badge?: string, version?: string, currentlyInstalled?: boolean, hint?: string, checked: boolean, disabled?: boolean, disabledReason?: string, onChange: function}>, hint?: string, experimental?: boolean, currentlyInstalled?: boolean, previouslySelected?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -352,6 +352,19 @@ export function renderNmCheckboxList(container, items) {
                 badge.className = 'nm-config-subitem-badge';
                 badge.textContent = sub.badge;
                 subRow.appendChild(badge);
+            }
+
+            // Already on the device. The feature rows say so in a pill, but an
+            // add-on row is one line by design, so it gets the same green check
+            // on its own — the words live in the tooltip and the accessible name.
+            if (sub.currentlyInstalled) {
+                const installed = document.createElement('span');
+                installed.className = 'nm-config-subitem-installed';
+                installed.innerHTML = svgIcon('<polyline points="20 6 9 17 4 12"/>');
+                installed.title = 'Currently installed';
+                installed.setAttribute('role', 'img');
+                installed.setAttribute('aria-label', 'Currently installed');
+                subLabel.append(installed);
             }
 
             subRow.append(subInput, subText);

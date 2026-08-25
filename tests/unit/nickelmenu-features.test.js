@@ -304,7 +304,7 @@ test('Cadmus contributes its launcher entry at the top of the menu', () => {
     assert.deepEqual(cadmus.menuItems(), [
         {
             id: 'cadmus',
-            lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+            lines: ['menu_item:main:Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
         },
     ]);
 });

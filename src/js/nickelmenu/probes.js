@@ -1,5 +1,4 @@
 import { NICKELMENU_FEATURES } from './features/index.js';
-import { featureById } from './selection.js';
 import { getConfSetting, revertableConfSettings } from '../kobo/configuration.js';
 import { countKoboUsers } from '../kobo/signin.js';
 import { TL } from '../shell/strings.js';
@@ -268,37 +267,6 @@ export async function detectPresetConflicts(state) {
         }
     }
     return conflicts;
-}
-
-/**
- * The parent features (features other features declare as their `parent`) that
- * are already installed on the connected Kobo, detected by the parent's cleanup
- * `detect` paths. A subitem whose parent is on the device can be added on its
- * own, without reinstalling the parent app.
- *
- * Only a hint for the feature list, so an unreadable device yields no ids rather
- * than an error — the subitem then simply asks for its parent to be selected.
- */
-export async function detectInstalledParentFeatures(state) {
-    if (state.manualMode || !state.device?.directoryHandle) return [];
-
-    const parentIds = [...new Set(NICKELMENU_FEATURES.map((f) => f.parent).filter(Boolean))];
-    const installed = [];
-
-    for (const id of parentIds) {
-        for (const detectPath of featureById(id)?.cleanup?.detect || []) {
-            try {
-                if (await state.device.pathExists(detectPath)) {
-                    installed.push(id);
-                    break;
-                }
-            } catch {
-                break;
-            }
-        }
-    }
-
-    return installed;
 }
 
 export async function isOptionalCleanupPresent(state, feature, conf) {

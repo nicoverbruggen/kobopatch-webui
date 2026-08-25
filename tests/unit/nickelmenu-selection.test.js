@@ -24,7 +24,6 @@ function session(overrides = {}) {
         nmWebuiPresetInstalled: true,
         installedNickelMenuFeatureIds: [],
         selectedFeatureIds: [],
-        installedParentFeatureIds: [],
         nmOptionalCleanupIds: [],
         ...overrides,
     };
@@ -166,7 +165,7 @@ test('subFeatures lists the features that declare a given parent', () => {
 
 test('parentIsCovered is true when the parent is selected or already on the device', () => {
     assert.equal(parentIsCovered('koreader', session({ selectedFeatureIds: ['koreader'] })), true);
-    assert.equal(parentIsCovered('koreader', session({ installedParentFeatureIds: ['koreader'] })), true);
+    assert.equal(parentIsCovered('koreader', session({ installedNickelMenuFeatureIds: ['koreader'] })), true);
     assert.equal(parentIsCovered('koreader', session()), false, 'nothing to plug into');
 });
 
@@ -186,7 +185,7 @@ test('featuresToInstall keeps a subitem when its parent is part of the same inst
 
 test('featuresToInstall keeps a subitem when its parent is already on the device', () => {
     withReadingAppsAvailable(() => {
-        const sess = session({ selectedFeatureIds: ['simpleui'], installedParentFeatureIds: ['koreader'] });
+        const sess = session({ selectedFeatureIds: ['simpleui'], installedNickelMenuFeatureIds: ['koreader'] });
         const ids = featuresToInstall(sess, { firmware: '4.40.0' }).map((f) => f.id);
         assert.ok(ids.includes('simpleui'), 'the plugin can be added on its own');
         assert.ok(!ids.includes('koreader'), 'without reinstalling KOReader');
@@ -339,6 +338,34 @@ test('nmReviewModel (remove) reports removed vs kept from the detected cleanups'
     assert.deepEqual(
         model.keptFeatures.map((f) => f.id),
         ['b'],
+    );
+});
+
+test('nmReviewModel (remove) names an installed plugin alongside the app it lives in', () => {
+    // The plugin is never its own removal option, but removing KOReader deletes
+    // it, so the review says so rather than leaving it to be inferred.
+    const koreader = NICKELMENU_FEATURES.find((f) => f.id === 'koreader');
+    const sess = session({
+        nickelMenuOption: 'remove',
+        nmOptionalCleanupIds: ['koreader'],
+        installedNickelMenuFeatureIds: ['koreader', 'simpleui'],
+    });
+
+    const model = nmReviewModel(sess, [koreader], { firmware: '4.40.0' });
+    assert.deepEqual(
+        model.removedFeatures.map((f) => f.id),
+        ['koreader', 'simpleui'],
+    );
+    // Its label comes from modifyCleanup, since a subitem declares no cleanup.
+    assert.equal(model.removedFeatures[1].modifyCleanup.title, 'Simple UI');
+});
+
+test('nmReviewModel (remove) leaves out a plugin that is not on the device', () => {
+    const koreader = NICKELMENU_FEATURES.find((f) => f.id === 'koreader');
+    const sess = session({ nickelMenuOption: 'remove', nmOptionalCleanupIds: ['koreader'], installedNickelMenuFeatureIds: ['koreader'] });
+    assert.deepEqual(
+        nmReviewModel(sess, [koreader], { firmware: '4.40.0' }).removedFeatures.map((f) => f.id),
+        ['koreader'],
     );
 });
 

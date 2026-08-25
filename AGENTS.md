@@ -121,7 +121,7 @@ Rendering:
 Availability:
 
 - A subitem is always visible but disabled until its parent is either ticked in the same install or already on the device.
-    - `probes.js`'s `detectInstalledParentFeatures` reports what is already installed into `session.installedParentFeatureIds` when the feature step is entered.
+    - `probes.js`'s `detectInstalledNickelMenuFeatureIds` reports what is already installed into `session.installedNickelMenuFeatureIds` when the config step is entered — one device scan serves both this and the modify flow.
     - `selection.js`'s `parentIsCovered` is the single predicate for "will the parent be there".
 - No words are shown for that case — the add-on is greyed out directly beneath the thing it is waiting for.
     - So `setNmSubItemAvailability` takes `disabled` and `reason` separately.

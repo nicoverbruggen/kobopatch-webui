@@ -23,7 +23,6 @@ import {
 import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
     detectInstalledNickelMenuFeatureIds,
-    detectInstalledParentFeatures as probeDetectInstalledParentFeatures,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
     readPreviousNickelMenuConfiguration,
@@ -275,9 +274,6 @@ export function initNickelMenuFlow(state) {
             navIndex: 3,
             back: () => 'config',
             onEnter: async () => {
-                // Which parent apps are already on the Kobo decides whether their
-                // subitems can be picked, so this has to land before the render.
-                state.installedParentFeatureIds = await probeDetectInstalledParentFeatures(state);
                 if (webuiPresetInstalled && !previousConfigurationApplied) {
                     restorePreviousConfiguration(true, false);
                 }
@@ -356,7 +352,7 @@ export function initNickelMenuFlow(state) {
                     summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
                     summary.hidden = false;
                     listLabel.textContent = TL.STATUS.NM_SELECTED_REMOVALS;
-                    populateList(list, [TL.STATUS.NM_REMOVAL_NICKELMENU, ...model.removedFeatures.map((f) => f.cleanup.title)]);
+                    populateList(list, [TL.STATUS.NM_REMOVAL_NICKELMENU, ...model.removedFeatures.map((f) => (f.modifyCleanup || f.cleanup).title)]);
                     populateList(
                         keptList,
                         model.keptFeatures.map((f) => f.cleanup.title),
@@ -537,6 +533,7 @@ export function initNickelMenuFlow(state) {
                     name: 'nm-cfg-' + f.id,
                     label: subFeatureCheckboxLabel(f),
                     badge: subFeatureNoun(parent.id),
+                    currentlyInstalled: state.installedNickelMenuFeatureIds.includes(f.id),
                     version: displayVersion(typeof f.version === 'function' ? f.version() : f.version),
                     hint: f.hint,
                     checked: state.selectedFeatureIds.includes(f.id) && !disabled,
@@ -662,7 +659,6 @@ export function initNickelMenuFlow(state) {
         state.nmWebuiPresetInstalled = false;
         webuiPresetInstalled = false;
         previousConfigurationApplied = false;
-        state.installedParentFeatureIds = [];
         state.nmOptionalCleanupIds = [];
         state.nmKeepLegacyConfig = false;
         $('nm-sideloaded-banner').hidden = true;
