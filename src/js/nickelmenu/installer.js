@@ -3,7 +3,7 @@ import { NM_ITEMS_FILE, nickelMenuManifestPath } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
 import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.js';
-import { installableAssetUrl, installableSize } from './installables.js';
+import { featureVersion, installableAssetUrl, installableSize } from './installables.js';
 import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import { removeExcludeSyncFoldersLine, revertableConfSettings, setConfSetting, setExcludeSyncFoldersLine } from '../kobo/configuration.js';
 
@@ -497,6 +497,12 @@ export class NickelMenuInstaller {
                 revertTo: s.revertTo ?? null,
             }));
             if (conf.length > 0) entry.conf = conf;
+
+            // What version went on the device, so a later run can tell an upgrade
+            // from a reinstall. Absent for features that install no pinned asset,
+            // and for anything written before this was recorded.
+            const version = featureVersion(feature);
+            if (version) entry.version = version;
 
             manifestFeatures[feature.id] = entry;
         }

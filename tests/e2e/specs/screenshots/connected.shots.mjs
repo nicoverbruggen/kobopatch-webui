@@ -60,7 +60,7 @@ test('connected nickelmenu', async ({ page }, testInfo) => {
     await page.click('input[value="preset"]');
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
-    await expect(page.locator('.nm-config-previous--installed').first()).toBeVisible();
+    await expect(page.locator('#nm-installed-features-note')).toBeVisible();
     await shot(page, dir, '06-nickelmenu-features', testInfo);
     await shotNickelMenuCustomizeModal(page, dir, '06a-nickelmenu-customize-modal', testInfo);
     await shotNickelMenuTabsModal(page, dir, '06b-nickelmenu-tabs-modal', testInfo);
@@ -180,7 +180,7 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 
 // ============================================================
 // Modifying a setup this tool already installed: the feature list arrives
-// preselected from what is on the device, marked "Currently installed".
+// preselected from what is on the device.
 // Captured with an app and one of its plugins both present, since a plugin
 // renders differently from a top-level feature.
 // ============================================================

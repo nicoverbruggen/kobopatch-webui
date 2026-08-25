@@ -109,11 +109,26 @@ export function showHint(title, text) {
 }
 
 /** Populate a <ul>/<ol> with text items, clearing existing content. */
+/**
+ * Fill a list from strings, or from `{ text, note }` for an entry that carries a
+ * smaller aside after its label (what a review run does to something already on
+ * the device, say).
+ */
 export function populateList(listEl, items) {
     listEl.innerHTML = '';
-    for (const text of items) {
+    for (const item of items) {
         const li = document.createElement('li');
-        li.textContent = text;
+        if (item && typeof item === 'object') {
+            li.textContent = item.text;
+            if (item.note) {
+                const note = document.createElement('span');
+                note.className = 'review-list-note';
+                note.textContent = ` ${item.note}`;
+                li.appendChild(note);
+            }
+        } else {
+            li.textContent = item;
+        }
         listEl.appendChild(li);
     }
 }

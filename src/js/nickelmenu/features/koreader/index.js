@@ -18,6 +18,13 @@ export default {
     directories: ['.adds/koreader'],
     hint: 'https://github.com/koreader/koreader',
 
+    // KOReader's own updater rewrites this file, so it is what is actually on the
+    // device — the manifest only records what this tool last wrote.
+    async installedVersion(device) {
+        const rev = await device.readFile(['.adds', 'koreader', 'git-rev']);
+        return rev?.trim() || null;
+    },
+
     reviewNotices() {
         return [
             {

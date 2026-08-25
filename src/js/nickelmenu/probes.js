@@ -83,6 +83,28 @@ export async function readPreviousNickelMenuConfiguration(state) {
  * authoritative; features without a reliable marker fall back to the manifest
  * only while the generated preset itself is still present.
  */
+/**
+ * The version installed for each feature, keyed by feature id.
+ *
+ * Starts from what the manifest recorded and lets a feature's own probe
+ * overrule it: KOReader and SimpleUI can update themselves on the device, so
+ * what this tool last wrote is not necessarily what is there now. A feature
+ * with neither is simply absent from the map, and nothing is claimed about it.
+ */
+export async function detectInstalledNickelMenuVersions(state, manifestVersions = {}) {
+    if (state.manualMode || !state.device?.directoryHandle) return { ...manifestVersions };
+
+    const versions = { ...manifestVersions };
+    for (const feature of NICKELMENU_FEATURES) {
+        if (!feature.installedVersion) continue;
+        try {
+            const found = await feature.installedVersion(state.device);
+            if (found) versions[feature.id] = found;
+        } catch {}
+    }
+    return versions;
+}
+
 export async function detectInstalledNickelMenuFeatureIds(state, previousFeatureIds = [], webuiPresetPresent = false) {
     if (state.manualMode || !state.device?.directoryHandle) return [];
 

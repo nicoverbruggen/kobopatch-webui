@@ -1,5 +1,6 @@
 import { NICKELMENU_FEATURES } from './features/index.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
+import { displayVersion, featureVersion, isUpgrade } from './installables.js';
 
 // Pure derivations of the NickelMenu flow's decisions from the session. None of
 // these touch the DOM: selections live in the session (the checkboxes are a view
@@ -208,6 +209,27 @@ function withInstalledSubFeatures(session, removed) {
 }
 
 /**
+ * What this run does to each feature, keyed by feature id: a first install, a
+ * reinstall of what is already there, or an upgrade when the installed version
+ * is provably older. The feature list stays a plain list of ticks; this is where
+ * the detail belongs, next to what is about to be written.
+ */
+function featureInstallNotes(session, features) {
+    const notes = {};
+    for (const feature of features) {
+        if (!session.installedNickelMenuFeatureIds?.includes(feature.id)) {
+            notes[feature.id] = { kind: 'install' };
+            continue;
+        }
+        const from = session.installedNickelMenuVersions?.[feature.id];
+        notes[feature.id] = isUpgrade(from, feature)
+            ? { kind: 'upgrade', from: displayVersion(from), to: displayVersion(featureVersion(feature)) }
+            : { kind: 'reinstall' };
+    }
+    return notes;
+}
+
+/**
  * The structured model the review step renders. Returns data (feature objects,
  * notices) rather than display strings — the flow maps those to copy and DOM.
  */
@@ -226,6 +248,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
     return {
         mode: session.nickelMenuOption,
         installFeatures,
+        installNotes: featureInstallNotes(session, installFeatures),
         removedFeatures: featuresToRemove(session, deviceInfo),
         notices: featureReviewNotices(installFeatures, deviceInfo),
     };

@@ -349,41 +349,6 @@
 /* Connected installs can read the previous run's manifest. A compact neutral
    pill below the description keeps that history visible without competing with
    the option name. */
-.nm-config-previous {
-    display: flex;
-    align-items: center;
-    width: fit-content;
-    gap: 0.35rem;
-    margin-top: 0.35rem;
-    padding: 0.12rem 0.45rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--card-bg);
-    color: var(--text-secondary);
-    font-size: 0.68rem;
-    font-weight: 600;
-    /* The label sits ~1.5px lower than the check icon at 1.25: the extra leading
-       is distributed around the glyph band, not around the icon's flex box. A
-       line box the height of the text itself lines the two up. */
-    line-height: 1;
-}
-
-/* Explicitly suppress the earlier pseudo-element icon so hot-reloaded styles
-   cannot leave it beside the real clock icon. */
-.nm-config-previous::before {
-    content: none;
-}
-
-.nm-config-previous-icon {
-    display: inline-flex;
-    flex-shrink: 0;
-    color: var(--text-secondary);
-    line-height: 1;
-}
-
-.nm-config-previous--installed .nm-config-previous-icon {
-    color: var(--success-text);
-}
 
 /* "Experimental" pill for features still considered unstable. Right-aligned so
    it sits just before the "?" hint badge, in muted amber to read as a caution
@@ -1001,6 +966,17 @@
     color: var(--text);
 }
 
+/* The aside after a review entry — "(reinstall)", "(upgrade from ... )" — is
+   secondary to the name it follows, so it steps back in size and colour, and
+   sits against the right edge where the notes line up as a column of their own. */
+.review-list-note {
+    margin-left: auto;
+    padding-left: 0.75rem;
+    font-size: 0.82em;
+    color: var(--text-muted);
+    text-align: right;
+}
+
 #step-nm-review .review-list {
     margin: 0;
     padding: 0;
@@ -1011,6 +987,8 @@
 
     & li {
         position: relative;
+        display: flex;
+        align-items: baseline;
         padding: 0.28rem 0 0.28rem 1.5rem;
         border-top: 1px dotted var(--border);
 

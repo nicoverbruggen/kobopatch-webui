@@ -30,7 +30,9 @@ const defaultConfig = {
     hardwareId: '00000000-0000-0000-0000-000000000390',
     hasNickelMenu: false,
     hasKOReader: false,
+    koreaderVersion: null,
     hasSimpleUI: false,
+    simpleUIVersion: null,
     hasNickelDbus: false,
     hasNickelSeries: false,
     hasNickelClock: false,
@@ -107,14 +109,18 @@ async function injectMockDevice(page, opts = {}) {
         if (config.hasKOReader) {
             if (!filesystem['.adds']) filesystem['.adds'] = dir();
             filesystem['.adds']['koreader'] = dir({ 'koreader.sh': file('#!/bin/sh') });
+            // KOReader keeps its version here and its own updater rewrites it.
+            // Left out unless a test asks for one, which stands for a device whose
+            // installed version cannot be determined.
+            if (config.koreaderVersion) filesystem['.adds']['koreader']['git-rev'] = file(config.koreaderVersion + '\n');
         }
 
         if (config.hasSimpleUI) {
             if (!filesystem['.adds']) filesystem['.adds'] = dir();
             if (!filesystem['.adds']['koreader']) filesystem['.adds']['koreader'] = dir({ 'koreader.sh': file('#!/bin/sh') });
-            filesystem['.adds']['koreader']['plugins'] = dir({
-                'simpleui.koplugin': dir({ 'main.lua': file('return {}') }),
-            });
+            const plugin = { 'main.lua': file('return {}') };
+            if (config.simpleUIVersion) plugin['_meta.lua'] = file(`return {\n    name = "simpleui",\n    version = "${config.simpleUIVersion}",\n}\n`);
+            filesystem['.adds']['koreader']['plugins'] = dir({ 'simpleui.koplugin': dir(plugin) });
         }
 
         if (config.hasNickelDbus) {

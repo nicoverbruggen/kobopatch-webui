@@ -23,6 +23,7 @@ import {
 import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
     detectInstalledNickelMenuFeatureIds,
+    detectInstalledNickelMenuVersions,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
     readPreviousNickelMenuConfiguration,
@@ -375,7 +376,10 @@ export function initNickelMenuFlow(state) {
                     keptLabel.textContent = 'These currently installed features will be removed:';
                     keptCard.hidden = model.removedFeatures.length === 0;
                     listLabel.textContent = state.nmWebuiPresetInstalled ? TL.STATUS.NM_WILL_BE_INSTALLED_MODIFY : TL.STATUS.NM_WILL_BE_INSTALLED;
-                    populateList(list, [TL.STATUS.NM_NICKEL_ROOT_TGZ, ...model.installFeatures.map((f) => f.title)]);
+                    populateList(list, [
+                        TL.STATUS.NM_NICKEL_ROOT_TGZ,
+                        ...model.installFeatures.map((f) => ({ text: f.title, note: installNoteText(model.installNotes[f.id]) })),
+                    ]);
                     btnNmWrite.hidden = false;
                     btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
                     btnNmDownload.hidden = false;
@@ -471,8 +475,6 @@ export function initNickelMenuFlow(state) {
                 description: f.description,
                 hint: f.hint,
                 experimental: f.experimental === true,
-                previouslySelected: state.previousNickelMenuFeatureIds.includes(f.id),
-                currentlyInstalled: state.installedNickelMenuFeatureIds.includes(f.id),
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
                 checked: state.selectedFeatureIds.includes(f.id) && !reason,
@@ -550,6 +552,13 @@ export function initNickelMenuFlow(state) {
                     },
                 };
             });
+    }
+
+    /** What to print after a feature in the review list. */
+    function installNoteText(note) {
+        if (!note) return '';
+        if (note.kind === 'upgrade') return `(upgrade from ${note.from} \u2192 ${note.to})`;
+        return note.kind === 'reinstall' ? '(reinstall)' : '(install)';
     }
 
     /**
@@ -730,6 +739,7 @@ export function initNickelMenuFlow(state) {
         // "remove this". See `featuresToRemove` in selection.js.
         state.nmWebuiPresetInstalled = webuiPresetInstalled;
         state.installedNickelMenuFeatureIds = await detectInstalledNickelMenuFeatureIds(state, state.previousNickelMenuFeatureIds, webuiPresetInstalled);
+        state.installedNickelMenuVersions = await detectInstalledNickelMenuVersions(state, previousConfiguration?.installedVersions || {});
         $('nm-installed-features-note').hidden = !installedState.installed;
         nmPreviousConfigurationActions.hidden = !previousConfiguration || webuiPresetInstalled;
     }

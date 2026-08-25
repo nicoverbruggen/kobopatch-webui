@@ -36,6 +36,13 @@ export default {
         paths: [{ path: ['.adds', 'koreader', 'plugins', 'simpleui.koplugin'], recursive: true }],
     },
 
+    // The plugin can update itself from inside KOReader, so its own metadata is
+    // the truth about what is installed, not what this tool last wrote.
+    async installedVersion(device) {
+        const meta = await device.readFile(['.adds', 'koreader', 'plugins', 'simpleui.koplugin', '_meta.lua']);
+        return meta?.match(/version\s*=\s*"([^"]+)"/)?.[1] || null;
+    },
+
     async install(ctx) {
         const version = installableVersion('simpleui');
         if (!version) throw new Error('SimpleUI assets not available (run npm run setup:installables)');

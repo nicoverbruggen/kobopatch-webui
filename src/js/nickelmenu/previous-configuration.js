@@ -55,6 +55,21 @@ function predatesSelectableFontCatalogue(manifest) {
     return major < 1 || (major === 1 && minor < 53);
 }
 
+/**
+ * The version recorded for each installed feature, `{}` for a manifest written
+ * before versions were recorded. Its absence is the signal that nothing can be
+ * said about upgrades, so no writer-version check is needed here.
+ */
+function installedVersions(manifest) {
+    const entries = manifest?.features;
+    if (!entries || typeof entries !== 'object') return {};
+    const versions = {};
+    for (const [id, entry] of Object.entries(entries)) {
+        if (typeof entry?.version === 'string' && entry.version) versions[id] = entry.version;
+    }
+    return versions;
+}
+
 function selectedFontFamilies(manifest, featureIds) {
     if (!featureIds.includes('additional-fonts')) return null;
 
@@ -182,5 +197,6 @@ export function parsePreviousNickelMenuConfiguration(manifestText, presetText) {
         menuIconPath: savedMenu?.icon?.data ? null : menu.iconPath,
         tabsCustomization: savedTabsCustomization(manifest, featureIds) || tabsCustomization(lines, featureIds),
         fontsCustomization: selectedFontFamilies(manifest, featureIds),
+        installedVersions: installedVersions(manifest),
     };
 }

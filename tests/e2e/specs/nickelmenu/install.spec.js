@@ -492,9 +492,11 @@ test.describe('NickelMenu — install', () => {
             has: page.locator('input[name="nm-cfg-screensaver"]'),
         });
 
-        await expect(simplifyTabs.locator('.nm-config-previous')).toHaveText('Currently installed');
-        await expect(hideNotices.locator('.nm-config-previous')).toHaveText('Currently installed');
-        await expect(screensaver.locator('.nm-config-previous')).toHaveCount(0);
+        // The selection screen says what is installed by having it ticked, and the
+        // note above the list explains why; the per-row wording lives in the review.
+        await expect(simplifyTabs.locator('input')).toBeChecked();
+        await expect(hideNotices.locator('input')).toBeChecked();
+        await expect(screensaver.locator('input')).not.toBeChecked();
         await expect(page.locator('#nm-installed-features-note')).toBeVisible();
         await expect(page.locator('input[name="nm-cfg-simplify-tabs"]')).toBeChecked();
         await expect(page.locator('input[name="nm-cfg-hide-notices"]')).toBeChecked();
@@ -525,7 +527,6 @@ test.describe('NickelMenu — install', () => {
         const screensaver = page.locator('.nm-config-item', {
             has: page.locator('input[name="nm-cfg-screensaver"]'),
         });
-        await expect(screensaver.locator('.nm-config-previous')).toHaveText('Currently installed');
         await expect(page.locator('input[name="nm-cfg-screensaver"]')).toBeChecked();
         await openNmSection(page, 'Legacy');
         await page.uncheck('input[name="nm-cfg-screensaver"]');

@@ -10,6 +10,7 @@
  * items are; this owns how they look.
  */
 
+import { Check } from 'lucide';
 import { showHint } from '../shell/dom.js';
 
 // Hover/focus explanation shown on the "Experimental" badge (same text for every
@@ -21,6 +22,14 @@ const EXPERIMENTAL_TOOLTIP =
 // colour via currentColor, so it follows the theme and the muted Legacy style).
 const svgIcon = (inner) =>
     `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${inner}</svg>`;
+
+const iconAttrs = (attrs) =>
+    Object.entries(attrs)
+        .map(([key, value]) => ` ${key}="${String(value).replace(/"/g, '&quot;')}"`)
+        .join('');
+
+/** An icon from the Lucide set (https://lucide.dev/icons/), as markup. */
+const lucideIcon = (icon) => svgIcon(icon.map(([tag, attrs]) => `<${tag}${iconAttrs(attrs)}/>`).join(''));
 
 // Per-section heading icons, keyed by the exact section title a feature declares
 // in its module. Presentational only — a section without an entry simply renders
@@ -86,7 +95,7 @@ export function setNmSubItemAvailability(input, disabled, reason) {
 /**
  * Render a list of checkbox items into a container.
  * @param {HTMLElement} container
- * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, subItems?: Array<{name: string, label: string, badge?: string, version?: string, currentlyInstalled?: boolean, hint?: string, checked: boolean, disabled?: boolean, disabledReason?: string, onChange: function}>, hint?: string, experimental?: boolean, currentlyInstalled?: boolean, previouslySelected?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
+ * @param {Array<{name: string, title: string, description: string, checked: boolean, version?: string, disabled?: boolean, disabledReason?: string, subItems?: Array<{name: string, label: string, badge?: string, version?: string, currentlyInstalled?: boolean, hint?: string, checked: boolean, disabled?: boolean, disabledReason?: string, onChange: function}>, hint?: string, experimental?: boolean, sectionTitle?: string, sectionDescription?: string, actionLabel?: string, actionAriaLabel?: string, onAction?: function, summaryId?: string, summaryLabel?: string, summaryIconHtml?: string, summaryIconSrc?: string}>} items
  */
 export function renderNmCheckboxList(container, items) {
     container.innerHTML = '';
@@ -175,22 +184,6 @@ export function renderNmCheckboxList(container, items) {
             titleSpan.append(version);
         }
 
-        let previous = null;
-        if (item.currentlyInstalled || item.previouslySelected) {
-            previous = document.createElement('span');
-            previous.className = 'nm-config-previous';
-            const previousIcon = document.createElement('span');
-            previousIcon.className = 'nm-config-previous-icon';
-            if (item.currentlyInstalled) {
-                previous.classList.add('nm-config-previous--installed');
-                previousIcon.innerHTML = svgIcon('<polyline points="20 6 9 17 4 12"/>');
-                previous.append(previousIcon, document.createTextNode('Currently installed'));
-            } else {
-                previousIcon.innerHTML = svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>');
-                previous.append(previousIcon, document.createTextNode('You selected this last time'));
-            }
-        }
-
         const descId = item.name + '-desc';
         const descSpan = document.createElement('span');
         descSpan.id = descId;
@@ -206,8 +199,6 @@ export function renderNmCheckboxList(container, items) {
         if (item.disabledReason) {
             textDiv.appendChild(disabledReasonElement(item.disabledReason));
         }
-
-        if (previous) textDiv.appendChild(previous);
 
         label.appendChild(input);
         label.appendChild(textDiv);
@@ -360,7 +351,7 @@ export function renderNmCheckboxList(container, items) {
             if (sub.currentlyInstalled) {
                 const installed = document.createElement('span');
                 installed.className = 'nm-config-subitem-installed';
-                installed.innerHTML = svgIcon('<polyline points="20 6 9 17 4 12"/>');
+                installed.innerHTML = lucideIcon(Check);
                 installed.title = 'Currently installed';
                 installed.setAttribute('role', 'img');
                 installed.setAttribute('aria-label', 'Currently installed');

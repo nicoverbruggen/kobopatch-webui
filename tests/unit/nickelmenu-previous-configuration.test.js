@@ -38,7 +38,24 @@ experimental :menu_main_15505_icon :/mnt/onboard/.adds/nm/.custom-icon.svg
             visibility: { stats: false, notes: true, store: true },
         },
         fontsCustomization: { families: ['libron', 'readerly'] },
+        // This 1.53 manifest predates recorded versions, so there is nothing to
+        // compare against and no upgrade can be claimed for anything in it.
+        installedVersions: {},
     });
+});
+
+test('recovers the version recorded for each installed feature', () => {
+    const manifest = {
+        selected: ['koreader', 'nickelclock'],
+        features: {
+            koreader: { directories: [['.adds', 'koreader']], version: 'v2026.05.1' },
+            nickelclock: { files: [], version: 'v0.4.0' },
+            'exclude-calibre': { files: [] },
+        },
+        meta: { writer: { version: '2.0' } },
+    };
+    const parsed = parsePreviousNickelMenuConfiguration(JSON.stringify(manifest), '');
+    assert.deepEqual(parsed.installedVersions, { koreader: 'v2026.05.1', nickelclock: 'v0.4.0' });
 });
 
 test('recovers the three fixed font families used before version 1.53', () => {

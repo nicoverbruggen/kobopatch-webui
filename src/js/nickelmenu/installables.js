@@ -20,6 +20,52 @@ export function installableVersion(id) {
     return entry ? entry.version : null;
 }
 
+/**
+ * The version a feature installs, or null when it has none.
+ *
+ * A feature either carries its own (`better-typography` ships NickelTypeFix, so
+ * its id does not match the installable's), or its id is the installable's id.
+ * Resolved from the manifest rather than from the feature object alone, so it
+ * works for code paths that never went through the flow's decoration step.
+ */
+export function featureVersion(feature) {
+    const own = typeof feature?.version === 'function' ? feature.version() : feature?.version;
+    return own || installableVersion(feature?.id) || null;
+}
+
+/**
+ * Compare two version strings loosely: `v2026.07.1`, `2.5.0` and `v0.7` all
+ * parse. Returns -1/0/1, or null when either side holds no digits at all — the
+ * caller must then say nothing about direction.
+ */
+export function compareVersions(a, b) {
+    const parse = (v) =>
+        String(v ?? '')
+            .replace(/^v/i, '')
+            .split(/[^0-9]+/)
+            .filter(Boolean)
+            .map(Number);
+    const [x, y] = [parse(a), parse(b)];
+    if (x.length === 0 || y.length === 0) return null;
+    for (let i = 0; i < Math.max(x.length, y.length); i++) {
+        const diff = (x[i] ?? 0) - (y[i] ?? 0);
+        if (diff !== 0) return diff < 0 ? -1 : 1;
+    }
+    return 0;
+}
+
+/**
+ * Whether installing this feature would move it forward. Only true when the
+ * installed version is provably older: an unknown version, an unparseable one,
+ * or one newer than what is bundled (a rolled-back pin, or a mod that updated
+ * itself past us) all read as "leave it alone".
+ */
+export function isUpgrade(installedVersion, feature) {
+    const bundled = featureVersion(feature);
+    if (!installedVersion || !bundled) return false;
+    return compareVersions(installedVersion, bundled) === -1;
+}
+
 /** Whether this deployment actually bundled the installable's archive. */
 export function installableAvailable(id) {
     return manifest()[id]?.available === true;

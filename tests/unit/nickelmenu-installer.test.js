@@ -672,3 +672,27 @@ test('buildManifest records files, directories, conf, and menuItems-only feature
     // Only revertable conf settings are recorded, with revertTo carried through.
     assert.deepEqual(manifest.features['with-conf'].conf, [{ section: 'S', key: 'k', value: 'v', revertTo: 'old' }]);
 });
+
+test('buildManifest records the version a feature installed, and omits it when there is none', async () => {
+    const installer = new NickelMenuInstaller();
+    // A feature whose id is an installable's id gets the version from the manifest;
+    // one that ships someone else's asset (better-typography ships NickelTypeFix)
+    // carries its own; a plain feature has none to record.
+    const originalManifest = globalThis.__INSTALLABLES__;
+    try {
+        globalThis.__INSTALLABLES__ = { koreader: { version: 'v2026.07.1', available: true } };
+        const byId = { id: 'koreader', title: 'KOReader', directories: [['.adds', 'koreader']] };
+        const byOwnVersion = { id: 'better-typography', title: 'Better typography', version: () => 'v0.7', menuItems: () => [] };
+        const noAsset = { id: 'exclude-calibre', title: 'Exclude Calibre', menuItems: () => [] };
+        const features = [byId, byOwnVersion, noAsset];
+
+        const { files, featureFiles } = await installer.collectFiles(features, () => {});
+        const manifest = installer.buildManifest(features, files, featureFiles, null, null);
+
+        assert.equal(manifest.features['koreader'].version, 'v2026.07.1');
+        assert.equal(manifest.features['better-typography'].version, 'v0.7');
+        assert.equal(manifest.features['exclude-calibre'].version, undefined);
+    } finally {
+        globalThis.__INSTALLABLES__ = originalManifest;
+    }
+});
