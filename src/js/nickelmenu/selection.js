@@ -86,6 +86,38 @@ export function featuresToInstall(session, deviceInfo) {
 }
 
 /**
+ * Installed, user-visible features that will be removed by the desired setup.
+ *
+ * Only ever non-empty when this tool's own preset is on the device. That is the
+ * condition under which the feature list is preselected from what is installed,
+ * so an unticked box means the user deliberately unticked it. Without the preset
+ * nothing is preselected, and treating "installed but unticked" as "remove it"
+ * would delete things the user never touched — a device with a manually
+ * installed KOReader, say, would lose it the moment they installed anything else.
+ */
+export function featuresToRemove(session, deviceInfo) {
+    if (!session.nmWebuiPresetInstalled) return [];
+    const desired = new Set(featuresToInstall(session, deviceInfo).map((feature) => feature.id));
+    const cleanupGroups = new Set();
+    return NICKELMENU_FEATURES.filter(
+        (feature) =>
+            !feature.hidden &&
+            feature.available !== false &&
+            !feature.disabled &&
+            meetsMinimumVersion(deviceInfo?.firmware, feature.minimumVersion) &&
+            !feature.unsupportedDeviceReason?.(deviceInfo) &&
+            session.installedNickelMenuFeatureIds?.includes(feature.id) &&
+            !desired.has(feature.id) &&
+            (feature.modifyCleanup || feature.cleanup),
+    ).filter((feature) => {
+        const cleanup = feature.modifyCleanup || feature.cleanup;
+        if (cleanupGroups.has(cleanup)) return false;
+        cleanupGroups.add(cleanup);
+        return true;
+    });
+}
+
+/**
  * The reason a feature's checkbox is disabled in the config step, or `undefined`
  * when it is selectable. Ordered by authority: a maintainer kill switch
  * (`disabled`) is global so it wins — a string value is shown verbatim, `true`
@@ -162,6 +194,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
     return {
         mode: session.nickelMenuOption,
         installFeatures,
+        removedFeatures: featuresToRemove(session, deviceInfo),
         notices: featureReviewNotices(installFeatures, deviceInfo),
     };
 }

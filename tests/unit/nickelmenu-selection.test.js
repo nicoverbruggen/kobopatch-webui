@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
     featuresToInstall,
+    featuresToRemove,
     featureDisabledReason,
     subFeatures,
     parentIsCovered,
@@ -20,6 +21,8 @@ import { NICKELMENU_FEATURES } from '../../src/js/nickelmenu/features/index.js';
 function session(overrides = {}) {
     return {
         nickelMenuOption: 'preset',
+        nmWebuiPresetInstalled: true,
+        installedNickelMenuFeatureIds: [],
         selectedFeatureIds: [],
         installedParentFeatureIds: [],
         nmOptionalCleanupIds: [],
@@ -205,6 +208,57 @@ test('featuresToInstall drops a subitem when its parent is filtered out for anot
         koreader.available = originals[0];
         simpleui.available = originals[1];
     }
+});
+
+test('featuresToRemove reconciles deselected installed features with cleanup support', () => {
+    const removed = featuresToRemove(
+        session({
+            selectedFeatureIds: [],
+            installedNickelMenuFeatureIds: ['screensaver', 'simplify-tabs'],
+        }),
+        { firmware: '4.40.0' },
+    );
+    assert.deepEqual(
+        removed.map((feature) => feature.id),
+        ['screensaver'],
+        'generated preset entries need no separate cleanup, but owned files do',
+    );
+});
+
+test('featuresToRemove schedules the shared NickelHome cleanup once when hiders are deselected', () => {
+    const removed = featuresToRemove(
+        session({
+            selectedFeatureIds: [],
+            installedNickelMenuFeatureIds: ['hide-recommendations', 'hide-row2col2', 'hide-notices'],
+        }),
+        { firmware: '4.40.0' },
+    );
+    assert.equal(removed.length, 1);
+    assert.equal((removed[0].modifyCleanup || removed[0].cleanup).title, 'NickelHome');
+});
+
+test('featuresToRemove drops an installed feature the user unticked', () => {
+    withReadingAppsAvailable(() => {
+        const sess = session({ installedNickelMenuFeatureIds: ['koreader'], selectedFeatureIds: [] });
+        assert.deepEqual(
+            featuresToRemove(sess, { firmware: '4.40.0' }).map((f) => f.id),
+            ['koreader'],
+        );
+    });
+});
+
+test('featuresToRemove removes nothing when our preset is not on the device', () => {
+    // The dangerous case: a device carrying a manually installed KOReader and no
+    // preset of ours. Nothing is preselected there, so "installed but unticked"
+    // is not a choice the user made — treating it as one would delete their app.
+    withReadingAppsAvailable(() => {
+        const sess = session({
+            nmWebuiPresetInstalled: false,
+            installedNickelMenuFeatureIds: ['koreader'],
+            selectedFeatureIds: ['simpleui'],
+        });
+        assert.deepEqual(featuresToRemove(sess, { firmware: '4.40.0' }), []);
+    });
 });
 
 test('featureDisabledReason surfaces the right message for each disabled cause', () => {

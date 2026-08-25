@@ -398,6 +398,15 @@ test('SimpleUI install places a flat archive under the plugin folder KOReader lo
     );
 });
 
+test('SimpleUI is removable when modifying an install, but never on its own', () => {
+    // The uninstall lists are built from `cleanup`; declaring none is what keeps
+    // the plugin out of them, since removing KOReader takes it either way.
+    assert.equal(simpleui.cleanup, undefined);
+    // `modifyCleanup` is what lets a modify run drop the plugin while KOReader stays.
+    assert.deepEqual(simpleui.modifyCleanup.paths, [{ path: ['.adds', 'koreader', 'plugins', 'simpleui.koplugin'], recursive: true }]);
+    assert.equal(simpleui.modifyCleanup.title, 'Simple UI');
+});
+
 test('SimpleUI is a KOReader subitem that adds no menu entry of its own', () => {
     assert.equal(simpleui.parent, 'koreader');
     assert.equal(simpleui.section, koreader.section, 'listed alongside the app it plugs into');

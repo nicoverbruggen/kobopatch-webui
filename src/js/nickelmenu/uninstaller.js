@@ -69,7 +69,7 @@ async function applyConfReverts(device, feature, audit = null) {
 }
 
 async function executeFeatureCleanup(device, feature, logger, audit = null) {
-    const cleanup = feature.cleanup;
+    const cleanup = feature.modifyCleanup || feature.cleanup;
     if (!cleanup) return;
 
     for (const entry of cleanup.paths || []) {
@@ -80,6 +80,15 @@ async function executeFeatureCleanup(device, feature, logger, audit = null) {
 
     await removeCleanupParentDirsIfEmpty(device, cleanup, logger, audit);
     await applyConfReverts(device, feature, audit);
+}
+
+export async function executeNickelMenuFeatureCleanups({ device, features, onProgress = () => {}, logger = console, audit = null }) {
+    for (const feature of features) {
+        const cleanup = feature.modifyCleanup || feature.cleanup;
+        onProgress(`Removing ${cleanup.title}...`);
+        audit?.record(`Removing ${cleanup.title}`);
+        await executeFeatureCleanup(device, feature, logger, audit);
+    }
 }
 
 async function executeNickelMenuRemoval({

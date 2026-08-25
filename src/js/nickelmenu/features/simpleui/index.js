@@ -22,10 +22,19 @@ export default {
     directories: ['.adds/koreader/plugins/simpleui.koplugin'],
     hint: 'https://github.com/doctorhetfield-cmd/simpleui.koplugin',
 
-    // No cleanup of its own: every file it installs sits inside KOReader's
-    // directory, so KOReader's own removal takes the plugin with it. There is no
-    // way to honour keeping a plugin whose parent directory is being deleted,
-    // which is why it is never offered as a separate removal.
+    // `modifyCleanup`, not `cleanup`: the two words mean different things here.
+    //
+    // Removing KOReader deletes its whole directory and takes the plugin with
+    // it, so the plugin is never offered as a standalone removal — the uninstall
+    // lists are built from `cleanup`, and this feature declares none.
+    //
+    // Modifying an existing install is the opposite case: keeping KOReader and
+    // unticking the plugin is a perfectly reasonable thing to ask for, and this
+    // is what makes it possible.
+    modifyCleanup: {
+        title: 'Simple UI',
+        paths: [{ path: ['.adds', 'koreader', 'plugins', 'simpleui.koplugin'], recursive: true }],
+    },
 
     async install(ctx) {
         const version = installableVersion('simpleui');

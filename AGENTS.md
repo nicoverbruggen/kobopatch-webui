@@ -131,7 +131,7 @@ Availability:
 
 Removal:
 
-- A subitem's files sit inside its parent's directory, so it declares **no `cleanup` of its own**, and `probes.js` skips any feature with a `parent` when detecting optional cleanups.
+- A subitem's files sit inside its parent's directory, so it declares **no `cleanup` of its own** — only a `modifyCleanup`, so a modify run can drop it while its parent stays installed — and `probes.js` skips any feature with a `parent` when detecting optional cleanups.
 - Removing the parent takes the subitem with it. There is no way to honour keeping one whose directory is being deleted, so it is never offered as a separate removal.
 - There is no compatibility check between a subitem and its parent, because upstream publishes none — SimpleUI declares no supported KOReader version in its `_meta.lua`, README or release notes, and performs no runtime check.
     - A break after a parent's version is bumped is handled by the maintainer setting `disabled` on the subitem with a reason, not by anything derived.
@@ -184,6 +184,17 @@ Removal:
     - The flow detects the feature by those revertable settings and the uninstaller reverts them — only when the current value still equals what was set, so user edits afterwards are never overwritten.
     - `installer.js`'s `revertableConfSettings(feature, ctx)` is the single helper that derives this subset, so the flow and uninstaller stay in sync.
     - A `confSettings` entry without `revertable` is applied once and never clawed back (a general preference).
+
+### Modifying an existing install
+
+- The preset option doubles as "modify what is already here" when this tool's own preset (`.adds/nm/webui-preset`) is on the device. `checkNickelMenuInstalled` reports `{ installed, webuiPresetPresent }`, and the preset card retitles itself accordingly.
+- `probes.js` supplies two reads:
+    - `readPreviousNickelMenuConfiguration` — the previous choices, via `previous-configuration.js`'s `parsePreviousNickelMenuConfiguration(manifestText, presetText)`. It prefers the manifest's `configuration` key and otherwise **recovers from the device**: menu label and icon from the preset's `experimental :menu_main_15505_*` lines, tab labels and visibility from the same, font families reconstructed from the manifest's recorded file list, with a pre-1.53 legacy fallback. A referenced custom icon is read back off the device so a reinstall keeps it.
+    - `detectInstalledNickelMenuFeatureIds` — what is actually installed, by `installedConfig` key, `directories`, `installedDetect`, `cleanup.detect` or revertable conf settings, falling back to the manifest only while the preset is present.
+- The feature list preselects what is installed and marks those rows "Currently installed". When the preset is gone but its manifest survives, a "Use last configuration" button restores the recorded selection instead.
+- `selection.js`'s `featuresToRemove` derives what an install run will delete: installed, not selected, and declaring a cleanup. **It returns nothing unless `session.nmWebuiPresetInstalled`** — without our preset nothing is preselected, so "installed but unticked" is not a user's choice, and treating it as one would delete a manually installed app. The review step lists the result under "These currently installed features will be removed".
+- `executeNmInstall` opens the audit log first, then runs `executeNickelMenuFeatureCleanups` for those features, then each feature's optional `reconcile(ctx)` hook (`additional-fonts` uses it to delete families dropped from the selection), and only then installs.
+- **`cleanup` and `modifyCleanup` mean different things.** `cleanup` is what the uninstall flow offers and acts on; `modifyCleanup` is what a modify run uses, and `executeFeatureCleanup` reads `modifyCleanup || cleanup`. A feature declaring only `modifyCleanup` is removable when modifying but never appears as a standalone uninstall option — which is exactly what a subitem wants (`simpleui`), and how the home hiders share one NickelHome cleanup between them.
 
 ### Installable assets
 

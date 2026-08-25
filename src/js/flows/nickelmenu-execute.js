@@ -11,8 +11,8 @@ import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
 import { DeviceWriter } from '../kobo/device-writer.js';
-import { executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
-import { featuresToInstall, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
+import { executeNickelMenuFeatureCleanups, executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
+import { featuresToInstall, featuresToRemove, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
 import { featureAnalyticsEvents } from '../nickelmenu/features/index.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
 import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
@@ -61,6 +61,31 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
 
         if (dom.writeToDevice && state.device.directoryHandle) {
             const writer = new DeviceWriter(state.device);
+            // The audit log is opened before anything is touched, so the
+            // removals below are recorded too.
+            audit = new AuditLog('install-nickelmenu', new Date(), state.device);
+            // Features the user unticked on a setup of ours go first, then each
+            // remaining feature reconciles its own leftovers (dropped fonts).
+            await executeNickelMenuFeatureCleanups({
+                device: writer,
+                features: featuresToRemove(state, state.device.deviceInfo),
+                onProgress: progressFn,
+                audit,
+            });
+            for (const feature of features) {
+                if (!feature.reconcile) continue;
+                progressFn(`Updating ${feature.title.toLowerCase()}...`);
+                await feature.reconcile({
+                    device: writer,
+                    deviceInfo: state.device.deviceInfo,
+                    features,
+                    previousConfiguration: state.previousNickelMenuConfiguration,
+                    menuCustomization: state.nickelMenuCustomization,
+                    tabsCustomization: state.nickelMenuTabsCustomization,
+                    fontsCustomization: state.nickelMenuFontsCustomization,
+                    audit,
+                });
+            }
             if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
                 if (!state.nmKeepLegacyConfig) {
                     try {
@@ -74,7 +99,6 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
                     await writer.removeEntry(legacyScriptPath);
                 }
             } catch {}
-            audit = new AuditLog('install-nickelmenu', new Date(), state.device);
             await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
                 menuCustomization: state.nickelMenuCustomization,
