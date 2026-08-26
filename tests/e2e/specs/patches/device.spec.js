@@ -34,6 +34,8 @@ const VERIFIED_IDENTIFICATION_HINT = 'The hardware UUID and serial prefix match 
 const REFURBISHED_IDENTIFICATION_HINT =
     'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.';
 const REFURBISHED_MODEL_HINT = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
+const TOLINO_IDENTIFICATION_HINT =
+    'This is Tolino hardware running Kobo software. Its serial number starts with T, while the hardware UUID is a Kobo one — expected for a cross-flashed Tolino, which takes the same mods and patches as the Kobo it is built from.';
 const MISMATCH_IDENTIFICATION_HINT =
     'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.';
 const CLOUD_SYNC_PATCH_NAME = 'Unlock Dropbox and Google Drive support';
@@ -370,6 +372,38 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#device-status')).toContainText('recognized');
         await expect(page.locator('#device-unknown-warning')).toBeHidden();
         await expect(page.locator('#btn-device-restore')).toBeHidden();
+    });
+
+    test('with device — a cross-flashed Tolino is named as a Tolino and can still be patched', async ({ page }) => {
+        // Reported in issue #22: a Tolino Vision Color running Kobo software. It
+        // reports the Kobo Libra Colour hardware UUID while keeping its own
+        // T-prefixed serial. Patches target the software, not the badge, so they
+        // must stay available.
+        await page.goto('/');
+        await injectMockDevice(page, {
+            serial: 'T1060A0000000',
+            firmware: '4.45.23697',
+            hardwareId: '00000000-0000-0000-0000-000000000390',
+        });
+        await page.click('#btn-connect');
+        await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+        await page.click('#btn-connect-ready');
+
+        await expect(page.locator('#step-device')).not.toBeHidden();
+        await expect(page.locator('#device-model')).toContainText('Tolino Vision Color (with Kobo software)');
+        await expect(page.locator('#device-model')).not.toContainText('Kobo Libra Colour');
+        await expect(page.locator('#device-model .device-identification-badge--tolino')).toHaveAttribute('data-tooltip', TOLINO_IDENTIFICATION_HINT);
+        await expect(page.locator('#device-serial')).toContainText('T106');
+        await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
+
+        // The wording the reporter saw must be gone, and patching must proceed.
+        await expect(page.locator('#device-status')).not.toContainText('disabled');
+        await expect(page.locator('#device-status')).toContainText('recognized');
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+        await expect(page.locator('#patch-container')).not.toBeEmpty();
     });
 
     test('with device — known hardware UUID identifies unknown serial prefix', async ({ page }) => {

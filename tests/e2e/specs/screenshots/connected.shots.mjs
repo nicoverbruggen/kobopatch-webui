@@ -361,6 +361,21 @@ test('device serial prefix mismatch', async ({ page }, testInfo) => {
     await shot(page, dir, 'serial-prefix-mismatch-hint', testInfo);
 });
 
+test('Tolino running Kobo software', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    // The device from issue #22: Tolino Vision Color, cross-flashed, reporting
+    // the Kobo Libra Colour hardware UUID with its own T-prefixed serial.
+    await connectToDeviceScreen(page, {
+        serial: 'T1060A0000000',
+        firmware: '4.45.23697',
+        hardwareId: '00000000-0000-0000-0000-000000000390',
+    });
+    await shot(page, dir, 'tolino-device', testInfo);
+
+    await page.locator('#device-model .device-identification-badge--tolino').hover();
+    await shot(page, dir, 'tolino-device-hint', testInfo);
+});
+
 test('refurbished device verified by UUID', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeCompatibility;
     await connectToDeviceScreen(page, {

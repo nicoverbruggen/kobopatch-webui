@@ -91,6 +91,7 @@ export function initConnectFlow(state, { patches }) {
         refurbished: 'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.',
         mismatch:
             'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
+        tolino: 'This is Tolino hardware running Kobo software. Its serial number starts with T, while the hardware UUID is a Kobo one — expected for a cross-flashed Tolino, which takes the same mods and patches as the Kobo it is built from.',
     };
     const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
     const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, patchManifestName];

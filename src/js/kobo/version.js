@@ -4,6 +4,12 @@
  * secondary consistency check and display hint; firmware downloads are keyed
  * by the channel stored on each hardware entry.
  */
+// Keyed by the hardware UUID in .kobo/version. `tolinoModel` is the rebadged
+// twin sold under the Tolino brand, and it is only set for the models that can
+// actually run Kobo software: the 2024 generation, where a Tolino can be put in
+// developer mode and switched to Kobo. Earlier Tolinos run Android and never
+// arrive here, so they are deliberately absent — a device is a Tolino to this
+// app only if it could have been cross-flashed in the first place.
 const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000310': { serialPrefix: 'N905', channel: 'kobo3', model: 'Kobo Touch A/B' },
     '00000000-0000-0000-0000-000000000320': { serialPrefix: 'N905', channel: 'kobo4', model: 'Kobo Touch C' },
@@ -30,10 +36,10 @@ const koboHardwareIds = {
     '00000000-0000-0000-0000-000000000387': { serialPrefix: 'N604', channel: 'kobo8', model: 'Kobo Elipsa' },
     '00000000-0000-0000-0000-000000000388': { serialPrefix: 'N418', channel: 'kobo9', model: 'Kobo Libra 2' },
     '00000000-0000-0000-0000-000000000389': { serialPrefix: 'N605', channel: 'kobo11', model: 'Kobo Elipsa 2E' },
-    '00000000-0000-0000-0000-000000000390': { serialPrefix: 'N428', channel: 'kobo13', model: 'Kobo Libra Colour' },
-    '00000000-0000-0000-0000-000000000391': { serialPrefix: 'N365', channel: 'kobo12', model: 'Kobo Clara BW' },
-    '00000000-0000-0000-0000-000000000393': { serialPrefix: 'N367', channel: 'kobo12', model: 'Kobo Clara Colour' },
-    '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', channel: 'kobo14', model: 'Kobo Clara BW' },
+    '00000000-0000-0000-0000-000000000390': { serialPrefix: 'N428', channel: 'kobo13', model: 'Kobo Libra Colour', tolinoModel: 'Tolino Vision Color' },
+    '00000000-0000-0000-0000-000000000391': { serialPrefix: 'N365', channel: 'kobo12', model: 'Kobo Clara BW', tolinoModel: 'Tolino Shine 5' },
+    '00000000-0000-0000-0000-000000000393': { serialPrefix: 'N367', channel: 'kobo12', model: 'Kobo Clara Colour', tolinoModel: 'Tolino Shine Color' },
+    '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', channel: 'kobo14', model: 'Kobo Clara BW', tolinoModel: 'Tolino Shine 5' },
 };
 
 const minimumSupportedFirmware = '4.23';
@@ -48,17 +54,33 @@ const firstUnsupportedFirmware = '5.0';
 // line as a whole rather than the exact version where support stops.
 const firstUnsupportedFirmwareMajor = firstUnsupportedFirmware.split('.')[0];
 
-function serialPrefixMatch(expectedPrefix, rawPrefix) {
-    const expected = String(expectedPrefix || '').substring(0, 4);
-    const actual = String(rawPrefix || '').substring(0, 4);
-    if (!expected || !actual) return { matches: false, refurbished: false };
+/**
+ * Tolino readers are built by Kobo, and on the 2024 generation a Tolino can be
+ * switched to Kobo software from its developer menu — which is what brings one
+ * here, reporting a Kobo hardware UUID with its own serial. The firmware's own
+ * serial validation is `SN-[TN]…`, where the letter is the brand, so the letter
+ * is the part that carries the meaning; no table of per-model Tolino prefixes is
+ * published. Whether a T serial is accepted is decided by `tolinoModel` in the
+ * hardware table, not here.
+ */
+function isTolinoSerialPrefix(rawPrefix) {
+    return /^T[0-9]{3}$/.test(String(rawPrefix || '').substring(0, 4));
+}
 
-    if (actual === expected) return { matches: true, refurbished: false };
+function serialPrefixMatch(hardwareInfo, rawPrefix) {
+    const expected = String(hardwareInfo?.serialPrefix || '').substring(0, 4);
+    const actual = String(rawPrefix || '').substring(0, 4);
+    if (!expected || !actual) return { matches: false, refurbished: false, tolino: false };
+
+    if (actual === expected) return { matches: true, refurbished: false, tolino: false };
     if (actual.startsWith('R') && actual.substring(1) === expected.substring(1)) {
-        return { matches: true, refurbished: true };
+        return { matches: true, refurbished: true, tolino: false };
+    }
+    if (hardwareInfo?.tolinoModel && isTolinoSerialPrefix(actual)) {
+        return { matches: true, refurbished: false, tolino: true };
     }
 
-    return { matches: false, refurbished: false };
+    return { matches: false, refurbished: false, tolino: false };
 }
 
 function deviceVerificationFor(hardwareInfo, rawSerialPrefix) {
@@ -68,24 +90,31 @@ function deviceVerificationFor(hardwareInfo, rawSerialPrefix) {
             serialPrefixStatus: 'unknown',
             serialPrefixMatches: false,
             isRefurbished: false,
+            isTolino: false,
         };
     }
 
-    const match = serialPrefixMatch(hardwareInfo.serialPrefix, rawSerialPrefix);
+    const match = serialPrefixMatch(hardwareInfo, rawSerialPrefix);
     if (!match.matches) {
         return {
             deviceVerification: 'mismatch',
             serialPrefixStatus: 'mismatch',
             serialPrefixMatches: false,
             isRefurbished: false,
+            isTolino: false,
         };
     }
 
+    // A Tolino is accepted like any other match: patches target the software the
+    // device runs, not its badge, so a Tolino on Kobo 4.45 takes what a Kobo on
+    // 4.45 takes. It gets its own status so the device card can say why.
+    const serialPrefixStatus = match.tolino ? 'tolino' : match.refurbished ? 'refurbished' : 'verified';
     return {
         deviceVerification: 'verified',
-        serialPrefixStatus: match.refurbished ? 'refurbished' : 'verified',
+        serialPrefixStatus,
         serialPrefixMatches: true,
         isRefurbished: match.refurbished,
+        isTolino: match.tolino,
     };
 }
 
@@ -109,7 +138,10 @@ function parseKoboVersion(content) {
     const hardwareInfo = koboHardwareIds[hardwareId] || null;
     const verification = deviceVerificationFor(hardwareInfo, rawSerialPrefix);
     const serialPrefix = hardwareInfo?.serialPrefix || rawSerialPrefix;
-    const model = hardwareInfo?.model || 'Unknown Kobo (' + rawSerialPrefix + ')';
+    const koboModel = hardwareInfo?.model || null;
+    // A Tolino is named as itself: the user is holding a Tolino, and saying
+    // "Kobo Libra Colour" at them is confusing even though the UUID says so.
+    const model = verification.isTolino ? `${hardwareInfo.tolinoModel} (with Kobo software)` : koboModel || 'Unknown Kobo (' + rawSerialPrefix + ')';
     const channel = hardwareInfo?.channel || null;
     const identifiedBy = hardwareInfo ? 'uuid' : null;
     const fwParts = firmware.split('.');
@@ -127,6 +159,7 @@ function parseKoboVersion(content) {
         firmware,
         hardwareId,
         model,
+        koboModel,
         channel,
         identifiedBy,
         ...verification,
