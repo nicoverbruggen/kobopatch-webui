@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 // Installs SimpleUI, a KOReader plugin that adds a home screen, a navigation bar
 // and a top status bar. It is not a standalone app: its files live inside
@@ -49,11 +49,10 @@ export default {
 
         const label = 'Downloading SimpleUI ' + version + '...';
         ctx.progress(label);
-        const zipBytes = await fetchWithProgress(
-            installableAssetUrl('simpleui', 'simpleui.koplugin.zip'),
-            downloadProgress(ctx.progress, label, await installableSize('simpleui')),
-            'Failed to download SimpleUI',
-        );
+        const zipBytes = await fetchInstallableAsset('simpleui', 'simpleui.koplugin.zip', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('simpleui')),
+            errorPrefix: 'Failed to download SimpleUI',
+        });
         const zip = await JSZip.loadAsync(zipBytes);
 
         ctx.progress('Extracting SimpleUI...');

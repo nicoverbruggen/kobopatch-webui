@@ -90,6 +90,12 @@ export const TL = {
 
     ERROR: {
         PATCH_FAILED: 'The patch failed to apply',
+        // A download whose contents do not match what this page expected. Which of
+        // the two it is depends on whether the app has been updated since the page
+        // was opened; see shell/deployment.js.
+        ASSET_STALE_PAGE: 'The website has been updated since you started using it. Reload the page to make sure you have the best experience.',
+        ASSET_CORRUPT: (file) =>
+            `The downloaded file ${file} did not match its expected checksum, so nothing was written to your Kobo. Check your connection and try again.`,
         SOMETHING_WENT_WRONG: 'Something went wrong',
         LOAD_PATCHES_FAILED: (v) => `Could not load patches for software version ${v}`,
         DEVICE_WRITE_FAILED_TITLE: 'Writing to your device didn’t work',

@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 // Installs KOReader, an alternative e-book reader, alongside the built-in Kobo
 // reader (it does not replace it). The app is downloaded as a release zip at
@@ -56,11 +56,10 @@ export default {
 
         const label = 'Downloading KOReader ' + version + '...';
         ctx.progress(label);
-        const zipBytes = await fetchWithProgress(
-            installableAssetUrl('koreader', 'koreader-kobo.zip'),
-            downloadProgress(ctx.progress, label, await installableSize('koreader')),
-            'Failed to download KOReader',
-        );
+        const zipBytes = await fetchInstallableAsset('koreader', 'koreader-kobo.zip', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('koreader')),
+            errorPrefix: 'Failed to download KOReader',
+        });
         const zip = await JSZip.loadAsync(zipBytes);
 
         ctx.progress('Extracting KOReader...');

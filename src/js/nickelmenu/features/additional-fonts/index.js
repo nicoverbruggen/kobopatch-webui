@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableSize, fetchInstallableAsset } from '../../installables.js';
 import { FONT_FAMILIES } from './catalogue.js';
 import { fontCollectionsToDownload, selectedFontFamilies } from './customization.js';
 
@@ -59,11 +59,10 @@ export default {
         for (const collection of fontCollectionsToDownload(ctx.fontsCustomization)) {
             const label = `Downloading ${collection.title.toLowerCase()}...`;
             ctx.progress(label);
-            const zipBytes = await fetchWithProgress(
-                installableAssetUrl(collection.installable, collection.asset),
-                downloadProgress(ctx.progress, label, await installableSize(collection.installable)),
-                `Failed to download the ${collection.title.toLowerCase()}`,
-            );
+            const zipBytes = await fetchInstallableAsset(collection.installable, collection.asset, {
+                onProgress: downloadProgress(ctx.progress, label, await installableSize(collection.installable)),
+                errorPrefix: `Failed to download the ${collection.title.toLowerCase()}`,
+            });
             const zip = await JSZip.loadAsync(zipBytes);
 
             const wanted = new Set(selected.filter((f) => f.collection === collection.id).flatMap((f) => f.files));

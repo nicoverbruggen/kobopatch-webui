@@ -1,6 +1,6 @@
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 // Installs NickelDissolve (https://github.com/nicoverbruggen/NickelDissolve),
 // an experimental mod that gives page turns a Kindle-style directional wipe
@@ -95,11 +95,10 @@ export default {
 
         const label = 'Downloading NickelDissolve ' + version + '...';
         ctx.progress(label);
-        const tgz = await fetchWithProgress(
-            installableAssetUrl('nickeldissolve', 'NickelDissolve.tgz'),
-            downloadProgress(ctx.progress, label, await installableSize('nickeldissolve')),
-            'Failed to download NickelDissolve',
-        );
+        const tgz = await fetchInstallableAsset('nickeldissolve', 'NickelDissolve.tgz', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('nickeldissolve')),
+            errorPrefix: 'Failed to download NickelDissolve',
+        });
 
         ctx.progress('Merging NickelDissolve into KoboRoot.tgz...');
         return parseTarGz(tgz);

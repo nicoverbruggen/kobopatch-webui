@@ -116,6 +116,11 @@ function setupRestartButtons() {
 
 export function initGlobalUI() {
     setupRestartButtons();
+    // The update dialog has no dismiss: reloading is the only way on, so its one
+    // button does exactly that, and Escape (which closes a <dialog> by default)
+    // is refused rather than leaving the user on a page that cannot continue.
+    $('btn-app-updated-reload')?.addEventListener('click', () => location.reload());
+    $('app-updated-dialog')?.addEventListener('cancel', (e) => e.preventDefault());
     const isMobileDevice = navigator.maxTouchPoints > 0 && window.innerWidth < 820;
     if (isMobileDevice) {
         const mobileDialog = $('mobile-dialog');

@@ -1,8 +1,8 @@
 import JSZip from 'jszip';
 
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 import { loadBundledAsset } from '../assets.js';
 
 export const TOGGLE_NICKELCLOCK_SCRIPT_URL = new URL('./scripts/toggle_nickelclock.sh', import.meta.url).href;
@@ -98,11 +98,10 @@ export default {
 
         const label = 'Downloading NickelClock ' + version + '...';
         ctx.progress(label);
-        const zipBytes = await fetchWithProgress(
-            installableAssetUrl('nickelclock', 'NickelClock.zip'),
-            downloadProgress(ctx.progress, label, await installableSize('nickelclock')),
-            'Failed to download NickelClock',
-        );
+        const zipBytes = await fetchInstallableAsset('nickelclock', 'NickelClock.zip', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('nickelclock')),
+            errorPrefix: 'Failed to download NickelClock',
+        });
         const zip = await JSZip.loadAsync(zipBytes);
 
         const tgzFile = zip.file('KoboRoot.tgz');

@@ -1,7 +1,7 @@
 import { loadBundledAsset } from '../assets.js';
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 import { isFontFamilySelected } from '../additional-fonts/customization.js';
 
 export const TOGGLE_TYPOGRAPHY_SCRIPT_URL = new URL('./scripts/toggle_typography.sh', import.meta.url).href;
@@ -102,11 +102,10 @@ export default {
         const version = installableVersion('nickeltypefix');
         const label = 'Downloading NickelTypeFix ' + version + '...';
         ctx.progress(label);
-        const tgz = await fetchWithProgress(
-            installableAssetUrl('nickeltypefix', 'NickelTypeFix.tgz'),
-            downloadProgress(ctx.progress, label, await installableSize('nickeltypefix')),
-            'Failed to download NickelTypeFix',
-        );
+        const tgz = await fetchInstallableAsset('nickeltypefix', 'NickelTypeFix.tgz', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('nickeltypefix')),
+            errorPrefix: 'Failed to download NickelTypeFix',
+        });
 
         ctx.progress('Merging NickelTypeFix into KoboRoot.tgz...');
         return parseTarGz(tgz);

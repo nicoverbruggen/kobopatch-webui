@@ -2,8 +2,8 @@ import { writeAuditLog } from '../kobo/audit-log.js';
 import { NM_ITEMS_FILE, nickelMenuManifestPath } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
-import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.js';
-import { featureVersion, installableAssetUrl, installableSize } from './installables.js';
+import { fetchOrThrow, downloadProgress } from '../shell/dom.js';
+import { featureVersion, installableSize, fetchInstallableAsset } from './installables.js';
 import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import { removeExcludeSyncFoldersLine, revertableConfSettings, setConfSetting, setExcludeSyncFoldersLine } from '../kobo/configuration.js';
 
@@ -150,11 +150,10 @@ export class NickelMenuInstaller {
         if (this.nickelMenuTgz) return;
         const label = 'Downloading NickelMenu...';
         progressFn(label);
-        this.nickelMenuTgz = await fetchWithProgress(
-            installableAssetUrl('nickelmenu', 'NickelMenu.tgz'),
-            downloadProgress(progressFn, label, await installableSize('nickelmenu')),
-            'Failed to download NickelMenu',
-        );
+        this.nickelMenuTgz = await fetchInstallableAsset('nickelmenu', 'NickelMenu.tgz', {
+            onProgress: downloadProgress(progressFn, label, await installableSize('nickelmenu')),
+            errorPrefix: 'Failed to download NickelMenu',
+        });
     }
 
     /**

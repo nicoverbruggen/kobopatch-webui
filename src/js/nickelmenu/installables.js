@@ -1,3 +1,8 @@
+import { fetchWithProgress } from '../shell/dom.js';
+import { sha256Hex } from '../shell/digest.js';
+import { announceUpdatedBuild, deployedBuildChanged } from '../shell/deployment.js';
+import { TL } from '../shell/strings.js';
+
 /**
  * Build-time manifest of bundled installable assets.
  *
@@ -64,6 +69,42 @@ export function isUpgrade(installedVersion, feature) {
     const bundled = featureVersion(feature);
     if (!installedVersion || !bundled) return false;
     return compareVersions(installedVersion, bundled) === -1;
+}
+
+/** Expected SHA-256 of an installable's archive, or null when the build did not record one. */
+export function installableSha256(id) {
+    const entry = manifest()[id];
+    return entry?.sha256 || null;
+}
+
+/**
+ * Download a bundled installable and check it against the digest this build was
+ * compiled with.
+ *
+ * The version lives in the query string (`?v=`), which servers ignore, so after
+ * a deploy the same URL hands an older page the *new* archive. Nothing else
+ * would notice: it would be written to the device and recorded in the manifest
+ * under the version this page believes in. The digest is what turns that into a
+ * stop, and asking the server which build it is now serving is what turns the
+ * stop into advice the user can act on.
+ */
+export async function fetchInstallableAsset(id, file, { onProgress, errorPrefix } = {}) {
+    const bytes = await fetchWithProgress(installableAssetUrl(id, file), onProgress, errorPrefix);
+
+    const expected = installableSha256(id);
+    if (!expected) return bytes;
+
+    const actual = await sha256Hex(bytes);
+    if (actual === expected) return bytes;
+
+    if (await deployedBuildChanged()) {
+        // The page is running code the server has replaced: say so and let the
+        // user reload. The throw stops the install either way.
+        announceUpdatedBuild();
+        throw new Error(TL.ERROR.ASSET_STALE_PAGE);
+    }
+
+    throw new Error(TL.ERROR.ASSET_CORRUPT(file));
 }
 
 /** Whether this deployment actually bundled the installable's archive. */

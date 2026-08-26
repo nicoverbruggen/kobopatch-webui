@@ -1,6 +1,6 @@
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 // Installs NickelCoverFix (https://github.com/nicoverbruggen/NickelCoverFix),
 // which keeps book covers from blanking to the title/author placeholder when
@@ -64,11 +64,10 @@ export default {
 
         const label = 'Downloading NickelCoverFix ' + version + '...';
         ctx.progress(label);
-        const tgz = await fetchWithProgress(
-            installableAssetUrl('nickelcoverfix', 'NickelCoverFix.tgz'),
-            downloadProgress(ctx.progress, label, await installableSize('nickelcoverfix')),
-            'Failed to download NickelCoverFix',
-        );
+        const tgz = await fetchInstallableAsset('nickelcoverfix', 'NickelCoverFix.tgz', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('nickelcoverfix')),
+            errorPrefix: 'Failed to download NickelCoverFix',
+        });
 
         ctx.progress('Merging NickelCoverFix into KoboRoot.tgz...');
         return parseTarGz(tgz);
