@@ -8,6 +8,7 @@
 
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { collect, formatBytes, populateList, renderDownloadConfSettings } from '../shell/dom.js';
+import { sha256Hex } from '../shell/digest.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
@@ -20,7 +21,6 @@ import {
     buildAdditionalFilesTgz,
     mergeAdditionalFilesIntoTgz,
     readAdditionalFilesArchive,
-    sha256Hex,
     additionalFilesArchiveName,
     patchManifestName,
 } from '../patches/additional-files.js';

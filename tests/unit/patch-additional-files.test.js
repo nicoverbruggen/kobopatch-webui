@@ -11,9 +11,9 @@ import {
     normalizeAdditionalFileDestination,
     readAdditionalFileEntry,
     readAdditionalFilesArchive,
-    sha256Hex,
     validateAdditionalFileDestination,
 } from '../../src/js/patches/additional-files.js';
+import { sha256Hex } from '../../src/js/shell/digest.js';
 import { buildTarGz, parseTarGz } from '../../src/js/nickelmenu/archive.js';
 
 function bytes(value) {
