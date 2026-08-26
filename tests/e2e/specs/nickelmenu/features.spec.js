@@ -16,6 +16,7 @@ const {
     hasCadmusAssets,
     hasFontAssets,
     hasFirmwareZip,
+    pinnedVersionLabel,
 } = require('../../support/assets');
 const {
     injectMockDevice,
@@ -603,7 +604,7 @@ test.describe('NickelMenu — install', () => {
         await expect(pluginRow).toBeVisible();
         await expect(pluginRow).toContainText('Install Simple UI');
         await expect(pluginRow.locator('.nm-config-subitem-badge')).toHaveText('plugin');
-        await expect(pluginRow.locator('.nm-config-version')).toHaveText('v2.5.0');
+        await expect(pluginRow.locator('.nm-config-version')).toHaveText(pinnedVersionLabel('simpleui'));
         // Greyed out, with no words: it sits directly under the thing it needs.
         await expect(plugin).toBeDisabled();
         await expect(pluginRow).not.toContainText('Requires');

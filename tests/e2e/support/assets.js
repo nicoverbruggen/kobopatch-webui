@@ -59,7 +59,20 @@ function cleanupFirmwareSymlink() {
     } catch {}
 }
 
+/**
+ * The version an installable is pinned to, formatted the way the feature list
+ * shows it. Read from the lock rather than hardcoded, so bumping a pin does not
+ * break a test that only cares that the row shows the pinned version.
+ */
+function pinnedVersionLabel(id) {
+    const lock = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'installables.lock'), 'utf-8'));
+    const version = lock.installables?.[id]?.version;
+    if (!version) return null;
+    return /^\d/.test(version) ? `v${version}` : version;
+}
+
 module.exports = {
+    pinnedVersionLabel,
     hasNickelMenuAssets,
     hasKOReaderAssets,
     hasSimpleUIAssets,

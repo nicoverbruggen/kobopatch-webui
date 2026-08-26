@@ -66,10 +66,10 @@
     },
     "simpleui": {
       "asset": "simpleui.koplugin.zip",
-      "version": "2.5.0",
-      "url": "https://github.com/doctorhetfield-cmd/simpleui.koplugin/releases/download/2.5.0/simpleui.koplugin.zip",
-      "sha256": "2981b22e01458ae85f5767a394e37e56e237accf7ad4ddf29d8d4877f88a0dac",
-      "size": 1255874
+      "version": "2.6.0",
+      "url": "https://github.com/doctorhetfield-cmd/simpleui.koplugin/releases/download/2.6.0/simpleui.koplugin.zip",
+      "sha256": "3762b43833b4b6625676d9d89ef03e5d49dcf405710cc0683448bcdccefa62a0",
+      "size": 1583211
     }
   }
 }
