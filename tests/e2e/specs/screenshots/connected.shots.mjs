@@ -410,6 +410,17 @@ test('disclaimer dialog', async ({ page }, testInfo) => {
     await shot(page, dir, 'disclaimer-dialog', testInfo);
 });
 
+test('app updated dialog', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeDialogs;
+    await page.goto('/');
+    await dismissMobileModal(page);
+    // Shown when a download does not match the digest this build pinned and the
+    // server confirms it is now serving a different build.
+    await page.evaluate(() => document.getElementById('app-updated-dialog').showModal());
+    await expect(page.locator('#app-updated-dialog')).toBeVisible();
+    await shot(page, dir, 'app-updated-dialog', testInfo);
+});
+
 test('analytics feedback thumbs', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeAnalytics;
     await page.addInitScript(() => {
