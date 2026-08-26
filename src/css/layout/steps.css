@@ -95,7 +95,7 @@ select + .fallback-hint {
        the auto margins can centre it. */
     display: flex;
     width: fit-content;
-    margin-inline: auto;
+    margin: 0 auto 1.25rem;
     padding: 0.3rem 0.75rem;
     font-size: 0.8rem;
     color: var(--text-secondary);
