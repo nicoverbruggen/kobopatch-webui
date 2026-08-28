@@ -158,17 +158,32 @@ class PatchUI {
     }
 
     /**
+     * Replace one patch's block and reparse, or refuse and leave the file as is.
+     * One block in, one block out, so the count must not change: if it does, the
+     * merged file stopped parsing (a rename onto an existing name is a duplicate
+     * key) and committing it would empty the list.
+     */
+    _replacePatchBlock(filename, lineStart, lineEnd, newYaml) {
+        const file = this.patchFiles[filename];
+        const updatedRaw = replacePatchLines(file.raw, lineStart, lineEnd, newYaml);
+        const reparsed = parsePatchYAML(updatedRaw);
+        if (reparsed.length !== file.patches.length) return false;
+
+        file.raw = updatedRaw;
+        file.patches = reparsed;
+        return true;
+    }
+
+    /**
      * Apply an edited patch block: rewrite the file text, reparse, restore live
      * toggle state, and track the modification. `displayedEnabled` is the Enabled
      * value the editor opened with (or undefined), passed in by the editor so the
-     * model never has to reach back into editor state.
+     * model never has to reach back into editor state. Returns false when
+     * `_replacePatchBlock` refuses the edit.
      */
     applyEdit(patch, filename, newYaml, container, displayedEnabled) {
-        const updatedRaw = replacePatchLines(this.patchFiles[filename].raw, patch.lineStart, patch.lineEnd, newYaml);
-
         const oldPatches = this.patchFiles[filename].patches;
-        this.patchFiles[filename].raw = updatedRaw;
-        this.patchFiles[filename].patches = parsePatchYAML(updatedRaw);
+        if (!this._replacePatchBlock(filename, patch.lineStart, patch.lineEnd, newYaml)) return false;
 
         // The reparse derives `enabled` from each patch's file text, but the live
         // toggle state lives on the patch objects, not in the file. Restore it so
@@ -191,6 +206,7 @@ class PatchUI {
 
         this.render(container);
         updatePatchCounts(this, container);
+        return true;
     }
 
     /**
@@ -413,8 +429,11 @@ class PatchUI {
                     summary.missing++;
                     continue;
                 }
-                file.raw = replacePatchLines(file.raw, p.lineStart, p.lineEnd, text);
-                file.patches = parsePatchYAML(file.raw);
+                // Unvalidated device text, so it can collide like a live edit.
+                if (!this._replacePatchBlock(filename, p.lineStart, p.lineEnd, text)) {
+                    summary.missing++;
+                    continue;
+                }
                 this._trackEdit(filename, name, text);
                 summary.edits++;
                 customized.add(`${filename}\0${name}`);

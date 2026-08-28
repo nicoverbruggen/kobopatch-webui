@@ -196,6 +196,23 @@ test('edit tracking follows a renamed patch and drops the old name', () => {
     assert.equal(ui.isModified('f.yaml', 'Renamed'), true);
 });
 
+test('a rename onto a name already used in the same file is refused, leaving the file intact', () => {
+    const raw = 'P:\n  - Enabled: yes\n  - FindReplaceString: a\nQ:\n  - Enabled: no\n';
+    const ui = seedUI('f.yaml', raw);
+    const p = ui.patchFiles['f.yaml'].patches.find((pp) => pp.name === 'P');
+
+    // Renaming P to Q is a duplicate key: the file would otherwise reparse as
+    // no patches at all, which the build step reads as a stock restore.
+    const applied = ui.applyEdit(p, 'f.yaml', 'Q:\n  - Enabled: yes\n', null, undefined);
+
+    assert.equal(applied, false);
+    assert.equal(ui.patchFiles['f.yaml'].raw, raw);
+    assert.equal(ui.patchFiles['f.yaml'].patches.length, 2);
+    assert.equal(ui.getEnabledCount(), 1);
+    assert.equal(ui.isModified('f.yaml', 'Q'), false);
+    assert.equal(ui.hasEdits(), false);
+});
+
 test('getCustomizations captures only edited patch blocks, keyed by file and name', () => {
     const ui = seedUI('f.yaml', 'P:\n  - Enabled: no\n  - FindReplaceString: a\nQ:\n  - Enabled: no\n');
 
@@ -211,6 +228,19 @@ test('getCustomizations captures only edited patch blocks, keyed by file and nam
     assert.match(custom['f.yaml']['P'], /FindReplaceString: b/);
     // Q was never edited, so it is absent.
     assert.equal('Q' in custom['f.yaml'], false);
+});
+
+test('applyReloadManifest refuses a recorded edit that collides with another patch name', () => {
+    // Manifest text comes off the device unvalidated, so it can collide too.
+    const fresh = 'P:\n  - Enabled: no\n  - FindReplaceString: a\nQ:\n  - Enabled: no\n';
+    const ui = seedUI('f.yaml', fresh);
+
+    const summary = ui.applyReloadManifest({ customized: { 'f.yaml': { P: 'Q:\n  - Enabled: yes\n' } } });
+
+    assert.equal(summary.edits, 0);
+    assert.equal(summary.missing, 1);
+    assert.equal(ui.patchFiles['f.yaml'].raw, fresh);
+    assert.equal(ui.patchFiles['f.yaml'].patches.length, 2);
 });
 
 test('applyReloadManifest re-applies enabled overrides and manual edits to a fresh set', () => {

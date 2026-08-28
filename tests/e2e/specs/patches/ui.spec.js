@@ -437,6 +437,38 @@ test.describe('Custom patches', () => {
         await expect(dialog).not.toBeVisible();
     });
 
+    test('renaming a patch onto another name in the same file is refused and keeps the list intact', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+
+        await gotoManualPatchesStep(page);
+
+        const patchName = page.locator('.patch-name', { hasText: 'Reduce top/bottom page spacer' }).first();
+        await patchName.locator('xpath=ancestor::details').locator('summary').click();
+        await expect(patchName).toBeVisible();
+
+        const rowsBefore = await page.locator('.patch-item').count();
+
+        const editBtn = patchName.locator('xpath=ancestor::div[contains(@class, "patch-item")]').locator('.patch-edit-btn');
+        await editBtn.click();
+
+        const dialog = page.locator('#patch-editor-dialog');
+        await expect(dialog).toBeVisible();
+
+        // Another patch in the same nickel.yaml, so the merged file is a duplicate key.
+        await dialog.locator('.patch-editor-textarea').fill('Custom synopsis font size:\n  - Enabled: yes\n');
+        await dialog.locator('.patch-editor-save').click();
+
+        // The block itself is valid, so only the model can catch the collision.
+        await expect(dialog).toBeVisible();
+        await expect(dialog.locator('.patch-editor-status--error')).toContainText('could not be applied');
+
+        await dialog.locator('.modal-footer .patch-editor-cancel').click();
+        await expect(dialog).not.toBeVisible();
+
+        await expect(page.locator('.patch-item')).toHaveCount(rowsBefore);
+        await expect(patchName).toBeVisible();
+    });
+
     test('editing a patch value changes the output KoboRoot.tgz', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 

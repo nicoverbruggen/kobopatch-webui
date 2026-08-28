@@ -176,7 +176,12 @@ function ensureEditorBound(ui, dialog) {
         } else if (btn.classList.contains('patch-editor-save')) {
             if (validatePatchEdit(textarea, statusEl)) {
                 const { patch, filename, container, displayedEnabled } = editing;
-                ui.applyEdit(patch, filename, textarea.value, container, displayedEnabled);
+                // Validation only sees the edited block; the model catches collisions.
+                if (!ui.applyEdit(patch, filename, textarea.value, container, displayedEnabled)) {
+                    statusEl.textContent = `Error: This edit could not be applied, so nothing was changed. If you renamed the patch, another patch in ${filename} may already use that name.`;
+                    statusEl.className = 'patch-editor-status patch-editor-status--error';
+                    return;
+                }
                 dialog.close();
             }
         } else if (btn.classList.contains('patch-editor-cancel')) {

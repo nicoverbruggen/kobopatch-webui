@@ -104,6 +104,22 @@ test('saving an invalid edit keeps the dialog open and does not touch the model'
     dialog().close();
 });
 
+test('saving a rename onto an existing patch name keeps the dialog open and leaves the model intact', () => {
+    openPatchEditor(ui, patchNamed('Alpha'), FILE, document.createElement('div'));
+
+    // 'Beta' already exists here, and the edited block is valid on its own.
+    editorTextarea().value = 'Beta:\n  - Enabled: yes\n';
+    footerButton('patch-editor-save').click();
+
+    assert.equal(dialog().open, true);
+    assert.match(editorStatus().textContent, /could not be applied/);
+    assert.ok(editorStatus().className.includes('patch-editor-status--error'));
+    assert.equal(ui.patchFiles[FILE].raw, RAW);
+    assert.equal(ui.patchFiles[FILE].patches.length, 2);
+    assert.equal(ui.isModified(FILE, 'Beta'), false);
+    dialog().close();
+});
+
 test('the Validate button reports status without closing or applying', () => {
     openPatchEditor(ui, patchNamed('Alpha'), FILE, document.createElement('div'));
 
