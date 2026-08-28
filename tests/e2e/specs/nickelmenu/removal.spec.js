@@ -75,6 +75,32 @@ test.describe('NickelMenu — removal', () => {
             });
     });
 
+    test('no device — going back to mode selection clears the remove choice', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+        await page.click('input[name="nm-option"][value="remove"]');
+        await expect(page.locator('#step-nav')).toContainText('Remove');
+
+        // Back out and in again. A radio left checked desyncs the card from the
+        // breadcrumb, and stays checked even once the card is disabled.
+        await page.click('#btn-nm-back');
+        await expect(page.locator('#step-mode')).not.toBeHidden();
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+        await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeChecked();
+        await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--selected/);
+        await expect(page.locator('input[name="nm-option"][value="preset"]')).toBeChecked();
+        await expect(page.locator('#step-nav')).toContainText('Install');
+        await expect(page.locator('#step-nav')).not.toContainText('Remove');
+    });
+
     test('with device — remove NickelMenu', async ({ page }) => {
         test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
 

@@ -663,6 +663,12 @@ export function initNickelMenuFlow(state) {
         nmOptionPresetTitle.textContent = NM_PRESET_TITLE_INSTALL;
         state.koboUserCount = undefined;
         state.nickelMenuOption = null;
+        // Clear the radios too, like the backup options below: `onEnter` skips the
+        // preset default if anything is checked, and `:checked` matches a disabled one.
+        for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
+            radio.checked = false;
+            radio.closest('.selection-card')?.classList.remove('selection-card--selected');
+        }
         state.selectedFeatureIds = [];
         state.previousNickelMenuFeatureIds = [];
         state.previousNickelMenuConfiguration = null;
