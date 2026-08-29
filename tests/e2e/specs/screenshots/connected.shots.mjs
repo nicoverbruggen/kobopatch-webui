@@ -361,6 +361,16 @@ test('device serial prefix mismatch', async ({ page }, testInfo) => {
     await shot(page, dir, 'serial-prefix-mismatch-hint', testInfo);
 });
 
+test('older device without custom patch support', async ({ page }, testInfo) => {
+    const dir = SCREENSHOT_DIRS.edgeCompatibility;
+    await connectToDeviceScreen(page, {
+        serial: 'KG31B0501709F',
+        firmware: '4.38.23684',
+        hardwareId: '00000000-0000-0000-0000-000000000310',
+    });
+    await shot(page, dir, 'older-device-patches-unsupported', testInfo);
+});
+
 test('Tolino running Kobo software', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeCompatibility;
     // The device from issue #22: Tolino Vision Color, cross-flashed, reporting

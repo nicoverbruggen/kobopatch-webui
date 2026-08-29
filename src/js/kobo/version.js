@@ -11,7 +11,12 @@
 // arrive here, so they are deliberately absent — a device is a Tolino to this
 // app only if it could have been cross-flashed in the first place.
 const koboHardwareIds = {
-    '00000000-0000-0000-0000-000000000310': { serialPrefix: 'N905', channel: 'kobo3', model: 'Kobo Touch A/B' },
+    '00000000-0000-0000-0000-000000000310': {
+        serialPrefix: 'N905',
+        serialPrefixAliases: ['KG31'],
+        channel: 'kobo3',
+        model: 'Kobo Touch A/B',
+    },
     '00000000-0000-0000-0000-000000000320': { serialPrefix: 'N905', channel: 'kobo4', model: 'Kobo Touch C' },
     '00000000-0000-0000-0000-000000000330': { serialPrefix: 'N613', channel: 'kobo4', model: 'Kobo Glo' },
     '00000000-0000-0000-0000-000000000340': { serialPrefix: 'N705', channel: 'kobo4', model: 'Kobo Mini' },
@@ -69,10 +74,12 @@ function isTolinoSerialPrefix(rawPrefix) {
 
 function serialPrefixMatch(hardwareInfo, rawPrefix) {
     const expected = String(hardwareInfo?.serialPrefix || '').substring(0, 4);
+    const aliases = (hardwareInfo?.serialPrefixAliases || []).map((prefix) => String(prefix).substring(0, 4));
     const actual = String(rawPrefix || '').substring(0, 4);
     if (!expected || !actual) return { matches: false, refurbished: false, tolino: false };
 
     if (actual === expected) return { matches: true, refurbished: false, tolino: false };
+    if (aliases.includes(actual)) return { matches: true, refurbished: false, tolino: false };
     if (actual.startsWith('R') && actual.substring(1) === expected.substring(1)) {
         return { matches: true, refurbished: true, tolino: false };
     }

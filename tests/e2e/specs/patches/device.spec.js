@@ -38,6 +38,8 @@ const TOLINO_IDENTIFICATION_HINT =
     'This is Tolino hardware running Kobo software. Its serial number starts with T, while the hardware UUID is a Kobo one — expected for a cross-flashed Tolino, which takes the same mods and patches as the Kobo it is built from.';
 const MISMATCH_IDENTIFICATION_HINT =
     'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.';
+const OLDER_DEVICE_PATCHES_UNAVAILABLE =
+    'Custom patches are not supported on this older Kobo model. You can still install NickelMenu and choose what you want to do with your Kobo.';
 const CLOUD_SYNC_PATCH_NAME = 'Unlock Dropbox and Google Drive support';
 const DROPBOX_LINK_ACCOUNT_POLL = 'dropbox_link_account_poll=https://authorize.kobo.com/{region}/{language}/LinkDropbox';
 const GOOGLEDRIVE_LINK_ACCOUNT_START = 'googledrive_link_account_start=https://authorize.kobo.com/{region}/{language}/linkcloudstorage/provider/google_drive';
@@ -428,6 +430,32 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#device-status a')).toHaveAttribute('href', 'https://github.com/nicoverbruggen/kobopatch-webui/issues/new');
         await expect(page.locator('#device-unknown-warning')).toBeHidden();
         await expect(page.locator('#btn-device-restore')).toBeHidden();
+    });
+
+    test('with device — legacy Kobo Touch serial explains that custom patches do not support older models', async ({ page }) => {
+        await page.goto('/');
+        await injectMockDevice(page, {
+            serial: 'KG31B0501709F',
+            firmware: '4.38.23684',
+            hardwareId: '00000000-0000-0000-0000-000000000310',
+        });
+        await page.click('#btn-connect');
+        await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+        await page.click('#btn-connect-ready');
+
+        await expect(page.locator('#step-device')).not.toBeHidden();
+        await expect(page.locator('#device-model')).toContainText('Kobo Touch A/B');
+        await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
+        await expect(page.locator('#device-serial')).toContainText('KG31');
+        await expect(page.locator('#device-status')).toHaveText(OLDER_DEVICE_PATCHES_UNAVAILABLE);
+        await expect(page.locator('#device-status')).not.toContainText('do not match');
+        await expect(page.locator('#device-status a')).toHaveCount(0);
+
+        await page.click('#btn-device-next');
+        await expect(page.locator('#step-mode')).not.toBeHidden();
+        await expect(page.locator('input[name="mode"][value="patches"]')).toBeDisabled();
+        await expect(page.locator('#mode-patches-hint')).toHaveText(OLDER_DEVICE_PATCHES_UNAVAILABLE);
+        await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
     });
 
     test('with device — unknown hardware UUID no longer falls back to serial number', async ({ page }) => {

@@ -17,6 +17,7 @@ import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { latestPatchVersionForFamily } from '../patches/catalog.js';
+import { hasSoftwareChannel } from '../kobo/software-urls.js';
 import { patchManifestName } from '../patches/additional-files.js';
 
 // Kobo's page about the software release that introduced the accessibility
@@ -94,6 +95,8 @@ export function initConnectFlow(state, { patches }) {
         tolino: 'This is Tolino hardware running Kobo software. Its serial number starts with T, while the hardware UUID is a Kobo one — expected for a cross-flashed Tolino, which takes the same mods and patches as the Kobo it is built from.',
     };
     const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
+    const olderDevicePatchesUnavailable =
+        'Custom patches are not supported on this older Kobo model. You can still install NickelMenu and choose what you want to do with your Kobo.';
     const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, patchManifestName];
 
     function displayDeviceInfo(info) {
@@ -274,7 +277,9 @@ export function initConnectFlow(state, { patches }) {
 
             await Promise.all([state.softwareUrlsReady, state.availablePatchesReady]);
             const match = state.availablePatches.find((p) => p.version === info.firmware);
-            const canPatchDevice = info.deviceVerification === 'verified';
+            const channelMatch = String(info.channel || '').match(/^kobo(\d+)$/);
+            const isUnsupportedOlderDevice = info.identifiedBy === 'uuid' && channelMatch && Number(channelMatch[1]) < 8 && !hasSoftwareChannel(info.channel);
+            const canPatchDevice = info.deviceVerification === 'verified' && !isUnsupportedOlderDevice;
 
             if (canPatchDevice) {
                 patches.configureFirmwareStep(info.firmware, info.channel, info.model);
@@ -282,10 +287,11 @@ export function initConnectFlow(state, { patches }) {
                 state.firmwareVersion = info.firmware;
                 state.firmwareURL = null;
                 state.deviceModelLabel = info.model;
-                state.patchesUnavailableReason =
-                    info.deviceVerification === 'mismatch'
-                        ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
-                        : 'Custom patches are disabled because this hardware UUID is not recognized.';
+                state.patchesUnavailableReason = isUnsupportedOlderDevice
+                    ? olderDevicePatchesUnavailable
+                    : info.deviceVerification === 'mismatch'
+                      ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
+                      : 'Custom patches are disabled because this hardware UUID is not recognized.';
             }
 
             if (canPatchDevice && match) {
@@ -305,7 +311,14 @@ export function initConnectFlow(state, { patches }) {
             deviceStatus.classList.remove('banner', 'banner--error', 'banner--warning');
             const isUnknownHardware = info.deviceVerification === 'unknown';
             const isMismatchedHardware = info.deviceVerification === 'mismatch';
-            if (isUnknownHardware) {
+            if (isUnsupportedOlderDevice) {
+                deviceStatus.textContent = olderDevicePatchesUnavailable;
+                deviceStatus.classList.add('banner', 'banner--warning');
+                deviceUnknownWarning.hidden = true;
+                deviceUnknownAck.hidden = true;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = false;
+            } else if (isUnknownHardware) {
                 deviceStatus.textContent = '';
                 deviceUnknownWarning.hidden = false;
                 deviceUnknownAck.hidden = false;

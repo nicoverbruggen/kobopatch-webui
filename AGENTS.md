@@ -228,6 +228,7 @@ Within `src/js/kobo/`:
 Device identity and locale:
 
 - Connected devices are identified by hardware UUID in `version.js`. The serial prefix is only a consistency/display check.
+    - `serialPrefix` is the canonical prefix shown in model labels. A hardware entry may declare exact `serialPrefixAliases` for known legacy serial formats; aliases verify the device without replacing the canonical label.
 - Firmware download URLs in `patches/downloads.json` are keyed by software version and firmware channel (`kobo12`, `kobo13`, etc.), not by serial prefix or UUID.
 - On connect, `device.js` reads `CurrentLocale` onto `deviceInfo.uiLocale` (null when manual/unknown). The connect flow shows it in the device overview and features can adapt to it.
     - `simplify-tabs` localizes its tab labels. For a *known* language it has no translation for, it omits them entirely so that non-English device keeps its own tab names.

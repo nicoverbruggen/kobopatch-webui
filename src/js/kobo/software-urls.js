@@ -48,6 +48,18 @@ function getSoftwareUrl(channel, version) {
 }
 
 /**
+ * Whether any supported software version has a download for this firmware
+ * channel. This distinguishes an unsupported model from a supported model
+ * running an unsupported software version.
+ */
+function hasSoftwareChannel(channel) {
+    const data = _data || window.FIRMWARE_DOWNLOADS;
+    if (!data || !channel) return false;
+
+    return Object.values(data).some((versionMap) => versionMap && !Array.isArray(versionMap) && typeof versionMap === 'object' && channel in versionMap);
+}
+
+/**
  * Get all firmware channels that have downloads for a given version.
  * Returns array of { channel, label } objects.
  */
@@ -91,4 +103,4 @@ function getChannelsForVersion(version) {
         });
 }
 
-export { loadSoftwareUrls, getSoftwareUrl, getChannelsForVersion, compareFirmwareChannelsDescending };
+export { loadSoftwareUrls, getSoftwareUrl, hasSoftwareChannel, getChannelsForVersion, compareFirmwareChannelsDescending };

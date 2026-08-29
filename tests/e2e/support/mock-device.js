@@ -362,7 +362,7 @@ async function connectMockDevice(page, opts = {}) {
     await expect(page.locator('#step-device')).not.toBeHidden();
     await expect(page.locator('#device-model')).toHaveText(opts.expectedModel ?? 'Kobo Libra Colour');
     await expect(page.locator('#device-firmware')).toHaveText(opts.firmware ?? '4.46.23836');
-    await expect(page.locator('#device-status')).toContainText('recognized');
+    await expect(page.locator('#device-status')).toContainText(opts.expectedDeviceStatus ?? 'recognized');
 }
 
 /**

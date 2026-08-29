@@ -829,6 +829,7 @@ test.describe('NickelMenu — install', () => {
             serial: 'N204E0000000000',
             hardwareId: '00000000-0000-0000-0000-000000000350',
             expectedModel: 'Kobo Aura HD',
+            expectedDeviceStatus: 'Custom patches are not supported on this older Kobo model.',
         });
 
         await page.click('#btn-device-next');

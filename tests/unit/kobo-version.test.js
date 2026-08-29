@@ -43,6 +43,17 @@ test('parseKoboVersion accepts known R-prefixed serials as refurbished variants'
     assert.equal(info.isRefurbished, true);
 });
 
+test('parseKoboVersion accepts the legacy KG31 serial prefix for Kobo Touch A/B', () => {
+    const info = parseKoboVersion(versionLine('KG31B0501709F', '4.38.23684', '00000000-0000-0000-0000-000000000310'));
+
+    assert.equal(info.serialPrefix, 'N905');
+    assert.equal(info.rawSerialPrefix, 'KG31');
+    assert.equal(info.model, 'Kobo Touch A/B');
+    assert.equal(info.channel, 'kobo3');
+    assert.equal(info.deviceVerification, 'verified');
+    assert.equal(info.serialPrefixStatus, 'verified');
+});
+
 test('parseKoboVersion flags known UUIDs with mismatched serial prefixes', () => {
     const info = parseKoboVersion(versionLine('N418ABC123456', '4.38.21908', '00000000-0000-0000-0000-000000000390'));
 
@@ -120,6 +131,12 @@ test('parseKoboVersion does not fall back to a 3-character prefix', () => {
 });
 
 test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000310'], {
+        serialPrefix: 'N905',
+        serialPrefixAliases: ['KG31'],
+        channel: 'kobo3',
+        model: 'Kobo Touch A/B',
+    });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000320'], {
         serialPrefix: 'N905',
         channel: 'kobo4',

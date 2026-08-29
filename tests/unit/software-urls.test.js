@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { getSoftwareUrl, getChannelsForVersion, compareFirmwareChannelsDescending } from '../../src/js/kobo/software-urls.js';
+import { getSoftwareUrl, hasSoftwareChannel, getChannelsForVersion, compareFirmwareChannelsDescending } from '../../src/js/kobo/software-urls.js';
 
 // The getters read the manifest from window.FIRMWARE_DOWNLOADS (set by
 // loadSoftwareUrls in the app). Seed that global directly here so the lookups
@@ -20,6 +20,19 @@ test('getSoftwareUrl returns the URL for a known channel + version, else null', 
 test('getSoftwareUrl returns null when no manifest is loaded', () => {
     window.FIRMWARE_DOWNLOADS = undefined;
     assert.equal(getSoftwareUrl('kobo7', '4.45.23646'), null);
+});
+
+test('hasSoftwareChannel distinguishes unsupported models from unsupported versions', () => {
+    window.FIRMWARE_DOWNLOADS = {
+        _sources: ['https://example.com'],
+        '4.38.23684': { kobo8: 'u1', kobo9: 'u2' },
+        '4.45.23684': { kobo12: 'u3', kobo13: 'u4' },
+    };
+
+    assert.equal(hasSoftwareChannel('kobo8'), true);
+    assert.equal(hasSoftwareChannel('kobo13'), true);
+    assert.equal(hasSoftwareChannel('kobo3'), false);
+    assert.equal(hasSoftwareChannel(null), false);
 });
 
 test('getChannelsForVersion maps channel manifests to channel labels', () => {
