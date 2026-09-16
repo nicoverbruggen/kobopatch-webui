@@ -31,10 +31,10 @@
     },
     "nickeltypefix": {
       "asset": "NickelTypeFix.tgz",
-      "version": "v0.7",
-      "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.7/KoboRoot.tgz",
-      "sha256": "0ee155a09b0d8c7780ef0eba4c0f0778824e3ce5921135a987dddeed80c97688",
-      "size": 27563
+      "version": "v0.10",
+      "url": "https://github.com/nicoverbruggen/NickelTypeFix/releases/download/v0.10/KoboRoot.tgz",
+      "sha256": "47f00cdae035768b031260d722cbd821d4010ec6e59421bcf9c0e598fa0bc142",
+      "size": 76037
     },
     "nickeldissolve": {
       "asset": "NickelDissolve.tgz",
@@ -66,10 +66,10 @@
     },
     "simpleui": {
       "asset": "simpleui.koplugin.zip",
-      "version": "2.6.0",
-      "url": "https://github.com/doctorhetfield-cmd/simpleui.koplugin/releases/download/2.6.0/simpleui.koplugin.zip",
-      "sha256": "3762b43833b4b6625676d9d89ef03e5d49dcf405710cc0683448bcdccefa62a0",
-      "size": 1583211
+      "version": "2.7.1",
+      "url": "https://github.com/doctorhetfield-cmd/simpleui.koplugin/releases/download/2.7.1/simpleui.koplugin.zip",
+      "sha256": "0215b8516102901f2ce7d332288317b321445fd02cbcca1aa2ef9c88c1cfee0d",
+      "size": 1640635
     }
   }
 }
