@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { previous } from '../../config/firmware-config.js';
 import {
     shot,
     SCREENSHOT_DIRS,
@@ -355,7 +356,7 @@ test('manual patches blacklist matching firmware tooltip', async ({ page }, test
     await page.click('input[name="mode"][value="patches"]');
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
-    await page.selectOption('#manual-version', '4.45.23697');
+    await page.selectOption('#manual-version', previous.version);
     await expect(page.locator('#manual-model')).not.toBeHidden();
     await page.selectOption('#manual-model', 'kobo13');
     await page.click('#btn-manual-confirm');
