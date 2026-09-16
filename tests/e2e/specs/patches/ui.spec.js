@@ -400,7 +400,7 @@ test.describe('Custom patches', () => {
         await expect(patchName).toBeVisible();
     });
 
-    test('patch editor validation rejects empty and invalid YAML', async ({ page }) => {
+    test('patch editor validation rejects empty, invalid, and excessive-merge YAML', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
         await gotoManualPatchesStep(page);
@@ -431,6 +431,13 @@ test.describe('Custom patches', () => {
 
         // Test that save is blocked when invalid (dialog stays open)
         await dialog.locator('.patch-editor-save').click();
+        await expect(dialog).toBeVisible();
+
+        // Empty merge sources must hit the parser's work limit too (CVE-2026-84375).
+        await textarea.fill(`Patch:\n  - Enabled: no\n  - Description: &empty [${Array(100).fill('{}').join(',')}]\n${'  - <<: *empty\n'.repeat(101)}`);
+        await dialog.locator('.patch-editor-save').click();
+        await expect(statusEl).toContainText('maxTotalMergeKeys');
+        await expect(dialog.locator('.patch-editor-status--error')).toBeVisible();
         await expect(dialog).toBeVisible();
 
         // Close dialog without saving

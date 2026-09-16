@@ -62,6 +62,17 @@ test('validatePatchEdit rejects empty, malformed, and structurally wrong input',
     expectError('Patch:\n  - Enabled: maybe\n', /Enabled must be "yes" or "no"/);
 });
 
+test('patch parsing and editing reject excessive merges of empty mappings', () => {
+    const { textarea, statusEl } = makeStatusEls();
+    // CVE-2026-84375: empty mappings must count toward the default 10,000 merge limit.
+    textarea.value = `Patch:\n  - Enabled: no\n  - Description: &empty [${Array(100).fill('{}').join(',')}]\n${'  - <<: *empty\n'.repeat(101)}`;
+
+    assert.equal(validatePatchEdit(textarea, statusEl), false);
+    assert.match(statusEl.textContent, /YAML error:.*maxTotalMergeKeys/);
+    assert.ok(statusEl.className.includes('patch-editor-status--error'));
+    assert.deepEqual(parsePatchYAML(textarea.value), []);
+});
+
 test('validatePatchEdit warns on an unknown operation (in any item) but still allows saving', () => {
     const { textarea, statusEl } = makeStatusEls();
     // The unknown op is the second item — the scan must not stop at the first.
