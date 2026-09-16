@@ -4,6 +4,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const zlib = require('zlib');
 const JSZip = require('jszip');
+const { previous } = require('../../config/firmware-config');
 
 const { FIRMWARE_PATH, paths, getOriginalTgzSha1 } = require('../../support/paths');
 const { hasFirmwareZip } = require('../../support/assets');
@@ -253,7 +254,7 @@ test.describe('Custom patches', () => {
         const blacklistDialog = page.locator('#patch-blacklist-dialog');
         await expect(blacklistDialog).toBeVisible();
         await expect(blacklistDialog.locator('#patch-blacklist-updated')).toHaveText(/Last updated: \d{4}-\d{2}-\d{2}/);
-        await expect(blacklistDialog.locator('#patch-blacklist-description')).toContainText('firmware 4.45.23697');
+        await expect(blacklistDialog.locator('#patch-blacklist-description')).toContainText(`firmware ${previous.version}`);
         await expect(blacklistDialog.locator('#patch-blacklist-description')).toContainText('Patch compatibility may vary');
         await expect(blacklistDialog.locator('#patch-blacklist-current-version')).toHaveText('Your firmware version: 4.45.23646');
         await expect(blacklistDialog.locator('#patch-blacklist-current-version .device-identification-badge--verified')).toHaveCount(0);
@@ -276,7 +277,7 @@ test.describe('Custom patches', () => {
     test('blacklist dialog match tooltip stays inside the modal', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 
-        await connectMockDevice(page, { hasNickelMenu: false, firmware: '4.45.23697', overrideFirmware: true });
+        await connectMockDevice(page, { hasNickelMenu: false, firmware: previous.version, overrideFirmware: true });
 
         await page.click('#btn-device-next');
         await page.click('input[name="mode"][value="patches"]');

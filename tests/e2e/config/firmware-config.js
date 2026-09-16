@@ -2,7 +2,8 @@
 // JSON output from: node -e "console.log(JSON.stringify(require('./tests/e2e/config/firmware-config')))"
 //
 // The primary version is used for WASM integration tests and E2E tests.
-// `all` is every patch family patches/index.json still serves, newest first.
+// `all` tests the newest supported firmware in every patch family that
+// patches/index.json still serves, newest family first.
 // The patch compatibility sweep runs over all of them, not just primary and
 // secondary: patches/blacklist.json is rebuilt from scratch on every run, so a
 // family left out here loses its entry while still being offered to devices,
@@ -20,9 +21,9 @@ const primary = {
 // The modern-device line 4.46 replaced. Still served, because 4.46 only started
 // rolling out and most devices have not taken it yet.
 const previous = {
-    version: '4.45.23697',
+    version: '4.45.23792',
     shortVersion: '4.45',
-    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/May2026/kobo-update-4.45.23697.zip',
+    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Jul2026/kobo-update-4.45.23792.zip',
     patches: 'patches_4.45.zip',
     patchesSource: '4.45',
 };
