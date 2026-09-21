@@ -68,7 +68,7 @@ If you want to apply **custom patches**:
 - Software **4.38.x**: Kobo Clara 2E, Kobo Libra 2, Kobo Elipsa 2E, Kobo Sage, Kobo Elipsa
 
 > [!WARNING]
-> **Software 5.x is currently not supported.** On the latest devices, it is possible to install an accessibility preview, which upgrades the software to version 5.0.
+> **Kobo software newer than 4.x is not supported yet.** This includes the 5.x accessibility preview and the recently released 6.0 update. This applies to both NickelMenu and custom patches.
 
 ## User flow
 

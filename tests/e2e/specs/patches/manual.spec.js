@@ -94,6 +94,9 @@ test.describe('Custom patches', () => {
 
         // Manual version/model selection
         await expect(page.locator('#step-manual-version')).not.toBeHidden();
+        await expect(page.locator('#step-manual-version .version-note')).toContainText(
+            'Kobo software newer than 4.x is not supported yet. This includes the 5.x accessibility preview and the recently released 6.0 update.',
+        );
 
         await overrideFirmwareURLs(page);
 
@@ -155,6 +158,9 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#download-device-name')).toHaveText('kobo13: Kobo Libra Colour (N428)');
         // The screen points users at the bundled instructions.txt file.
         await expect(page.locator('#download-instructions')).toContainText('instructions.txt');
+        await expect(page.locator('#download-instructions .version-note')).toContainText(
+            'Kobo software newer than 4.x is not supported yet. This includes the 5.x accessibility preview and the recently released 6.0 update.',
+        );
 
         // The ZIP bundles plain-text instructions naming the selected device, with
         // the credit header and the hard-lock disclaimer.

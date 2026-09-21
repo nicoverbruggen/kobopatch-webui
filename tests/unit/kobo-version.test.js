@@ -338,7 +338,11 @@ test('parseKoboVersion treats a bare major-4 build below the floor as incompatib
 });
 
 test('parseKoboVersion treats any non-4 major as incompatible regardless of the floor', () => {
-    assert.equal(parseKoboVersion(versionLine('N428000000000', '5.0.0')).isIncompatible, true);
+    for (const firmware of ['5.0.0', '5.15.245253', '6.0.0', '6.1.12345']) {
+        const info = parseKoboVersion(versionLine('N428000000000', firmware));
+        assert.equal(info.isIncompatible, true, firmware);
+        assert.equal(info.incompatibleReason, 'too-new', firmware);
+    }
     assert.equal(parseKoboVersion(versionLine('N428000000000', '3.99.99999')).isIncompatible, true);
     assert.equal(parseKoboVersion(versionLine('N428000000000', 'x.50.0')).isIncompatible, true); // non-numeric major => 0
 });

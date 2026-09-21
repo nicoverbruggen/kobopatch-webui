@@ -12,7 +12,7 @@
  * tested directly. `date` defaults to "now" but is injectable for tests.
  */
 
-import { firstUnsupportedFirmware, minimumSupportedFirmware } from '../kobo/version.js';
+import { minimumSupportedFirmware } from '../kobo/version.js';
 
 // Where to learn how to recover a hard-locked / bricked device. Mirrors the
 // "manually reset your Kobo" link in the on-screen Disclaimer.
@@ -72,8 +72,9 @@ function supportedVersions() {
         '',
         ...wrapText(
             `These steps are for Kobo software ${minimumSupportedFirmware} up to the last 4.x release. ` +
-                `Kobo software ${firstUnsupportedFirmware} and newer is not supported yet, so if you purchased a new ` +
-                'device recently, check the version number before you continue.',
+                'Kobo software newer than 4.x is not supported yet. ' +
+                'This includes the 5.x accessibility preview and the recently released 6.0 update. ' +
+                'Check the version number before you continue.',
         ),
         '',
         ...wrapText('You can find the version on your Kobo under More > Settings > Device information > Software version.'),

@@ -28,14 +28,15 @@ test('NickelMenu instructions include the hard-lock disclaimer and Kobo reset li
     assert.ok(text.includes(KOBO_RESET_HELP_URL));
 });
 
-test('instructions state that Kobo software 5.0 and newer is not supported', () => {
+test('instructions explain the unsupported versions newer than 4.x', () => {
     for (const text of [
         buildNickelMenuInstructions({ version: '1.0.0', date: DATE, isPreset: false }),
         buildPatchesInstructions({ version: '1.0.0', date: DATE }),
     ]) {
         assert.match(text, /Supported software versions/);
         assert.ok(flatten(text).includes('Kobo software 4.23 up to the last 4.x release.'));
-        assert.ok(flatten(text).includes('Kobo software 5.0 and newer is not supported yet'));
+        assert.ok(flatten(text).includes('Kobo software newer than 4.x is not supported yet.'));
+        assert.ok(flatten(text).includes('This includes the 5.x accessibility preview and the recently released 6.0 update.'));
     }
 });
 

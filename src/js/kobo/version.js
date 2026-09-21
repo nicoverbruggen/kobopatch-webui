@@ -49,16 +49,6 @@ const koboHardwareIds = {
 
 const minimumSupportedFirmware = '4.23';
 
-// Kobo's 5.x line is not supported yet, which is why parseKoboVersion rejects
-// every major version other than 4. Shown to the user in the manual
-// instructions, where there is no device to check, and on the device step when
-// a connected Kobo turns out to run 5.x.
-const firstUnsupportedFirmware = '5.0';
-
-// Just the major of the above ("5"), for copy that talks about the software
-// line as a whole rather than the exact version where support stops.
-const firstUnsupportedFirmwareMajor = firstUnsupportedFirmware.split('.')[0];
-
 /**
  * Tolino readers are built by Kobo, and on the 2024 generation a Tolino can be
  * switched to Kobo software from its developer menu — which is what brings one
@@ -154,8 +144,8 @@ function parseKoboVersion(content) {
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
     const isIncompatible = fwMajor !== 4 || compareFirmware(firmware, minimumSupportedFirmware) < 0;
-    // Why the version is rejected, so the connect flow can explain it. A 5.x
-    // device is too new for the mods; anything else that lands here is too old
+    // Why the version is rejected, so the connect flow can explain it. A major
+    // version above 4 is too new; anything else that lands here is too old
     // (a pre-4.23 build, or a major that could not be parsed).
     const incompatibleReason = !isIncompatible ? null : fwMajor > 4 ? 'too-new' : 'too-old';
 
@@ -209,13 +199,4 @@ function meetsMinimumVersion(firmware, minimum) {
     return compareFirmware(firmware, minimum) >= 0;
 }
 
-export {
-    koboHardwareIds,
-    minimumSupportedFirmware,
-    firstUnsupportedFirmware,
-    firstUnsupportedFirmwareMajor,
-    serialPrefixMatch,
-    parseKoboVersion,
-    compareFirmware,
-    meetsMinimumVersion,
-};
+export { koboHardwareIds, minimumSupportedFirmware, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };
