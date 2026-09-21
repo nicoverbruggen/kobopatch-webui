@@ -150,6 +150,9 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#nm-download-instructions')).not.toBeHidden();
         // The screen points users at the bundled instructions.txt file.
         await expect(page.locator('#nm-download-instructions')).toContainText('instructions.txt');
+        await expect(page.locator('#nm-download-instructions .version-note')).toContainText(
+            'Kobo software newer than 4.x is not supported yet. This includes the 5.x accessibility preview and the recently released 6.0 update.',
+        );
         await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
         // Verify the correct pattern and description are shown (exclude-calibre is enabled)
         await expect(page.locator('#nm-download-conf-line')).toHaveText(EXCLUDE_SYNC_FOLDERS_CALIBRE_LINE);

@@ -11,7 +11,7 @@
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { localeDisplayName } from '../kobo/locale.js';
-import { firstUnsupportedFirmwareMajor, minimumSupportedFirmware } from '../kobo/version.js';
+import { minimumSupportedFirmware } from '../kobo/version.js';
 import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
@@ -215,7 +215,7 @@ export function initConnectFlow(state, { patches }) {
             return;
         }
 
-        deviceStatus.appendChild(document.createTextNode(TL.STATUS.DEVICE_FIRMWARE_TOO_NEW(firstUnsupportedFirmwareMajor) + ' '));
+        deviceStatus.appendChild(document.createTextNode(TL.STATUS.DEVICE_FIRMWARE_TOO_NEW + ' '));
 
         const link = document.createElement('a');
         link.href = KOBO_FIRMWARE_HELP_URL;

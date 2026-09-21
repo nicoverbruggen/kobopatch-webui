@@ -93,41 +93,44 @@ async function gotoManualPatchesStep(page) {
 }
 
 test.describe('Custom patches', () => {
-    test('with device — incompatible version 5.x shows error', async ({ page }) => {
-        await page.goto('/');
-        await injectMockDevice(page, { firmware: '5.0.0' });
-        await page.click('#btn-connect');
-        await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
-        await page.click('#btn-connect-ready');
+    for (const firmware of ['5.0.0', '6.0.0']) {
+        test(`with device — incompatible version ${firmware} shows error`, async ({ page }) => {
+            await page.goto('/');
+            await injectMockDevice(page, { firmware });
+            await page.click('#btn-connect');
+            await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+            await page.click('#btn-connect-ready');
 
-        // Device info should be displayed
-        await expect(page.locator('#step-device')).not.toBeHidden();
-        await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
-        await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
-        await expect(page.locator('#device-firmware')).toHaveText('5.0.0');
-        await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
+            // Device info should be displayed
+            await expect(page.locator('#step-device')).not.toBeHidden();
+            await expect(page.locator('#device-model')).toHaveText('Kobo Libra Colour');
+            await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
+            await expect(page.locator('#device-firmware')).toHaveText(firmware);
+            await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
-        // Status message should say the version is too new, not too old
-        await expect(page.locator('#device-status')).toContainText('Kobo software 5 and newer cannot be modded here yet');
-        await expect(page.locator('#device-status')).toContainText('You may be able to downgrade to version 4.');
-        await expect(page.locator('#device-status')).not.toContainText('4.23 or newer is required');
-        await expect(page.locator('#device-status')).toHaveClass(/error/);
+            // Status message should say the version is too new, not too old
+            await expect(page.locator('#device-status')).toContainText('Kobo software newer than 4.x is not supported yet.');
+            await expect(page.locator('#device-status')).toContainText('This includes the 5.x accessibility preview and the recently released 6.0 update.');
+            await expect(page.locator('#device-status')).toContainText('You may be able to downgrade to version 4.');
+            await expect(page.locator('#device-status')).not.toContainText('4.23 or newer is required');
+            await expect(page.locator('#device-status')).toHaveClass(/error/);
 
-        // And it should link to Kobo's own guide for installing a software version
-        const helpLink = page.locator('#device-status a');
-        await expect(helpLink).toHaveText('Learn more');
-        await expect(helpLink).toHaveAttribute('href', /help\.kobo\.com/);
-        await expect(helpLink).toHaveAttribute('target', '_blank');
+            // And it should link to Kobo's own guide for installing a software version
+            const helpLink = page.locator('#device-status a');
+            await expect(helpLink).toHaveText('Learn more');
+            await expect(helpLink).toHaveAttribute('href', /help\.kobo\.com/);
+            await expect(helpLink).toHaveAttribute('target', '_blank');
 
-        // Continue and restore buttons should be hidden, but Back should be visible
-        await expect(page.locator('#btn-device-next')).toBeHidden();
-        await expect(page.locator('#btn-device-restore')).toBeHidden();
-        await expect(page.locator('#btn-device-back')).toBeVisible();
+            // Continue and restore buttons should be hidden, but Back should be visible
+            await expect(page.locator('#btn-device-next')).toBeHidden();
+            await expect(page.locator('#btn-device-restore')).toBeHidden();
+            await expect(page.locator('#btn-device-back')).toBeVisible();
 
-        // Back should return to connect step
-        await page.click('#btn-device-back');
-        await expect(page.locator('#step-connect')).not.toBeHidden();
-    });
+            // Back should return to connect step
+            await page.click('#btn-device-back');
+            await expect(page.locator('#step-connect')).not.toBeHidden();
+        });
+    }
 
     test('with device — firmware below 4.23 shows error', async ({ page }) => {
         await page.goto('/');
