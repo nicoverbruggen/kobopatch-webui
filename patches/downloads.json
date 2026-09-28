@@ -35,6 +35,12 @@
     "kobo12": "https://ereaderfiles.kobo.com/firmwares/kobo12/Mar2026/kobo-update-4.45.23646.zip"
   },
   "_older_devices": ["older devices below"],
+  "4.38.23828": {
+    "kobo11": "https://ereaderfiles.kobo.com/firmwares/kobo11/Sep2026/kobo-update-4.38.23828.zip",
+    "kobo10": "https://ereaderfiles.kobo.com/firmwares/kobo10/Sep2026/kobo-update-4.38.23828.zip",
+    "kobo9": "https://ereaderfiles.kobo.com/firmwares/kobo9/Sep2026/kobo-update-4.38.23828.zip",
+    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Sep2026/kobo-update-4.38.23828.zip"
+  },
   "4.38.23697": {
     "kobo11": "https://ereaderfiles.kobo.com/firmwares/kobo11/May2026/kobo-update-4.38.23697.zip",
     "kobo10": "https://ereaderfiles.kobo.com/firmwares/kobo10/May2026/kobo-update-4.38.23697.zip",

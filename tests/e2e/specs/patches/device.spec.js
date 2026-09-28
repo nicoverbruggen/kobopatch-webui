@@ -93,6 +93,24 @@ async function gotoManualPatchesStep(page) {
 }
 
 test.describe('Custom patches', () => {
+    test('with device — September 2026 firmware enables custom patches on Libra 2', async ({ page }) => {
+        await connectMockDevice(page, {
+            serial: 'N4180A0000000',
+            hardwareId: '00000000-0000-0000-0000-000000000388',
+            firmware: '4.38.23828',
+            expectedModel: 'Kobo Libra 2',
+        });
+        await page.click('#btn-device-next');
+        await expect(page.locator('input[name="mode"][value="patches"]')).toBeEnabled();
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).toBeVisible();
+        await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+        await page.click('#btn-patches-next');
+        await expect(page.locator('#firmware-version-label')).toHaveText('4.38.23828');
+        await expect(page.locator('#firmware-device-label')).toContainText('Kobo Libra 2');
+    });
+
     for (const firmware of ['5.0.0', '6.0.0']) {
         test(`with device — incompatible version ${firmware} shows error`, async ({ page }) => {
             await page.goto('/');

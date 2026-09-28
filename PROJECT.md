@@ -107,7 +107,7 @@ hand, which the File System Access API restriction does not touch.
 
 ## Adding a Software Version
 
-1. Add the patch sources to `patches/<version>/` and update `patches/index.json`. A new family starts as a copy of the family it succeeds; the compatibility sweep below is what tells you which patches no longer apply.
+1. Keep one patch set per firmware family in `patches/<family>/`. For a new revision in an existing family, update that set for the latest revision and add the version first in its `patches/index.json` entry. Do not create a separate patch set for each revision. A new family starts as a copy of the family it succeeds; the compatibility sweep below identifies patches that no longer apply. Compatibility results describe the latest tested revision, not every older revision listed in the catalogue.
 2. Add download URLs to `patches/downloads.json` keyed by version and firmware channel (`kobo12`, `kobo13`, etc.).
 3. The Kobo CDN prefix per device family, such as `kobo12` or `kobo13`, is stable; the date path segment changes per release.
 4. Update `tests/e2e/config/firmware-config.js`. `primary` is the build the WASM integration test and the E2E suite patch against, `secondary` is the older-device line, and `all` lists every family `patches/index.json` still serves, newest first.

@@ -83,6 +83,74 @@ async function gotoManualPatchesStep(page) {
 }
 
 test.describe('Custom patches', () => {
+    test('no device — September 2026 firmware offers the supported older-device channels', async ({ page }) => {
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await page.selectOption('#manual-version', '4.38.23828');
+        const channels = await page.locator('#manual-model option[value^="kobo"]').evaluateAll((options) => options.map((option) => option.value));
+        expect(channels).toEqual(['kobo11', 'kobo10', 'kobo9', 'kobo8']);
+        await page.selectOption('#manual-model', 'kobo9');
+        await page.click('#btn-manual-confirm');
+        await expect(page.locator('#step-patches')).toBeVisible();
+        await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+        await page.click('#btn-patches-next');
+        await expect(page.locator('#firmware-version-label')).toHaveText('4.38.23828');
+        await expect(page.locator('#firmware-device-label')).toContainText('Kobo Libra 2');
+    });
+
+    test('no device — repaired 4.38 patches build against September 2026 firmware', async ({ page }) => {
+        const firmwarePath = paths.repo('tests/e2e/cached_assets/kobo-update-4.38.23828.zip');
+        test.skip(!fs.existsSync(firmwarePath), `Firmware not found at ${firmwarePath}`);
+        const servedFirmware = paths.repo('dist/_test_firmware_4.38.23828.zip');
+        fs.symlinkSync(firmwarePath, servedFirmware);
+        try {
+            await goToManualMode(page);
+            await page.click('input[name="mode"][value="patches"]');
+            await page.click('#btn-mode-next');
+            await page.evaluate(() => {
+                FIRMWARE_DOWNLOADS['4.38.23828'].kobo9 = '/_test_firmware_4.38.23828.zip';
+            });
+            await page.selectOption('#manual-version', '4.38.23828');
+            await page.selectOption('#manual-model', 'kobo9');
+            await page.click('#btn-manual-confirm');
+            await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
+            await page.locator('#patch-about-patches-section > summary').click();
+            await page.locator('#patch-original-format').check();
+
+            const repaired = {
+                'src/libnickel.so.1.0.0.yaml': {
+                    'Disable forward/backward swipe Gestures': true,
+                    'Disable menu swipe gesture': true,
+                    'Never show Kobo Plus, wishlist, and points SmartLinks': true,
+                },
+                'src/nickel.yaml': { 'Remove forgot pin button from lock screen': true },
+            };
+            for (const patches of Object.values(repaired)) {
+                for (const name of Object.keys(patches)) {
+                    const item = page.locator('.patch-item').filter({ has: page.getByText(name, { exact: true }) });
+                    const section = item.locator('xpath=ancestor::details');
+                    if (!(await section.evaluate((element) => element.open))) await section.locator('summary').click();
+                    await expect(item.locator('.patch-incompatible')).toHaveCount(0);
+                    await item.locator('input').check();
+                }
+            }
+            await expect(page.locator('#patch-count-hint')).toContainText('4 patches selected');
+            await page.click('#btn-patches-next');
+            await page.click('#btn-build');
+            await expect(page.locator('#step-done')).toBeVisible({ timeout: 240_000 });
+            await expect(page.locator('#build-status')).toContainText('Patching complete');
+            const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-download')]);
+            const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+            const manifest = JSON.parse(await zip.file('.kobopatch-webui/custom-patches.json').async('string'));
+            for (const [file, patches] of Object.entries(repaired)) expect(manifest.overrides[file]).toMatchObject(patches);
+            const payload = parseTar(zlib.gunzipSync(await zip.file('.kobo/KoboRoot.tgz').async('nodebuffer')));
+            expect(Object.keys(payload)).toEqual(expect.arrayContaining(['usr/local/Kobo/nickel', 'usr/local/Kobo/libnickel.so.1.0.0']));
+        } finally {
+            fs.unlinkSync(servedFirmware);
+        }
+    });
+
     test('no device — full manual mode patching pipeline', async ({ page }) => {
         test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
 

@@ -1100,11 +1100,11 @@ Never show Kobo Plus, wishlist, and points SmartLinks:
   - ReplaceBytes: {Offset: 310, FindH: 02 23, CheckOnly: true} # MOVS r3, #2
   - ReplaceBytes: {Offset: 320, FindInstBLX: {SymPLT: "QVector<SmartLinkType>::append(SmartLinkType const&)"}, ReplaceInstNOP: true}
   # NOP wishlist (14):
-  - ReplaceBytes: {Offset: 284, FindH: 0E 23, CheckOnly: true} # MOVS r3, #14
-  - ReplaceBytes: {Offset: 294, FindInstBLX: {SymPLT: "QVector<SmartLinkType>::append(SmartLinkType const&)"}, ReplaceInstNOP: true}
+  - ReplaceBytes: {Offset: 218, FindH: 0E 23, CheckOnly: true} # MOVS r3, #14
+  - ReplaceBytes: {Offset: 228, FindInstBLX: {SymPLT: "QVector<SmartLinkType>::append(SmartLinkType const&)"}, ReplaceInstNOP: true}
   # NOP super points (17):
-  - ReplaceBytes: {Offset: 1514, FindH: 11 23, CheckOnly: true} # MOVS r3, #17
-  - ReplaceBytes: {Offset: 1526, FindInstBLX: {SymPLT: "QVector<SmartLinkType>::append(SmartLinkType const&)"}, ReplaceInstNOP: true}
+  - ReplaceBytes: {Offset: 430, FindH: 11 23, CheckOnly: true} # MOVS r3, #17
+  - ReplaceBytes: {Offset: 440, FindInstBLX: {SymPLT: "QVector<SmartLinkType>::append(SmartLinkType const&)"}, ReplaceInstNOP: true}
 
 ###
 
@@ -1457,21 +1457,21 @@ Disable forward/backward swipe Gestures:
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
   - ReplaceBytes:
       Offset: 0xE8
-      FindH: 1D F7 28 CC 
-      ReplaceH: 00 BF 00 BF
+      FindInstBLX: {SymPLT: "ReadingView::nextPageWithTimer()"}
+      ReplaceInstNOP: true
   - ReplaceBytes:
       Offset: 0xF6
-      FindH: 1A F7 F0 C8 
-      ReplaceH: 00 BF 00 BF
+      FindInstBLX: {SymPLT: "ReadingView::prevPageWithTimer()"}
+      ReplaceInstNOP: true
 
 Disable menu swipe gesture:
   - Enabled: no
   - BaseAddress: {Sym: "_ZN11ReadingView12processSwipeEP12SwipeGesture"}
   - ReplaceBytes:
       Offset: 0x134
-      FindH: 3F F7 E6 CA 
-      ReplaceH: 00 BF 00 BF
+      FindInstBLX: {SymPLT: "ReadingView::openQuickAccess()"}
+      ReplaceInstNOP: true
   - ReplaceBytes:
       Offset: 0x13c
-      FindH: 12 F7 A2 CB 
-      ReplaceH: 00 BF 00 BF
+      FindInstBLX: {SymPLT: "ReadingView::openFooterMenuOnSwipe()"}
+      ReplaceInstNOP: true

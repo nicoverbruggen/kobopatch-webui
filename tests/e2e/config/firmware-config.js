@@ -30,9 +30,9 @@ const previous = {
 
 // Older Kobo devices (older chipset, sometimes SD card as storage, etc.)
 const secondary = {
-    version: '4.38.23697',
+    version: '4.38.23828',
     shortVersion: '4.38',
-    url: 'https://ereaderfiles.kobo.com/firmwares/kobo9/May2026/kobo-update-4.38.23697.zip',
+    url: 'https://ereaderfiles.kobo.com/firmwares/kobo9/Sep2026/kobo-update-4.38.23828.zip',
     patches: 'patches_4.38.zip',
     patchesSource: '4.38',
 };
