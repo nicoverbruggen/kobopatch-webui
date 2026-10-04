@@ -59,12 +59,13 @@ function getChannelsForVersion(version) {
 
     const channels = new Map();
     const addChannelEntry = (info) => {
+        const serialPrefix = info.serialPrefixes[0];
         const item = channels.get(info.channel) || { channel: info.channel, devices: [] };
-        const duplicate = item.devices.some((device) => device.model === info.model && device.serialPrefix === info.serialPrefix);
+        const duplicate = item.devices.some((device) => device.model === info.model && device.serialPrefix === serialPrefix);
         if (!duplicate) {
             item.devices.push({
                 model: info.model,
-                serialPrefix: info.serialPrefix,
+                serialPrefix,
             });
         }
         channels.set(info.channel, item);

@@ -293,6 +293,22 @@ test('device verified by UUID and serial prefix', async ({ page }, testInfo) => 
     await shot(page, dir, 'device-verified-hint', testInfo);
 });
 
+for (const [model, suffix, serial] of [
+    ['touch-ab', '310', 'KG31000000000'],
+    ['glo', '330', '613B2A3004105'],
+    ['aura', '360', '514A394000000'],
+]) {
+    test(`${model} legacy serial is verified`, async ({ page }, testInfo) => {
+        await connectToDeviceScreen(page, {
+            serial,
+            firmware: '4.38.23828',
+            hardwareId: `00000000-0000-0000-0000-000000000${suffix}`,
+        });
+        await expect(page.locator('#device-model .device-identification-badge--verified')).toBeVisible();
+        await shot(page, SCREENSHOT_DIRS.edgeCompatibility, `${model}-legacy-serial`, testInfo);
+    });
+}
+
 test('device serial prefix mismatch', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeCompatibility;
     await connectToDeviceScreen(page, {

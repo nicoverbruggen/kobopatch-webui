@@ -392,6 +392,36 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#btn-device-restore')).toBeHidden();
     });
 
+    for (const [model, suffix, serial] of [
+        ['Kobo Touch A/B', '310', 'KG31000000000'],
+        ['Kobo Glo', '330', '613B2A3004105'],
+        ['Kobo Aura', '360', '514A394000000'],
+    ]) {
+        test(`with device — ${model} legacy serial is verified`, async ({ page }) => {
+            await page.goto('/');
+            await injectMockDevice(page, {
+                serial,
+                firmware: '4.38.23828',
+                hardwareId: `00000000-0000-0000-0000-000000000${suffix}`,
+            });
+            await page.click('#btn-connect');
+            await page.click('#btn-connect-ready');
+
+            await expect(page.locator('#step-device')).not.toBeHidden();
+            await expect(page.locator('#device-model')).toHaveText(model);
+            await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
+            await expect(page.locator('#device-status')).toContainText('recognized');
+            await expect(page.locator('#device-status')).not.toContainText('Please file an issue');
+            await expect(page.locator('#device-unknown-warning')).toBeHidden();
+            await page.locator('.serial-reveal').click();
+            await expect(page.locator('#device-serial')).toContainText(serial);
+            await page.click('#btn-device-next');
+            await expect(page.locator('#step-mode')).not.toBeHidden();
+            await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeEnabled();
+            await expect(page.locator('input[name="mode"][value="patches"]')).toBeDisabled();
+        });
+    }
+
     test('with device — known hardware UUID identifies unknown serial prefix', async ({ page }) => {
         await page.goto('/');
         await injectMockDevice(page, {
