@@ -1,6 +1,6 @@
 {
   "name": "kobopatch-webui",
-  "version": "1.63",
+  "version": "1.64",
   "private": true,
   "type": "module",
   "scripts": {
