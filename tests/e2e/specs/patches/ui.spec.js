@@ -66,7 +66,7 @@ function tgzContentSignature(tgzBytes) {
 }
 
 /**
- * Drive the manual flow up to a loaded patches step for 4.46.23836 / kobo13.
+ * Drive the manual flow up to a loaded patches step for 4.46.23852 / kobo13.
  * Collapses the version → channel → confirm sequence that nearly every patch
  * test repeats. Leaves the page on #step-patches with sections rendered.
  */
@@ -76,7 +76,7 @@ async function gotoManualPatchesStep(page) {
     await page.click('#btn-mode-next');
     await expect(page.locator('#step-manual-version')).not.toBeHidden();
     await overrideFirmwareURLs(page);
-    await page.selectOption('#manual-version', '4.46.23836');
+    await page.selectOption('#manual-version', '4.46.23852');
     await page.selectOption('#manual-model', 'kobo13');
     await page.click('#btn-manual-confirm');
     await expect(page.locator('#step-patches')).not.toBeHidden();

@@ -9,6 +9,11 @@
     "All other channels match the official docs and were verified correct: kobo14 = E60V00 (Clara BW P365), kobo8 = E80P00 + EA0P10 (Sage + Elipsa), kobo9 = E70K10 (Libra 2), kobo10 = E60K20 (Clara 2E), kobo11 = EA0T00 (Elipsa 2E)."
   ],
   "_newer_devices": ["newer devices below"],
+  "4.46.23852": {
+    "kobo14": "https://ereaderfiles.kobo.com/firmwares/kobo14/Oct2026/kobo-update-4.46.23852.zip",
+    "kobo13": "https://ereaderfiles.kobo.com/firmwares/kobo13/Oct2026/kobo-update-4.46.23852.zip",
+    "kobo12": "https://ereaderfiles.kobo.com/firmwares/kobo12/Oct2026/kobo-update-4.46.23852.zip"
+  },
   "4.46.23836": {
     "kobo14": "https://ereaderfiles.kobo.com/firmwares/kobo14/Aug2026/kobo-update-4.46.23836.zip",
     "kobo13": "https://ereaderfiles.kobo.com/firmwares/kobo13/Aug2026/kobo-update-4.46.23836.zip",

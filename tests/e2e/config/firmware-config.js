@@ -11,9 +11,9 @@
 
 // Modern Kobo devices w/ more recent chipset (Libra Color, Clara Color, Clara BW)
 const primary = {
-    version: '4.46.23836',
+    version: '4.46.23852',
     shortVersion: '4.46',
-    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Aug2026/kobo-update-4.46.23836.zip',
+    url: 'https://ereaderfiles.kobo.com/firmwares/kobo13/Oct2026/kobo-update-4.46.23852.zip',
     patches: 'patches_4.46.zip',
     patchesSource: '4.46',
 };
