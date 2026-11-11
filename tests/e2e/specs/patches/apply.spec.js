@@ -84,6 +84,53 @@ async function gotoManualPatchesStep(page) {
 }
 
 test.describe('Custom patches', () => {
+    test('firmware 4.46 builds the newly supported patches against the stock firmware', async ({ page }) => {
+        test.skip(!hasFirmwareZip(), `Firmware not found at ${FIRMWARE_PATH}`);
+        const names = [
+            'Remove PDF map widget shown during panning',
+            'Allow showing info panel on random screensaver',
+            'Customize ComfortLight settings',
+            'Disable forward/backward swipe Gestures',
+            'Disable menu swipe gesture',
+            'Hide browser from beta features',
+            'My 24 line spacing values',
+            'Never show Kobo Plus, wishlist, and points SmartLinks',
+            'Replace adobe page numbers toggle with invert screen',
+            'Set KePub hyphenation',
+            'Remove forgot pin button from lock screen',
+        ];
+        await gotoManualPatchesStep(page);
+        await expect(page.locator('#manual-version option[value="4.46.23836"]')).toHaveCount(0);
+        await page.locator('#patch-about-patches-section > summary').click();
+        await page.check('#patch-original-format');
+        for (const name of names) {
+            const label = page.locator('.patch-header').filter({ has: page.getByText(name, { exact: true }) });
+            await expect(label.locator('.patch-incompatible')).toHaveCount(0);
+            const section = label.locator('xpath=ancestor::details');
+            if ((await section.getAttribute('open')) === null) await section.locator('summary').click();
+            await label.locator('input').check();
+        }
+        await expect(page.locator('#patch-count-hint')).toContainText('11 patches selected');
+        await page.click('#btn-patches-next');
+        await page.click('#btn-build');
+        await expect(page.locator('#step-done:visible, #step-error:visible')).toBeVisible({ timeout: 240_000 });
+        await expect(page.locator('#step-error'), await page.locator('#error-message').textContent()).toBeHidden();
+        const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-download')]);
+        const result = parseTar(zlib.gunzipSync(await extractKoboRootTgz(download)));
+        const stockZip = await JSZip.loadAsync(fs.readFileSync(FIRMWARE_PATH));
+        const stock = parseTar(zlib.gunzipSync(await stockZip.file('KoboRoot.tgz').async('nodebuffer')));
+        for (const filename of ['libadobe.so', 'libnickel.so.1.0.0', 'nickel']) {
+            const destination = `usr/local/Kobo/${filename}`;
+            expect(result[destination]).toBeDefined();
+            expect(result[destination].length).toBe(stock[destination].length);
+            expect(result[destination]).not.toEqual(stock[destination]);
+        }
+        for (const offset of [0x1ce1eb6, 0x1cec5b0]) {
+            const css = zlib.inflateSync(result['usr/local/Kobo/nickel'].subarray(offset)).toString();
+            expect(css).toContain('#lblForgotPin,#lblSignOut{qproperty-visible:false;}');
+        }
+    });
+
     test('with device — additional files only writes the archive alongside the manifest', async ({ page }) => {
         await connectMockDevice(page, { hasNickelMenu: false });
         await page.click('#btn-device-next');
