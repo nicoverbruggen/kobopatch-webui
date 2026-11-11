@@ -232,6 +232,8 @@ npm run screenshots
 npm run validate:dist
 ```
 
+The firmware download URL check retries transient request failures up to three times, with connection and request timeouts. Exhausted retries count as a failed URL; the check continues through the remaining URLs and fails if any are unavailable.
+
 `npm run test:e2e:fresh` removes `dist`, rebuilds the app plus the WASM artifact used by the UI, and then runs Playwright without the standalone WASM integration or patch blacklist checks. This is the preferred verification after feature work.
 
 To pass flags to Playwright:

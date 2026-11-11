@@ -54,7 +54,13 @@ TOTAL=0
 
 while IFS= read -r url; do
   TOTAL=$((TOTAL + 1))
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" --head "$url")
+  if ! STATUS=$(curl -sS -o /dev/null -w "%{http_code}" --head \
+    --connect-timeout 10 --max-time 20 \
+    --retry 3 --retry-delay 1 --retry-max-time 60 --retry-all-errors "$url"); then
+    echo "FAIL  $STATUS  $url (request failed after retries)"
+    FAILED=$((FAILED + 1))
+    continue
+  fi
   if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
     echo "  OK  $STATUS  $url"
   else
