@@ -65,43 +65,45 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             // The audit log is opened before anything is touched, so the
             // removals below are recorded too.
             audit = new AuditLog('install-nickelmenu', new Date(), state.device);
-            // Features the user unticked on a setup of ours go first, then each
-            // remaining feature reconciles its own leftovers (dropped fonts).
-            await executeNickelMenuFeatureCleanups({
-                device: writer,
-                features: featuresToRemove(state, nickelMenuDeviceInfo(state)),
-                onProgress: progressFn,
-                audit,
-            });
-            for (const feature of features) {
-                if (!feature.reconcile) continue;
-                progressFn(`Updating ${feature.title.toLowerCase()}...`);
-                await feature.reconcile({
-                    device: writer,
-                    deviceInfo: nickelMenuDeviceInfo(state),
-                    features,
-                    previousConfiguration: state.previousNickelMenuConfiguration,
-                    menuCustomization: state.nickelMenuCustomization,
-                    tabsCustomization: state.nickelMenuTabsCustomization,
-                    fontsCustomization: state.nickelMenuFontsCustomization,
-                    audit,
-                });
-            }
-            if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
-                if (!state.nmKeepLegacyConfig) {
-                    try {
-                        await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
-                    } catch {}
-                }
-            }
-            try {
-                const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
-                if (await writer.pathExists(legacyScriptPath)) {
-                    await writer.removeEntry(legacyScriptPath);
-                }
-            } catch {}
             await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
+                beforeWrite: async () => {
+                    // Features the user unticked on a setup of ours go first, then each
+                    // remaining feature reconciles its own leftovers (dropped fonts).
+                    await executeNickelMenuFeatureCleanups({
+                        device: writer,
+                        features: featuresToRemove(state, nickelMenuDeviceInfo(state)),
+                        onProgress: progressFn,
+                        audit,
+                    });
+                    for (const feature of features) {
+                        if (!feature.reconcile) continue;
+                        progressFn(`Updating ${feature.title.toLowerCase()}...`);
+                        await feature.reconcile({
+                            device: writer,
+                            deviceInfo: nickelMenuDeviceInfo(state),
+                            features,
+                            previousConfiguration: state.previousNickelMenuConfiguration,
+                            menuCustomization: state.nickelMenuCustomization,
+                            tabsCustomization: state.nickelMenuTabsCustomization,
+                            fontsCustomization: state.nickelMenuFontsCustomization,
+                            audit,
+                        });
+                    }
+                    if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
+                        if (!state.nmKeepLegacyConfig) {
+                            try {
+                                await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
+                            } catch {}
+                        }
+                    }
+                    try {
+                        const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
+                        if (await writer.pathExists(legacyScriptPath)) {
+                            await writer.removeEntry(legacyScriptPath);
+                        }
+                    } catch {}
+                },
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
                 fontsCustomization: state.nickelMenuFontsCustomization,

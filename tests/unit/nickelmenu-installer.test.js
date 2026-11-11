@@ -314,12 +314,33 @@ test('installToDevice stops before config overwrite when Kobo eReader.conf canno
         failReadPaths: [koboEReaderConfPath],
     });
 
+    let cleanupRan = false;
     await assert.rejects(
-        () => installer.installToDevice(device, [excludeCalibre], createProgressRecorder()),
+        () =>
+            installer.installToDevice(device, [excludeCalibre], createProgressRecorder(), {
+                beforeWrite: async () => {
+                    cleanupRan = true;
+                },
+            }),
         /Refusing read of \.kobo\/Kobo\/Kobo eReader\.conf/,
     );
     assert.deepEqual(device.writePaths(), []);
     assert.equal(device.writeFor(koboEReaderConfPath), undefined);
+    assert.equal(cleanupRan, false);
+});
+
+test('modify cleanup config changes survive the prepared install', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({ textFiles: { [koboEReaderConfPath]: '[Reading]\r\nreadingFontFamily=Old\r\n' } });
+    await installer.installToDevice(device, [excludeCalibre], createProgressRecorder(), {
+        beforeWrite: async () => {
+            device.textFiles.set(koboEReaderConfPath, '[Reading]\r\nreadingFontFamily=\r\n');
+        },
+    });
+    const config = text(device.writeFor(koboEReaderConfPath).data);
+    assert.match(config, /readingFontFamily=\r\n/);
+    assert.ok(!config.includes('Old'));
+    assert.match(config, /ExcludeSyncFolders=/);
 });
 
 test('installToDevice stops writing remaining feature files after a feature write fails', async () => {

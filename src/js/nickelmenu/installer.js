@@ -266,22 +266,38 @@ export class NickelMenuInstaller {
     /**
      * Install to a connected Kobo device via File System Access API.
      */
-    async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
+    async installToDevice(
+        device,
+        features,
+        progressFn,
+        { audit = null, beforeWrite = null, menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {},
+    ) {
         await this.loadNickelMenu(progressFn, device.deviceInfo);
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
 
         let collectedFiles = [];
         let featureFiles = {};
+        let eReaderConfData = null;
 
         if (features.length > 0) {
             progressFn('Preparing Kobo eReader.conf...');
-            const eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
+            eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
 
             const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization, tabsCustomization, fontsCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
+        }
 
+        // Finish downloads and validation before modify cleanup deletes anything.
+        if (beforeWrite) {
+            await beforeWrite();
+            // Cleanup may have reverted settings; do not overwrite those changes
+            // with the configuration read during preflight.
+            if (features.length > 0) eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
+        }
+
+        if (features.length > 0) {
             progressFn('Updating Kobo eReader.conf...');
             await device.writeFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], eReaderConfData);
             this.recordEReaderConfUpdates(features, device.deviceInfo, audit, fontsCustomization);
