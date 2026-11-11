@@ -31,7 +31,7 @@ Keep JavaScript carefully organized by responsibility. Do not let flow logic, do
 - The front of the wizard is split into flows:
     - `flows/connect-flow.js` — browser-support detection, direct device connection, device-info display, restore shortcut.
     - `flows/manual-flow.js` — manual version/model selection.
-    - `flows/mode-flow.js` — patches-vs-NickelMenu selection; owns the shared `state.goToModeSelection`.
+    - `flows/mode-flow.js` — patches-vs-NickelMenu selection; owns the shared `state.goToModeSelection`. Connected OS 6 devices bypass this screen and enter NickelMenu configuration directly. Their breadcrumb omits Mode, and Back returns to the device screen. The connect flow shows a beta OS warning before advancing from an OS 6 device. Treat all OS 6 builds as beta until this policy is updated.
 - The shared error step and global error handling live in `shell/error-screen.js`.
 - Modal dialogs, the mobile warning, the environment pill and the preview banner live in `shell/global-ui.js`.
 - Keep flow-specific behavior inside the relevant flow file.
@@ -75,6 +75,8 @@ Metadata:
     - `featureAnalyticsEvents` in `features/index.js` dedupes, so related features may share one event, like the hiders' `add-minimal-home`.
     - `tests/unit/nickelmenu-analytics.test.js` fails if a feature omits the key. See "Analytics" in PROJECT.md.
 - `hint` (optional) — a URL or plain text. Renders a "?" badge in the feature list that opens the link in a new tab, or shows the text in a popup.
+- `supportedFirmwareMajors` (optional) defaults to `[4]`. A feature must opt into another firmware family in its own module. `custom-menu`, `nickelmodmanager`, `additional-fonts` and `koreader` currently declare `[4, 6]`. The same gate controls rendering, installation and modify cleanup; unsupported installed features are preserved. OS 6 hides unavailable features and subitems and shows a single compatibility note below the list.
+- `description`, `default`, `available` and `version` may be functions of `deviceInfo` when a feature has firmware-specific packages or defaults. The manifest decoration must preserve these functions. Version lookup for the list, review and persisted manifest uses the same device context.
 - `minimumVersion` (optional) — a Kobo software version like `4.31`. The flow disables the feature with a red explanation when the connected device's firmware is older.
 - `unsupportedDeviceReason(deviceInfo)` (optional) — returns a reason string when the feature does not support the connected device, or `null` when supported or when the device cannot be identified (e.g. NickelDissolve's hardware-UUID allowlist).
     - The flow disables the checkbox with it and `featuresToInstall` drops the feature.
@@ -138,7 +140,9 @@ Removal:
 
 ### KoboRoot.tgz payloads
 
-- The device processes a single `.kobo/KoboRoot.tgz` per boot.
+- Firmware 4 processes `.kobo/KoboRoot.tgz`; firmware 6 uses `.kobo/Kobo.tgz` with paths relative to `/usr/local/Kobo`. These archives are not interchangeable.
+- `nickelmenu/firmware.js` selects the package and resolves the connected or manual firmware context. Cache base archives by package ID. Installation, downloads, removal and instructions must use the same context.
+- Keep firmware 4 payloads out of firmware 6 archives. The installer rejects features that have not declared support before it writes files.
 - A feature that ships its own payload (e.g. `nickelclock`, a Qt imageformats plugin that can't be expressed as ordinary onboard files) declares a `koboRootEntries(ctx)` hook returning tar entries (`{ path, data, mode }`).
 - `installer.js`'s `buildKoboRootTgz(features)` merges them into NickelMenu's base archive and writes one combined tarball.
     - It uses `archive.js`'s `parseTarGz`/`buildTarGz`, which preserve executable modes.
@@ -199,7 +203,8 @@ Removal:
 
 ### Installable assets
 
-- `src/assets/` contains external installable assets: NickelMenu, NickelClock, NickelModManager, KOReader, the KOReader SimpleUI plugin, Cadmus, and the two ebook-fonts archives `kobo-core-fonts.zip`/`kobo-extra-fonts.zip`.
+- `src/assets/` contains external installable assets: NickelMenu (separate firmware 4 and 6 packages), NickelClock, NickelModManager, KOReader, the KOReader SimpleUI plugin, Cadmus, and the two ebook-fonts archives `kobo-core-fonts.zip`/`kobo-extra-fonts.zip`.
+- KOReader has separate `koreader` (OS 4) and `koreader-kobov5` (OS 6) lock entries. Its feature module selects the archive, version and availability from the firmware context. Both install into `.adds/koreader/`.
 - The archives are gitignored. `installables.lock` (committed) pins each one's version/url/sha256.
 - `npm run setup:installables` fetches exactly what the lock pins and verifies the hash. Reproducible.
 - `npm run update:installables` resolves latest upstream and rewrites the lock (commit it), then regenerates the committed font catalogue from the font archives.

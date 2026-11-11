@@ -104,6 +104,11 @@
     justify-content: flex-end;
 }
 
+#beta-os-dialog .modal-footer {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
 /* The update notice has no footer: it dismisses itself by reloading, so the
    secondary line sits quietly under the explanation instead. */
 #app-updated-dialog .modal-body {

@@ -9,53 +9,71 @@ import { featuresToInstall } from '../../src/js/nickelmenu/selection.js';
 import { executeNickelMenuFeatureCleanups, executeNickelMenuRemoval } from '../../src/js/nickelmenu/uninstaller.js';
 import { RecordingDevice, bytes, createInstaller, createResponse } from './test-helpers.js';
 
-const pluginPath = 'usr/local/Kobo/imageformats/libnickelmm.so';
 const markerPath = '.adds/nickel-mod-manager/uninstall';
 
-test('NickelModManager selection requires a bundled package and supported firmware', () => {
-    const available = nickelModManager.available;
+test('NickelModManager selects only the bundled package for the chosen firmware', () => {
+    const originalManifest = globalThis.__INSTALLABLES__;
     const session = { selectedFeatureIds: ['nickelmodmanager'] };
     const selected = (firmware) => featuresToInstall(session, firmware ? { firmware } : null).includes(nickelModManager);
     try {
-        nickelModManager.available = true;
-        assert.equal(selected('4.23.15548'), true);
-        assert.equal(selected('4.46.23852'), true);
-        assert.equal(selected(null), true);
-        for (const firmware of ['4.22.15190', '4.23.15547', '5.18.270971', '6.0.276679']) assert.equal(selected(firmware), false);
-        assert.equal(featuresToInstall({ selectedFeatureIds: [] }, null).includes(nickelModManager), false);
-        nickelModManager.available = false;
-        assert.equal(selected('4.46.23852'), false);
+        globalThis.__INSTALLABLES__ = {
+            nickelmodmanager: { available: true, version: 'v0.3' },
+            'nickelmodmanager-qt6': { available: true, version: 'v0.4' },
+        };
+        for (const firmware of ['4.23.15548', '4.46.23852', '6.0.276679', null]) assert.equal(selected(firmware), true);
+        for (const firmware of ['4.22.15190', '4.23.15547', '5.18.270971', '7.0']) assert.equal(selected(firmware), false);
+        assert.equal(featuresToInstall({ selectedFeatureIds: [] }, { firmware: '6.0' }).includes(nickelModManager), false);
+        assert.equal(nickelModManager.default({ firmware: '6.0' }), true);
+        assert.equal(nickelModManager.default({ firmware: '4.46' }), false);
+        assert.match(nickelModManager.description({ firmware: '6.0' }), /restores enabled mods after supported Kobo OS updates/);
+        assert.doesNotMatch(nickelModManager.description({ firmware: '4.46' }), /restores/);
+        assert.equal(nickelModManager.version({ firmware: '6.0' }), 'v0.4');
+        globalThis.__INSTALLABLES__['nickelmodmanager-qt6'].available = false;
+        assert.equal(selected('6.0'), false);
+        assert.equal(selected('4.46'), true);
+        globalThis.__INSTALLABLES__.nickelmodmanager.available = false;
+        globalThis.__INSTALLABLES__['nickelmodmanager-qt6'].available = true;
+        assert.equal(selected('4.46'), false);
+        assert.equal(selected('6.0'), true);
     } finally {
-        nickelModManager.available = available;
-    }
-});
-
-test('NickelModManager merges verified plugin bytes and mode into NickelMenu without adding an uninstall marker', async () => {
-    const originalFetch = globalThis.fetch;
-    const originalManifest = globalThis.__INSTALLABLES__;
-    const archive = await buildTarGz([{ path: pluginPath, data: bytes('manager plugin'), mode: 0o755 }]);
-    const base = await buildTarGz([{ path: 'usr/local/Kobo/imageformats/libnm.so', data: bytes('menu plugin'), mode: 0o755 }]);
-    const fetched = [];
-    globalThis.__INSTALLABLES__ = {
-        nickelmodmanager: { version: 'v0.3', available: true, sha256: createHash('sha256').update(archive).digest('hex') },
-    };
-    globalThis.fetch = async (url) => {
-        fetched.push(url);
-        return url === '/assets/NickelModManager.tgz?v=v0.3' ? createResponse(archive) : createResponse('', { status: 404 });
-    };
-    try {
-        const result = await createInstaller(base).buildKoboRootTgz([nickelModManager], () => {});
-        const entries = await parseTarGz(result);
-        assert.deepEqual(entries.map((entry) => entry.path).sort(), ['usr/local/Kobo/imageformats/libnm.so', pluginPath].sort());
-        const manager = entries.find((entry) => entry.path === pluginPath);
-        assert.deepEqual(manager.data, bytes('manager plugin'));
-        assert.equal(manager.mode, 0o755);
-        assert.ok(fetched.includes('/assets/NickelModManager.tgz?v=v0.3'));
-    } finally {
-        globalThis.fetch = originalFetch;
         globalThis.__INSTALLABLES__ = originalManifest;
     }
 });
+
+for (const [major, id, asset, prefix] of [
+    [4, 'nickelmodmanager', 'NickelModManager.tgz', 'usr/local/Kobo/'],
+    [6, 'nickelmodmanager-qt6', 'NickelModManager-Qt6.tgz', ''],
+]) {
+    test(`OS ${major} merges verified manager bytes and mode without adding an uninstall marker`, async () => {
+        const originalFetch = globalThis.fetch;
+        const originalManifest = globalThis.__INSTALLABLES__;
+        const pluginPath = `${prefix}imageformats/libnickelmm.so`;
+        const archive = await buildTarGz([{ path: pluginPath, data: bytes('manager plugin'), mode: 0o755 }]);
+        const base = await buildTarGz([{ path: `${prefix}imageformats/libnm.so`, data: bytes('menu plugin'), mode: 0o755 }]);
+        const fetched = [];
+        globalThis.__INSTALLABLES__ = {
+            [id]: { version: 'v0.3', available: true, sha256: createHash('sha256').update(archive).digest('hex') },
+        };
+        globalThis.fetch = async (url) => {
+            fetched.push(url);
+            return url === `/assets/${asset}?v=v0.3` ? createResponse(archive) : createResponse('', { status: 404 });
+        };
+        try {
+            const installer = createInstaller(base);
+            installer.nickelMenuArchives.set(major === 6 ? 'nickelmenu-qt6' : 'nickelmenu', base);
+            const result = await installer.buildKoboRootTgz([nickelModManager], () => {}, { firmware: `${major}.46` });
+            const entries = await parseTarGz(result);
+            assert.deepEqual(entries.map((entry) => entry.path).sort(), [`${prefix}imageformats/libnm.so`, pluginPath].sort());
+            const manager = entries.find((entry) => entry.path === pluginPath);
+            assert.deepEqual(manager.data, bytes('manager plugin'));
+            assert.equal(manager.mode, 0o755);
+            assert.ok(fetched.includes(`/assets/${asset}?v=v0.3`));
+        } finally {
+            globalThis.fetch = originalFetch;
+            globalThis.__INSTALLABLES__ = originalManifest;
+        }
+    });
+}
 
 test('NickelModManager refuses to build when its asset is missing', async () => {
     const originalManifest = globalThis.__INSTALLABLES__;

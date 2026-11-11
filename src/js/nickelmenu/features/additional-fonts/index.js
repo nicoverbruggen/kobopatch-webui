@@ -12,6 +12,7 @@ import { fontCollectionsToDownload, selectedFontFamilies } from './customization
 // selection needs are downloaded, and only the selected families' .ttf files
 // are extracted into fonts/; removal deletes the individual .ttf files again.
 export default {
+    supportedFirmwareMajors: [4, 6],
     id: 'additional-fonts',
     section: 'Reading Experience',
     analyticsEvent: 'add-fonts',

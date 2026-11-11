@@ -30,6 +30,20 @@ const TARGETS = {
 // and the id used by the build-time manifest (see scripts/build.mjs).
 const INSTALLABLES = [
     {
+        name: 'nickelmenu-qt6',
+        asset: 'NickelMenu-Qt6.tgz',
+        pinned: {
+            version: 'fork-v1.2',
+            url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.2/Kobo.tgz',
+        },
+    },
+    {
+        name: 'nickelmodmanager-qt6',
+        asset: 'NickelModManager-Qt6.tgz',
+        repo: 'nicoverbruggen/NickelModManager',
+        match: (n) => n === 'Kobo.tgz',
+    },
+    {
         name: 'nickelmodmanager',
         asset: 'NickelModManager.tgz',
         repo: 'nicoverbruggen/NickelModManager',
@@ -77,6 +91,12 @@ const INSTALLABLES = [
         asset: 'NickelHome.tgz',
         repo: 'nicoverbruggen/NickelHome',
         match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
+        name: 'koreader-kobov5',
+        asset: 'koreader-kobov5.zip',
+        repo: 'koreader/koreader',
+        match: (n) => /^koreader-kobov5-.*\.zip$/.test(n),
     },
     {
         name: 'koreader',

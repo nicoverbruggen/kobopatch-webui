@@ -17,7 +17,7 @@ function createInstaller(tgz = bytes('nickelmenu tgz')) {
     const installer = new NickelMenuInstaller();
     // Upstream NickelMenu ships a bare KoboRoot.tgz, so the installer holds the
     // tgz bytes directly (no wrapping zip).
-    installer.nickelMenuTgz = tgz instanceof Uint8Array ? tgz : bytes(tgz);
+    installer.nickelMenuArchives.set('nickelmenu', tgz instanceof Uint8Array ? tgz : bytes(tgz));
     return installer;
 }
 

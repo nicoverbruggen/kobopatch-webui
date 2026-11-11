@@ -77,6 +77,27 @@
       "url": "https://github.com/nicoverbruggen/NickelModManager/releases/download/v0.3/KoboRoot.tgz",
       "sha256": "17593550bd4f7c26ca1c277b0852bc175deba5a3409f20c71d0afdac7758084b",
       "size": 122065
+    },
+    "nickelmenu-qt6": {
+      "asset": "NickelMenu-Qt6.tgz",
+      "version": "fork-v1.2",
+      "url": "https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.2/Kobo.tgz",
+      "sha256": "2ec56131888d39fdb3842b7b086da839f83da6f17ffa3b69e758dc6bcbdaa3ce",
+      "size": 69870
+    },
+    "nickelmodmanager-qt6": {
+      "asset": "NickelModManager-Qt6.tgz",
+      "version": "v0.3",
+      "url": "https://github.com/nicoverbruggen/NickelModManager/releases/download/v0.3/Kobo.tgz",
+      "sha256": "cf6a3776f1bb1ab6f26eaf7c8a0000b2d7bdd60bbbfec7821d390158ca9fe6f5",
+      "size": 146593
+    },
+    "koreader-kobov5": {
+      "asset": "koreader-kobov5.zip",
+      "version": "v2026.07.1",
+      "url": "https://github.com/koreader/koreader/releases/download/v2026.07.1/koreader-kobov5-v2026.07.1.zip",
+      "sha256": "b20ec657a4abe745994590b7b1233c692909b8f4b4160643a4bd453622aba1e6",
+      "size": 42349662
     }
   }
 }

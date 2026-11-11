@@ -1,5 +1,13 @@
         <section id="step-nickelmenu" class="step" hidden>
             <p>How would you like to configure NickelMenu?</p>
+            <div id="nm-manual-firmware-field" hidden>
+                <label for="nm-manual-firmware">Kobo software version</label>
+                <select id="nm-manual-firmware">
+                    <option value="4">Kobo OS 4.x (4.23 or newer)</option>
+                    <option value="6">Kobo OS 6.x</option>
+                </select>
+                <p class="fallback-hint">Check under More &gt; Settings &gt; Device information &gt; Software version. The download must match your device.</p>
+            </div>
             <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
                 <label class="selection-card">
                     <input type="radio" name="nm-option" value="preset">

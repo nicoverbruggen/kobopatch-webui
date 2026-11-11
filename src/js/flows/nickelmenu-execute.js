@@ -6,6 +6,7 @@
  * and renders the final "done" screen for each outcome (remove / write / download).
  */
 
+import { nickelMenuDeviceInfo } from '../nickelmenu/firmware.js';
 import { triggerDownload, setProgressDetail, renderDownloadConfSettings } from '../shell/dom.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
@@ -15,7 +16,7 @@ import { executeNickelMenuFeatureCleanups, executeNickelMenuRemoval } from '../n
 import { featuresToInstall, featuresToRemove, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
 import { featureAnalyticsEvents } from '../nickelmenu/features/index.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
-import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
+import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE, nickelMenuDownloadVersionNote } from '../shell/instructions.js';
 import { watchForEject } from '../kobo/eject-watch.js';
 
 const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
@@ -56,7 +57,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             return;
         }
 
-        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
+        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, nickelMenuDeviceInfo(state)) : [];
         trackFeatures(features);
 
         if (dom.writeToDevice && state.device.directoryHandle) {
@@ -68,7 +69,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             // remaining feature reconciles its own leftovers (dropped fonts).
             await executeNickelMenuFeatureCleanups({
                 device: writer,
-                features: featuresToRemove(state, state.device.deviceInfo),
+                features: featuresToRemove(state, nickelMenuDeviceInfo(state)),
                 onProgress: progressFn,
                 audit,
             });
@@ -77,7 +78,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
                 progressFn(`Updating ${feature.title.toLowerCase()}...`);
                 await feature.reconcile({
                     device: writer,
-                    deviceInfo: state.device.deviceInfo,
+                    deviceInfo: nickelMenuDeviceInfo(state),
                     features,
                     previousConfiguration: state.previousNickelMenuConfiguration,
                     menuCustomization: state.nickelMenuCustomization,
@@ -108,7 +109,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             state._nmDoneMode = 'written';
             await flow.go('done', state);
         } else {
-            state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
+            state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, nickelMenuDeviceInfo(state), {
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
                 fontsCustomization: state.nickelMenuFontsCustomization,
@@ -217,13 +218,14 @@ export function renderNmDoneStatus(state, terminal, dom) {
         dom.doneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
         triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
         dom.downloadInstructions.hidden = false;
-        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
+        if (dom.downloadVersionNote) dom.downloadVersionNote.textContent = nickelMenuDownloadVersionNote(nickelMenuDeviceInfo(state));
+        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, nickelMenuDeviceInfo(state)) : [];
         const hasExcludeCalibre = features.some((f) => f.id === 'exclude-calibre');
         dom.downloadConfStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadRebootStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadConfLine.textContent = getExcludeSyncFoldersLine(features);
         dom.downloadConfDesc.textContent = hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT;
-        const confSettings = getFeatureConfSettings(features, state.device.deviceInfo, state.nickelMenuFontsCustomization);
+        const confSettings = getFeatureConfSettings(features, nickelMenuDeviceInfo(state), state.nickelMenuFontsCustomization);
         renderDownloadConfSettings(dom.downloadConfSettings, confSettings);
         dom.downloadConfSettingsStep.hidden = confSettings.length === 0;
         terminal.end('nm-download');

@@ -163,7 +163,7 @@ test.describe('Custom patches', () => {
         // Manual version/model selection
         await expect(page.locator('#step-manual-version')).not.toBeHidden();
         await expect(page.locator('#step-manual-version .version-note')).toContainText(
-            'Kobo software newer than 4.x is not supported yet. This includes the 5.x accessibility preview and the recently released 6.0 update.',
+            'Custom patches are not available for Kobo OS 5.x or 6.x. On Kobo OS 6, you can install NickelMenu and KOReader instead.',
         );
 
         await overrideFirmwareURLs(page);
@@ -227,7 +227,7 @@ test.describe('Custom patches', () => {
         // The screen points users at the bundled instructions.txt file.
         await expect(page.locator('#download-instructions')).toContainText('instructions.txt');
         await expect(page.locator('#download-instructions .version-note')).toContainText(
-            'Kobo software newer than 4.x is not supported yet. This includes the 5.x accessibility preview and the recently released 6.0 update.',
+            'Custom patches are not available for Kobo OS 5.x or 6.x. Use this package only with the software version selected when building it.',
         );
 
         // The ZIP bundles plain-text instructions naming the selected device, with

@@ -59,7 +59,8 @@ If you choose to apply custom patches, **patching happens fully client-side** â€
 
 If you want to install **NickelMenu**:
 
-- Any Kobo released in 2025 or earlier, running software version >=4.23 and <5.0.
+- Kobo OS 4.23 through 4.x supports the existing NickelMenu add-ons.
+- Kobo OS 6.x supports NickelMenu, NickelModManager, additional fonts and KOReader. It uses [NickelMenu fork-v1.2](https://github.com/nicoverbruggen/NickelMenu/releases/tag/fork-v1.2); other add-ons need compatible updates. NickelModManager is selected by default on OS 6 because it restores enabled mods after supported firmware updates. You can untick it.
 
 If you want to apply **custom patches**:
 
@@ -68,7 +69,7 @@ If you want to apply **custom patches**:
 - Software **4.38.x**: Kobo Clara 2E, Kobo Libra 2, Kobo Elipsa 2E, Kobo Sage, Kobo Elipsa
 
 > [!WARNING]
-> **Kobo software newer than 4.x is not supported yet.** This includes the 5.x accessibility preview and the recently released 6.0 update. This applies to both NickelMenu and custom patches.
+> **Custom patches require a listed 4.x software version.** Kobo OS 5.x is not supported. In manual mode, select Kobo OS 4.x or 6.x before configuring NickelMenu. Connected OS 6 devices show a beta warning, then go directly to NickelMenu configuration. Downloads use the KOReader build for the selected firmware, and contain `KoboRoot.tgz` for OS 4 or `Kobo.tgz` for OS 6. Do not rename these archives.
 
 ## User flow
 

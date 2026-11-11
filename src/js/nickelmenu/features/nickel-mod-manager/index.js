@@ -1,24 +1,29 @@
-import { compareFirmware } from '../../../kobo/version.js';
+import { firmwareMajor } from '../../../kobo/version.js';
 import { downloadProgress } from '../../../shell/dom.js';
 import { parseTarGz } from '../../archive.js';
 import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
+function managerPackage(deviceInfo) {
+    return firmwareMajor(deviceInfo?.firmware) === 6
+        ? { id: 'nickelmodmanager-qt6', asset: 'NickelModManager-Qt6.tgz', filename: 'Kobo.tgz' }
+        : { id: 'nickelmodmanager', asset: 'NickelModManager.tgz', filename: 'KoboRoot.tgz' };
+}
+
 export default {
+    supportedFirmwareMajors: [4, 6],
     id: 'nickelmodmanager',
     section: 'Interface Tweaks',
     analyticsEvent: 'add-nickelmodmanager',
     title: 'Install NickelModManager',
-    description: 'Adds Manage Mods to the More tab. Turn installed mods off and on, then restart your Kobo to apply the changes.',
-    default: false,
-    available: false,
+    description: (deviceInfo) =>
+        firmwareMajor(deviceInfo?.firmware) === 6
+            ? 'Adds Manage Mods to the More tab and restores enabled mods after supported Kobo OS updates, so you do not have to reinstall them manually.'
+            : 'Adds Manage Mods to the More tab. Turn installed mods off and on, then restart your Kobo to apply the changes.',
+    default: (deviceInfo) => firmwareMajor(deviceInfo?.firmware) === 6,
+    available: (deviceInfo) => installableAvailable(managerPackage(deviceInfo).id),
+    version: (deviceInfo) => installableVersion(managerPackage(deviceInfo).id),
     minimumVersion: '4.23.15548',
     hint: 'https://github.com/nicoverbruggen/NickelModManager',
-
-    // This deployment bundles the Qt5 package. Qt6 uses a different archive
-    // and install location, even though the mod itself supports both.
-    unsupportedDeviceReason(deviceInfo) {
-        return deviceInfo?.firmware && compareFirmware(deviceInfo.firmware, '5.0') >= 0 ? 'This installer requires Kobo software 4.x.' : null;
-    },
 
     reviewNotices() {
         return [
@@ -47,14 +52,15 @@ export default {
     },
 
     async koboRootEntries(ctx) {
-        if (!installableAvailable('nickelmodmanager')) throw new Error('NickelModManager assets not available (run npm run setup:installables)');
-        const label = 'Downloading NickelModManager ' + installableVersion('nickelmodmanager') + '...';
+        const pkg = managerPackage(ctx.deviceInfo);
+        if (!installableAvailable(pkg.id)) throw new Error('NickelModManager assets not available (run npm run setup:installables)');
+        const label = 'Downloading NickelModManager ' + installableVersion(pkg.id) + '...';
         ctx.progress(label);
-        const tgz = await fetchInstallableAsset('nickelmodmanager', 'NickelModManager.tgz', {
-            onProgress: downloadProgress(ctx.progress, label, await installableSize('nickelmodmanager')),
+        const tgz = await fetchInstallableAsset(pkg.id, pkg.asset, {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize(pkg.id)),
             errorPrefix: 'Failed to download NickelModManager',
         });
-        ctx.progress('Merging NickelModManager into KoboRoot.tgz...');
+        ctx.progress(`Merging NickelModManager into ${pkg.filename}...`);
         return parseTarGz(tgz);
     },
 };

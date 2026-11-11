@@ -139,9 +139,9 @@ function parseKoboVersion(content) {
     const identifiedBy = hardwareInfo ? 'uuid' : null;
     const fwParts = firmware.split('.');
     const fwMajor = parseInt(fwParts[0], 10) || 0;
-    const isIncompatible = fwMajor !== 4 || compareFirmware(firmware, minimumSupportedFirmware) < 0;
+    const isIncompatible = fwMajor !== 6 && (fwMajor !== 4 || compareFirmware(firmware, minimumSupportedFirmware) < 0);
     // Why the version is rejected, so the connect flow can explain it. A major
-    // version above 4 is too new; anything else that lands here is too old
+    // unsupported major above 4 is too new; anything else that lands here is too old
     // (a pre-4.23 build, or a major that could not be parsed).
     const incompatibleReason = !isIncompatible ? null : fwMajor > 4 ? 'too-new' : 'too-old';
 
@@ -193,6 +193,11 @@ function meetsMinimumVersion(firmware, minimum) {
     if (!minimum) return true;
     if (!firmware) return true;
     return compareFirmware(firmware, minimum) >= 0;
+}
+
+export function firmwareMajor(firmware) {
+    if (!firmware) return null;
+    return Number(String(firmware).split('.')[0]);
 }
 
 export { koboHardwareIds, minimumSupportedFirmware, serialPrefixMatch, parseKoboVersion, compareFirmware, meetsMinimumVersion };

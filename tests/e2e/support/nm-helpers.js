@@ -31,8 +31,11 @@ async function openNmSection(page, title) {
 // Navigate a connected device to the preset feature-selection step.
 async function goToNmFeatures(page) {
     await page.click('#btn-device-next');
-    await page.click('input[name="mode"][value="nickelmenu"]');
-    await page.click('#btn-mode-next');
+    if (await page.locator('#beta-os-dialog').isVisible()) await page.click('#btn-beta-os-continue');
+    if (await page.locator('#step-mode').isVisible()) {
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+    }
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
     await page.click('input[name="nm-option"][value="preset"]');
     await page.click('#btn-nm-next');

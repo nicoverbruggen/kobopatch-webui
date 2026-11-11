@@ -1,3 +1,4 @@
+import { featureFirmwareDisabledReason } from './firmware.js';
 import { NICKELMENU_FEATURES } from './features/index.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
 import { displayVersion, featureVersion, isUpgrade } from './installables.js';
@@ -73,11 +74,8 @@ export function parentIsCovered(parentId, session, selectedIds = session.selecte
  * subitem whose parent is neither being installed nor already on the device.
  */
 export function featuresToInstall(session, deviceInfo) {
-    const firmware = deviceInfo?.firmware;
     const selected = NICKELMENU_FEATURES.filter((f) => {
-        if (f.hidden || f.available === false || f.disabled) return false;
-        if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
-        if (f.unsupportedDeviceReason?.(deviceInfo)) return false;
+        if (f.hidden || featureDisabledReason(f, deviceInfo)) return false;
         if (f.required) return true;
         return session.selectedFeatureIds.includes(f.id);
     });
@@ -107,10 +105,7 @@ export function featuresToRemove(session, deviceInfo) {
     return NICKELMENU_FEATURES.filter(
         (feature) =>
             !feature.hidden &&
-            feature.available !== false &&
-            !feature.disabled &&
-            meetsMinimumVersion(deviceInfo?.firmware, feature.minimumVersion) &&
-            !feature.unsupportedDeviceReason?.(deviceInfo) &&
+            !featureDisabledReason(feature, deviceInfo) &&
             session.installedNickelMenuFeatureIds?.includes(feature.id) &&
             !desired.has(feature.id) &&
             (feature.modifyCleanup || feature.cleanup),
@@ -135,13 +130,16 @@ export function featuresToRemove(session, deviceInfo) {
  */
 export function featureDisabledReason(feature, deviceInfo) {
     if (feature.disabled) return typeof feature.disabled === 'string' ? feature.disabled : 'Temporarily unavailable.';
+    const firmwareReason = featureFirmwareDisabledReason(feature, deviceInfo);
+    if (firmwareReason) return firmwareReason;
     const firmware = deviceInfo?.firmware;
     if (!meetsMinimumVersion(firmware, feature.minimumVersion)) {
         return `Requires Kobo software ${feature.minimumVersion} or newer (this device runs ${firmware}).`;
     }
     const unsupported = feature.unsupportedDeviceReason?.(deviceInfo);
     if (unsupported) return unsupported;
-    if (feature.available === false) return 'Temporarily unavailable.';
+    const available = typeof feature.available === 'function' ? feature.available(deviceInfo) : feature.available;
+    if (available === false) return 'Temporarily unavailable.';
     return undefined;
 }
 
@@ -214,7 +212,7 @@ function withInstalledSubFeatures(session, removed) {
  * is provably older. The feature list stays a plain list of ticks; this is where
  * the detail belongs, next to what is about to be written.
  */
-function featureInstallNotes(session, features) {
+function featureInstallNotes(session, features, deviceInfo) {
     const notes = {};
     for (const feature of features) {
         if (!session.installedNickelMenuFeatureIds?.includes(feature.id)) {
@@ -222,8 +220,8 @@ function featureInstallNotes(session, features) {
             continue;
         }
         const from = session.installedNickelMenuVersions?.[feature.id];
-        notes[feature.id] = isUpgrade(from, feature)
-            ? { kind: 'upgrade', from: displayVersion(from), to: displayVersion(featureVersion(feature)) }
+        notes[feature.id] = isUpgrade(from, feature, deviceInfo)
+            ? { kind: 'upgrade', from: displayVersion(from), to: displayVersion(featureVersion(feature, deviceInfo)) }
             : { kind: 'reinstall' };
     }
     return notes;
@@ -248,7 +246,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
     return {
         mode: session.nickelMenuOption,
         installFeatures,
-        installNotes: featureInstallNotes(session, installFeatures),
+        installNotes: featureInstallNotes(session, installFeatures, deviceInfo),
         removedFeatures: featuresToRemove(session, deviceInfo),
         notices: featureReviewNotices(installFeatures, deviceInfo),
     };

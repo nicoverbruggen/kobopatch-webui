@@ -116,7 +116,7 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#firmware-device-label')).toContainText('Kobo Libra 2');
     });
 
-    for (const firmware of ['5.0.0', '6.0.0']) {
+    for (const firmware of ['5.0.0', '7.0.0']) {
         test(`with device — incompatible version ${firmware} shows error`, async ({ page }) => {
             await page.goto('/');
             await injectMockDevice(page, { firmware });
@@ -132,8 +132,8 @@ test.describe('Custom patches', () => {
             await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
             // Status message should say the version is too new, not too old
-            await expect(page.locator('#device-status')).toContainText('Kobo software newer than 4.x is not supported yet.');
-            await expect(page.locator('#device-status')).toContainText('This includes the 5.x accessibility preview and the recently released 6.0 update.');
+            await expect(page.locator('#device-status')).toContainText('This Kobo software version is not supported.');
+            await expect(page.locator('#device-status')).toContainText('Kobo OS 5.x and other firmware families are not supported.');
             await expect(page.locator('#device-status')).toContainText('You may be able to downgrade to version 4.');
             await expect(page.locator('#device-status')).not.toContainText('4.23 or newer is required');
             await expect(page.locator('#device-status')).toHaveClass(/error/);

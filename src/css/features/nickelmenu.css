@@ -5,6 +5,29 @@
     gap: 0.9rem;
 }
 
+.nm-compatibility-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+
+    & strong {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+}
+
+.nm-compatibility-icon {
+    flex: 0 0 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-top: 0.1rem;
+}
+
 .nm-previous-configuration-banner {
     display: block;
     margin-bottom: 1rem;

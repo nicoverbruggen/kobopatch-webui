@@ -30,9 +30,9 @@ export const TL = {
             'You seem to have an incompatible Kobo software version installed. ' +
             `Kobo software ${minimum} or newer is required for NickelMenu, and the custom patches are incompatible with this version.`,
         DEVICE_FIRMWARE_TOO_NEW:
-            'Kobo software newer than 4.x is not supported yet. ' +
-            'This includes the 5.x accessibility preview and the recently released 6.0 update. ' +
-            'This applies to both NickelMenu and custom patches. You may be able to downgrade to version 4.',
+            'This Kobo software version is not supported. ' +
+            'NickelMenu supports Kobo OS 4.23 through 4.x and Kobo OS 6.x. ' +
+            'Kobo OS 5.x and other firmware families are not supported. You may be able to downgrade to version 4.',
         DEVICE_FIRMWARE_TOO_NEW_LINK: 'Learn more',
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
         // The done step watches for the Kobo to disappear rather than telling

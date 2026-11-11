@@ -33,8 +33,8 @@ export function installableVersion(id) {
  * Resolved from the manifest rather than from the feature object alone, so it
  * works for code paths that never went through the flow's decoration step.
  */
-export function featureVersion(feature) {
-    const own = typeof feature?.version === 'function' ? feature.version() : feature?.version;
+export function featureVersion(feature, deviceInfo = null) {
+    const own = typeof feature?.version === 'function' ? feature.version(deviceInfo) : feature?.version;
     return own || installableVersion(feature?.id) || null;
 }
 
@@ -65,8 +65,8 @@ export function compareVersions(a, b) {
  * or one newer than what is bundled (a rolled-back pin, or a mod that updated
  * itself past us) all read as "leave it alone".
  */
-export function isUpgrade(installedVersion, feature) {
-    const bundled = featureVersion(feature);
+export function isUpgrade(installedVersion, feature, deviceInfo = null) {
+    const bundled = featureVersion(feature, deviceInfo);
     if (!installedVersion || !bundled) return false;
     return compareVersions(installedVersion, bundled) === -1;
 }

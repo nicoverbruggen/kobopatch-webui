@@ -12,6 +12,7 @@
  * tested directly. `date` defaults to "now" but is injectable for tests.
  */
 
+import { nickelMenuPackage } from '../nickelmenu/firmware.js';
 import { minimumSupportedFirmware } from '../kobo/version.js';
 
 // Where to learn how to recover a hard-locked / bricked device. Mirrors the
@@ -72,8 +73,7 @@ function supportedVersions() {
         '',
         ...wrapText(
             `These steps are for Kobo software ${minimumSupportedFirmware} up to the last 4.x release. ` +
-                'Kobo software newer than 4.x is not supported yet. ' +
-                'This includes the 5.x accessibility preview and the recently released 6.0 update. ' +
+                'Custom patches are not available for Kobo OS 5.x or 6.x. ' +
                 'Check the version number before you continue.',
         ),
         '',
@@ -137,19 +137,34 @@ function renderConfBlock(confLine, confSettings) {
     return lines;
 }
 
+export function nickelMenuDownloadVersionNote(deviceInfo = null) {
+    const pkg = nickelMenuPackage(deviceInfo);
+    const supported = pkg.id === 'nickelmenu-qt6' ? 'Kobo OS 6.x' : `Kobo software ${minimumSupportedFirmware} up to the last 4.x release`;
+    return `This package is for ${supported}. It contains .kobo/${pkg.filename}. Do not rename the archive or use it on another firmware family. Check your software version under More > Settings > Device information > Software version.`;
+}
+
 /**
  * Build the instructions.txt body for the NickelMenu manual download.
  *
  * @param {object}  ctx
  * @param {string}  ctx.version          App version string.
  * @param {Date}    [ctx.date]           Generation timestamp.
+ * @param {object} [ctx.deviceInfo]     Connected or manually selected firmware.
  * @param {boolean} ctx.isPreset         Whether the curated preset was chosen
  *                                       (only then is the conf step relevant).
  * @param {string}  [ctx.confLine]       The ExcludeSyncFolders line to add.
  * @param {object[]}[ctx.confSettings]   Feature `Kobo eReader.conf` settings.
  * @param {boolean} [ctx.hasExcludeCalibre]
  */
-export function buildNickelMenuInstructions({ version, date = new Date(), isPreset, confLine = '', confSettings = [], hasExcludeCalibre = false } = {}) {
+export function buildNickelMenuInstructions({
+    version,
+    date = new Date(),
+    deviceInfo = null,
+    isPreset,
+    confLine = '',
+    confSettings = [],
+    hasExcludeCalibre = false,
+} = {}) {
     const steps = [];
 
     steps.push(['Connect your Kobo via USB so it appears as a removable drive.']);
@@ -184,7 +199,20 @@ export function buildNickelMenuInstructions({ version, date = new Date(), isPres
 
     steps.push(['Safely eject the Kobo before unplugging the USB cable — it will', 'reboot and install NickelMenu automatically.']);
 
-    return [header(version, date), '', supportedVersions(), '', disclaimer(), '', heading('Installation steps'), '', renderSteps(steps), ''].join('\n');
+    return [
+        header(version, date),
+        '',
+        heading('Supported software versions'),
+        '',
+        ...wrapText(nickelMenuDownloadVersionNote(deviceInfo)),
+        '',
+        disclaimer(),
+        '',
+        heading('Installation steps'),
+        '',
+        renderSteps(steps),
+        '',
+    ].join('\n');
 }
 
 /**

@@ -1,3 +1,4 @@
+import { nickelMenuPackage, featureFirmwareDisabledReason } from './firmware.js';
 import { writeAuditLog } from '../kobo/audit-log.js';
 import { NM_ITEMS_FILE, nickelMenuManifestPath } from './constants.js';
 import JSZip from 'jszip';
@@ -138,34 +139,37 @@ function buildItemsFile(features, deviceInfo, menuCustomization = null) {
 
 export class NickelMenuInstaller {
     constructor() {
-        this.nickelMenuTgz = null;
+        this.nickelMenuArchives = new Map();
     }
 
     /**
-     * Download and cache NickelMenu's KoboRoot.tgz. Upstream NickelMenu ships a
-     * bare KoboRoot.tgz (stored locally as NickelMenu.tgz to avoid confusion with
-     * the generated .kobo/KoboRoot.tgz), so the bytes are used verbatim.
+     * Download and cache the base archive for the requested firmware family.
+     * Firmware 4 and 6 use different binaries and archive paths.
      */
-    async loadNickelMenu(progressFn) {
-        if (this.nickelMenuTgz) return;
+    async loadNickelMenu(progressFn, deviceInfo = null) {
+        const pkg = nickelMenuPackage(deviceInfo);
+        if (this.nickelMenuArchives.has(pkg.id)) return;
         const label = 'Downloading NickelMenu...';
         progressFn(label);
-        this.nickelMenuTgz = await fetchInstallableAsset('nickelmenu', 'NickelMenu.tgz', {
-            onProgress: downloadProgress(progressFn, label, await installableSize('nickelmenu')),
+        const tgz = await fetchInstallableAsset(pkg.id, pkg.asset, {
+            onProgress: downloadProgress(progressFn, label, await installableSize(pkg.id)),
             errorPrefix: 'Failed to download NickelMenu',
         });
+        this.nickelMenuArchives.set(pkg.id, tgz);
     }
 
     /**
-     * Get the base NickelMenu KoboRoot.tgz.
+     * Get the base NickelMenu archive for this firmware family.
      */
-    async getKoboRootTgz() {
-        if (!this.nickelMenuTgz) throw new Error('NickelMenu KoboRoot.tgz not loaded');
-        return this.nickelMenuTgz;
+    async getKoboRootTgz(deviceInfo = null) {
+        const pkg = nickelMenuPackage(deviceInfo);
+        const tgz = this.nickelMenuArchives.get(pkg.id);
+        if (!tgz) throw new Error(`NickelMenu ${pkg.filename} not loaded`);
+        return tgz;
     }
 
     /**
-     * Build the effective KoboRoot.tgz written to the device.
+     * Build the effective NickelMenu archive written to the device.
      *
      * The device only processes one `.kobo/KoboRoot.tgz` per boot, so any feature
      * that ships its own KoboRoot.tgz payload (e.g. NickelClock, whose plugin
@@ -179,7 +183,11 @@ export class NickelMenuInstaller {
      * we parse the base archive and rebuild a merged one.
      */
     async buildKoboRootTgz(features = [], progressFn = () => {}, deviceInfo = null) {
-        const baseTgz = await this.getKoboRootTgz();
+        for (const feature of features) {
+            const reason = featureFirmwareDisabledReason(feature, deviceInfo);
+            if (reason) throw new Error(`${feature.title}: ${reason}`);
+        }
+        const baseTgz = await this.getKoboRootTgz(deviceInfo);
 
         const extraEntries = [];
         for (const feature of features) {
@@ -259,7 +267,7 @@ export class NickelMenuInstaller {
      * Install to a connected Kobo device via File System Access API.
      */
     async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
-        await this.loadNickelMenu(progressFn);
+        await this.loadNickelMenu(progressFn, device.deviceInfo);
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
 
@@ -304,9 +312,10 @@ export class NickelMenuInstaller {
             await this.writeManifest(device, manifest);
         }
 
-        progressFn('Writing KoboRoot.tgz...');
-        await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
-        audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
+        const { filename } = nickelMenuPackage(device.deviceInfo);
+        progressFn(`Writing ${filename}...`);
+        await device.writeFile(['.kobo', filename], tgz);
+        audit?.record(`Installed NickelMenu: wrote .kobo/${filename} (${tgz.length} bytes)`);
 
         await writeAuditLog(audit, device);
         progressFn('Done.');
@@ -321,13 +330,13 @@ export class NickelMenuInstaller {
         deviceInfo = null,
         { menuCustomization = null, tabsCustomization = null, fontsCustomization = null, isPreset = features.length > 0 } = {},
     ) {
-        await this.loadNickelMenu(progressFn);
+        await this.loadNickelMenu(progressFn, deviceInfo);
 
         progressFn('Building download package...');
         const zip = new JSZip();
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, deviceInfo);
-        zip.file('.kobo/KoboRoot.tgz', tgz);
+        zip.file(`.kobo/${nickelMenuPackage(deviceInfo).filename}`, tgz);
 
         let collectedFiles = [];
         let featureFiles = {};
@@ -381,6 +390,7 @@ export class NickelMenuInstaller {
         const confSettings = isPreset ? features.flatMap((feature) => (feature.confSettings ? feature.confSettings(settingsCtx) : [])) : [];
         return buildNickelMenuInstructions({
             version,
+            deviceInfo,
             isPreset,
             confLine: getExcludeSyncFoldersLine(features),
             confSettings,
@@ -500,7 +510,7 @@ export class NickelMenuInstaller {
             // What version went on the device, so a later run can tell an upgrade
             // from a reinstall. Absent for features that install no pinned asset,
             // and for anything written before this was recorded.
-            const version = featureVersion(feature);
+            const version = featureVersion(feature, deviceInfo);
             if (version) entry.version = version;
 
             manifestFeatures[feature.id] = entry;

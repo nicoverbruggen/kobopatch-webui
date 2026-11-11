@@ -153,7 +153,7 @@ test.describe('NickelMenu — install', () => {
         // The screen points users at the bundled instructions.txt file.
         await expect(page.locator('#nm-download-instructions')).toContainText('instructions.txt');
         await expect(page.locator('#nm-download-instructions .version-note')).toContainText(
-            'Kobo software newer than 4.x is not supported yet. This includes the 5.x accessibility preview and the recently released 6.0 update.',
+            'This package is for Kobo software 4.23 up to the last 4.x release. It contains .kobo/KoboRoot.tgz.',
         );
         await expect(page.locator('#nm-download-conf-step')).not.toBeHidden();
         // Verify the correct pattern and description are shown (exclude-calibre is enabled)

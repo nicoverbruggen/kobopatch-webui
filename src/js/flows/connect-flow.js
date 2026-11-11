@@ -11,8 +11,8 @@
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { localeDisplayName } from '../kobo/locale.js';
-import { minimumSupportedFirmware } from '../kobo/version.js';
-import { $, collect } from '../shell/dom.js';
+import { minimumSupportedFirmware, firmwareMajor } from '../kobo/version.js';
+import { $, collect, trapFocus } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
@@ -240,7 +240,7 @@ export function initConnectFlow(state, { patches }) {
     }
 
     state.goBackToDeviceStep = () => {
-        setNavLabels(TL.NAV_DEFAULT);
+        setNavLabels(firmwareMajor(state.device?.deviceInfo?.firmware) === 6 ? TL.NAV_NICKELMENU.filter((_, index) => index !== 1) : TL.NAV_DEFAULT);
         setNavStep(1);
         showStep(stepDevice);
     };
@@ -262,6 +262,8 @@ export function initConnectFlow(state, { patches }) {
             const info = await state.device.connect();
 
             displayDeviceInfo(info);
+            setNavLabels(firmwareMajor(info.firmware) === 6 ? TL.NAV_NICKELMENU.filter((_, index) => index !== 1) : TL.NAV_DEFAULT);
+            setNavStep(1);
 
             if (info.isIncompatible) {
                 renderIncompatibleStatus(info.incompatibleReason);
@@ -279,7 +281,8 @@ export function initConnectFlow(state, { patches }) {
             const match = state.availablePatches.find((p) => p.version === info.firmware);
             const channelMatch = String(info.channel || '').match(/^kobo(\d+)$/);
             const isUnsupportedOlderDevice = info.identifiedBy === 'uuid' && channelMatch && Number(channelMatch[1]) < 8 && !hasSoftwareChannel(info.channel);
-            const canPatchDevice = info.deviceVerification === 'verified' && !isUnsupportedOlderDevice;
+            const isOs6 = firmwareMajor(info.firmware) === 6;
+            const canPatchDevice = !isOs6 && info.deviceVerification === 'verified' && !isUnsupportedOlderDevice;
 
             if (canPatchDevice) {
                 patches.configureFirmwareStep(info.firmware, info.channel, info.model);
@@ -287,11 +290,13 @@ export function initConnectFlow(state, { patches }) {
                 state.firmwareVersion = info.firmware;
                 state.firmwareURL = null;
                 state.deviceModelLabel = info.model;
-                state.patchesUnavailableReason = isUnsupportedOlderDevice
-                    ? olderDevicePatchesUnavailable
-                    : info.deviceVerification === 'mismatch'
-                      ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
-                      : 'Custom patches are disabled because this hardware UUID is not recognized.';
+                state.patchesUnavailableReason = isOs6
+                    ? 'Custom patches are not available for Kobo OS 6. You can install NickelMenu and KOReader.'
+                    : isUnsupportedOlderDevice
+                      ? olderDevicePatchesUnavailable
+                      : info.deviceVerification === 'mismatch'
+                        ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
+                        : 'Custom patches are disabled because this hardware UUID is not recognized.';
             }
 
             if (canPatchDevice && match) {
@@ -362,7 +367,20 @@ export function initConnectFlow(state, { patches }) {
         showStep(stepConnect);
     });
 
+    const betaOsDialog = $('beta-os-dialog');
+    trapFocus(betaOsDialog);
     btnDeviceNext.addEventListener('click', () => {
+        // Treat all supported OS 6 builds as beta until support is reviewed.
+        if (firmwareMajor(state.device?.deviceInfo?.firmware) === 6) {
+            betaOsDialog.showModal();
+            return;
+        }
+        state.goToModeSelection();
+    });
+    $('btn-beta-os-close').addEventListener('click', () => betaOsDialog.close());
+    $('btn-beta-os-back').addEventListener('click', () => betaOsDialog.close());
+    $('btn-beta-os-continue').addEventListener('click', () => {
+        betaOsDialog.close();
         state.goToModeSelection();
     });
 

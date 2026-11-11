@@ -397,8 +397,8 @@ test('parseKoboVersion treats a bare major-4 build below the floor as incompatib
     assert.equal(parseKoboVersion(versionLine('N428000000000', '4')).isIncompatible, true);
 });
 
-test('parseKoboVersion treats any non-4 major as incompatible regardless of the floor', () => {
-    for (const firmware of ['5.0.0', '5.15.245253', '6.0.0', '6.1.12345']) {
+test('parseKoboVersion rejects unsupported firmware families', () => {
+    for (const firmware of ['5.0.0', '5.15.245253', '7.0.0', '8.1.12345']) {
         const info = parseKoboVersion(versionLine('N428000000000', firmware));
         assert.equal(info.isIncompatible, true, firmware);
         assert.equal(info.incompatibleReason, 'too-new', firmware);

@@ -332,29 +332,49 @@ test('Better typography and fixes cleanup removes the toggle script, NickelTypeF
     ]);
 });
 
-test('KOReader install maps ZIP files under .adds/koreader', async () => {
-    const zipData = await createZip({
-        'koreader/koreader.sh': '#!/bin/sh',
-        'defaults.lua': 'return {}',
+for (const [major, id, asset] of [
+    [4, 'koreader', 'koreader-kobo.zip'],
+    [6, 'koreader-kobov5', 'koreader-kobov5.zip'],
+]) {
+    test(`KOReader OS ${major} install maps the matching ZIP under .adds/koreader`, async () => {
+        const zipData = await createZip({
+            'koreader/koreader.sh': '#!/bin/sh',
+            'defaults.lua': 'return {}',
+        });
+        const progressMessages = [];
+
+        await withManifest({ [id]: { version: 'v2026.01', available: true } }, () =>
+            withMockFetch(new Map([[`/assets/${asset}?v=v2026.01`, createResponse(zipData)]]), async () => {
+                const files = await koreader.install({
+                    deviceInfo: { firmware: `${major}.0` },
+                    progress(message) {
+                        progressMessages.push(message);
+                    },
+                });
+
+                assert.deepEqual(
+                    files.map((file) => file.path),
+                    ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua'],
+                );
+                assert.equal(text(files[0].data), '#!/bin/sh');
+                assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);
+            }),
+        );
     });
-    const progressMessages = [];
+}
 
-    await withManifest({ koreader: { version: 'v2026.01', available: true } }, () =>
-        withMockFetch(new Map([['/assets/koreader-kobo.zip?v=v2026.01', createResponse(zipData)]]), async () => {
-            const files = await koreader.install({
-                progress(message) {
-                    progressMessages.push(message);
-                },
-            });
-
-            assert.deepEqual(
-                files.map((file) => file.path),
-                ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua'],
-            );
-            assert.equal(text(files[0].data), '#!/bin/sh');
-            assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);
-        }),
-    );
+test('KOReader requires the package for the chosen firmware and reports its version', async () => {
+    await withManifest({ koreader: { version: 'v1', available: true } }, async () => {
+        assert.equal(koreader.available({ firmware: '4.46' }), true);
+        assert.equal(koreader.available({ firmware: '6.0' }), false);
+        await assert.rejects(() => koreader.install({ deviceInfo: { firmware: '6.0' }, progress() {} }), /assets not available/);
+    });
+    await withManifest({ 'koreader-kobov5': { version: 'v2', available: true } }, async () => {
+        assert.equal(koreader.available({ firmware: '4.46' }), false);
+        assert.equal(koreader.available({ firmware: '6.0' }), true);
+        assert.equal(koreader.version({ firmware: '6.0' }), 'v2');
+        await assert.rejects(() => koreader.install({ deviceInfo: { firmware: '4.46' }, progress() {} }), /assets not available/);
+    });
 });
 
 test("SimpleUI install maps ZIP files into KOReader's plugins directory", async () => {

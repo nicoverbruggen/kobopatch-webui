@@ -1,12 +1,18 @@
 import JSZip from 'jszip';
+import { firmwareMajor } from '../../../kobo/version.js';
 import { downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
+import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
+
+function readerPackage(deviceInfo) {
+    return firmwareMajor(deviceInfo?.firmware) === 6 ? { id: 'koreader-kobov5', asset: 'koreader-kobov5.zip' } : { id: 'koreader', asset: 'koreader-kobo.zip' };
+}
 
 // Installs KOReader, an alternative e-book reader, alongside the built-in Kobo
 // reader (it does not replace it). The app is downloaded as a release zip at
 // install time and extracted into .adds/koreader/, and a Toggle-menu item is
 // added to launch it. Removal deletes the whole app directory.
 export default {
+    supportedFirmwareMajors: [4, 6],
     id: 'koreader',
     subFeaturesLabel: 'Plugins', // what its add-ons are called in the feature list
     section: 'Alternative reading apps',
@@ -14,7 +20,8 @@ export default {
     title: 'Install KOReader',
     description: 'Installs KOReader, an alternative e-book reader with advanced features like PDF reflow, customizable fonts, and more.',
     default: false,
-    available: false, // set to true at runtime if KOReader assets exist
+    available: (deviceInfo) => installableAvailable(readerPackage(deviceInfo).id),
+    version: (deviceInfo) => installableVersion(readerPackage(deviceInfo).id),
     directories: ['.adds/koreader'],
     hint: 'https://github.com/koreader/koreader',
 
@@ -51,13 +58,14 @@ export default {
     },
 
     async install(ctx) {
-        const version = installableVersion('koreader');
-        if (!version) throw new Error('KOReader assets not available (run npm run setup:installables)');
+        const pkg = readerPackage(ctx.deviceInfo);
+        const version = installableVersion(pkg.id);
+        if (!version || !installableAvailable(pkg.id)) throw new Error('KOReader assets not available (run npm run setup:installables)');
 
         const label = 'Downloading KOReader ' + version + '...';
         ctx.progress(label);
-        const zipBytes = await fetchInstallableAsset('koreader', 'koreader-kobo.zip', {
-            onProgress: downloadProgress(ctx.progress, label, await installableSize('koreader')),
+        const zipBytes = await fetchInstallableAsset(pkg.id, pkg.asset, {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize(pkg.id)),
             errorPrefix: 'Failed to download KOReader',
         });
         const zip = await JSZip.loadAsync(zipBytes);

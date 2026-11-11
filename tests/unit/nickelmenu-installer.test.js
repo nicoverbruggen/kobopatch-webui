@@ -427,7 +427,7 @@ const tgzAddonFeature = {
 
 async function createInstallerWithBaseTgz() {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuTgz = await buildTarGz([nmTgzEntry]);
+    installer.nickelMenuArchives.set('nickelmenu', await buildTarGz([nmTgzEntry]));
     return installer;
 }
 
@@ -598,8 +598,8 @@ test('installToDevice writes the items file as bytes even when a postProcess rep
 
 test('buildKoboRootTgz keeps the base entry when a feature duplicates its path', async () => {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuTgz = await buildTarGz([{ path: 'shared/plugin.so', data: bytes('base bytes'), mode: 0o644 }]);
-    const baseBefore = installer.nickelMenuTgz.slice();
+    installer.nickelMenuArchives.set('nickelmenu', await buildTarGz([{ path: 'shared/plugin.so', data: bytes('base bytes'), mode: 0o644 }]));
+    const baseBefore = installer.nickelMenuArchives.get('nickelmenu').slice();
     const feature = {
         id: 'dup',
         title: 'Dup',
@@ -618,12 +618,12 @@ test('buildKoboRootTgz keeps the base entry when a feature duplicates its path',
     assert.equal(shared.mode, 0o644);
     assert.ok(entries.some((e) => e.path === 'feature/only'));
     // The base archive bytes must not be mutated by the merge.
-    assert.deepEqual(installer.nickelMenuTgz, baseBefore);
+    assert.deepEqual(installer.nickelMenuArchives.get('nickelmenu'), baseBefore);
 });
 
 test('buildKoboRootTgz keeps the first feature entry when two features ship the same path', async () => {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuTgz = await buildTarGz([{ path: 'base/x', data: bytes('base'), mode: 0o644 }]);
+    installer.nickelMenuArchives.set('nickelmenu', await buildTarGz([{ path: 'base/x', data: bytes('base'), mode: 0o644 }]));
     const first = { id: 'first', title: 'First', koboRootEntries: () => [{ path: 'clash', data: bytes('first'), mode: 0o644 }] };
     const second = { id: 'second', title: 'Second', koboRootEntries: () => [{ path: 'clash', data: bytes('second'), mode: 0o644 }] };
 

@@ -48,6 +48,7 @@ export class Session {
         this.hasCustomPatchesManifest = false;
         this.isRestore = false;
         this.nickelMenuOption = null;
+        this.manualNickelMenuFirmware = '4';
         this.nickelMenuCustomization = createDefaultMenuCustomization();
         this.nickelMenuTabsCustomization = createDefaultTabsCustomization();
         this.nickelMenuFontsCustomization = createDefaultFontsCustomization();
