@@ -173,6 +173,7 @@ Removal:
 
 ### Cleanup
 
+- NickelModManager detects and removes only `.adds/nickel-mod-manager/uninstall`. The manager creates this marker on first startup and removes its plugin on reboot when the marker is gone. Keep its directory, saved mod copies, settings and external initialization receipt. Do not use the directory as an installed marker.
 - A feature's `cleanup` declares how it is removed and how that removal is presented.
     - `detect` — files that mark it as present.
     - `paths` — files to delete.
@@ -198,7 +199,7 @@ Removal:
 
 ### Installable assets
 
-- `src/assets/` contains external installable assets: NickelMenu, NickelClock, KOReader, the KOReader SimpleUI plugin, Cadmus, and the two ebook-fonts archives `kobo-core-fonts.zip`/`kobo-extra-fonts.zip`.
+- `src/assets/` contains external installable assets: NickelMenu, NickelClock, NickelModManager, KOReader, the KOReader SimpleUI plugin, Cadmus, and the two ebook-fonts archives `kobo-core-fonts.zip`/`kobo-extra-fonts.zip`.
 - The archives are gitignored. `installables.lock` (committed) pins each one's version/url/sha256.
 - `npm run setup:installables` fetches exactly what the lock pins and verifies the hash. Reproducible.
 - `npm run update:installables` resolves latest upstream and rewrites the lock (commit it), then regenerates the committed font catalogue from the font archives.

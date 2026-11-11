@@ -22,6 +22,7 @@ import excludeCalibre from './exclude-calibre/index.js';
 import sideloadedMode from './sideloaded-mode/index.js';
 import nickelCoverFix from './nickel-cover-fix/index.js';
 import nickelDissolve from './nickel-dissolve/index.js';
+import nickelModManager from './nickel-mod-manager/index.js';
 
 /**
  * All available NickelMenu features in display order.
@@ -34,6 +35,7 @@ export const NICKELMENU_FEATURES = [
     customMenu,
     simplifyTabs, // postProcess must run before sideloadedMode (home-tab override)
     ...homeHiders,
+    nickelModManager,
     // "Reading Experience" section.
     additionalFonts,
     betterTypography,

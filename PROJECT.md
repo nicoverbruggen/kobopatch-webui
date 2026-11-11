@@ -139,7 +139,9 @@ npm run build:wasm    # compiles WASM, copies to dist/wasm/ and src/js/
 
 ### Installable assets (lock-pinned)
 
-NickelMenu, NickelHome, NickelClock, NickelTypeFix, the reading apps (KOReader, Cadmus), the
+NickelModManager is an optional Interface Tweaks feature for firmware 4.23.15548 through 4.x. Its Qt5 plugin is merged into the single KoboRoot.tgz. Installation detection and removal use only `.adds/nickel-mod-manager/uninstall`, which the manager creates on first startup. Removing that marker requests removal on reboot and preserves saved mod copies and settings. Users must turn on any mods they want to keep using before removing the manager.
+
+NickelMenu, NickelHome, NickelClock, NickelModManager, NickelTypeFix, the reading apps (KOReader, Cadmus), the
 KOReader SimpleUI plugin and the
 [ebook-fonts](https://github.com/nicoverbruggen/ebook-fonts) collection (a "core" and an "extra"
 archive of Kobo-optimized KF fonts) are downloaded from upstream GitHub releases, not committed.
@@ -377,6 +379,7 @@ Events currently emitted:
 | `add-koreader` | — | Only when the add-on is part of the install. |
 | `add-nickelclock` | — | Only when installed. |
 | `add-nickeldissolve` | — | Only when the page turn animations mod is installed. |
+| `add-nickelmodmanager` | — | Only when NickelModManager is installed. |
 | `add-nickeltypefix` | — | Only when better typography (NickelTypeFix) is installed. |
 | `add-cadmus` | — | Only when installed. |
 | `add-fonts` | — | Only when the additional fonts are installed. |

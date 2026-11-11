@@ -24,7 +24,7 @@ You pick and choose what to apply. On offer: home screen tweaks (via [NickelHome
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
 - <u>This is easily the safest mod to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
-- Every extra mod is optional: **NickelHome**, **NickelTypeFix**, **NickelClock**, **KOReader**, and **Cadmus** all install through this same method.
+- Every extra mod is optional: **NickelHome**, **NickelTypeFix**, **NickelClock**, **NickelModManager**, **KOReader**, and **Cadmus** all install through this same method.
 - Recommended for everyone. Easy to uninstall, too.
 
 ## Mode B: Custom Patches
@@ -121,6 +121,7 @@ Some of these are bundled with the app (see `installables.lock`) rather than dow
 
 Mods and fonts I maintain myself, installed or bundled by this tool:
 
+- [NickelModManager](https://github.com/nicoverbruggen/NickelModManager) adds Manage Mods to the More tab, so you can turn installed mods off and on. _(MIT)_
 - [NickelHome](https://github.com/nicoverbruggen/NickelHome) — hides Kobo home-screen widgets (recommendations, suggestions, notices); installed when you enable a home-screen hider. _(MIT)_
 - The [curated configuration](https://github.com/nicoverbruggen/kobo-config) — the optional preset this tool can install NickelMenu from. _(MIT)_
 - [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) — fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of "Better typography and fixes". _(MIT)_

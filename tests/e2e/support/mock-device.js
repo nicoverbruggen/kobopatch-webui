@@ -261,6 +261,7 @@ async function injectMockDevice(page, opts = {}) {
                             const bytes = first instanceof Uint8Array ? first : new TextEncoder().encode(String(first));
                             if (!dirNode[fileName]) dirNode[fileName] = { _type: 'file' };
                             dirNode[fileName].content = new TextDecoder().decode(bytes);
+                            dirNode[fileName].bytes = bytes;
                             window.__mockWrittenFiles[fullPath] = true;
                         },
                     };

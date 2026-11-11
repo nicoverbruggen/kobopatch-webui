@@ -70,6 +70,13 @@
       "url": "https://github.com/doctorhetfield-cmd/simpleui.koplugin/releases/download/2.7.5/simpleui.koplugin.zip",
       "sha256": "d09143a3c1d6867d8cbcf2f18f8262dde894e11d7412156d50c8784c87beea12",
       "size": 1803124
+    },
+    "nickelmodmanager": {
+      "asset": "NickelModManager.tgz",
+      "version": "v0.3",
+      "url": "https://github.com/nicoverbruggen/NickelModManager/releases/download/v0.3/KoboRoot.tgz",
+      "sha256": "17593550bd4f7c26ca1c277b0852bc175deba5a3409f20c71d0afdac7758084b",
+      "size": 122065
     }
   }
 }

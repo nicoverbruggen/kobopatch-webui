@@ -30,6 +30,12 @@ const TARGETS = {
 // and the id used by the build-time manifest (see scripts/build.mjs).
 const INSTALLABLES = [
     {
+        name: 'nickelmodmanager',
+        asset: 'NickelModManager.tgz',
+        repo: 'nicoverbruggen/NickelModManager',
+        match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
         // Upstream publishes a bare KoboRoot.tgz; stored under a distinct local
         // name so it can't be confused with the generated .kobo/KoboRoot.tgz.
         name: 'nickelmenu',

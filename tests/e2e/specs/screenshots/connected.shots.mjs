@@ -244,6 +244,7 @@ test('connected nickelmenu removal', async ({ page }, testInfo) => {
         hasNickelMenu: true,
         hasKOReader: true,
         hasAdditionalFonts: true,
+        extraAddsFiles: [{ path: ['nickel-mod-manager', 'uninstall'], content: 'Delete to uninstall' }],
     });
 
     await page.click('#btn-connect');
@@ -260,6 +261,7 @@ test('connected nickelmenu removal', async ({ page }, testInfo) => {
     await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
     await page.click('input[name="nm-option"][value="remove"]');
     await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+    await expect(page.locator('input[name="nm-uninstall-nickelmodmanager"]')).toBeChecked();
     await shot(page, dir, '01-removal-options', testInfo);
 
     // Uncheck the additional fonts so the review shows them under the "kept" card.

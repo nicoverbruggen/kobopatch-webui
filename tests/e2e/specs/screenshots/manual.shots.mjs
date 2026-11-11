@@ -65,12 +65,16 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await openNmFeatureSection(page, 'Advanced');
     await shot(page, dir, '03d-nickelmenu-features-advanced', testInfo);
 
+    await page.check('input[name="nm-cfg-nickelmodmanager"]');
+    await shot(page, dir, '03e-nickelmenu-features-mod-manager', testInfo);
+
     // Features → backup → review (only download button in manual mode)
     await page.click('#btn-nm-features-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
     await shot(page, dir, '04-nickelmenu-backup', testInfo);
     await page.click('#btn-nm-backup-next');
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#step-nm-review')).toContainText('More > Manage Mods');
     await shot(page, dir, '05-nickelmenu-review', testInfo);
 
     // Download → done
