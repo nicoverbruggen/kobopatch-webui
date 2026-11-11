@@ -3,6 +3,8 @@ import { firmwareMajor } from '../../../kobo/version.js';
 import { downloadProgress } from '../../../shell/dom.js';
 import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
+const os6ExitPatch = new URL('./2-webui-os6-exit.lua', import.meta.url);
+
 function readerPackage(deviceInfo) {
     return firmwareMajor(deviceInfo?.firmware) === 6 ? { id: 'koreader-kobov5', asset: 'koreader-kobov5.zip' } : { id: 'koreader', asset: 'koreader-kobo.zip' };
 }
@@ -32,7 +34,18 @@ export default {
         return rev?.trim() || null;
     },
 
-    reviewNotices() {
+    reviewNotices({ deviceInfo } = {}) {
+        if (firmwareMajor(deviceInfo?.firmware) === 6) {
+            return [
+                {
+                    type: 'warning',
+                    title: 'Exiting KOReader on Kobo OS 6',
+                    paragraphs: [
+                        'Returning from KOReader to Kobo can get stuck on the startup screen. This installation hides the normal Exit action and its long-press shortcut. Use Exit → Reboot the device instead. If your Kobo gets stuck, hold the power button until it shuts down, then press it again to turn it on. Keep the included KOReader user patch enabled.',
+                    ],
+                },
+            ];
+        }
         return [
             {
                 type: 'warning',
@@ -81,6 +94,9 @@ export default {
             });
         }
 
+        if (firmwareMajor(ctx.deviceInfo?.firmware) === 6) {
+            files.push({ path: '.adds/koreader/patches/2-webui-os6-exit.lua', data: await ctx.bundledAsset(os6ExitPatch) });
+        }
         return files;
     },
 

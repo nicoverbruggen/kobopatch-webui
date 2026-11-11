@@ -347,6 +347,7 @@ for (const [major, id, asset] of [
             withMockFetch(new Map([[`/assets/${asset}?v=v2026.01`, createResponse(zipData)]]), async () => {
                 const files = await koreader.install({
                     deviceInfo: { firmware: `${major}.0` },
+                    bundledAsset: async (url) => new Uint8Array(readFileSync(url)),
                     progress(message) {
                         progressMessages.push(message);
                     },
@@ -354,7 +355,7 @@ for (const [major, id, asset] of [
 
                 assert.deepEqual(
                     files.map((file) => file.path),
-                    ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua'],
+                    ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua', ...(major === 6 ? ['.adds/koreader/patches/2-webui-os6-exit.lua'] : [])],
                 );
                 assert.equal(text(files[0].data), '#!/bin/sh');
                 assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);

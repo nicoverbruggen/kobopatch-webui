@@ -63,12 +63,16 @@ for (const mode of ['manual', 'connected']) {
         await skipNmBackup(page);
         await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (Kobo.tgz)');
         await expect(page.locator('#nm-review-list')).not.toContainText('KoboRoot.tgz');
+        await expect(page.locator('#nm-review-notices')).toContainText('Exit → Reboot the device');
+        await expect(page.locator('#nm-review-notices')).toContainText('power button');
+        await expect(page.locator('#nm-review-notices')).not.toContainText('Bluetooth');
         if (mode === 'manual') {
             const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
             const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
             expect(await zip.file('.kobo/Kobo.tgz').async('nodebuffer')).toEqual(basePackage());
             expect(zip.file('.kobo/KoboRoot.tgz')).toBeNull();
             expect(zip.file('.adds/koreader/koreader.sh')).not.toBeNull();
+            expect(await zip.file('.adds/koreader/patches/2-webui-os6-exit.lua').async('string')).toContain('item_table.exit = nil');
             expect(await zip.file('.adds/koreader/luajit').async('nodebuffer')).toEqual(expectedReaderBinary);
             expect(Object.keys(zip.files).some((name) => name.startsWith('fonts/') && name.endsWith('.ttf'))).toBe(true);
             const preset = await zip.file('.adds/nm/webui-preset').async('string');
@@ -86,6 +90,7 @@ for (const mode of ['manual', 'connected']) {
             expect(Buffer.from(archive)).toEqual(basePackage());
             expect(await mockPathExists(page, '.kobo', 'KoboRoot.tgz')).toBe(false);
             expect(await mockPathExists(page, '.adds', 'koreader', 'koreader.sh')).toBe(true);
+            expect(await readMockFile(page, '.adds', 'koreader', 'patches', '2-webui-os6-exit.lua')).toContain('item_table.exit = nil');
             const installedReader = await page.evaluate(() => Array.from(window.__mockFS['.adds'].koreader.luajit.bytes));
             expect(Buffer.from(installedReader)).toEqual(expectedReaderBinary);
             expect(await page.evaluate(() => Object.keys(window.__mockFS.fonts).some((name) => name.endsWith('.ttf')))).toBe(true);
