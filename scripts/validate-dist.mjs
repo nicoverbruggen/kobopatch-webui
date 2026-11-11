@@ -7,6 +7,9 @@ const dist = join(appDir, 'dist');
 const required = [
     'index.html',
     'bundle.js',
+    // The running app fetches this to tell "the deployment moved on" apart from
+    // "that download was corrupt"; without it every mismatch reads as corrupt.
+    'version.json',
     'css/style.css',
     'js/workers/patch-worker.js',
     'js/workers/wasm_exec.js',
@@ -16,6 +19,7 @@ const required = [
     'patches/downloads.json',
     'assets/NickelMenu.tgz',
     'assets/koreader-kobo.zip',
+    'assets/simpleui.koplugin.zip',
     'assets/kobo-core-fonts.zip',
     'assets/kobo-extra-fonts.zip',
     'assets/font-previews.json',

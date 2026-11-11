@@ -1,12 +1,20 @@
         <section id="step-nickelmenu" class="step" hidden>
             <p>How would you like to configure NickelMenu?</p>
+            <div id="nm-manual-firmware-field" hidden>
+                <label for="nm-manual-firmware">Kobo software version</label>
+                <select id="nm-manual-firmware">
+                    <option value="4">Kobo OS 4.x (4.23 or newer)</option>
+                    <option value="6">Kobo OS 6.x</option>
+                </select>
+                <p class="fallback-hint">Check under More &gt; Settings &gt; Device information &gt; Software version. The download must match your device.</p>
+            </div>
             <div class="selection-cards" role="radiogroup" aria-label="NickelMenu options">
                 <label class="selection-card">
                     <input type="radio" name="nm-option" value="preset">
                     <svg class="selection-card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z"/></svg>
                     <div class="selection-card-body">
                         <div id="nm-option-preset-title" class="selection-card-title">Install with preset (and customize)</div>
-                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. You also get to decide which extra optional features you'd like to enable, including enabling some home screen tweaks and installing KOReader, among others.</div>
+                        <div class="selection-card-desc">Installs NickelMenu with a curated set of menu options. If this setup is already installed, you can add or remove features here without uninstalling it first.</div>
                     </div>
                 </label>
                 <label id="nm-option-remove" class="selection-card selection-card--disabled selection-card--danger">

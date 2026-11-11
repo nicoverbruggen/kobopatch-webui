@@ -1,3 +1,4 @@
+import { firmwareMajor } from '../../../kobo/version.js';
 import { darkModeSupport } from '../../../kobo/dark-mode.js';
 import { resolveMenuCustomization, NM_MENU_ICON_DEFAULT_PATH } from '../../customization.js';
 import { loadBundledAsset } from '../assets.js';
@@ -15,6 +16,7 @@ export const TOGGLE_SCREENSHOTS_SCRIPT_URL = new URL('./scripts/toggle_screensho
 // owned by the features that hide those things (hide-home-content and
 // simplify-tabs); custom-menu only owns the base Toggle menu.
 export default {
+    supportedFirmwareMajors: [4, 6],
     id: 'custom-menu',
     section: 'Interface Tweaks',
     // Required in every preset install, so an install event would carry no
@@ -109,6 +111,7 @@ export default {
             });
         }
 
-        return entries;
+        // Invert Display does not work on OS 6. Keep it in the OS 4 preset.
+        return firmwareMajor(ctx.deviceInfo?.firmware) === 6 ? entries.filter((entry) => entry.id !== 'invert-reboot') : entries;
     },
 };

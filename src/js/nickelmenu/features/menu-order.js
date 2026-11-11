@@ -5,8 +5,8 @@
 // item, add its id in the right place — no numbers to juggle.
 export const MENU_ITEM_ORDER = [
     'tweak-header', // custom-menu: the Toggle tab header
-    'koreader', // koreader: Open KOReader
-    'cadmus', // cadmus: Open Cadmus
+    'koreader', // koreader: the KOReader launcher
+    'cadmus', // cadmus: the Cadmus launcher
     'screenshots', // custom-menu: Screenshots
     'screensaver', // screensaver: Screensaver (below Screenshots)
     'auto-usb', // custom-menu: Auto USB

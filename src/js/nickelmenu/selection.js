@@ -1,5 +1,7 @@
+import { featureFirmwareDisabledReason } from './firmware.js';
 import { NICKELMENU_FEATURES } from './features/index.js';
 import { meetsMinimumVersion } from '../kobo/version.js';
+import { displayVersion, featureVersion, isUpgrade } from './installables.js';
 
 // Pure derivations of the NickelMenu flow's decisions from the session. None of
 // these touch the DOM: selections live in the session (the checkboxes are a view
@@ -7,22 +9,111 @@ import { meetsMinimumVersion } from '../kobo/version.js';
 // unit-tested without a browser. Mirrors the role PatchUI plays for the patches
 // flow.
 
+/** The feature module with this id, or undefined. */
+export function featureById(id) {
+    return NICKELMENU_FEATURES.find((f) => f.id === id);
+}
+
+/**
+ * The subitems of a feature: the features that declare it as their `parent`.
+ * A subitem is an add-on installed inside its parent's directory (a KOReader
+ * plugin, say), so it only makes sense next to that parent. Nesting is one level
+ * deep — a subitem is never itself a parent.
+ */
+export function subFeatures(parentId) {
+    return NICKELMENU_FEATURES.filter((f) => f.parent === parentId);
+}
+
+/**
+ * The singular of a parent's add-on label, shown as a badge beside a subitem's
+ * name ("plugin"). A trailing-"s" strip is enough: these labels are ours,
+ * declared in the feature modules, not user input.
+ */
+export function subFeatureNoun(parentId) {
+    const label = (featureById(parentId)?.subFeaturesLabel || 'add-ons').toLowerCase();
+    return label.endsWith('s') ? label.slice(0, -1) : label;
+}
+
+/**
+ * The label of a subitem's checkbox on its parent's row. The kind of add-on it
+ * is ("plugin") is not said here — it renders as a badge beside the name, from
+ * `subFeatureNoun`.
+ */
+export function subFeatureCheckboxLabel(feature) {
+    // `shortTitle` because a `title` reads as an action ("Install KOReader"),
+    // which does not sit inside another sentence.
+    return `Install ${feature.shortTitle || feature.title}`;
+}
+
+/**
+ * Whether a parent feature's app will be on the device: either it is part of
+ * this install, or it was already detected on the connected Kobo (so its
+ * subitems can be added without reinstalling the parent).
+ *
+ * This decides whether a parent's subitem group is shown at all. The group is
+ * hidden until the parent is covered rather than shown greyed out, so there is
+ * no "requires X" copy anywhere — the plugins simply are not offered until
+ * there is something to plug them into.
+ */
+export function parentIsCovered(parentId, session, selectedIds = session.selectedFeatureIds || []) {
+    if (selectedIds.includes(parentId)) return true;
+    // Being on the device only counts outside a modify run. In one the list is
+    // preselected from what is installed, so an unticked parent is on its way
+    // out and cannot host an add-on — see `featuresToRemove` for the same guard.
+    if (session.nmWebuiPresetInstalled) return false;
+    return Boolean(session.installedNickelMenuFeatureIds?.includes(parentId));
+}
+
 /**
  * The features that will actually be installed for the current session: the
  * required ones always, plus the user's selected ids, minus anything that is
  * hidden from the install catalogue, unavailable (asset not bundled), disabled
  * (a maintainer's temporary kill switch, `disabled: true` on the feature
- * module), needs a newer firmware than the connected device runs, or does not
- * support the connected device (a feature's `unsupportedDeviceReason`).
+ * module), needs a newer firmware than the connected device runs, does not
+ * support the connected device (a feature's `unsupportedDeviceReason`), or is a
+ * subitem whose parent is neither being installed nor already on the device.
  */
 export function featuresToInstall(session, deviceInfo) {
-    const firmware = deviceInfo?.firmware;
-    return NICKELMENU_FEATURES.filter((f) => {
-        if (f.hidden || f.available === false || f.disabled) return false;
-        if (!meetsMinimumVersion(firmware, f.minimumVersion)) return false;
-        if (f.unsupportedDeviceReason?.(deviceInfo)) return false;
+    const selected = NICKELMENU_FEATURES.filter((f) => {
+        if (f.hidden || featureDisabledReason(f, deviceInfo)) return false;
         if (f.required) return true;
         return session.selectedFeatureIds.includes(f.id);
+    });
+
+    // Drop orphaned subitems last, so a parent that was itself filtered out
+    // above (unavailable, too-old firmware, ...) takes its subitems with it.
+    // The list hides a subitem whose parent is missing, but a stale id can still
+    // sit in the session after the parent was unticked, so this is the real gate.
+    const selectedIds = selected.map((f) => f.id);
+    return selected.filter((f) => !f.parent || parentIsCovered(f.parent, session, selectedIds));
+}
+
+/**
+ * Installed, user-visible features that will be removed by the desired setup.
+ *
+ * Only ever non-empty when this tool's own preset is on the device. That is the
+ * condition under which the feature list is preselected from what is installed,
+ * so an unticked box means the user deliberately unticked it. Without the preset
+ * nothing is preselected, and treating "installed but unticked" as "remove it"
+ * would delete things the user never touched — a device with a manually
+ * installed KOReader, say, would lose it the moment they installed anything else.
+ */
+export function featuresToRemove(session, deviceInfo) {
+    if (!session.nmWebuiPresetInstalled) return [];
+    const desired = new Set(featuresToInstall(session, deviceInfo).map((feature) => feature.id));
+    const cleanupGroups = new Set();
+    return NICKELMENU_FEATURES.filter(
+        (feature) =>
+            !feature.hidden &&
+            !featureDisabledReason(feature, deviceInfo) &&
+            session.installedNickelMenuFeatureIds?.includes(feature.id) &&
+            !desired.has(feature.id) &&
+            (feature.modifyCleanup || feature.cleanup),
+    ).filter((feature) => {
+        const cleanup = feature.modifyCleanup || feature.cleanup;
+        if (cleanupGroups.has(cleanup)) return false;
+        cleanupGroups.add(cleanup);
+        return true;
     });
 }
 
@@ -33,16 +124,22 @@ export function featuresToInstall(session, deviceInfo) {
  * falls back to the generic text; then a too-old firmware, then a feature's own
  * device gate (`unsupportedDeviceReason`), then an unbundled asset. `required`
  * features have no reason (they are locked on, not unavailable).
+ *
+ * A subitem waiting on its parent is not a reason: its whole group is hidden
+ * until the parent is covered, so it is never a row the user can look at.
  */
 export function featureDisabledReason(feature, deviceInfo) {
     if (feature.disabled) return typeof feature.disabled === 'string' ? feature.disabled : 'Temporarily unavailable.';
+    const firmwareReason = featureFirmwareDisabledReason(feature, deviceInfo);
+    if (firmwareReason) return firmwareReason;
     const firmware = deviceInfo?.firmware;
     if (!meetsMinimumVersion(firmware, feature.minimumVersion)) {
         return `Requires Kobo software ${feature.minimumVersion} or newer (this device runs ${firmware}).`;
     }
     const unsupported = feature.unsupportedDeviceReason?.(deviceInfo);
     if (unsupported) return unsupported;
-    if (feature.available === false) return 'Temporarily unavailable.';
+    const available = typeof feature.available === 'function' ? feature.available(deviceInfo) : feature.available;
+    if (available === false) return 'Temporarily unavailable.';
     return undefined;
 }
 
@@ -51,7 +148,11 @@ export function alwaysCleanupFeatures() {
     return NICKELMENU_FEATURES.filter((f) => f.cleanup?.mode === 'always');
 }
 
-/** Of the detected optional cleanups, the ones the user checked for removal. */
+/**
+ * Of the detected optional cleanups, the ones the user checked for removal.
+ * Subitems never appear here: `probes.js` does not detect them, because their
+ * files sit inside their parent's directory and go when it does.
+ */
 export function optionalCleanupToRemove(session, detected) {
     return detected.filter((f) => session.nmOptionalCleanupIds.includes(f.id));
 }
@@ -69,12 +170,61 @@ export function featureReviewNotices(features, deviceInfo) {
     // hiders) can each contribute the same shared NickelHome notice, but it should
     // appear once.
     const seen = new Set();
-    return all.filter((notice) => {
+    const notices = all.filter((notice) => {
         const key = JSON.stringify(notice);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
     });
+    return combineModNotices(notices);
+}
+
+/**
+ * Fold every bundled-mod notice into one card, listed after the rest.
+ *
+ * Each mod used to get a card of its own, which turned a three-mod install into
+ * a wall of near-identical text. One card gives each chosen mod a line, and the
+ * heading follows the count.
+ */
+function combineModNotices(notices) {
+    const mods = notices.filter((notice) => notice.mod).map((notice) => notice.mod);
+    const rest = notices.filter((notice) => !notice.mod);
+    if (mods.length === 0) return rest;
+    return [...rest, { type: 'info', title: mods.length === 1 ? 'Selected mod' : 'Selected mods', mods }];
+}
+
+/**
+ * The removal list with each feature's installed subitems named after it. A
+ * subitem is never a removal of its own — its files sit inside its parent's
+ * directory and go when that directory does — but the review should say so
+ * rather than leave the user to infer it from the parent's description.
+ */
+function withInstalledSubFeatures(session, removed) {
+    return removed.flatMap((feature) => [
+        feature,
+        ...subFeatures(feature.id).filter((sub) => !sub.hidden && session.installedNickelMenuFeatureIds?.includes(sub.id)),
+    ]);
+}
+
+/**
+ * What this run does to each feature, keyed by feature id: a first install, a
+ * reinstall of what is already there, or an upgrade when the installed version
+ * is provably older. The feature list stays a plain list of ticks; this is where
+ * the detail belongs, next to what is about to be written.
+ */
+function featureInstallNotes(session, features, deviceInfo) {
+    const notes = {};
+    for (const feature of features) {
+        if (!session.installedNickelMenuFeatureIds?.includes(feature.id)) {
+            notes[feature.id] = { kind: 'install' };
+            continue;
+        }
+        const from = session.installedNickelMenuVersions?.[feature.id];
+        notes[feature.id] = isUpgrade(from, feature, deviceInfo)
+            ? { kind: 'upgrade', from: displayVersion(from), to: displayVersion(featureVersion(feature, deviceInfo)) }
+            : { kind: 'reinstall' };
+    }
+    return notes;
 }
 
 /**
@@ -85,7 +235,7 @@ export function nmReviewModel(session, detected, deviceInfo) {
     if (session.nickelMenuOption === 'remove') {
         return {
             mode: 'remove',
-            removedFeatures: optionalCleanupToRemove(session, detected),
+            removedFeatures: withInstalledSubFeatures(session, optionalCleanupToRemove(session, detected)),
             keptFeatures: optionalCleanupKept(session, detected),
         };
     }
@@ -96,6 +246,8 @@ export function nmReviewModel(session, detected, deviceInfo) {
     return {
         mode: session.nickelMenuOption,
         installFeatures,
+        installNotes: featureInstallNotes(session, installFeatures, deviceInfo),
+        removedFeatures: featuresToRemove(session, deviceInfo),
         notices: featureReviewNotices(installFeatures, deviceInfo),
     };
 }

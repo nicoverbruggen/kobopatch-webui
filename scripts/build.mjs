@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { extname, join } from 'node:path';
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import JSZip from 'jszip';
+import { generateVersion } from './version-generate.mjs';
 
 const appDir = join(import.meta.dirname, '..');
 const srcDir = join(appDir, 'src');
@@ -118,6 +119,21 @@ function injectHashQueries() {
     return { bundleHash, cssHash };
 }
 
+/**
+ * Write the small file a running page fetches to find out whether the build it
+ * was loaded from is still the one being served. A rolling deploy replaces every
+ * file in place, so a page left open can download an asset belonging to a build
+ * it was never compiled against; this is how it tells that apart from a corrupt
+ * download.
+ */
+async function writeVersionFile(bundleHash) {
+    let versionStr = 'unknown';
+    try {
+        ({ versionStr } = await generateVersion());
+    } catch {}
+    writeFileSync(join(distDir, 'version.json'), JSON.stringify({ version: versionStr, bundle: bundleHash }) + '\n');
+}
+
 function copyWorkerFiles() {
     mkdirSync(join(distDir, 'js', 'workers'), { recursive: true });
 
@@ -156,6 +172,7 @@ async function build() {
     copyWorkerFiles();
 
     const { bundleHash, cssHash } = injectHashQueries();
+    await writeVersionFile(bundleHash);
 
     if (!isDev) {
         precompressDir(distDir);

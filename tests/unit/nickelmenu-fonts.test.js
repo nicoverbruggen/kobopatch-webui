@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
 import { FONT_COLLECTIONS, FONT_FAMILIES } from '../../src/js/nickelmenu/features/additional-fonts/catalogue.js';
 import {
     cloneFontsCustomization,
@@ -77,6 +78,25 @@ test('cloneFontsCustomization copies the selection without sharing the array', (
     assert.deepEqual(clone, original);
     clone.families.push('sourcerer');
     assert.deepEqual(original.families, ['libron']);
+});
+
+test('additional fonts reconciliation removes families dropped from the previous selection', async () => {
+    const removed = [];
+    await additionalFonts.reconcile({
+        previousConfiguration: { fontsCustomization: { families: ['libron', 'readerly'] } },
+        fontsCustomization: { families: ['libron'] },
+        device: {
+            async removeEntry(path) {
+                removed.push(path.join('/'));
+            },
+        },
+    });
+
+    const readerly = FONT_FAMILIES.find((family) => family.id === 'readerly');
+    assert.deepEqual(
+        removed,
+        readerly.files.map((file) => `fonts/${file}`),
+    );
 });
 
 test('fontCollectionsToDownload only lists the archives the selection needs', () => {

@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableSize, fetchInstallableAsset } from '../../installables.js';
 import { FONT_FAMILIES } from './catalogue.js';
 import { fontCollectionsToDownload, selectedFontFamilies } from './customization.js';
 
@@ -12,6 +12,7 @@ import { fontCollectionsToDownload, selectedFontFamilies } from './customization
 // selection needs are downloaded, and only the selected families' .ttf files
 // are extracted into fonts/; removal deletes the individual .ttf files again.
 export default {
+    supportedFirmwareMajors: [4, 6],
     id: 'additional-fonts',
     section: 'Reading Experience',
     analyticsEvent: 'add-fonts',
@@ -35,6 +36,23 @@ export default {
         paths: FONT_FAMILIES.flatMap((family) => family.files.map((file) => ({ path: ['fonts', file] }))),
     },
 
+    async reconcile(ctx) {
+        const previousFamilies = new Set(ctx.previousConfiguration?.fontsCustomization?.families || []);
+        const desiredFamilies = new Set(selectedFontFamilies(ctx.fontsCustomization).map((family) => family.id));
+        const staleFamilies = FONT_FAMILIES.filter((family) => previousFamilies.has(family.id) && !desiredFamilies.has(family.id));
+
+        for (const family of staleFamilies) {
+            for (const file of family.files) {
+                try {
+                    await ctx.device.removeEntry(['fonts', file]);
+                    ctx.audit?.record(`Removed fonts/${file}`);
+                } catch (error) {
+                    if (error?.name !== 'NotFoundError') throw error;
+                }
+            }
+        }
+    },
+
     async install(ctx) {
         const selected = selectedFontFamilies(ctx.fontsCustomization);
 
@@ -42,11 +60,10 @@ export default {
         for (const collection of fontCollectionsToDownload(ctx.fontsCustomization)) {
             const label = `Downloading ${collection.title.toLowerCase()}...`;
             ctx.progress(label);
-            const zipBytes = await fetchWithProgress(
-                installableAssetUrl(collection.installable, collection.asset),
-                downloadProgress(ctx.progress, label, await installableSize(collection.installable)),
-                `Failed to download the ${collection.title.toLowerCase()}`,
-            );
+            const zipBytes = await fetchInstallableAsset(collection.installable, collection.asset, {
+                onProgress: downloadProgress(ctx.progress, label, await installableSize(collection.installable)),
+                errorPrefix: `Failed to download the ${collection.title.toLowerCase()}`,
+            });
             const zip = await JSZip.loadAsync(zipBytes);
 
             const wanted = new Set(selected.filter((f) => f.collection === collection.id).flatMap((f) => f.files));

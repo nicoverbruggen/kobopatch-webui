@@ -1,6 +1,6 @@
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 // Installs NickelCoverFix (https://github.com/nicoverbruggen/NickelCoverFix),
 // which keeps book covers from blanking to the title/author placeholder when
@@ -33,13 +33,11 @@ export default {
         return [
             {
                 type: 'info',
-                title: 'NickelCoverFix',
-                paragraphs: [
-                    'NickelCoverFix keeps book covers from turning into the title/author placeholder, and supports custom covers. Applied on the reboot after install. Covers are mirrored automatically as books are shown; with a large library, open "More > Repair Book Covers" on the device once to prepare all covers in one pass.',
-                ],
-                link: {
-                    label: 'NickelCoverFix on GitHub',
+                mod: {
+                    name: 'NickelCoverFix',
                     href: 'https://github.com/nicoverbruggen/NickelCoverFix',
+                    summary: 'keeps book covers from turning into the title/author placeholder, and supports custom covers.',
+                    detail: 'Covers are mirrored automatically as books are shown; with a large library, open "More > Repair Book Covers" on the device once to prepare all covers in one pass.',
                 },
             },
         ];
@@ -66,11 +64,10 @@ export default {
 
         const label = 'Downloading NickelCoverFix ' + version + '...';
         ctx.progress(label);
-        const tgz = await fetchWithProgress(
-            installableAssetUrl('nickelcoverfix', 'NickelCoverFix.tgz'),
-            downloadProgress(ctx.progress, label, await installableSize('nickelcoverfix')),
-            'Failed to download NickelCoverFix',
-        );
+        const tgz = await fetchInstallableAsset('nickelcoverfix', 'NickelCoverFix.tgz', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('nickelcoverfix')),
+            errorPrefix: 'Failed to download NickelCoverFix',
+        });
 
         ctx.progress('Merging NickelCoverFix into KoboRoot.tgz...');
         return parseTarGz(tgz);

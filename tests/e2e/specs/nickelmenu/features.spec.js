@@ -12,9 +12,11 @@ const {
     hasNickelClockAssets,
     hasNickelTypeFixAssets,
     hasKOReaderAssets,
+    hasSimpleUIAssets,
     hasCadmusAssets,
     hasFontAssets,
     hasFirmwareZip,
+    pinnedVersionLabel,
 } = require('../../support/assets');
 const {
     injectMockDevice,
@@ -79,7 +81,7 @@ test.describe('NickelMenu — install', () => {
         expect(zipFiles.some((f) => f.startsWith('.adds/cadmus/libs/'))).toBe(true);
 
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
-        expect(itemsContent).toContain('menu_item:main:Open Cadmus');
+        expect(itemsContent).toContain('menu_item:main:Cadmus');
         expect(itemsContent).toContain('chain_success :cmd_output :1000 :/mnt/onboard/.adds/nm/scripts/toggle_screenshots.sh');
         expect(zipFiles).toContainEqual('.adds/nm/scripts/toggle_screenshots.sh');
     });
@@ -244,7 +246,7 @@ test.describe('NickelMenu — install', () => {
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-        // KOReader lives in the collapsed "Alternative reading apps" section.
+        // KOReader lives in the "Alternative reading apps" section.
         await openNmSection(page, 'Alternative reading apps');
         await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
 
@@ -279,9 +281,61 @@ test.describe('NickelMenu — install', () => {
         // KOReader launcher should be the first menu item, just below the Tweak
         // tab header (first in MENU_ITEM_ORDER after the header).
         const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
-        expect(itemsContent).toContain('menu_item:main:Open KOReader');
+        expect(itemsContent).toContain('menu_item:main:KOReader');
         const firstMenuItem = itemsContent.split('\n').find((line) => line.startsWith('menu_item'));
-        expect(firstMenuItem.startsWith('menu_item:main:Open KOReader')).toBe(true);
+        expect(firstMenuItem.startsWith('menu_item:main:KOReader')).toBe(true);
+    });
+
+    test('no device — the manual download bundles KOReader together with its plugin', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+        // Drop the additional fonts so this run only depends on the two assets under test.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-koreader"]');
+        await page.check('input[name="nm-cfg-simpleui"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+
+        const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 120_000 });
+
+        expect(download.suggestedFilename()).toBe('NickelMenu-install.zip');
+        const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+        const zipFiles = Object.keys(zip.files);
+
+        // The reader's own files, at the paths the device expects.
+        expect(zipFiles).toContainEqual('.adds/koreader/koreader.sh');
+        expect(zipFiles).toContainEqual('.adds/koreader/defaults.lua');
+
+        // The plugin, nested inside the reader's plugins directory, with the real
+        // archive's bytes rather than an empty placeholder.
+        expect(zipFiles).toContainEqual('.adds/koreader/plugins/simpleui.koplugin/main.lua');
+        const meta = await zip.file('.adds/koreader/plugins/simpleui.koplugin/_meta.lua').async('string');
+        expect(meta).toMatch(/name\s*=\s*"simpleui"/);
+
+        // KOReader ships its own plugins in that same directory; bundling one must
+        // sit alongside them rather than replacing the folder.
+        expect(zipFiles).toContainEqual('.adds/koreader/plugins/SSH.koplugin/main.lua');
+
+        // The reader gets a Toggle entry; a plugin is launched from inside it, so
+        // it contributes none.
+        const itemsContent = await zip.file('.adds/nm/webui-preset').async('string');
+        expect(itemsContent).toContain('menu_item:main:KOReader');
+        expect(itemsContent).not.toContain('Simple UI');
     });
 
     test('with device — install with KOReader writes files to device', async ({ page }) => {
@@ -304,7 +358,7 @@ test.describe('NickelMenu — install', () => {
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-        // Enable KOReader (in the collapsed "Alternative reading apps" section)
+        // Enable KOReader in the "Alternative reading apps" section.
         await openNmSection(page, 'Alternative reading apps');
         await page.check('input[name="nm-cfg-koreader"]');
 
@@ -330,6 +384,302 @@ test.describe('NickelMenu — install', () => {
         // Verify the .adds/koreader directory was created in mock FS
         const koreaderDirExists = await mockPathExists(page, '.adds', 'koreader');
         expect(koreaderDirExists, '.adds/koreader/ should exist').toBe(true);
+    });
+
+    test('with device — installing KOReader together with its plugin lands both, nested correctly', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, { hasNickelMenu: false });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+        // Drop the additional fonts so this run only depends on the two assets under test.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-koreader"]');
+        await page.check('input[name="nm-cfg-simpleui"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 120_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        // The reader's own files land under .adds/koreader/.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'koreader.sh')).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'defaults.lua')).toBe(true);
+
+        // The plugin lands nested inside the reader's plugins directory, and its
+        // bytes are the real archive's rather than an empty placeholder.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin', 'main.lua')).toBe(true);
+        const meta = await readMockFile(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin', '_meta.lua');
+        expect(meta).toMatch(/name\s*=\s*"simpleui"/);
+
+        // KOReader ships its own plugins in that same directory; adding one must
+        // sit alongside them rather than replacing the folder.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'SSH.koplugin', 'main.lua')).toBe(true);
+
+        // The reader gets a Toggle entry; a plugin is launched from inside it, so
+        // it contributes none.
+        const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
+        expect(items).toContain('menu_item:main:KOReader');
+        expect(items).not.toContain('Simple UI');
+    });
+
+    test('with device — an installed app and its plugin both arrive selected when modifying', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasKOReader: true,
+            hasSimpleUI: true,
+            extraAddsFiles: [{ path: ['nm', 'webui-preset'], content: '# Generated by KoboPatch Web UI\n' }],
+            extraRootFiles: [
+                {
+                    path: ['.kobopatch-webui', 'nickelmenu.json'],
+                    content: JSON.stringify({ selected: ['custom-menu', 'koreader', 'simpleui'], features: {}, meta: { writer: { version: '1.60' } } }),
+                },
+            ],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+
+        // Both are on the device, so both arrive ticked rather than needing to be
+        // re-picked — that is what makes unticking one mean "remove it".
+        await expect(page.locator('input[name="nm-cfg-koreader"]')).toBeChecked();
+        await expect(page.locator('input[name="nm-cfg-simpleui"]')).toBeChecked();
+
+        // The app says so in a pill; the plugin row is one line, so it carries the
+        // same check mark on its own with the words in its accessible name.
+        const koreaderRow = page.locator('.nm-config-item', { has: page.locator('input[name="nm-cfg-koreader"]') });
+        const pluginRow = page.locator('.nm-config-subitem').filter({ hasText: 'Simple UI' });
+        await expect(pluginRow.locator('.nm-config-subitem-installed')).toHaveAttribute('aria-label', 'Currently installed');
+    });
+
+    test('with device — the review names the version move for an out-of-date mod', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasKOReader: true,
+            koreaderVersion: 'v2020.01.1',
+            extraAddsFiles: [{ path: ['nm', 'webui-preset'], content: '# Generated by KoboPatch Web UI\n' }],
+            extraRootFiles: [
+                { path: ['.kobopatch-webui', 'nickelmenu.json'], content: JSON.stringify({ selected: ['custom-menu', 'koreader'], features: {} }) },
+            ],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+        await openNmSection(page, 'Alternative reading apps');
+
+        // The selection screen carries no version wording at all: it is a list of
+        // ticks, and the review is where the versions are named.
+        await expect(page.locator('#nm-config-options')).not.toContainText('upgrade');
+
+        // The move itself is named where the changes are listed.
+        await page.click('#btn-nm-features-next');
+        await page.click('#btn-nm-backup-next');
+        await expect(page.locator('#step-nm-review')).not.toBeHidden();
+        await expect(page.locator('#nm-review-list')).toContainText('(upgrade from v2020.01.1 \u2192 v');
+    });
+
+    test('with device — a mod already at the bundled version is listed without a version move', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+
+        // A version far ahead of any pin this build could ship: a downgrade must
+        // never be announced as an upgrade.
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasKOReader: true,
+            koreaderVersion: '9999.99.9',
+            extraAddsFiles: [{ path: ['nm', 'webui-preset'], content: '# Generated by KoboPatch Web UI\n' }],
+            extraRootFiles: [
+                { path: ['.kobopatch-webui', 'nickelmenu.json'], content: JSON.stringify({ selected: ['custom-menu', 'koreader'], features: {} }) },
+            ],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+        await page.click('#btn-nm-features-next');
+        await page.click('#btn-nm-backup-next');
+        await expect(page.locator('#nm-review-list')).toContainText('Install KOReader (reinstall)');
+        await expect(page.locator('#nm-review-list')).not.toContainText('upgrade from');
+    });
+
+    test('with device — unticking KOReader in a modify run takes its installed plugin with it', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasKOReader: true,
+            hasSimpleUI: true,
+            extraAddsFiles: [{ path: ['nm', 'webui-preset'], content: '# Generated by KoboPatch Web UI\n' }],
+            extraRootFiles: [
+                {
+                    path: ['.kobopatch-webui', 'nickelmenu.json'],
+                    content: JSON.stringify({ selected: ['custom-menu', 'koreader', 'simpleui'], features: {}, meta: { writer: { version: '1.60' } } }),
+                },
+            ],
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+        await openNmSection(page, 'Alternative reading apps');
+
+        const plugin = page.locator('input[name="nm-cfg-simpleui"]');
+        await expect(plugin).toBeChecked();
+
+        // The plugin lives inside KOReader's folder, so removing KOReader must
+        // take it along: leaving it ticked would install a plugin into a folder
+        // that is on its way out.
+        await page.uncheck('input[name="nm-cfg-koreader"]');
+        await expect(plugin).not.toBeChecked();
+        await expect(plugin).toBeDisabled();
+
+        await page.click('#btn-nm-features-next');
+        await page.click('#btn-nm-backup-next');
+        await expect(page.locator('#step-nm-review')).not.toBeHidden();
+        await expect(page.locator('#nm-review-list-label')).toHaveText('The following will be installed or reinstalled on your Kobo:');
+        await expect(page.locator('#nm-review-kept-list')).toContainText('KOReader');
+        await expect(page.locator('#nm-review-kept-list')).toContainText('Simple UI');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+        expect(await mockPathExists(page, '.adds', 'koreader')).toBe(false);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin')).toBe(false);
+    });
+
+    test('no device — a KOReader plugin is a checkbox under it that follows KOReader', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasKOReaderAssets(), 'KOReader assets not found (run npm run setup:installables)');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+
+        // The plugin is always visible under KOReader's description, but it
+        // installs inside KOReader, so it says what it is waiting for.
+        const plugin = page.locator('input[name="nm-cfg-simpleui"]');
+        const pluginRow = page.locator('.nm-config-subitem').filter({ hasText: 'Simple UI' });
+        await expect(pluginRow).toBeVisible();
+        await expect(pluginRow).toContainText('Install Simple UI');
+        await expect(pluginRow.locator('.nm-config-subitem-badge')).toHaveText('plugin');
+        await expect(pluginRow.locator('.nm-config-version')).toHaveText(pinnedVersionLabel('simpleui'));
+        // Greyed out, with no words: it sits directly under the thing it needs.
+        await expect(plugin).toBeDisabled();
+        await expect(pluginRow).not.toContainText('Requires');
+
+        // Ticking KOReader frees it, in place — the section stays open.
+        await page.check('input[name="nm-cfg-koreader"]');
+        await expect(plugin).toBeEnabled();
+
+        // Its "?" badge links to the plugin upstream, and following it must not
+        // toggle the checkbox it sits beside.
+        const pluginHelp = pluginRow.locator('.nm-config-help');
+        await expect(pluginHelp).toHaveAttribute('href', 'https://github.com/doctorhetfield-cmd/simpleui.koplugin');
+        await expect(pluginHelp).toHaveAttribute('target', '_blank');
+        await pluginHelp.click();
+        await expect(plugin).not.toBeChecked();
+
+        // Clicking the plugin's label must not toggle KOReader above it, and
+        // must not press it either — an add-on inside KOReader's <label> made
+        // its checkbox flash on every click, which is why they are siblings.
+        const koreader = page.locator('input[name="nm-cfg-koreader"]');
+        await pluginRow.click();
+        await expect(plugin).toBeChecked();
+        await expect(koreader).toBeChecked();
+        await expect(pluginRow.locator('input')).toHaveCount(1);
+        await expect(page.locator('.nm-config-item .nm-config-subitem')).toHaveCount(0);
+
+        // Unticking KOReader takes the plugin down with it.
+        await page.uncheck('input[name="nm-cfg-koreader"]');
+        await expect(plugin).toBeDisabled();
+        await expect(plugin).not.toBeChecked();
+    });
+
+    test('with device — SimpleUI installs on its own when KOReader is already on the device', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+        test.skip(!hasSimpleUIAssets(), 'SimpleUI assets not found (run npm run setup:installables)');
+
+        await connectMockDevice(page, { hasNickelMenu: false, hasKOReader: true });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="preset"]');
+        await page.click('#btn-nm-next');
+
+        await expect(page.locator('#step-nm-features')).not.toBeHidden();
+        await openNmSection(page, 'Alternative reading apps');
+
+        // The device already has .adds/koreader, so the plugin is selectable
+        // without KOReader being ticked — it can be added on its own, without
+        // redownloading the 42 MB reader.
+        await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
+        await expect(page.locator('input[name="nm-cfg-simpleui"]')).toBeEnabled();
+        // Drop the additional fonts so this run only depends on the SimpleUI asset.
+        await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+        await page.check('input[name="nm-cfg-simpleui"]');
+
+        await page.click('#btn-nm-features-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+        await expect(page.locator('#nm-review-list')).not.toContainText('Install KOReader');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('installed');
+
+        const writtenFiles = await getWrittenFiles(page);
+        expect(writtenFiles.some((f) => f.includes('.adds/koreader/plugins/simpleui.koplugin/'))).toBe(true);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin')).toBe(true);
+        // KOReader itself was not part of this install, so nothing else was rewritten.
+        expect(writtenFiles.some((f) => f.includes('.adds/koreader/koreader.sh'))).toBe(false);
+        // And it is still there. Without this, the test passes even if KOReader
+        // were deleted before the plugin installed — "not written" and "removed"
+        // look identical from the written-files list alone.
+        expect(await mockPathExists(page, '.adds', 'koreader', 'koreader.sh'), 'KOReader must survive a plugin-only install').toBe(true);
     });
 
     test('with device — install with Cadmus extracts its app directory to the device', async ({ page }) => {
@@ -368,7 +718,7 @@ test.describe('NickelMenu — install', () => {
 
         // Its launcher is wired into the NickelMenu preset written to the device.
         const items = await readMockFile(page, '.adds', 'nm', 'webui-preset');
-        expect(items).toContain('menu_item:main:Open Cadmus');
+        expect(items).toContain('menu_item:main:Cadmus');
     });
 
     test('with device — install with NickelClock writes the merged KoboRoot.tgz and toggle script', async ({ page }) => {
@@ -479,6 +829,7 @@ test.describe('NickelMenu — install', () => {
             serial: 'N204E0000000000',
             hardwareId: '00000000-0000-0000-0000-000000000350',
             expectedModel: 'Kobo Aura HD',
+            expectedDeviceStatus: 'Custom patches are not supported on this older Kobo model.',
         });
 
         await page.click('#btn-device-next');

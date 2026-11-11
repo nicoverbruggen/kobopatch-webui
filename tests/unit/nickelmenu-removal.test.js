@@ -7,7 +7,12 @@ import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
 // screensaver is used as the stand-in for "an optional feature with files to
 // remove" in the removal tests (better-typography's cleanup is now conf-only).
 import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../../src/js/kobo/sync-exclusions.js';
-import { executeNickelMenuRemoval, hasAddsDirectoriesRequiringSyncExclusions, nickelMenuUninstallMarkerPath } from '../../src/js/nickelmenu/uninstaller.js';
+import {
+    executeNickelMenuFeatureCleanups,
+    executeNickelMenuRemoval,
+    hasAddsDirectoriesRequiringSyncExclusions,
+    nickelMenuUninstallMarkerPath,
+} from '../../src/js/nickelmenu/uninstaller.js';
 import { AuditLog } from '../../src/js/kobo/audit-log.js';
 import { RecordingDevice, createInstaller, createProgressRecorder, koboEReaderConfPath, koboRootTgzPath, text } from './test-helpers.js';
 
@@ -43,6 +48,31 @@ test('hasAddsDirectoriesRequiringSyncExclusions ignores only the NickelMenu dire
         ]),
         true,
     );
+});
+
+test('executeNickelMenuFeatureCleanups removes deselected feature files without removing NickelMenu', async () => {
+    const device = new RecordingDevice({
+        existingEntries: ['.adds/nm', '.kobo/screensaver', { path: '.kobo/screensaver/moon.png', kind: 'file' }],
+    });
+    const progress = createProgressRecorder();
+
+    const audit = new AuditLog('install-nickelmenu', new Date(), device);
+
+    await executeNickelMenuFeatureCleanups({
+        device,
+        features: [screensaver],
+        onProgress: progress,
+        audit,
+    });
+
+    assert.deepEqual(device.removePaths(), ['.kobo/screensaver/moon.png']);
+    assert.ok(await device.pathExists(['.adds', 'nm']));
+    assert.deepEqual(progress.messages, ['Removing Screensaver...']);
+    // A modify run deletes during an install, so the audit log is the user's only
+    // record of what went. It must name the feature and the file it removed.
+    const entries = audit.lines.join('\n');
+    assert.match(entries, /Removing Screensaver/);
+    assert.match(entries, /\.kobo\/screensaver\/moon\.png/);
 });
 
 test('executeNickelMenuRemoval removes NickelMenu assets, optional feature files, and creates uninstall marker', async () => {

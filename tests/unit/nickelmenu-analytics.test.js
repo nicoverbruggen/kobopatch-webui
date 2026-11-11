@@ -29,9 +29,11 @@ test('the full catalog maps to the expected event set', () => {
         'add-nickelclock',
         'add-nickelcoverfix',
         'add-nickeldissolve',
+        'add-nickelmodmanager',
         'add-nickeltypefix',
         'add-screensaver',
         'add-sideloaded-mode',
+        'add-simpleui',
     ]);
 });
 

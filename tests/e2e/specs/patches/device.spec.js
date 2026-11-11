@@ -13,7 +13,8 @@ const { parseTar } = require('../../support/tar');
 // Build a custom-patches-files archive (and its checksum) exactly the way the app
 // does, so a seeded manifest can reference bytes the app will accept on reload.
 async function buildPatchFilesArchive(entries) {
-    const { buildAdditionalFilesTgz, sha256Hex } = await import(paths.src('js/patches/additional-files.js'));
+    const { buildAdditionalFilesTgz } = await import(paths.src('js/patches/additional-files.js'));
+    const { sha256Hex } = await import(paths.src('js/shell/digest.js'));
     const archiveBytes = await buildAdditionalFilesTgz(entries);
     const sha256 = await sha256Hex(archiveBytes);
     return { archiveBytes, sha256, base64: Buffer.from(archiveBytes).toString('base64') };
@@ -33,8 +34,12 @@ const VERIFIED_IDENTIFICATION_HINT = 'The hardware UUID and serial prefix match 
 const REFURBISHED_IDENTIFICATION_HINT =
     'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.';
 const REFURBISHED_MODEL_HINT = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
+const TOLINO_IDENTIFICATION_HINT =
+    'This is Tolino hardware running Kobo software. Its serial number starts with T, while the hardware UUID is a Kobo one — expected for a cross-flashed Tolino, which takes the same mods and patches as the Kobo it is built from.';
 const MISMATCH_IDENTIFICATION_HINT =
     'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.';
+const OLDER_DEVICE_PATCHES_UNAVAILABLE =
+    'Custom patches are not supported on this older Kobo model. You can still install NickelMenu and choose what you want to do with your Kobo.';
 const CLOUD_SYNC_PATCH_NAME = 'Unlock Dropbox and Google Drive support';
 const DROPBOX_LINK_ACCOUNT_POLL = 'dropbox_link_account_poll=https://authorize.kobo.com/{region}/{language}/LinkDropbox';
 const GOOGLEDRIVE_LINK_ACCOUNT_START = 'googledrive_link_account_start=https://authorize.kobo.com/{region}/{language}/linkcloudstorage/provider/google_drive';
@@ -111,7 +116,7 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#firmware-device-label')).toContainText('Kobo Libra 2');
     });
 
-    for (const firmware of ['5.0.0', '6.0.0']) {
+    for (const firmware of ['5.0.0', '7.0.0']) {
         test(`with device — incompatible version ${firmware} shows error`, async ({ page }) => {
             await page.goto('/');
             await injectMockDevice(page, { firmware });
@@ -127,8 +132,8 @@ test.describe('Custom patches', () => {
             await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
 
             // Status message should say the version is too new, not too old
-            await expect(page.locator('#device-status')).toContainText('Kobo software newer than 4.x is not supported yet.');
-            await expect(page.locator('#device-status')).toContainText('This includes the 5.x accessibility preview and the recently released 6.0 update.');
+            await expect(page.locator('#device-status')).toContainText('This Kobo software version is not supported.');
+            await expect(page.locator('#device-status')).toContainText('Kobo OS 5.x and other firmware families are not supported.');
             await expect(page.locator('#device-status')).toContainText('You may be able to downgrade to version 4.');
             await expect(page.locator('#device-status')).not.toContainText('4.23 or newer is required');
             await expect(page.locator('#device-status')).toHaveClass(/error/);
@@ -392,6 +397,38 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#btn-device-restore')).toBeHidden();
     });
 
+    test('with device — a cross-flashed Tolino is named as a Tolino and can still be patched', async ({ page }) => {
+        // Reported in issue #22: a Tolino Vision Color running Kobo software. It
+        // reports the Kobo Libra Colour hardware UUID while keeping its own
+        // T-prefixed serial. Patches target the software, not the badge, so they
+        // must stay available.
+        await page.goto('/');
+        await injectMockDevice(page, {
+            serial: 'T1060A0000000',
+            firmware: '4.45.23697',
+            hardwareId: '00000000-0000-0000-0000-000000000390',
+        });
+        await page.click('#btn-connect');
+        await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+        await page.click('#btn-connect-ready');
+
+        await expect(page.locator('#step-device')).not.toBeHidden();
+        await expect(page.locator('#device-model')).toContainText('Tolino Vision Color (with Kobo software)');
+        await expect(page.locator('#device-model')).not.toContainText('Kobo Libra Colour');
+        await expect(page.locator('#device-model .device-identification-badge--tolino')).toHaveAttribute('data-tooltip', TOLINO_IDENTIFICATION_HINT);
+        await expect(page.locator('#device-serial')).toContainText('T106');
+        await expect(page.locator('#device-hardware-id')).toHaveText('00000000-0000-0000-0000-000000000390');
+
+        // The wording the reporter saw must be gone, and patching must proceed.
+        await expect(page.locator('#device-status')).not.toContainText('disabled');
+        await expect(page.locator('#device-status')).toContainText('recognized');
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="patches"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-patches')).not.toBeHidden();
+        await expect(page.locator('#patch-container')).not.toBeEmpty();
+    });
+
     for (const [model, suffix, serial] of [
         ['Kobo Touch A/B', '310', 'KG31000000000'],
         ['Kobo Glo', '330', '613B2A3004105'],
@@ -410,7 +447,7 @@ test.describe('Custom patches', () => {
             await expect(page.locator('#step-device')).not.toBeHidden();
             await expect(page.locator('#device-model')).toHaveText(model);
             await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
-            await expect(page.locator('#device-status')).toContainText('recognized');
+            await expect(page.locator('#device-status')).toHaveText(OLDER_DEVICE_PATCHES_UNAVAILABLE);
             await expect(page.locator('#device-status')).not.toContainText('Please file an issue');
             await expect(page.locator('#device-unknown-warning')).toBeHidden();
             await page.locator('.serial-reveal').click();
@@ -444,6 +481,32 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#device-status a')).toHaveAttribute('href', 'https://github.com/nicoverbruggen/kobopatch-webui/issues/new');
         await expect(page.locator('#device-unknown-warning')).toBeHidden();
         await expect(page.locator('#btn-device-restore')).toBeHidden();
+    });
+
+    test('with device — legacy Kobo Touch serial explains that custom patches do not support older models', async ({ page }) => {
+        await page.goto('/');
+        await injectMockDevice(page, {
+            serial: 'KG31B0501709F',
+            firmware: '4.38.23684',
+            hardwareId: '00000000-0000-0000-0000-000000000310',
+        });
+        await page.click('#btn-connect');
+        await expect(page.locator('#step-connect-instructions')).not.toBeHidden();
+        await page.click('#btn-connect-ready');
+
+        await expect(page.locator('#step-device')).not.toBeHidden();
+        await expect(page.locator('#device-model')).toContainText('Kobo Touch A/B');
+        await expect(page.locator('#device-model .device-identification-badge--verified')).toHaveAttribute('data-tooltip', VERIFIED_IDENTIFICATION_HINT);
+        await expect(page.locator('#device-serial')).toContainText('KG31');
+        await expect(page.locator('#device-status')).toHaveText(OLDER_DEVICE_PATCHES_UNAVAILABLE);
+        await expect(page.locator('#device-status')).not.toContainText('do not match');
+        await expect(page.locator('#device-status a')).toHaveCount(0);
+
+        await page.click('#btn-device-next');
+        await expect(page.locator('#step-mode')).not.toBeHidden();
+        await expect(page.locator('input[name="mode"][value="patches"]')).toBeDisabled();
+        await expect(page.locator('#mode-patches-hint')).toHaveText(OLDER_DEVICE_PATCHES_UNAVAILABLE);
+        await expect(page.locator('input[name="mode"][value="nickelmenu"]')).toBeChecked();
     });
 
     test('with device — unknown hardware UUID no longer falls back to serial number', async ({ page }) => {

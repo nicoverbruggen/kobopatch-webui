@@ -1,8 +1,8 @@
 import { appendToNickelHomeConfig } from '../helpers.js';
 import { loadBundledAsset } from '../assets.js';
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableAvailable, installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 export const TOGGLE_HIDDEN_HOME_SCRIPT_URL = new URL('./scripts/toggle_hidden_home.sh', import.meta.url).href;
 
@@ -30,11 +30,10 @@ function nickelHomeKoboRootEntries(ctx) {
             const version = installableVersion('nickelhome');
             const label = 'Downloading NickelHome ' + version + '...';
             ctx.progress(label);
-            const tgz = await fetchWithProgress(
-                installableAssetUrl('nickelhome', 'NickelHome.tgz'),
-                downloadProgress(ctx.progress, label, await installableSize('nickelhome')),
-                'Failed to download NickelHome',
-            );
+            const tgz = await fetchInstallableAsset('nickelhome', 'NickelHome.tgz', {
+                onProgress: downloadProgress(ctx.progress, label, await installableSize('nickelhome')),
+                errorPrefix: 'Failed to download NickelHome',
+            });
             ctx.progress('Merging NickelHome into KoboRoot.tgz...');
             return parseTarGz(tgz);
         })().catch((err) => {
@@ -55,6 +54,15 @@ function makeHider({ id, title, description, flag }) {
         title,
         description,
         default: false,
+        // The shared directory only proves NickelHome is installed; this flag
+        // identifies which individual hider is active.
+        installedConfig: {
+            paths: [
+                ['.adds', 'nickel-home', 'config'],
+                ['.adds', 'nickelhome', 'config'],
+            ],
+            key: flag,
+        },
 
         // Ship the shared toggle script (de-duplicated by path in the installer,
         // so it lands once however many hiders are selected). It goes under
@@ -91,13 +99,11 @@ function makeHider({ id, title, description, flag }) {
             return [
                 {
                     type: 'info',
-                    title: 'NickelHome',
-                    paragraphs: [
-                        'NickelHome hides the home-screen widgets you selected. Applied on the reboot after install. You can turn the minimal home on or off any time with the "Minimal Home" menu item.',
-                    ],
-                    link: {
-                        label: 'NickelHome on GitHub',
+                    mod: {
+                        name: 'NickelHome',
                         href: 'https://github.com/nicoverbruggen/NickelHome',
+                        summary: 'hides the home-screen widgets you selected.',
+                        detail: 'You can turn the minimal home on or off any time with the "Minimal Home" menu item.',
                     },
                 },
             ];
@@ -135,7 +141,7 @@ export const homeHiders = HIDERS.map(makeHider);
 // irrelevant. Removing NickelHome's config folder is what makes the mod finish uninstalling itself
 // on the next reboot (its NickelHook uninstall flag is the folder). Covers both the current
 // .adds/nickel-home and the pre-v0.6 .adds/nickelhome (older installs) for backward compatibility.
-homeHiders[0].cleanup = {
+const nickelHomeCleanup = {
     mode: 'optional',
     title: 'NickelHome',
     removeLabel: 'Remove NickelHome (.adds/nickel-home)',
@@ -150,3 +156,5 @@ homeHiders[0].cleanup = {
         { path: ['.adds', 'nickelhome'], recursive: true },
     ],
 };
+for (const hider of homeHiders) hider.modifyCleanup = nickelHomeCleanup;
+homeHiders[0].cleanup = nickelHomeCleanup;

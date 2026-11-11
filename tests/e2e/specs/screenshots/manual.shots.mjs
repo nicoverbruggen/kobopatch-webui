@@ -47,10 +47,18 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
     await shotNickelMenuFontsModal(page, dir, '03c-nickelmenu-fonts-modal', testInfo);
 
-    // The "Alternative reading apps" section (collapsed by default) holds KOReader
-    // and Cadmus.
+    // Alternative reading apps starts open so both readers are visible.
+    await expect(page.locator('input[name="nm-cfg-koreader"]')).toBeVisible();
+    await expect(page.locator('input[name="nm-cfg-cadmus"]')).toBeVisible();
     await openNmFeatureSection(page, 'Alternative reading apps');
     await shot(page, dir, '03c-nickelmenu-features-reading-apps', testInfo);
+
+    // A KOReader plugin is a checkbox under KOReader, disabled until KOReader
+    // itself is ticked. Capture that second state too, then untick so the rest
+    // of the flow is unaffected.
+    await page.check('input[name="nm-cfg-koreader"]');
+    await shot(page, dir, '03c-nickelmenu-features-reading-apps-plugins', testInfo);
+    await page.uncheck('input[name="nm-cfg-koreader"]');
 
     // The Advanced section (collapsed by default) holds the power-user mods —
     // Sideload Mode and NickelCoverFix (experimental; currently temporarily
@@ -58,12 +66,16 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await openNmFeatureSection(page, 'Advanced');
     await shot(page, dir, '03d-nickelmenu-features-advanced', testInfo);
 
+    await page.check('input[name="nm-cfg-nickelmodmanager"]');
+    await shot(page, dir, '03e-nickelmenu-features-mod-manager', testInfo);
+
     // Features → backup → review (only download button in manual mode)
     await page.click('#btn-nm-features-next');
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
     await shot(page, dir, '04-nickelmenu-backup', testInfo);
     await page.click('#btn-nm-backup-next');
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
+    await expect(page.locator('#step-nm-review')).toContainText('More > Manage Mods');
     await shot(page, dir, '05-nickelmenu-review', testInfo);
 
     // Download → done

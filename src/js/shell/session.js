@@ -48,11 +48,18 @@ export class Session {
         this.hasCustomPatchesManifest = false;
         this.isRestore = false;
         this.nickelMenuOption = null;
+        this.manualNickelMenuFirmware = '4';
         this.nickelMenuCustomization = createDefaultMenuCustomization();
         this.nickelMenuTabsCustomization = createDefaultTabsCustomization();
         this.nickelMenuFontsCustomization = createDefaultFontsCustomization();
         this.selectedFeatureIds = [];
         this.previousNickelMenuFeatureIds = [];
+        this.previousNickelMenuConfiguration = null;
+        this.installedNickelMenuFeatureIds = [];
+        this.nmWebuiPresetInstalled = false;
+        // Parent features (features that have subitems) already present on the
+        // connected Kobo, so their subitems can be added without reinstalling
+        // the parent. Probed when the feature list is first shown.
         this.nmBackupChoice = null;
         this.nmKeepLegacyConfig = false;
         this.nmOptionalCleanupIds = [];
@@ -73,6 +80,9 @@ export class Session {
         this.patchesUnavailableReason = null;
         this.koboUserCount = undefined;
         this.previousNickelMenuFeatureIds = [];
+        this.previousNickelMenuConfiguration = null;
+        this.installedNickelMenuFeatureIds = [];
+        this.nmWebuiPresetInstalled = false;
         this.reloadManifest = null;
         this.reloadAdditionalFiles = null;
         this.resultTgz = null;

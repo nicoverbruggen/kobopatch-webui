@@ -9,6 +9,7 @@ import customMenu, { CUSTOM_MENU_ICON_URL, TOGGLE_SCREENSHOTS_SCRIPT_URL } from 
 import cadmus from '../../src/js/nickelmenu/features/cadmus/index.js';
 import { homeHiders, TOGGLE_HIDDEN_HOME_SCRIPT_URL } from '../../src/js/nickelmenu/features/hide-home-content/index.js';
 import koreader from '../../src/js/nickelmenu/features/koreader/index.js';
+import simpleui from '../../src/js/nickelmenu/features/simpleui/index.js';
 import additionalFonts from '../../src/js/nickelmenu/features/additional-fonts/index.js';
 import betterTypography, { TOGGLE_TYPOGRAPHY_SCRIPT_URL } from '../../src/js/nickelmenu/features/better-typography/index.js';
 import screensaver from '../../src/js/nickelmenu/features/screensaver/index.js';
@@ -293,7 +294,7 @@ test('KOReader contributes its launcher entry at the top of the menu', () => {
     assert.deepEqual(koreader.menuItems(), [
         {
             id: 'koreader',
-            lines: ['menu_item:main:Open KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
+            lines: ['menu_item:main:KOReader:cmd_spawn:quiet:exec /mnt/onboard/.adds/koreader/koreader.sh'],
         },
     ]);
 });
@@ -303,7 +304,7 @@ test('Cadmus contributes its launcher entry at the top of the menu', () => {
     assert.deepEqual(cadmus.menuItems(), [
         {
             id: 'cadmus',
-            lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+            lines: ['menu_item:main:Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
         },
     ]);
 });
@@ -331,16 +332,62 @@ test('Better typography and fixes cleanup removes the toggle script, NickelTypeF
     ]);
 });
 
-test('KOReader install maps ZIP files under .adds/koreader', async () => {
+for (const [major, id, asset] of [
+    [4, 'koreader', 'koreader-kobo.zip'],
+    [6, 'koreader-kobov5', 'koreader-kobov5.zip'],
+]) {
+    test(`KOReader OS ${major} install maps the matching ZIP under .adds/koreader`, async () => {
+        const zipData = await createZip({
+            'koreader/koreader.sh': '#!/bin/sh',
+            'defaults.lua': 'return {}',
+        });
+        const progressMessages = [];
+
+        await withManifest({ [id]: { version: 'v2026.01', available: true } }, () =>
+            withMockFetch(new Map([[`/assets/${asset}?v=v2026.01`, createResponse(zipData)]]), async () => {
+                const files = await koreader.install({
+                    deviceInfo: { firmware: `${major}.0` },
+                    bundledAsset: async (url) => new Uint8Array(readFileSync(url)),
+                    progress(message) {
+                        progressMessages.push(message);
+                    },
+                });
+
+                assert.deepEqual(
+                    files.map((file) => file.path),
+                    ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua', ...(major === 6 ? ['.adds/koreader/patches/2-webui-os6-exit.lua'] : [])],
+                );
+                assert.equal(text(files[0].data), '#!/bin/sh');
+                assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);
+            }),
+        );
+    });
+}
+
+test('KOReader requires the package for the chosen firmware and reports its version', async () => {
+    await withManifest({ koreader: { version: 'v1', available: true } }, async () => {
+        assert.equal(koreader.available({ firmware: '4.46' }), true);
+        assert.equal(koreader.available({ firmware: '6.0' }), false);
+        await assert.rejects(() => koreader.install({ deviceInfo: { firmware: '6.0' }, progress() {} }), /assets not available/);
+    });
+    await withManifest({ 'koreader-kobov5': { version: 'v2', available: true } }, async () => {
+        assert.equal(koreader.available({ firmware: '4.46' }), false);
+        assert.equal(koreader.available({ firmware: '6.0' }), true);
+        assert.equal(koreader.version({ firmware: '6.0' }), 'v2');
+        await assert.rejects(() => koreader.install({ deviceInfo: { firmware: '4.46' }, progress() {} }), /assets not available/);
+    });
+});
+
+test("SimpleUI install maps ZIP files into KOReader's plugins directory", async () => {
     const zipData = await createZip({
-        'koreader/koreader.sh': '#!/bin/sh',
-        'defaults.lua': 'return {}',
+        'simpleui.koplugin/main.lua': 'return {}',
+        'simpleui.koplugin/infra/sui_core.lua': '-- core',
     });
     const progressMessages = [];
 
-    await withManifest({ koreader: { version: 'v2026.01', available: true } }, () =>
-        withMockFetch(new Map([['/assets/koreader-kobo.zip?v=v2026.01', createResponse(zipData)]]), async () => {
-            const files = await koreader.install({
+    await withManifest({ simpleui: { version: '2.5.0', available: true } }, () =>
+        withMockFetch(new Map([['/assets/simpleui.koplugin.zip?v=2.5.0', createResponse(zipData)]]), async () => {
+            const files = await simpleui.install({
                 progress(message) {
                     progressMessages.push(message);
                 },
@@ -348,12 +395,44 @@ test('KOReader install maps ZIP files under .adds/koreader', async () => {
 
             assert.deepEqual(
                 files.map((file) => file.path),
-                ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua'],
+                ['.adds/koreader/plugins/simpleui.koplugin/main.lua', '.adds/koreader/plugins/simpleui.koplugin/infra/sui_core.lua'],
             );
-            assert.equal(text(files[0].data), '#!/bin/sh');
-            assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);
+            assert.equal(text(files[0].data), 'return {}');
+            assert.deepEqual(progressMessages, ['Downloading SimpleUI 2.5.0...', 'Extracting SimpleUI...']);
         }),
     );
+});
+
+test('SimpleUI install places a flat archive under the plugin folder KOReader looks for', async () => {
+    // KOReader identifies a plugin by its directory name, so an archive that
+    // ever ships its contents unrooted must still land in simpleui.koplugin/.
+    const zipData = await createZip({ 'main.lua': 'return {}' });
+
+    await withManifest({ simpleui: { version: '2.5.0', available: true } }, () =>
+        withMockFetch(new Map([['/assets/simpleui.koplugin.zip?v=2.5.0', createResponse(zipData)]]), async () => {
+            const files = await simpleui.install({ progress() {} });
+            assert.deepEqual(
+                files.map((file) => file.path),
+                ['.adds/koreader/plugins/simpleui.koplugin/main.lua'],
+            );
+        }),
+    );
+});
+
+test('SimpleUI is removable when modifying an install, but never on its own', () => {
+    // The uninstall lists are built from `cleanup`; declaring none is what keeps
+    // the plugin out of them, since removing KOReader takes it either way.
+    assert.equal(simpleui.cleanup, undefined);
+    // `modifyCleanup` is what lets a modify run drop the plugin while KOReader stays.
+    assert.deepEqual(simpleui.modifyCleanup.paths, [{ path: ['.adds', 'koreader', 'plugins', 'simpleui.koplugin'], recursive: true }]);
+    assert.equal(simpleui.modifyCleanup.title, 'Simple UI');
+});
+
+test('SimpleUI is a KOReader subitem that adds no menu entry of its own', () => {
+    assert.equal(simpleui.parent, 'koreader');
+    assert.equal(simpleui.section, koreader.section, 'listed alongside the app it plugs into');
+    assert.equal(simpleui.menuItems, undefined, 'a KOReader plugin has no NickelMenu entry');
+    assert.deepEqual(simpleui.directories, ['.adds/koreader/plugins/simpleui.koplugin']);
 });
 
 test('Cadmus install maps tar.gz files under .adds/cadmus', async () => {

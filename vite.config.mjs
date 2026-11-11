@@ -18,6 +18,10 @@ function installablesManifest() {
     for (const [name, entry] of Object.entries(lock.installables || {})) {
         manifest[name] = {
             version: entry.version,
+            // The digest travels with the pin so a download can be checked against
+            // what this build expected, rather than against whatever the server
+            // happens to be serving after a redeploy.
+            sha256: entry.sha256,
             available: existsSync(join(srcDir, 'assets', entry.asset)),
         };
     }

@@ -96,8 +96,8 @@ test('reviewNotices links to the NickelCoverFix repository', () => {
     const notices = nickelCoverFix.reviewNotices();
     assert.equal(notices.length, 1);
     assert.equal(notices[0].type, 'info');
-    assert.equal(notices[0].title, 'NickelCoverFix');
-    assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelCoverFix');
+    assert.equal(notices[0].mod.name, 'NickelCoverFix');
+    assert.equal(notices[0].mod.href, 'https://github.com/nicoverbruggen/NickelCoverFix');
 });
 
 test('the mod is detected as installed exactly when its uninstall marker exists', async () => {

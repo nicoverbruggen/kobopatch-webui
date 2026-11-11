@@ -6,13 +6,14 @@
  * review screen. The actual device writes are delegated to nickelmenu-execute.js.
  */
 
+import { nickelMenuDeviceInfo, nickelMenuPackage } from '../nickelmenu/firmware.js';
 import { $, $q, $qa, collect, populateList } from '../shell/dom.js';
 import { setupCardRadios } from '../shell/navigation.js';
-import { renderNmCheckboxList } from '../nickelmenu/checkbox-list.js';
+import { renderNmCheckboxList, setNmSubItemAvailability } from '../nickelmenu/checkbox-list.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { NICKELMENU_FEATURES } from '../nickelmenu/features/index.js';
-import { installablesManifest } from '../nickelmenu/installables.js';
+import { displayVersion, installablesManifest } from '../nickelmenu/installables.js';
 import {
     createDefaultMenuCustomization,
     isDefaultMenuCustomization,
@@ -22,11 +23,13 @@ import {
 } from '../nickelmenu/customization.js';
 import {
     checkNickelMenuInstalled as probeCheckNickelMenuInstalled,
+    detectInstalledNickelMenuFeatureIds,
+    detectInstalledNickelMenuVersions,
     detectPresetConflicts as probeDetectPresetConflicts,
     getKoboUserCount as probeGetKoboUserCount,
-    readPreviousNickelMenuSelections,
+    readPreviousNickelMenuConfiguration,
 } from '../nickelmenu/probes.js';
-import { nmReviewModel, featureDisabledReason } from '../nickelmenu/selection.js';
+import { nmReviewModel, featureDisabledReason, parentIsCovered, subFeatureCheckboxLabel, subFeatureNoun, subFeatures } from '../nickelmenu/selection.js';
 import {
     cloneMenuCustomization,
     getMenuCustomizationSummaryItem,
@@ -54,13 +57,13 @@ import {
     setFontsCollectionSelection,
     normalizedFontsCustomization,
 } from '../nickelmenu/features/additional-fonts/customization-dialog.js';
-import { meetsMinimumVersion } from '../kobo/version.js';
+import { meetsMinimumVersion, firmwareMajor } from '../kobo/version.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { shouldOfferNmBackup, prepareNmBackup } from './nickelmenu-backup.js';
 import { executeNmInstall as executeNmInstallFn, renderNmDoneStatus, renderReviewNotices } from './nickelmenu-execute.js';
 
-const NM_COLLAPSED_SECTIONS = new Set(['Alternative reading apps', 'Advanced', 'Legacy']);
+const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
 
 export function initNickelMenuFlow(state) {
     const {
@@ -68,6 +71,9 @@ export function initNickelMenuFlow(state) {
         'step-nm-backup': stepNmBackup,
         'step-nm-done': stepNmDone,
         'nm-config-options': nmConfigOptions,
+        'nm-previous-configuration-actions': nmPreviousConfigurationActions,
+        'btn-nm-use-previous-configuration': btnNmUsePreviousConfiguration,
+        'btn-nm-previous-configuration-dismiss': btnNmPreviousConfigurationDismiss,
         'nm-uninstall-options': nmUninstallOptions,
         'btn-nm-back': btnNmBack,
         'btn-nm-next': btnNmNext,
@@ -132,6 +138,9 @@ export function initNickelMenuFlow(state) {
         'step-nm-backup',
         'step-nm-done',
         'nm-config-options',
+        'nm-previous-configuration-actions',
+        'btn-nm-use-previous-configuration',
+        'btn-nm-previous-configuration-dismiss',
         'nm-uninstall-options',
         'btn-nm-back',
         'btn-nm-next',
@@ -199,40 +208,52 @@ export function initNickelMenuFlow(state) {
     for (const [id, info] of Object.entries(installablesManifest())) {
         const feature = NICKELMENU_FEATURES.find((f) => f.id === id);
         if (feature && info.available) {
-            feature.available = true;
-            feature.version = info.version;
+            if (typeof feature.available !== 'function') feature.available = true;
+            if (typeof feature.version !== 'function') feature.version = info.version;
         }
     }
 
     setupCardRadios(stepNickelMenu, 'selection-card--selected');
+    $('nm-manual-firmware').addEventListener('change', (event) => {
+        state.manualNickelMenuFirmware = event.target.value;
+        state.selectedFeatureIds = [];
+    });
 
     const NM_PRESET_TITLE_INSTALL = nmOptionPresetTitle.textContent;
-    const NM_PRESET_TITLE_REINSTALL = '(Re)install with preset (and customize)';
+    const NM_PRESET_TITLE_REINSTALL = 'Modify current setup (and customize)';
 
     let detectedOptionalCleanupFeatures = [];
     let detectedPresetConflictsList = [];
     let legacyItemsDetected = false;
     let legacyItemsWasOurs = false;
+    let webuiPresetInstalled = false;
+    let previousConfigurationApplied = false;
     let nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
     let nmCustomizationSession = 0;
     let nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
     let nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
 
-    function resolveNavLabels(ctx) {
-        const option = ctx.nickelMenuOption;
-        if (option === 'remove' && state.manualMode) return TL.NAV_NICKELMENU_MANUAL_REMOVE;
-        if (option === 'remove') return TL.NAV_NICKELMENU_REMOVE;
-        return TL.NAV_NICKELMENU;
+    function skipsModeSelection(ctx) {
+        return !ctx.manualMode && firmwareMajor(ctx.device?.deviceInfo?.firmware) === 6;
     }
+
+    function resolveNavLabels(ctx) {
+        const labels = ctx.nickelMenuOption !== 'remove' ? TL.NAV_NICKELMENU : ctx.manualMode ? TL.NAV_NICKELMENU_MANUAL_REMOVE : TL.NAV_NICKELMENU_REMOVE;
+        return skipsModeSelection(ctx) ? labels.filter((_, index) => index !== 1) : labels;
+    }
+
+    const navIndex = (index) => (ctx) => index - (skipsModeSelection(ctx) ? 1 : 0);
 
     const steps = [
         {
             id: 'config',
             domId: 'step-nickelmenu',
             navLabels: resolveNavLabels,
-            navIndex: 3,
+            navIndex: navIndex(3),
             recoveryStep: 'config',
             onEnter: async () => {
+                $('nm-manual-firmware-field').hidden = !state.manualMode;
+                $('nm-manual-firmware').value = state.manualNickelMenuFirmware;
                 await checkNmInstalledState();
                 if (!$q('input[name="nm-option"]:checked', stepNickelMenu)) {
                     const presetRadio = $q('input[name="nm-option"][value="preset"]', stepNickelMenu);
@@ -248,7 +269,7 @@ export function initNickelMenuFlow(state) {
             id: 'preset-conflict',
             domId: 'step-nm-preset-conflict',
             navLabels: resolveNavLabels,
-            navIndex: 3,
+            navIndex: navIndex(3),
             back: () => 'config',
             onEnter: async () => {
                 nmPresetConflictSummary.textContent = TL.STATUS.NM_PRESET_CONFLICT;
@@ -264,9 +285,12 @@ export function initNickelMenuFlow(state) {
             id: 'features',
             domId: 'step-nm-features',
             navLabels: resolveNavLabels,
-            navIndex: 3,
+            navIndex: navIndex(3),
             back: () => 'config',
             onEnter: async () => {
+                if (webuiPresetInstalled && !previousConfigurationApplied) {
+                    restorePreviousConfiguration(true, false);
+                }
                 renderFeatureCheckboxes();
                 updateSideloadedRecommendation().catch(() => {});
             },
@@ -275,7 +299,7 @@ export function initNickelMenuFlow(state) {
             id: 'backup',
             domId: 'step-nm-backup',
             navLabels: resolveNavLabels,
-            navIndex: 4,
+            navIndex: navIndex(4),
             back: (ctx) => (ctx.nickelMenuOption === 'preset' ? 'features' : 'config'),
             onEnter: async () => {
                 const canCreateBackup = shouldOfferNmBackup(state);
@@ -321,7 +345,7 @@ export function initNickelMenuFlow(state) {
             id: 'review',
             domId: 'step-nm-review',
             navLabels: resolveNavLabels,
-            navIndex: 5,
+            navIndex: navIndex(5),
             back: () => 'backup',
             onEnter: async () => {
                 const summary = $('nm-review-summary');
@@ -332,14 +356,17 @@ export function initNickelMenuFlow(state) {
                 const keptList = $('nm-review-kept-list');
                 const reviewNotices = $('nm-review-notices');
 
-                const model = nmReviewModel(state, detectedOptionalCleanupFeatures, state.device.deviceInfo);
+                const model = nmReviewModel(state, detectedOptionalCleanupFeatures, nickelMenuDeviceInfo(state));
                 $('step-nm-review').classList.toggle('review--removal', model.mode === 'remove');
+                // An install run that also removes things marks that list red,
+                // so "will be removed" never reads like part of the install.
+                keptCard.classList.toggle('review-summary--pending-removals', model.mode !== 'remove' && model.removedFeatures.length > 0);
 
                 if (model.mode === 'remove') {
                     summary.textContent = TL.STATUS.NM_WILL_BE_REMOVED;
                     summary.hidden = false;
                     listLabel.textContent = TL.STATUS.NM_SELECTED_REMOVALS;
-                    populateList(list, [TL.STATUS.NM_REMOVAL_NICKELMENU, ...model.removedFeatures.map((f) => f.cleanup.title)]);
+                    populateList(list, [TL.STATUS.NM_REMOVAL_NICKELMENU, ...model.removedFeatures.map((f) => (f.modifyCleanup || f.cleanup).title)]);
                     populateList(
                         keptList,
                         model.keptFeatures.map((f) => f.cleanup.title),
@@ -353,9 +380,17 @@ export function initNickelMenuFlow(state) {
                 } else {
                     summary.hidden = true;
                     summary.textContent = '';
-                    keptCard.hidden = true;
-                    listLabel.textContent = TL.STATUS.NM_WILL_BE_INSTALLED;
-                    populateList(list, [TL.STATUS.NM_NICKEL_ROOT_TGZ, ...model.installFeatures.map((f) => f.title)]);
+                    populateList(
+                        keptList,
+                        model.removedFeatures.map((f) => (f.modifyCleanup || f.cleanup).title),
+                    );
+                    keptLabel.textContent = 'These currently installed features will be removed:';
+                    keptCard.hidden = model.removedFeatures.length === 0;
+                    listLabel.textContent = state.nmWebuiPresetInstalled ? TL.STATUS.NM_WILL_BE_INSTALLED_MODIFY : TL.STATUS.NM_WILL_BE_INSTALLED;
+                    populateList(list, [
+                        `NickelMenu (${nickelMenuPackage(nickelMenuDeviceInfo(state)).filename})`,
+                        ...model.installFeatures.map((f) => ({ text: f.title, note: installNoteText(model.installNotes[f.id]) })),
+                    ]);
                     btnNmWrite.hidden = false;
                     btnNmWrite.textContent = TL.BUTTON.WRITE_TO_KOBO;
                     btnNmDownload.hidden = false;
@@ -376,19 +411,20 @@ export function initNickelMenuFlow(state) {
             domId: 'step-nm-installing',
             transient: true,
             navLabels: resolveNavLabels,
-            navIndex: 5,
+            navIndex: navIndex(5),
             recoveryStep: 'review',
         },
         {
             id: 'done',
             domId: 'step-nm-done',
             navLabels: resolveNavLabels,
-            navIndex: 6,
+            navIndex: navIndex(6),
             onEnter: async () => {
                 renderNmDoneStatus(state, terminal, {
                     doneStatus: $('nm-done-status'),
                     writeInstructions: $('nm-write-instructions'),
                     downloadInstructions: $('nm-download-instructions'),
+                    downloadVersionNote: $('nm-download-version-note'),
                     rebootInstructions: $('nm-reboot-instructions'),
                     downloadConfStep: $('nm-download-conf-step'),
                     downloadRebootStep: $('nm-download-reboot-step'),
@@ -409,7 +445,7 @@ export function initNickelMenuFlow(state) {
             id: 'manual-remove',
             domId: 'step-nm-manual-remove',
             navLabels: resolveNavLabels,
-            navIndex: 4,
+            navIndex: navIndex(4),
         },
     ];
 
@@ -428,62 +464,51 @@ export function initNickelMenuFlow(state) {
     }
 
     function renderFeatureCheckboxes() {
-        const deviceInfo = state.device?.deviceInfo;
-        const firmware = deviceInfo?.firmware;
+        const deviceInfo = nickelMenuDeviceInfo(state);
+        const isOs6 = firmwareMajor(deviceInfo?.firmware) === 6;
+        $('nm-os6-notice').hidden = !isOs6;
         // Hidden add-ons stay in the registry so existing installs can still be
         // detected and removed, but are omitted from the install catalogue.
-        // Unavailable or disabled add-ons stay listed with an explanation.
-        const features = NICKELMENU_FEATURES.filter((f) => !f.hidden);
+        // OS 6 shows only available features; other firmware keeps disabled rows.
+        // Subitems are not rows at all: they are picked in their parent's dialog.
+        const features = NICKELMENU_FEATURES.filter((f) => !f.hidden && !f.parent && (!isOs6 || !featureDisabledReason(f, deviceInfo)));
 
         if (state.selectedFeatureIds.length === 0) {
             state.selectedFeatureIds = features
-                .filter(
-                    (f) =>
-                        f.available !== false &&
-                        !f.disabled &&
-                        meetsMinimumVersion(firmware, f.minimumVersion) &&
-                        !f.unsupportedDeviceReason?.(deviceInfo) &&
-                        (f.required || f.default),
-                )
+                .filter((f) => (f.required || (typeof f.default === 'function' ? f.default(deviceInfo) : f.default)) && !featureDisabledReason(f, deviceInfo))
                 .map((f) => f.id);
         }
 
         const items = features.map((f) => {
-            const unavailable = f.available === false || Boolean(f.disabled);
-            const meetsMinimum = meetsMinimumVersion(firmware, f.minimumVersion);
-            // A feature-owned device gate (e.g. NickelDissolve's allowlist):
-            // a returned string disables the checkbox and is shown as the reason.
-            const unsupportedReason = f.unsupportedDeviceReason?.(deviceInfo) || undefined;
+            // Everything that can hold a feature back — a maintainer kill switch,
+            // too-old firmware, a feature-owned device gate, an unbundled asset —
+            // comes back as one reason string.
+            const reason = featureDisabledReason(f, deviceInfo);
             return {
                 name: 'nm-cfg-' + f.id,
                 title: f.title + (f.required ? ' (required)' : ''),
-                version: typeof f.version === 'function' ? f.version() : f.version,
-                description: f.description,
+                version: displayVersion(typeof f.version === 'function' ? f.version(deviceInfo) : f.version),
+                description: typeof f.description === 'function' ? f.description(deviceInfo) : f.description,
                 hint: f.hint,
                 experimental: f.experimental === true,
-                previouslySelected: state.previousNickelMenuFeatureIds.includes(f.id),
                 sectionTitle: f.section,
                 sectionCollapsed: NM_COLLAPSED_SECTIONS.has(f.section),
-                checked: state.selectedFeatureIds.includes(f.id) && !unavailable,
-                disabled: f.required || !meetsMinimum || Boolean(unsupportedReason) || unavailable,
-                disabledReason: featureDisabledReason(f, deviceInfo),
+                checked: state.selectedFeatureIds.includes(f.id) && !reason,
+                disabled: f.required || Boolean(reason),
+                disabledReason: reason,
+                subItems: subFeatureItems(f, deviceInfo),
                 actionLabel: f.customization?.actionLabel,
                 actionAriaLabel: f.customization?.actionAriaLabel,
                 onAction: f.customization
-                    ? (triggerEl) => {
+                    ? () => {
                           if (f.customization.type === 'tabs') {
-                              nmTabsDraft = openTabsCustomizeDialog(state, tabsDialogDom, triggerEl);
+                              nmTabsDraft = openTabsCustomizeDialog(state, tabsDialogDom);
                           } else if (f.customization.type === 'fonts') {
-                              nmFontsDraft = openFontsCustomizeDialog(state, fontsDialogDom, triggerEl);
+                              nmFontsDraft = openFontsCustomizeDialog(state, fontsDialogDom);
                           } else {
                               nmCustomizationSession++;
                               const session = nmCustomizationSession;
-                              nmCustomizationDraft = openMenuCustomizeDialog(
-                                  state,
-                                  customizationDialogDom,
-                                  triggerEl,
-                                  () => session === nmCustomizationSession,
-                              );
+                              nmCustomizationDraft = openMenuCustomizeDialog(state, customizationDialogDom, () => session === nmCustomizationSession);
                           }
                       }
                     : undefined,
@@ -503,7 +528,74 @@ export function initNickelMenuFlow(state) {
                 } else {
                     state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== feature.id);
                 }
+                refreshSubFeatureSelections();
             });
+        }
+
+        refreshSubFeatureSelections();
+    }
+
+    /**
+     * The add-on checkboxes rendered under a feature's description. An add-on
+     * installs inside its parent, so it is only selectable once the parent is
+     * ticked or already on the device — said on the checkbox itself rather than
+     * hidden, so the option is always visible.
+     */
+    function subFeatureItems(parent, deviceInfo) {
+        return subFeatures(parent.id)
+            .filter((f) => !f.hidden && (firmwareMajor(deviceInfo?.firmware) !== 6 || !featureDisabledReason(f, deviceInfo)))
+            .map((f) => {
+                // Its own blockers are worth explaining; waiting on the feature
+                // it sits under is not — it is greyed out directly beneath it.
+                const reason = featureDisabledReason(f, deviceInfo);
+                const disabled = Boolean(reason) || !parentIsCovered(parent.id, state);
+                return {
+                    name: 'nm-cfg-' + f.id,
+                    label: subFeatureCheckboxLabel(f),
+                    badge: subFeatureNoun(parent.id),
+                    currentlyInstalled: state.installedNickelMenuFeatureIds.includes(f.id),
+                    version: displayVersion(typeof f.version === 'function' ? f.version(deviceInfo) : f.version),
+                    hint: f.hint,
+                    checked: state.selectedFeatureIds.includes(f.id) && !disabled,
+                    disabled,
+                    disabledReason: reason,
+                    onChange: (checked) => {
+                        if (checked) {
+                            if (!state.selectedFeatureIds.includes(f.id)) state.selectedFeatureIds.push(f.id);
+                        } else {
+                            state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== f.id);
+                        }
+                    },
+                };
+            });
+    }
+
+    /** What to print after a feature in the review list. */
+    function installNoteText(note) {
+        if (!note) return '';
+        if (note.kind === 'upgrade') return `(upgrade from ${note.from} \u2192 ${note.to})`;
+        return note.kind === 'reinstall' ? '(reinstall)' : '(install)';
+    }
+
+    /**
+     * Bring every add-on checkbox in line with its parent. An add-on installs
+     * inside its parent, so it becomes selectable when the parent is ticked and
+     * un-ticks itself when the parent goes away, rather than silently failing to
+     * install. Patched in place rather than re-rendered, so the sections the
+     * user opened stay open.
+     */
+    function refreshSubFeatureSelections() {
+        const deviceInfo = nickelMenuDeviceInfo(state);
+
+        for (const feature of NICKELMENU_FEATURES.filter((f) => f.parent && !f.hidden)) {
+            const reason = featureDisabledReason(feature, deviceInfo);
+            const disabled = Boolean(reason) || !parentIsCovered(feature.parent, state);
+
+            const cb = $q(`input[name="nm-cfg-${feature.id}"]`);
+            if (!cb) continue;
+            if (disabled && cb.checked) cb.checked = false;
+            if (disabled) state.selectedFeatureIds = state.selectedFeatureIds.filter((id) => id !== feature.id);
+            setNmSubItemAvailability(cb, disabled, reason);
         }
     }
 
@@ -587,8 +679,19 @@ export function initNickelMenuFlow(state) {
         nmOptionPresetTitle.textContent = NM_PRESET_TITLE_INSTALL;
         state.koboUserCount = undefined;
         state.nickelMenuOption = null;
+        // Clear the radios too, like the backup options below: `onEnter` skips the
+        // preset default if anything is checked, and `:checked` matches a disabled one.
+        for (const radio of $qa('input[name="nm-option"]', stepNickelMenu)) {
+            radio.checked = false;
+            radio.closest('.selection-card')?.classList.remove('selection-card--selected');
+        }
         state.selectedFeatureIds = [];
         state.previousNickelMenuFeatureIds = [];
+        state.previousNickelMenuConfiguration = null;
+        state.installedNickelMenuFeatureIds = [];
+        state.nmWebuiPresetInstalled = false;
+        webuiPresetInstalled = false;
+        previousConfigurationApplied = false;
         state.nmOptionalCleanupIds = [];
         state.nmKeepLegacyConfig = false;
         $('nm-sideloaded-banner').hidden = true;
@@ -606,6 +709,8 @@ export function initNickelMenuFlow(state) {
         state.nickelMenuFontsCustomization = createDefaultFontsCustomization();
         nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
         nmConfigOptions.innerHTML = '';
+        nmPreviousConfigurationActions.hidden = true;
+        $('nm-installed-features-note').hidden = true;
         updateMenuCustomizationSummary(state);
         updateTabsCustomizationSummary(state);
         updateFontsCustomizationSummary(state);
@@ -624,7 +729,7 @@ export function initNickelMenuFlow(state) {
         const removeRadio = $q('input[value="remove"]', removeOption);
         const removeDesc = $('nm-remove-desc');
 
-        const [, previousSelections] = await Promise.all([
+        const [installedState, previousConfiguration] = await Promise.all([
             probeCheckNickelMenuInstalled(state, {
                 presetTitleEl: nmOptionPresetTitle,
                 removeOption,
@@ -646,9 +751,19 @@ export function initNickelMenuFlow(state) {
                     legacyItemsWasOurs = wasOurs;
                 },
             }),
-            readPreviousNickelMenuSelections(state),
+            readPreviousNickelMenuConfiguration(state),
         ]);
-        state.previousNickelMenuFeatureIds = previousSelections;
+        state.previousNickelMenuConfiguration = previousConfiguration;
+        state.previousNickelMenuFeatureIds = previousConfiguration?.selectedFeatureIds || [];
+        webuiPresetInstalled = installedState.webuiPresetPresent;
+        // Only a setup this tool wrote can be modified: it is what makes the
+        // feature list reflect reality, and so what makes an unticked box mean
+        // "remove this". See `featuresToRemove` in selection.js.
+        state.nmWebuiPresetInstalled = webuiPresetInstalled;
+        state.installedNickelMenuFeatureIds = await detectInstalledNickelMenuFeatureIds(state, state.previousNickelMenuFeatureIds, webuiPresetInstalled);
+        state.installedNickelMenuVersions = await detectInstalledNickelMenuVersions(state, previousConfiguration?.installedVersions || {});
+        $('nm-installed-features-note').hidden = !installedState.installed;
+        nmPreviousConfigurationActions.hidden = !previousConfiguration || webuiPresetInstalled;
     }
 
     async function detectHasPresetConflicts() {
@@ -671,7 +786,8 @@ export function initNickelMenuFlow(state) {
     }
 
     btnNmBack.addEventListener('click', () => {
-        state.goToModeSelection();
+        if (skipsModeSelection(state)) state.goBackToDeviceStep();
+        else state.goToModeSelection();
     });
 
     btnNmNext.addEventListener('click', async () => {
@@ -713,9 +829,9 @@ export function initNickelMenuFlow(state) {
 
     async function updateSideloadedRecommendation() {
         const banner = $('nm-sideloaded-banner');
-        const firmware = state.device?.deviceInfo?.firmware;
+        const firmware = nickelMenuDeviceInfo(state)?.firmware;
         const sideloaded = supportedSideloadedModeFeature(NICKELMENU_FEATURES, firmware);
-        if (!sideloaded) {
+        if (!sideloaded || featureDisabledReason(sideloaded, nickelMenuDeviceInfo(state))) {
             banner.hidden = true;
             return;
         }
@@ -734,6 +850,58 @@ export function initNickelMenuFlow(state) {
     btnNmFeaturesBack.addEventListener('click', async () => {
         const target = flow.back(state);
         if (target) await flow.go(target, state);
+    });
+
+    /**
+     * Seed the wizard from a previous run. With `useInstalledState` it seeds the
+     * ticks from what is actually on the device (the modify case); otherwise it
+     * seeds them from the manifest's recorded selection (the "Use last
+     * configuration" button, offered when our preset is gone but its manifest
+     * survives). Customizations come from the manifest either way.
+     */
+    function restorePreviousConfiguration(useInstalledState = false, render = true) {
+        const previous = state.previousNickelMenuConfiguration;
+        if (!previous && !useInstalledState) return false;
+
+        const previousIds = new Set(useInstalledState ? state.installedNickelMenuFeatureIds : previous.selectedFeatureIds);
+        state.selectedFeatureIds = NICKELMENU_FEATURES.filter((feature) => !feature.hidden && (feature.required || previousIds.has(feature.id))).map(
+            (feature) => feature.id,
+        );
+
+        if (previous?.menuCustomization) {
+            const previousIcon = previous.menuCustomization.icon;
+            if (previousIcon?.type === 'upload' && previousIcon.data && !previousIcon.previewUrl) {
+                previousIcon.previewUrl = URL.createObjectURL(new Blob([previousIcon.data], { type: previousIcon.mimeType }));
+            }
+            state.nickelMenuCustomization = cloneMenuCustomization(previous.menuCustomization);
+            nmCustomizationDraft = cloneMenuCustomization(state.nickelMenuCustomization);
+            nmCustomizationSession++;
+        }
+        if (previous?.tabsCustomization && previousIds.has('simplify-tabs')) {
+            state.nickelMenuTabsCustomization = cloneTabsCustomization(previous.tabsCustomization);
+            nmTabsDraft = cloneTabsCustomization(state.nickelMenuTabsCustomization);
+        }
+        if (previous?.fontsCustomization && previousIds.has('additional-fonts')) {
+            state.nickelMenuFontsCustomization = cloneFontsCustomization(previous.fontsCustomization);
+            nmFontsDraft = cloneFontsCustomization(state.nickelMenuFontsCustomization);
+        }
+
+        previousConfigurationApplied = true;
+        if (render) renderFeatureCheckboxes();
+        return true;
+    }
+
+    btnNmUsePreviousConfiguration.addEventListener('click', () => {
+        restorePreviousConfiguration(false);
+        // The offer has been taken: the ticked boxes are the confirmation, so the
+        // banner has nothing left to say.
+        nmPreviousConfigurationActions.hidden = true;
+    });
+
+    // Dismissing only hides the banner for as long as the user stays on the step:
+    // checkNmInstalledState() decides again on the next visit.
+    btnNmPreviousConfigurationDismiss.addEventListener('click', () => {
+        nmPreviousConfigurationActions.hidden = true;
     });
 
     btnNmFeaturesNext.addEventListener('click', async () => {

@@ -1,8 +1,8 @@
+import { nickelMenuPackage } from './firmware.js';
 import { getConfSetting, removeConfSetting, revertableConfSettings, setConfSetting } from '../kobo/configuration.js';
 import { writeAuditLog } from '../kobo/audit-log.js';
 
 const eReaderConfPath = ['.kobo', 'Kobo', 'Kobo eReader.conf'];
-const nickelMenuTgzPath = ['.kobo', 'KoboRoot.tgz'];
 const nickelMenuRecursiveAssetPaths = [['.adds', 'nm']];
 const nickelMenuUninstallMarkerPath = ['.adds', 'nm', 'uninstall'];
 const syncExclusionIgnoredAddsDirectories = new Set(['nm']);
@@ -69,7 +69,7 @@ async function applyConfReverts(device, feature, audit = null) {
 }
 
 async function executeFeatureCleanup(device, feature, logger, audit = null) {
-    const cleanup = feature.cleanup;
+    const cleanup = feature.modifyCleanup || feature.cleanup;
     if (!cleanup) return;
 
     for (const entry of cleanup.paths || []) {
@@ -82,6 +82,15 @@ async function executeFeatureCleanup(device, feature, logger, audit = null) {
     await applyConfReverts(device, feature, audit);
 }
 
+export async function executeNickelMenuFeatureCleanups({ device, features, onProgress = () => {}, logger = console, audit = null }) {
+    for (const feature of features) {
+        const cleanup = feature.modifyCleanup || feature.cleanup;
+        onProgress(`Removing ${cleanup.title}...`);
+        audit?.record(`Removing ${cleanup.title}`);
+        await executeFeatureCleanup(device, feature, logger, audit);
+    }
+}
+
 async function executeNickelMenuRemoval({
     device,
     installer,
@@ -91,8 +100,9 @@ async function executeNickelMenuRemoval({
     logger = console,
     audit = null,
 }) {
-    await installer.loadNickelMenu(onProgress);
-    const tgz = await installer.getKoboRootTgz();
+    const nickelMenuTgzPath = ['.kobo', nickelMenuPackage(device.deviceInfo).filename];
+    await installer.loadNickelMenu(onProgress, device.deviceInfo);
+    const tgz = await installer.getKoboRootTgz(device.deviceInfo);
 
     onProgress('Removing NickelMenu assets...');
     for (const path of nickelMenuRecursiveAssetPaths) {
@@ -123,11 +133,11 @@ async function executeNickelMenuRemoval({
         await installer.repairLegacyExcludeSyncFolders(device);
     }
 
-    onProgress('Writing KoboRoot.tgz...');
+    onProgress(`Writing ${nickelMenuTgzPath[1]}...`);
     await device.writeFile(nickelMenuTgzPath, tgz);
     audit?.record(`Removing NickelMenu: wrote ${nickelMenuTgzPath.join('/')} (${tgz.length} bytes)`);
 
     await writeAuditLog(audit, device);
 }
 
-export { executeNickelMenuRemoval, hasAddsDirectoriesRequiringSyncExclusions, nickelMenuRecursiveAssetPaths, nickelMenuTgzPath, nickelMenuUninstallMarkerPath };
+export { executeNickelMenuRemoval, hasAddsDirectoriesRequiringSyncExclusions, nickelMenuRecursiveAssetPaths, nickelMenuUninstallMarkerPath };

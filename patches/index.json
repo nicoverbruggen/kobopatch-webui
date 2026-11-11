@@ -2,8 +2,7 @@
     {
         "filename": "patches_4.46.zip",
         "versions": [
-            "4.46.23852",
-            "4.46.23836"
+            "4.46.23852"
         ],
         "patches": {
             "src/nickel.yaml": "usr/local/Kobo/nickel",

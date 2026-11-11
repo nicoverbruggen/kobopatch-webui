@@ -18,13 +18,15 @@ function versionLine(serial, firmware, hardwareId = HARDWARE_ID) {
 }
 
 test('serialPrefixMatch checks every accepted prefix and preserves refurbished detection', () => {
-    assert.deepEqual(serialPrefixMatch(['N613', '613'], '613B'), { matches: true, refurbished: false });
-    assert.deepEqual(serialPrefixMatch(['N613', '613'], 'R613'), { matches: true, refurbished: true });
-    assert.deepEqual(serialPrefixMatch(['N613', '613'], 'R514'), { matches: false, refurbished: false });
-    assert.deepEqual(serialPrefixMatch(['613'], 'R13'), { matches: false, refurbished: false });
-    assert.deepEqual(serialPrefixMatch(['N905', 'KG31'], 'RG31'), { matches: false, refurbished: false });
-    assert.deepEqual(serialPrefixMatch([], 'N613'), { matches: false, refurbished: false });
-    assert.deepEqual(serialPrefixMatch(['N613', '613'], ''), { matches: false, refurbished: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: ['N613', '613'] }, '613B'), { matches: true, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: ['N613', '613'] }, 'R613'), { matches: true, refurbished: true, tolino: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: ['N613', '613'] }, 'R514'), { matches: false, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: ['613'] }, 'R13'), { matches: false, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: ['N905', 'KG31'] }, 'RG31'), { matches: false, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: [] }, 'N613'), { matches: false, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch(null, 'N613'), { matches: false, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch({}, 'N613'), { matches: false, refurbished: false, tolino: false });
+    assert.deepEqual(serialPrefixMatch({ serialPrefixes: ['N613', '613'] }, ''), { matches: false, refurbished: false, tolino: false });
 });
 
 test('parseKoboVersion reads known 4-character device prefixes', () => {
@@ -35,12 +37,14 @@ test('parseKoboVersion reads known 4-character device prefixes', () => {
         firmware: '4.45.23646',
         hardwareId: HARDWARE_ID,
         model: 'Kobo Libra Colour',
+        koboModel: 'Kobo Libra Colour',
         channel: 'kobo13',
         identifiedBy: 'uuid',
         deviceVerification: 'verified',
         serialPrefixStatus: 'verified',
         serialPrefixMatches: true,
         isRefurbished: false,
+        isTolino: false,
         isIncompatible: false,
         incompatibleReason: null,
     });
@@ -188,6 +192,11 @@ test('parseKoboVersion does not fall back to a 3-character prefix', () => {
 });
 
 test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
+    assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000310'], {
+        serialPrefixes: ['N905', 'KG31'],
+        channel: 'kobo3',
+        model: 'Kobo Touch A/B',
+    });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000320'], {
         serialPrefixes: ['N905'],
         channel: 'kobo4',
@@ -208,20 +217,24 @@ test('koboHardwareIds maps firmware UUIDs to canonical serial prefixes', () => {
         channel: 'kobo6',
         model: 'Kobo Aura ONE Limited Edition',
     });
+    // Models Kobo also sells as a Tolino carry the rebadged name alongside.
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000390'], {
         serialPrefixes: ['N428'],
         channel: 'kobo13',
         model: 'Kobo Libra Colour',
+        tolinoModel: 'Tolino Vision Color',
     });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000393'], {
         serialPrefixes: ['N367'],
         channel: 'kobo12',
         model: 'Kobo Clara Colour',
+        tolinoModel: 'Tolino Shine Color',
     });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000395'], {
         serialPrefixes: ['P365'],
         channel: 'kobo14',
         model: 'Kobo Clara BW',
+        tolinoModel: 'Tolino Shine 5',
     });
     assert.deepEqual(koboHardwareIds['00000000-0000-0000-0000-000000000380'], {
         serialPrefixes: ['N782'],
@@ -384,8 +397,8 @@ test('parseKoboVersion treats a bare major-4 build below the floor as incompatib
     assert.equal(parseKoboVersion(versionLine('N428000000000', '4')).isIncompatible, true);
 });
 
-test('parseKoboVersion treats any non-4 major as incompatible regardless of the floor', () => {
-    for (const firmware of ['5.0.0', '5.15.245253', '6.0.0', '6.1.12345']) {
+test('parseKoboVersion rejects unsupported firmware families', () => {
+    for (const firmware of ['5.0.0', '5.15.245253', '7.0.0', '8.1.12345']) {
         const info = parseKoboVersion(versionLine('N428000000000', firmware));
         assert.equal(info.isIncompatible, true, firmware);
         assert.equal(info.incompatibleReason, 'too-new', firmware);
@@ -401,4 +414,56 @@ test('parseKoboVersion reports why an incompatible version was rejected', () => 
     assert.equal(parseKoboVersion(versionLine('N428000000000', 'x.50.0')).incompatibleReason, 'too-old'); // non-numeric major => 0
     assert.equal(parseKoboVersion(versionLine('N428000000000', '5.0.0')).incompatibleReason, 'too-new');
     assert.equal(parseKoboVersion(versionLine('N428000000000', '5.15.245253')).incompatibleReason, 'too-new');
+});
+
+// --- Tolino hardware running Kobo software ---
+//
+// Kobo has built the Tolino line since 2017, so a cross-flashed Tolino reports a
+// Kobo hardware UUID while keeping its own serial. The firmware's own serial
+// validation is `SN-[TN]…`, where the letter is the brand.
+
+test('a Tolino serial on a known Kobo UUID is accepted and named as the Tolino', () => {
+    const info = parseKoboVersion('T106123456789,4.9.77,4.45.23697,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390');
+    assert.equal(info.model, 'Tolino Vision Color (with Kobo software)');
+    assert.equal(info.koboModel, 'Kobo Libra Colour', 'the Kobo it is built from stays available');
+    assert.equal(info.serialPrefixStatus, 'tolino');
+    assert.equal(info.deviceVerification, 'verified', 'custom patches are gated on this');
+    assert.equal(info.isTolino, true);
+    assert.equal(info.isRefurbished, false);
+});
+
+test('a T serial on a Kobo with no Tolino twin is still a mismatch', () => {
+    // Only the 2024 generation can be switched to Kobo software, so a T serial on
+    // anything else does not add up and keeps the old warning — which is what
+    // gets such a device reported rather than silently accepted.
+    const info = parseKoboVersion('T999123456789,4.9.77,4.35.20400,4.9.77,4.9.77,00000000-0000-0000-0000-000000000373');
+    assert.equal(info.serialPrefixStatus, 'mismatch');
+    assert.equal(info.deviceVerification, 'mismatch');
+    assert.equal(info.isTolino, false);
+});
+
+test('every Tolino twin in the table is one that can run Kobo software', () => {
+    // Vision Color, Shine Color and Shine 5 (Libra Colour, Clara Colour, Clara
+    // BW). Earlier Tolinos run Android and cannot be cross-flashed, so listing
+    // one would claim support that cannot exist.
+    const twins = Object.values(koboHardwareIds)
+        .map((entry) => entry.tolinoModel)
+        .filter(Boolean);
+    assert.deepEqual(new Set(twins), new Set(['Tolino Vision Color', 'Tolino Shine Color', 'Tolino Shine 5']));
+});
+
+test('a Kobo serial still has to match its own UUID', () => {
+    // The guard the Tolino case relaxes must keep working for everything else:
+    // a Libra Colour UUID with a Clara serial is still a mismatch.
+    const info = parseKoboVersion('N365123456789,4.9.77,4.45.23697,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390');
+    assert.equal(info.serialPrefixStatus, 'mismatch');
+    assert.equal(info.deviceVerification, 'mismatch');
+    assert.equal(info.isTolino, false);
+});
+
+test('a Kobo device is unaffected by the Tolino allowance', () => {
+    const info = parseKoboVersion('N428000000000,4.9.77,4.45.23697,4.9.77,4.9.77,00000000-0000-0000-0000-000000000390');
+    assert.equal(info.model, 'Kobo Libra Colour');
+    assert.equal(info.serialPrefixStatus, 'verified');
+    assert.equal(info.isTolino, false);
 });

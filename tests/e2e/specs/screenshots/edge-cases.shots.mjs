@@ -274,13 +274,13 @@ test('unsupported browser', async ({ page }, testInfo) => {
     await shot(page, dir, 'unsupported-browser', testInfo);
 });
 
-test('incompatible firmware 6.x', async ({ page }, testInfo) => {
+test('incompatible firmware 5.x', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeCompatibility;
-    await connectToDeviceScreen(page, { firmware: '6.0.0' });
+    await connectToDeviceScreen(page, { firmware: '5.18.270971' });
     await shot(page, dir, 'incompatible-firmware', testInfo);
 });
 
-// A version below the 4.23 floor gets different wording than a 5.x or 6.x device.
+// A version below the 4.23 floor gets different wording than a device on an unsupported firmware family.
 test('outdated firmware', async ({ page }, testInfo) => {
     const dir = SCREENSHOT_DIRS.edgeCompatibility;
     await connectToDeviceScreen(page, { firmware: '4.22.99999' });

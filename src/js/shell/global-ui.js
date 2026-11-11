@@ -2,8 +2,9 @@
  * global-ui.js — Global app UI that lives outside the wizard flow.
  *
  * Owns the modal dialogs (how-it-works, credits, privacy, hint), the mobile
- * warning dialog, the analytics-gated privacy link, and the build/preview
- * environment pill. None of this participates in step navigation.
+ * warning dialog, the analytics-gated privacy link, the build/preview
+ * environment pill, and the Start Over buttons on the final steps. None of this
+ * participates in step navigation.
  */
 
 import { $, trapFocus } from './dom.js';
@@ -105,7 +106,21 @@ function injectPreviewBanner() {
     });
 }
 
+// Every "Start Over" button is a plain page reload, so one delegated handler
+// covers all of them however many steps end up carrying the partial.
+function setupRestartButtons() {
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.restart-button')) location.reload();
+    });
+}
+
 export function initGlobalUI() {
+    setupRestartButtons();
+    // The update dialog has no dismiss: reloading is the only way on, so its one
+    // button does exactly that, and Escape (which closes a <dialog> by default)
+    // is refused rather than leaving the user on a page that cannot continue.
+    $('btn-app-updated-reload')?.addEventListener('click', () => location.reload());
+    $('app-updated-dialog')?.addEventListener('cancel', (e) => e.preventDefault());
     const isMobileDevice = navigator.maxTouchPoints > 0 && window.innerWidth < 820;
     if (isMobileDevice) {
         const mobileDialog = $('mobile-dialog');

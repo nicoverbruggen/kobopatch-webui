@@ -7,6 +7,7 @@
  * by the connect, manual, and NickelMenu flows.
  */
 
+import { firmwareMajor } from '../kobo/version.js';
 import { $, $q, $qa, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showStep, setupCardRadios } from '../shell/navigation.js';
 import { deactivateFlow } from '../shell/step-machine.js';
@@ -35,10 +36,16 @@ export function initModeFlow(state, { patches, nm, manual }) {
         applyModeNav(radio.value);
     });
 
-    function goToModeSelection() {
+    async function goToModeSelection() {
         deactivateFlow();
         nm.resetNickelMenuState();
         btnModeNext.disabled = true;
+
+        if (!state.manualMode && firmwareMajor(state.device?.deviceInfo?.firmware) === 6) {
+            state.selectedMode = 'nickelmenu';
+            await nm.goToNickelMenuConfig();
+            return;
+        }
 
         for (const radio of $qa('input[name="mode"]', stepMode)) {
             radio.checked = false;

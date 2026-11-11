@@ -1,15 +1,52 @@
+import { nickelMenuPackage, featureFirmwareDisabledReason } from './firmware.js';
 import { writeAuditLog } from '../kobo/audit-log.js';
 import { NM_ITEMS_FILE, nickelMenuManifestPath } from './constants.js';
 import JSZip from 'jszip';
 import { buildTarGz, parseTarGz } from './archive.js';
-import { fetchOrThrow, fetchWithProgress, downloadProgress } from '../shell/dom.js';
-import { installableAssetUrl, installableSize } from './installables.js';
+import { fetchOrThrow, downloadProgress } from '../shell/dom.js';
+import { featureVersion, installableSize, fetchInstallableAsset } from './installables.js';
 import { buildNickelMenuInstructions } from '../shell/instructions.js';
 import { removeExcludeSyncFoldersLine, revertableConfSettings, setConfSetting, setExcludeSyncFoldersLine } from '../kobo/configuration.js';
 
 import { menuItemPosition } from './features/menu-order.js';
 import excludeCalibre from './features/exclude-calibre/index.js';
 import { buildExcludeSyncFoldersLine, legacyBrokenExcludeSyncFoldersLines } from '../kobo/sync-exclusions.js';
+import { resolveMenuCustomization } from './customization.js';
+import { cloneTabsCustomization } from './features/simplify-tabs/customization.js';
+import { resolveSelectedFamilyIds } from './features/additional-fonts/customization.js';
+
+function bytesToBase64(data) {
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+    }
+    return globalThis.btoa(binary);
+}
+
+function savedConfiguration(features, { menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
+    const selected = new Set(features.map((feature) => feature.id));
+    const configuration = {};
+
+    if (selected.has('custom-menu')) {
+        const resolved = resolveMenuCustomization(menuCustomization);
+        configuration.menu = { label: resolved.label };
+        if (resolved.iconFile) {
+            configuration.menu.icon = {
+                mimeType: resolved.iconFile.path.endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+                data: bytesToBase64(resolved.iconFile.data),
+            };
+        }
+    }
+    if (selected.has('simplify-tabs')) {
+        configuration.tabs = cloneTabsCustomization(tabsCustomization);
+    }
+    if (selected.has('additional-fonts')) {
+        configuration.fonts = { families: resolveSelectedFamilyIds(fontsCustomization) };
+    }
+
+    return configuration;
+}
 
 export function getExcludeSyncFoldersLine(features = []) {
     return buildExcludeSyncFoldersLine({
@@ -102,35 +139,37 @@ function buildItemsFile(features, deviceInfo, menuCustomization = null) {
 
 export class NickelMenuInstaller {
     constructor() {
-        this.nickelMenuTgz = null;
+        this.nickelMenuArchives = new Map();
     }
 
     /**
-     * Download and cache NickelMenu's KoboRoot.tgz. Upstream NickelMenu ships a
-     * bare KoboRoot.tgz (stored locally as NickelMenu.tgz to avoid confusion with
-     * the generated .kobo/KoboRoot.tgz), so the bytes are used verbatim.
+     * Download and cache the base archive for the requested firmware family.
+     * Firmware 4 and 6 use different binaries and archive paths.
      */
-    async loadNickelMenu(progressFn) {
-        if (this.nickelMenuTgz) return;
+    async loadNickelMenu(progressFn, deviceInfo = null) {
+        const pkg = nickelMenuPackage(deviceInfo);
+        if (this.nickelMenuArchives.has(pkg.id)) return;
         const label = 'Downloading NickelMenu...';
         progressFn(label);
-        this.nickelMenuTgz = await fetchWithProgress(
-            installableAssetUrl('nickelmenu', 'NickelMenu.tgz'),
-            downloadProgress(progressFn, label, await installableSize('nickelmenu')),
-            'Failed to download NickelMenu',
-        );
+        const tgz = await fetchInstallableAsset(pkg.id, pkg.asset, {
+            onProgress: downloadProgress(progressFn, label, await installableSize(pkg.id)),
+            errorPrefix: 'Failed to download NickelMenu',
+        });
+        this.nickelMenuArchives.set(pkg.id, tgz);
     }
 
     /**
-     * Get the base NickelMenu KoboRoot.tgz.
+     * Get the base NickelMenu archive for this firmware family.
      */
-    async getKoboRootTgz() {
-        if (!this.nickelMenuTgz) throw new Error('NickelMenu KoboRoot.tgz not loaded');
-        return this.nickelMenuTgz;
+    async getKoboRootTgz(deviceInfo = null) {
+        const pkg = nickelMenuPackage(deviceInfo);
+        const tgz = this.nickelMenuArchives.get(pkg.id);
+        if (!tgz) throw new Error(`NickelMenu ${pkg.filename} not loaded`);
+        return tgz;
     }
 
     /**
-     * Build the effective KoboRoot.tgz written to the device.
+     * Build the effective NickelMenu archive written to the device.
      *
      * The device only processes one `.kobo/KoboRoot.tgz` per boot, so any feature
      * that ships its own KoboRoot.tgz payload (e.g. NickelClock, whose plugin
@@ -144,7 +183,11 @@ export class NickelMenuInstaller {
      * we parse the base archive and rebuild a merged one.
      */
     async buildKoboRootTgz(features = [], progressFn = () => {}, deviceInfo = null) {
-        const baseTgz = await this.getKoboRootTgz();
+        for (const feature of features) {
+            const reason = featureFirmwareDisabledReason(feature, deviceInfo);
+            if (reason) throw new Error(`${feature.title}: ${reason}`);
+        }
+        const baseTgz = await this.getKoboRootTgz(deviceInfo);
 
         const extraEntries = [];
         for (const feature of features) {
@@ -223,22 +266,38 @@ export class NickelMenuInstaller {
     /**
      * Install to a connected Kobo device via File System Access API.
      */
-    async installToDevice(device, features, progressFn, { audit = null, menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {}) {
-        await this.loadNickelMenu(progressFn);
+    async installToDevice(
+        device,
+        features,
+        progressFn,
+        { audit = null, beforeWrite = null, menuCustomization = null, tabsCustomization = null, fontsCustomization = null } = {},
+    ) {
+        await this.loadNickelMenu(progressFn, device.deviceInfo);
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, device.deviceInfo);
 
         let collectedFiles = [];
         let featureFiles = {};
+        let eReaderConfData = null;
 
         if (features.length > 0) {
             progressFn('Preparing Kobo eReader.conf...');
-            const eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
+            eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
 
             const result = await this.collectFiles(features, progressFn, device.deviceInfo, { menuCustomization, tabsCustomization, fontsCustomization });
             collectedFiles = result.files;
             featureFiles = result.featureFiles;
+        }
 
+        // Finish downloads and validation before modify cleanup deletes anything.
+        if (beforeWrite) {
+            await beforeWrite();
+            // Cleanup may have reverted settings; do not overwrite those changes
+            // with the configuration read during preflight.
+            if (features.length > 0) eReaderConfData = await this.buildEReaderConfData(device, features, fontsCustomization);
+        }
+
+        if (features.length > 0) {
             progressFn('Updating Kobo eReader.conf...');
             await device.writeFile(['.kobo', 'Kobo', 'Kobo eReader.conf'], eReaderConfData);
             this.recordEReaderConfUpdates(features, device.deviceInfo, audit, fontsCustomization);
@@ -260,14 +319,19 @@ export class NickelMenuInstaller {
         }
 
         // Write the install manifest
-        const manifest = this.buildManifest(features, collectedFiles, featureFiles, device.deviceInfo, audit);
+        const manifest = this.buildManifest(features, collectedFiles, featureFiles, device.deviceInfo, audit, {
+            menuCustomization,
+            tabsCustomization,
+            fontsCustomization,
+        });
         if (manifest) {
             await this.writeManifest(device, manifest);
         }
 
-        progressFn('Writing KoboRoot.tgz...');
-        await device.writeFile(['.kobo', 'KoboRoot.tgz'], tgz);
-        audit?.record(`Installed NickelMenu: wrote .kobo/KoboRoot.tgz (${tgz.length} bytes)`);
+        const { filename } = nickelMenuPackage(device.deviceInfo);
+        progressFn(`Writing ${filename}...`);
+        await device.writeFile(['.kobo', filename], tgz);
+        audit?.record(`Installed NickelMenu: wrote .kobo/${filename} (${tgz.length} bytes)`);
 
         await writeAuditLog(audit, device);
         progressFn('Done.');
@@ -282,13 +346,13 @@ export class NickelMenuInstaller {
         deviceInfo = null,
         { menuCustomization = null, tabsCustomization = null, fontsCustomization = null, isPreset = features.length > 0 } = {},
     ) {
-        await this.loadNickelMenu(progressFn);
+        await this.loadNickelMenu(progressFn, deviceInfo);
 
         progressFn('Building download package...');
         const zip = new JSZip();
 
         const tgz = await this.buildKoboRootTgz(features, progressFn, deviceInfo);
-        zip.file('.kobo/KoboRoot.tgz', tgz);
+        zip.file(`.kobo/${nickelMenuPackage(deviceInfo).filename}`, tgz);
 
         let collectedFiles = [];
         let featureFiles = {};
@@ -305,7 +369,11 @@ export class NickelMenuInstaller {
 
         // Include the install manifest so the downloaded archive carries the same
         // definitional info about the chosen features that a USB install writes.
-        const manifest = this.buildManifest(features, collectedFiles, featureFiles, deviceInfo, null);
+        const manifest = this.buildManifest(features, collectedFiles, featureFiles, deviceInfo, null, {
+            menuCustomization,
+            tabsCustomization,
+            fontsCustomization,
+        });
         if (manifest) {
             const data = new TextEncoder().encode(JSON.stringify(manifest, null, 2) + '\n');
             zip.file(nickelMenuManifestPath.join('/'), data);
@@ -338,6 +406,7 @@ export class NickelMenuInstaller {
         const confSettings = isPreset ? features.flatMap((feature) => (feature.confSettings ? feature.confSettings(settingsCtx) : [])) : [];
         return buildNickelMenuInstructions({
             version,
+            deviceInfo,
             isPreset,
             confLine: getExcludeSyncFoldersLine(features),
             confSettings,
@@ -428,7 +497,7 @@ export class NickelMenuInstaller {
         }
     }
 
-    buildManifest(features, collectedFiles, featureFiles, deviceInfo, audit) {
+    buildManifest(features, collectedFiles, featureFiles, deviceInfo, audit, customizations = {}) {
         const selected = features.map((f) => f.id);
         const settingsCtx = { deviceInfo, features };
         const manifestFeatures = {};
@@ -454,6 +523,12 @@ export class NickelMenuInstaller {
             }));
             if (conf.length > 0) entry.conf = conf;
 
+            // What version went on the device, so a later run can tell an upgrade
+            // from a reinstall. Absent for features that install no pinned asset,
+            // and for anything written before this was recorded.
+            const version = featureVersion(feature, deviceInfo);
+            if (version) entry.version = version;
+
             manifestFeatures[feature.id] = entry;
         }
 
@@ -465,6 +540,7 @@ export class NickelMenuInstaller {
         return {
             selected,
             features: manifestFeatures,
+            configuration: savedConfiguration(features, customizations),
             meta: {
                 writer: { name: 'kobopatch-webui', version },
                 installed: { timestamp, firmware, channel },

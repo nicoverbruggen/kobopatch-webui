@@ -132,7 +132,8 @@
 }
 
 .device-identification-badge--verified,
-.device-identification-badge--refurbished {
+.device-identification-badge--refurbished,
+.device-identification-badge--tolino {
     color: var(--success-text);
 }
 

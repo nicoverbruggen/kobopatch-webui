@@ -11,12 +11,13 @@
 import { KoboDevice } from '../kobo/device.js';
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { localeDisplayName } from '../kobo/locale.js';
-import { minimumSupportedFirmware } from '../kobo/version.js';
-import { $, collect } from '../shell/dom.js';
+import { minimumSupportedFirmware, firmwareMajor } from '../kobo/version.js';
+import { $, collect, trapFocus } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { latestPatchVersionForFamily } from '../patches/catalog.js';
+import { hasSoftwareChannel } from '../kobo/software-urls.js';
 import { patchManifestName } from '../patches/additional-files.js';
 
 // Kobo's page about the software release that introduced the accessibility
@@ -91,8 +92,11 @@ export function initConnectFlow(state, { patches }) {
         refurbished: 'The hardware UUID matches this device. The serial prefix uses the refurbished-device form, which is expected for some Kobo replacements.',
         mismatch:
             'The hardware UUID matches this device, but the serial prefix does not match the expected device family. Custom patches are disabled for this device.',
+        tolino: 'This is Tolino hardware running Kobo software. Its serial number starts with T, while the hardware UUID is a Kobo one — expected for a cross-flashed Tolino, which takes the same mods and patches as the Kobo it is built from.',
     };
     const refurbishedModelHint = 'This serial number uses the refurbished-device prefix form, which is expected for some Kobo replacements.';
+    const olderDevicePatchesUnavailable =
+        'Custom patches are not supported on this older Kobo model. You can still install NickelMenu and choose what you want to do with your Kobo.';
     const customPatchesManifestPath = [AUDIT_LOG_DIRECTORY, patchManifestName];
 
     function displayDeviceInfo(info) {
@@ -236,7 +240,7 @@ export function initConnectFlow(state, { patches }) {
     }
 
     state.goBackToDeviceStep = () => {
-        setNavLabels(TL.NAV_DEFAULT);
+        setNavLabels(firmwareMajor(state.device?.deviceInfo?.firmware) === 6 ? TL.NAV_NICKELMENU.filter((_, index) => index !== 1) : TL.NAV_DEFAULT);
         setNavStep(1);
         showStep(stepDevice);
     };
@@ -258,6 +262,8 @@ export function initConnectFlow(state, { patches }) {
             const info = await state.device.connect();
 
             displayDeviceInfo(info);
+            setNavLabels(firmwareMajor(info.firmware) === 6 ? TL.NAV_NICKELMENU.filter((_, index) => index !== 1) : TL.NAV_DEFAULT);
+            setNavStep(1);
 
             if (info.isIncompatible) {
                 renderIncompatibleStatus(info.incompatibleReason);
@@ -273,7 +279,10 @@ export function initConnectFlow(state, { patches }) {
 
             await Promise.all([state.softwareUrlsReady, state.availablePatchesReady]);
             const match = state.availablePatches.find((p) => p.version === info.firmware);
-            const canPatchDevice = info.deviceVerification === 'verified';
+            const channelMatch = String(info.channel || '').match(/^kobo(\d+)$/);
+            const isUnsupportedOlderDevice = info.identifiedBy === 'uuid' && channelMatch && Number(channelMatch[1]) < 8 && !hasSoftwareChannel(info.channel);
+            const isOs6 = firmwareMajor(info.firmware) === 6;
+            const canPatchDevice = !isOs6 && info.deviceVerification === 'verified' && !isUnsupportedOlderDevice;
 
             if (canPatchDevice) {
                 patches.configureFirmwareStep(info.firmware, info.channel, info.model);
@@ -281,8 +290,11 @@ export function initConnectFlow(state, { patches }) {
                 state.firmwareVersion = info.firmware;
                 state.firmwareURL = null;
                 state.deviceModelLabel = info.model;
-                state.patchesUnavailableReason =
-                    info.deviceVerification === 'mismatch'
+                state.patchesUnavailableReason = isOs6
+                    ? 'Custom patches are not available for Kobo OS 6. You can install NickelMenu and KOReader.'
+                    : isUnsupportedOlderDevice
+                      ? olderDevicePatchesUnavailable
+                      : info.deviceVerification === 'mismatch'
                         ? 'Custom patches are disabled because the hardware UUID and serial prefix do not match.'
                         : 'Custom patches are disabled because this hardware UUID is not recognized.';
             }
@@ -304,7 +316,14 @@ export function initConnectFlow(state, { patches }) {
             deviceStatus.classList.remove('banner', 'banner--error', 'banner--warning');
             const isUnknownHardware = info.deviceVerification === 'unknown';
             const isMismatchedHardware = info.deviceVerification === 'mismatch';
-            if (isUnknownHardware) {
+            if (isUnsupportedOlderDevice) {
+                deviceStatus.textContent = olderDevicePatchesUnavailable;
+                deviceStatus.classList.add('banner', 'banner--warning');
+                deviceUnknownWarning.hidden = true;
+                deviceUnknownAck.hidden = true;
+                deviceUnknownCheckbox.checked = false;
+                btnDeviceNext.disabled = false;
+            } else if (isUnknownHardware) {
                 deviceStatus.textContent = '';
                 deviceUnknownWarning.hidden = false;
                 deviceUnknownAck.hidden = false;
@@ -348,7 +367,20 @@ export function initConnectFlow(state, { patches }) {
         showStep(stepConnect);
     });
 
+    const betaOsDialog = $('beta-os-dialog');
+    trapFocus(betaOsDialog);
     btnDeviceNext.addEventListener('click', () => {
+        // Treat all supported OS 6 builds as beta until support is reviewed.
+        if (firmwareMajor(state.device?.deviceInfo?.firmware) === 6) {
+            betaOsDialog.showModal();
+            return;
+        }
+        state.goToModeSelection();
+    });
+    $('btn-beta-os-close').addEventListener('click', () => betaOsDialog.close());
+    $('btn-beta-os-back').addEventListener('click', () => betaOsDialog.close());
+    $('btn-beta-os-continue').addEventListener('click', () => {
+        betaOsDialog.close();
         state.goToModeSelection();
     });
 

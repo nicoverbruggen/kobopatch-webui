@@ -103,3 +103,19 @@
     display: flex;
     justify-content: flex-end;
 }
+
+#beta-os-dialog .modal-footer {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* The update notice has no footer: it dismisses itself by reloading, so the
+   secondary line sits quietly under the explanation instead. */
+#app-updated-dialog .modal-body {
+    padding-bottom: 1.25rem;
+}
+
+.app-updated-note {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}

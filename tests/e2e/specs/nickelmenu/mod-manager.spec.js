@@ -1,0 +1,135 @@
+const { test, expect } = require('@playwright/test');
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
+const JSZip = require('jszip');
+
+const { WEBROOT } = require('../../support/paths');
+const { pinnedVersionLabel } = require('../../support/assets');
+const { connectMockDevice, goToManualMode, readMockFile, mockPathExists } = require('../../support/mock-device');
+const { goToNmFeatures, skipNmBackup } = require('../../support/nm-helpers');
+const { parseTar } = require('../../support/tar');
+
+const managerCheckbox = 'input[name="nm-cfg-nickelmodmanager"]';
+
+function assertMergedPayload(tgz, major) {
+    const suffix = major === 6 ? '-Qt6' : '';
+    const pluginPath = `${major === 6 ? '' : 'usr/local/Kobo/'}imageformats/libnickelmm.so`;
+    const entries = parseTar(zlib.gunzipSync(tgz));
+    const menu = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, `assets/NickelMenu${suffix}.tgz`))));
+    const manager = parseTar(zlib.gunzipSync(fs.readFileSync(path.join(WEBROOT, `assets/NickelModManager${suffix}.tgz`))));
+    expect(Object.keys(entries).sort()).toEqual(Object.keys({ ...menu, ...manager }).sort());
+    for (const [name, data] of Object.entries({ ...menu, ...manager })) expect(entries[name]).toEqual(data);
+    expect(entries[pluginPath]).toBeDefined();
+}
+
+for (const major of [4, 6]) {
+    const filename = major === 6 ? 'Kobo.tgz' : 'KoboRoot.tgz';
+    for (const mode of ['manual', 'connected']) {
+        test(`OS ${major} ${mode} install includes NickelModManager in the combined package`, async ({ page }) => {
+            if (mode === 'connected') {
+                await connectMockDevice(page, {
+                    firmware: major === 6 ? '6.0.276679' : '4.46.23852',
+                    // A removal was requested, but the device has not rebooted yet.
+                    extraAddsFiles: [
+                        { path: ['.nickel-mod-manager.initialized'], content: '1\n' },
+                        { path: ['nickel-mod-manager', 'state.json'], content: '{"saved":true}' },
+                    ],
+                });
+                await goToNmFeatures(page);
+            } else {
+                await goToManualMode(page);
+                await page.click('input[name="mode"][value="nickelmenu"]');
+                await page.click('#btn-mode-next');
+                await page.selectOption('#nm-manual-firmware', String(major));
+                await page.click('input[name="nm-option"][value="preset"]');
+                await page.click('#btn-nm-next');
+            }
+            const row = page.locator('.nm-config-item', { has: page.locator(managerCheckbox) });
+            await expect(page.locator(managerCheckbox)).toBeVisible();
+            await expect(page.locator(managerCheckbox)).toBeChecked({ checked: major === 6 });
+            await expect(row.locator('.nm-config-recommended')).toHaveCount(0);
+            if (major === 6) await expect(row).toContainText('restores enabled mods after supported Kobo OS updates');
+            else await expect(row).not.toContainText('restores enabled mods');
+            await expect(row.locator('.nm-config-version')).toHaveText(pinnedVersionLabel(major === 6 ? 'nickelmodmanager-qt6' : 'nickelmodmanager'));
+            await page.uncheck('input[name="nm-cfg-additional-fonts"]');
+            if (major === 4) await page.uncheck('input[name="nm-cfg-better-typography"]');
+            await page.check(managerCheckbox);
+            await page.click('#btn-nm-features-next');
+            await skipNmBackup(page);
+            await expect(page.locator('#nm-review-notices')).toContainText('More > Manage Mods');
+            await expect(page.locator('#nm-review-notices')).toContainText('Turn on any mods you want to keep using');
+
+            if (mode === 'manual') {
+                const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
+                const zip = await JSZip.loadAsync(fs.readFileSync(await download.path()));
+                assertMergedPayload(await zip.file(`.kobo/${filename}`).async('nodebuffer'), major);
+                expect(zip.file(`.kobo/${major === 6 ? 'KoboRoot.tgz' : 'Kobo.tgz'}`)).toBeNull();
+                const manifest = JSON.parse(await zip.file('.kobopatch-webui/nickelmenu.json').async('string'));
+                expect(manifest.selected).toContain('nickelmodmanager');
+                expect(await zip.file('.adds/nickel-mod-manager/uninstall').async('string')).toContain('Delete this file');
+            } else {
+                await page.click('#btn-nm-write');
+                await expect(page.locator('#step-nm-done')).toBeVisible();
+                const written = await page.evaluate((name) => Array.from(window.__mockFS['.kobo'][name].bytes), filename);
+                assertMergedPayload(Buffer.from(written), major);
+                const manifest = JSON.parse(await readMockFile(page, '.kobopatch-webui', 'nickelmenu.json'));
+                expect(manifest.selected).toContain('nickelmodmanager');
+                expect(await mockPathExists(page, '.adds', 'nickel-mod-manager', 'uninstall')).toBe(true);
+                expect(await readMockFile(page, '.adds', 'nickel-mod-manager', 'state.json')).toBe('{"saved":true}');
+                expect(await readMockFile(page, '.adds', '.nickel-mod-manager.initialized')).toBe('1\n');
+            }
+        });
+    }
+}
+
+for (const mode of ['modify', 'remove']) {
+    test(`${mode} removes NickelModManager's marker while keeping saved mod copies`, async ({ page }) => {
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            extraAddsFiles: [
+                { path: ['nm', 'webui-preset'], content: '# Generated by KoboPatch Web UI\n' },
+                { path: ['nickel-mod-manager', 'uninstall'], content: 'Delete to uninstall' },
+                { path: ['nickel-mod-manager', 'mods', 'libnm.so'], content: 'saved mod' },
+                { path: ['nickel-mod-manager', 'state.json'], content: '{"saved":true}' },
+            ],
+        });
+        if (mode === 'modify') {
+            await goToNmFeatures(page);
+            await expect(page.locator(managerCheckbox)).toBeChecked();
+            await page.uncheck(managerCheckbox);
+            await page.click('#btn-nm-features-next');
+        } else {
+            await page.click('#btn-device-next');
+            await page.click('input[name="mode"][value="nickelmenu"]');
+            await page.click('#btn-mode-next');
+            await page.click('input[name="nm-option"][value="remove"]');
+            await expect(page.locator('input[name="nm-uninstall-nickelmodmanager"]')).toBeChecked();
+            await expect(page.locator('#nm-uninstall-options')).toContainText('Turn on any mods you want to keep using first.');
+            await page.click('#btn-nm-next');
+        }
+        await skipNmBackup(page);
+        await expect(page.locator(mode === 'modify' ? '#nm-review-kept-list' : '#nm-review-list')).toContainText('NickelModManager');
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible();
+        expect(await mockPathExists(page, '.adds', 'nickel-mod-manager', 'uninstall')).toBe(false);
+        expect(await readMockFile(page, '.adds', 'nickel-mod-manager', 'mods', 'libnm.so')).toBe('saved mod');
+        expect(await readMockFile(page, '.adds', 'nickel-mod-manager', 'state.json')).toBe('{"saved":true}');
+    });
+}
+
+test('OS 6 manager explains persistence in its description and stays optional', async ({ page }) => {
+    await connectMockDevice(page, { firmware: '6.0.276679' });
+    await goToNmFeatures(page);
+    const row = page.locator('.nm-config-item', { has: page.locator(managerCheckbox) });
+    await expect(row.locator('.nm-config-recommended')).toHaveCount(0);
+    await expect(row).toContainText('restores enabled mods after supported Kobo OS updates');
+    await expect(page.locator(managerCheckbox)).toBeChecked();
+    await page.uncheck(managerCheckbox);
+    await page.click('#btn-nm-features-next');
+    await skipNmBackup(page);
+    await expect(page.locator('#nm-review-list')).not.toContainText('Install NickelModManager');
+    await page.click('#btn-nm-review-back');
+    await page.click('#btn-nm-backup-back');
+    await expect(page.locator(managerCheckbox)).not.toBeChecked();
+});

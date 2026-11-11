@@ -8,6 +8,7 @@
 
 import { AUDIT_LOG_DIRECTORY } from '../kobo/audit-log.js';
 import { collect, formatBytes, populateList, renderDownloadConfSettings } from '../shell/dom.js';
+import { sha256Hex } from '../shell/digest.js';
 import { createFlow } from '../shell/step-machine.js';
 import { createTerminal } from '../shell/terminal.js';
 import { buildPatchesInstructions } from '../shell/instructions.js';
@@ -20,7 +21,6 @@ import {
     buildAdditionalFilesTgz,
     mergeAdditionalFilesIntoTgz,
     readAdditionalFilesArchive,
-    sha256Hex,
     additionalFilesArchiveName,
     patchManifestName,
 } from '../patches/additional-files.js';
@@ -30,6 +30,7 @@ export function initPatchesFlow(state) {
         'step-done': stepDone,
         'patch-container': patchContainer,
         'patch-reload-banner': patchReloadBanner,
+        'btn-patch-reload-dismiss': btnPatchReloadDismiss,
         'patch-reload-text': patchReloadText,
         'btn-patch-reload': btnPatchReload,
         'patch-reload-dialog': patchReloadDialog,
@@ -83,6 +84,7 @@ export function initPatchesFlow(state) {
         'patch-reload-banner',
         'patch-reload-text',
         'btn-patch-reload',
+        'btn-patch-reload-dismiss',
         'patch-reload-dialog',
         'btn-patch-reload-dialog-close',
         'patch-reload-dialog-intro',
@@ -379,6 +381,12 @@ export function initPatchesFlow(state) {
     btnPatchReloadDialogClose.addEventListener('click', () => patchReloadDialog.close());
     patchReloadDialog.addEventListener('click', (e) => {
         if (e.target === patchReloadDialog) patchReloadDialog.close();
+    });
+
+    // Dismissing only hides the banner for as long as the user stays on the step:
+    // re-entering it runs maybeOfferReload() again, which shows the offer afresh.
+    btnPatchReloadDismiss.addEventListener('click', () => {
+        patchReloadBanner.hidden = true;
     });
 
     btnPatchReload.addEventListener('click', () => {

@@ -19,12 +19,12 @@ The project itself currently has a few operational modes, depending on what it i
 
 **This mode installs [NickelMenu](https://pgaskin.net/NickelMenu/) and, optionally, a whole selection of standalone mods and a [curated configuration](https://github.com/nicoverbruggen/kobo-config) alongside it.** 
 
-You pick and choose what to apply. On offer: home screen tweaks (via [NickelHome](https://github.com/nicoverbruggen/NickelHome)), a preconfigured NickelMenu, some extra fonts, screensavers, [NickelClock](https://github.com/shermp/NickelClock) (which displays the clock while you're reading), [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) (which repairs typesetting issues like justification and vertical text rendering), and alternative reading apps like KOReader or Cadmus if you'd like. Each is its own mod, so you only get what you select.
+You pick and choose what to apply. On offer: home screen tweaks (via [NickelHome](https://github.com/nicoverbruggen/NickelHome)), a preconfigured NickelMenu, some extra fonts, screensavers, [NickelClock](https://github.com/shermp/NickelClock) (which displays the clock while you're reading), [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) (which repairs typesetting issues like justification and vertical text rendering), and alternative reading apps like KOReader (with the [SimpleUI](https://github.com/doctorhetfield-cmd/simpleui.koplugin) plugin, if you want a home screen for it) or Cadmus if you'd like. Each is its own mod, so you only get what you select.
 
 Works with most Kobo devices regardless of software version. If you don't like it and change your mind, you can also remove the modification using the same method.
 
 - <u>This is easily the safest mod to install</u>. These modifications tend to persist with system updates as long as NickelMenu remains functional.
-- Every extra mod is optional: **NickelHome**, **NickelTypeFix**, **NickelClock**, **KOReader**, and **Cadmus** all install through this same method.
+- Every extra mod is optional: **NickelHome**, **NickelTypeFix**, **NickelClock**, **NickelModManager**, **KOReader**, and **Cadmus** all install through this same method.
 - Recommended for everyone. Easy to uninstall, too.
 
 ## Mode B: Custom Patches
@@ -59,16 +59,17 @@ If you choose to apply custom patches, **patching happens fully client-side** �
 
 If you want to install **NickelMenu**:
 
-- Any Kobo released in 2025 or earlier, running software version >=4.23 and <5.0.
+- Kobo OS 4.23 through 4.x supports the existing NickelMenu add-ons.
+- Kobo OS 6.x supports NickelMenu, NickelModManager, additional fonts and KOReader. It uses [NickelMenu fork-v1.2](https://github.com/nicoverbruggen/NickelMenu/releases/tag/fork-v1.2); other add-ons need compatible updates. NickelModManager is selected by default on OS 6 because it restores enabled mods after supported firmware updates. You can untick it. On OS 6, KOReader’s normal Exit action can hang when returning to Kobo. The installer includes a user patch that hides this action and its long-press shortcut. Keep that patch enabled and use **Exit → Reboot the device** instead. If the device gets stuck, hold the power button until it shuts down, then press it again to turn it on.
 
 If you want to apply **custom patches**:
 
-- Software **4.46.x**: Kobo Libra Colour, Kobo Clara Colour, Kobo Clara BW
+- Software **4.46.23852**: Kobo Libra Colour, Kobo Clara Colour, Kobo Clara BW
 - Software **4.45.x**: Kobo Libra Colour, Kobo Clara Colour, Kobo Clara BW
 - Software **4.38.x**: Kobo Clara 2E, Kobo Libra 2, Kobo Elipsa 2E, Kobo Sage, Kobo Elipsa
 
 > [!WARNING]
-> **Kobo software newer than 4.x is not supported yet.** This includes the 5.x accessibility preview and the recently released 6.0 update. This applies to both NickelMenu and custom patches.
+> **Custom patches require a listed 4.x software version.** Kobo OS 5.x is not supported. In manual mode, select Kobo OS 4.x or 6.x before configuring NickelMenu. Connected OS 6 devices show a beta warning, then go directly to NickelMenu configuration. Downloads use the KOReader build for the selected firmware, and contain `KoboRoot.tgz` for OS 4 or `Kobo.tgz` for OS 6. Do not rename these archives.
 
 ## User flow
 
@@ -107,6 +108,7 @@ Some of these are bundled with the app (see `installables.lock`) rather than dow
 - [NickelClock](https://github.com/shermp/NickelClock) — a clock on the reading screen. _(MIT)_
 - [KOReader](https://github.com/koreader/koreader) — a feature-rich document and e-book reader. _(AGPL-3.0)_
 - [Cadmus](https://github.com/OGKevin/cadmus) — a reading companion app for Kobo, based on [Plato](https://github.com/baskerville/plato). _(AGPL-3.0)_
+- [SimpleUI](https://github.com/doctorhetfield-cmd/simpleui.koplugin) — a KOReader plugin that adds a home screen, a navigation bar and a status bar. _(MIT)_
 
 **Libraries & tooling**
 
@@ -120,6 +122,7 @@ Some of these are bundled with the app (see `installables.lock`) rather than dow
 
 Mods and fonts I maintain myself, installed or bundled by this tool:
 
+- [NickelModManager](https://github.com/nicoverbruggen/NickelModManager) adds Manage Mods to the More tab, so you can turn installed mods off and on. _(MIT)_
 - [NickelHome](https://github.com/nicoverbruggen/NickelHome) — hides Kobo home-screen widgets (recommendations, suggestions, notices); installed when you enable a home-screen hider. _(MIT)_
 - The [curated configuration](https://github.com/nicoverbruggen/kobo-config) — the optional preset this tool can install NickelMenu from. _(MIT)_
 - [NickelTypeFix](https://github.com/nicoverbruggen/NickelTypeFix) — fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of "Better typography and fixes". _(MIT)_

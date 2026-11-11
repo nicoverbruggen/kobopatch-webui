@@ -63,8 +63,8 @@ test.describe('NickelMenu — removal', () => {
         await expect(page.locator('#step-nm-manual-remove')).toContainText('long-pressing the power button');
         await expect(page.locator('#step-nm-manual-remove')).not.toContainText('KoboRoot.tgz');
         await expect(page.locator('#step-nm-manual-remove')).toContainText('ExcludeSyncFolders=');
-        await expect(page.locator('#nm-manual-remove-retry')).toBeVisible();
-        await expect(page.locator('#nm-manual-remove-retry')).toHaveText(
+        await expect(page.locator('#step-nm-manual-remove .restart-hint')).toBeVisible();
+        await expect(page.locator('#step-nm-manual-remove .restart-hint')).toHaveText(
             'You can always restart the entire flow by reloading the page, if you want to try again for another configuration or undo the changes that were made.',
         );
         await expect
@@ -73,6 +73,32 @@ test.describe('NickelMenu — removal', () => {
                 eventName: 'flow-end',
                 data: { result: 'nm-remove-manual' },
             });
+    });
+
+    test('no device — going back to mode selection clears the remove choice', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await goToManualMode(page);
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+        await page.click('input[name="nm-option"][value="remove"]');
+        await expect(page.locator('#step-nav')).toContainText('Remove');
+
+        // Back out and in again. A radio left checked desyncs the card from the
+        // breadcrumb, and stays checked even once the card is disabled.
+        await page.click('#btn-nm-back');
+        await expect(page.locator('#step-mode')).not.toBeHidden();
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await expect(page.locator('#step-nickelmenu')).not.toBeHidden();
+
+        await expect(page.locator('input[name="nm-option"][value="remove"]')).not.toBeChecked();
+        await expect(page.locator('#nm-option-remove')).not.toHaveClass(/selection-card--selected/);
+        await expect(page.locator('input[name="nm-option"][value="preset"]')).toBeChecked();
+        await expect(page.locator('#step-nav')).toContainText('Install');
+        await expect(page.locator('#step-nav')).not.toContainText('Remove');
     });
 
     test('with device — remove NickelMenu', async ({ page }) => {
@@ -133,7 +159,7 @@ test.describe('NickelMenu — removal', () => {
         await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
         await expect(page.locator('#nm-done-status')).toContainText('removed');
         await expect(page.locator('#nm-reboot-instructions')).not.toBeHidden();
-        await expect(page.locator('#nm-manual-remove-retry')).toBeHidden();
+        await expect(page.locator('#step-nm-manual-remove .restart-hint')).toBeHidden();
         await expect
             .poll(() => page.evaluate(() => window.__trackedEvents))
             .toContainEqual({
@@ -308,6 +334,42 @@ test.describe('NickelMenu — removal', () => {
         // The whole .adds/cadmus directory (and its launcher script) is deleted recursively.
         expect(await mockPathExists(page, '.adds', 'cadmus', 'cadmus.sh')).toBe(false);
         expect(await mockPathExists(page, '.adds', 'cadmus')).toBe(false);
+    });
+
+    test('with device — removing KOReader removes its plugins with it', async ({ page }) => {
+        test.skip(!hasNickelMenuAssets(), 'NickelMenu assets not found in webroot');
+
+        await connectMockDevice(page, {
+            hasNickelMenu: true,
+            hasKOReader: true,
+            hasSimpleUI: true,
+        });
+
+        await page.click('#btn-device-next');
+        await page.click('input[name="mode"][value="nickelmenu"]');
+        await page.click('#btn-mode-next');
+        await page.click('input[name="nm-option"][value="remove"]');
+
+        // A plugin lives inside KOReader's directory, so it is never offered as
+        // a removal of its own — there would be no way to honour keeping it.
+        await expect(page.locator('#nm-uninstall-options')).not.toBeHidden();
+        await expect(page.locator('input[name="nm-uninstall-koreader"]')).toBeChecked();
+        await expect(page.locator('input[name="nm-uninstall-simpleui"]')).toHaveCount(0);
+
+        await page.click('#btn-nm-next');
+        await skipNmBackup(page);
+
+        await expect(page.locator('#nm-review-list')).toContainText('KOReader');
+        // The plugin is never its own removal option, but it goes with KOReader,
+        // so the review names it rather than leaving that to be inferred.
+        await expect(page.locator('#nm-review-list')).toContainText('Simple UI');
+
+        await page.click('#btn-nm-write');
+        await expect(page.locator('#step-nm-done')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('#nm-done-status')).toContainText('removed');
+
+        expect(await mockPathExists(page, '.adds', 'koreader')).toBe(false);
+        expect(await mockPathExists(page, '.adds', 'koreader', 'plugins', 'simpleui.koplugin')).toBe(false);
     });
 
     test('with device — remove NickelClock deletes its folder to trigger the xflag self-uninstall', async ({ page }) => {

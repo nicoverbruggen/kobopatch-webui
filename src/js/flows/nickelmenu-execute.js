@@ -6,16 +6,17 @@
  * and renders the final "done" screen for each outcome (remove / write / download).
  */
 
+import { nickelMenuDeviceInfo } from '../nickelmenu/firmware.js';
 import { triggerDownload, setProgressDetail, renderDownloadConfSettings } from '../shell/dom.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
 import { DeviceWriter } from '../kobo/device-writer.js';
-import { executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
-import { featuresToInstall, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
+import { executeNickelMenuFeatureCleanups, executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
+import { featuresToInstall, featuresToRemove, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
 import { featureAnalyticsEvents } from '../nickelmenu/features/index.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
-import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE } from '../shell/instructions.js';
+import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE, nickelMenuDownloadVersionNote } from '../shell/instructions.js';
 import { watchForEject } from '../kobo/eject-watch.js';
 
 const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
@@ -56,27 +57,53 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             return;
         }
 
-        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
+        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, nickelMenuDeviceInfo(state)) : [];
         trackFeatures(features);
 
         if (dom.writeToDevice && state.device.directoryHandle) {
             const writer = new DeviceWriter(state.device);
-            if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
-                if (!state.nmKeepLegacyConfig) {
-                    try {
-                        await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
-                    } catch {}
-                }
-            }
-            try {
-                const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
-                if (await writer.pathExists(legacyScriptPath)) {
-                    await writer.removeEntry(legacyScriptPath);
-                }
-            } catch {}
+            // The audit log is opened before anything is touched, so the
+            // removals below are recorded too.
             audit = new AuditLog('install-nickelmenu', new Date(), state.device);
             await state.nmInstaller.installToDevice(writer, features, progressFn, {
                 audit,
+                beforeWrite: async () => {
+                    // Features the user unticked on a setup of ours go first, then each
+                    // remaining feature reconciles its own leftovers (dropped fonts).
+                    await executeNickelMenuFeatureCleanups({
+                        device: writer,
+                        features: featuresToRemove(state, nickelMenuDeviceInfo(state)),
+                        onProgress: progressFn,
+                        audit,
+                    });
+                    for (const feature of features) {
+                        if (!feature.reconcile) continue;
+                        progressFn(`Updating ${feature.title.toLowerCase()}...`);
+                        await feature.reconcile({
+                            device: writer,
+                            deviceInfo: nickelMenuDeviceInfo(state),
+                            features,
+                            previousConfiguration: state.previousNickelMenuConfiguration,
+                            menuCustomization: state.nickelMenuCustomization,
+                            tabsCustomization: state.nickelMenuTabsCustomization,
+                            fontsCustomization: state.nickelMenuFontsCustomization,
+                            audit,
+                        });
+                    }
+                    if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
+                        if (!state.nmKeepLegacyConfig) {
+                            try {
+                                await writer.removeEntry(NM_LEGACY_ITEMS_FILE.split('/'));
+                            } catch {}
+                        }
+                    }
+                    try {
+                        const legacyScriptPath = ['.adds', 'scripts', 'toggle_typography.sh'];
+                        if (await writer.pathExists(legacyScriptPath)) {
+                            await writer.removeEntry(legacyScriptPath);
+                        }
+                    } catch {}
+                },
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
                 fontsCustomization: state.nickelMenuFontsCustomization,
@@ -84,7 +111,7 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             state._nmDoneMode = 'written';
             await flow.go('done', state);
         } else {
-            state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, state.device.deviceInfo, {
+            state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, nickelMenuDeviceInfo(state), {
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
                 fontsCustomization: state.nickelMenuFontsCustomization,
@@ -193,13 +220,14 @@ export function renderNmDoneStatus(state, terminal, dom) {
         dom.doneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
         triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
         dom.downloadInstructions.hidden = false;
-        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, state.device.deviceInfo) : [];
+        if (dom.downloadVersionNote) dom.downloadVersionNote.textContent = nickelMenuDownloadVersionNote(nickelMenuDeviceInfo(state));
+        const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, nickelMenuDeviceInfo(state)) : [];
         const hasExcludeCalibre = features.some((f) => f.id === 'exclude-calibre');
         dom.downloadConfStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadRebootStep.hidden = state.nickelMenuOption !== 'preset';
         dom.downloadConfLine.textContent = getExcludeSyncFoldersLine(features);
         dom.downloadConfDesc.textContent = hasExcludeCalibre ? CONF_DESC_EXCLUDE_CALIBRE : CONF_DESC_DEFAULT;
-        const confSettings = getFeatureConfSettings(features, state.device.deviceInfo, state.nickelMenuFontsCustomization);
+        const confSettings = getFeatureConfSettings(features, nickelMenuDeviceInfo(state), state.nickelMenuFontsCustomization);
         renderDownloadConfSettings(dom.downloadConfSettings, confSettings);
         dom.downloadConfSettingsStep.hidden = confSettings.length === 0;
         terminal.end('nm-download');
@@ -227,6 +255,23 @@ export function renderReviewNotices(container, notices) {
             const paragraph = document.createElement('p');
             paragraph.textContent = paragraphText;
             banner.appendChild(paragraph);
+        }
+
+        if (notice.mods) {
+            const list = document.createElement('ul');
+            list.className = 'review-notice-mods';
+            for (const mod of notice.mods) {
+                const item = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = mod.href;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = mod.name;
+                item.append(link, ` ${mod.summary}`);
+                if (mod.detail) item.append(` ${mod.detail}`);
+                list.appendChild(item);
+            }
+            banner.appendChild(list);
         }
 
         if (notice.link) {

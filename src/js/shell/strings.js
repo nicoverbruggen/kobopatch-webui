@@ -30,9 +30,9 @@ export const TL = {
             'You seem to have an incompatible Kobo software version installed. ' +
             `Kobo software ${minimum} or newer is required for NickelMenu, and the custom patches are incompatible with this version.`,
         DEVICE_FIRMWARE_TOO_NEW:
-            'Kobo software newer than 4.x is not supported yet. ' +
-            'This includes the 5.x accessibility preview and the recently released 6.0 update. ' +
-            'This applies to both NickelMenu and custom patches. You may be able to downgrade to version 4.',
+            'This Kobo software version is not supported. ' +
+            'NickelMenu supports Kobo OS 4.23 through 4.x and Kobo OS 6.x. ' +
+            'Kobo OS 5.x and other firmware families are not supported. You may be able to downgrade to version 4.',
         DEVICE_FIRMWARE_TOO_NEW_LINK: 'Learn more',
         NM_REMOVED_ON_REBOOT: 'NickelMenu will be removed on next reboot.',
         // The done step watches for the Kobo to disappear rather than telling
@@ -58,6 +58,9 @@ export const TL = {
         NM_SELECTED_REMOVALS: 'Selected removals:',
         NM_KEPT_FEATURES: 'These items and their files will be kept:',
         NM_WILL_BE_INSTALLED: 'The following will be installed on your Kobo:',
+        // A modify run rewrites what is already there alongside anything newly
+        // ticked, so the plain "will be installed" would misdescribe most of the list.
+        NM_WILL_BE_INSTALLED_MODIFY: 'The following will be installed or reinstalled on your Kobo:',
         NM_NICKEL_ROOT_TGZ: 'NickelMenu (KoboRoot.tgz)',
         NM_REMOVAL_NICKELMENU: 'NickelMenu',
         NM_REMOVAL_HINT: 'Removes NickelMenu from your device. Your device will restart automatically.',
@@ -88,6 +91,12 @@ export const TL = {
 
     ERROR: {
         PATCH_FAILED: 'The patch failed to apply',
+        // A download whose contents do not match what this page expected. Which of
+        // the two it is depends on whether the app has been updated since the page
+        // was opened; see shell/deployment.js.
+        ASSET_STALE_PAGE: 'The website has been updated since you started using it. Reload the page to make sure you have the best experience.',
+        ASSET_CORRUPT: (file) =>
+            `The downloaded file ${file} did not match its expected checksum, so nothing was written to your Kobo. Check your connection and try again.`,
         SOMETHING_WENT_WRONG: 'Something went wrong',
         LOAD_PATCHES_FAILED: (v) => `Could not load patches for software version ${v}`,
         DEVICE_WRITE_FAILED_TITLE: 'Writing to your device didn’t work',
@@ -125,7 +134,7 @@ export const TL = {
         BLACKLIST_UNKNOWN_VERSION: 'unknown',
         DISCARD_EDITS_CONFIRM: 'You have unsaved edits to one or more patches. Going back will discard them. Continue?',
         RELOAD_OFFER:
-            'You connected a device that is or was previously patched. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
+            'You connected a Kobo that has been patched before. If you need to re-apply the previous patches, you can restore them, including any manual edits.',
         RELOAD_APPLIED: 'Previously applied patches have been reloaded, including any manual edits.',
         RELOAD_NONE_MATCHED: 'None of the previously applied patches could be matched to the patches for this software version.',
         RELOAD_SUMMARY_INTRO: 'The following patches have been re-applied:',

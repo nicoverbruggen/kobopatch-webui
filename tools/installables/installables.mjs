@@ -30,6 +30,26 @@ const TARGETS = {
 // and the id used by the build-time manifest (see scripts/build.mjs).
 const INSTALLABLES = [
     {
+        name: 'nickelmenu-qt6',
+        asset: 'NickelMenu-Qt6.tgz',
+        pinned: {
+            version: 'fork-v1.2',
+            url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.2/Kobo.tgz',
+        },
+    },
+    {
+        name: 'nickelmodmanager-qt6',
+        asset: 'NickelModManager-Qt6.tgz',
+        repo: 'nicoverbruggen/NickelModManager',
+        match: (n) => n === 'Kobo.tgz',
+    },
+    {
+        name: 'nickelmodmanager',
+        asset: 'NickelModManager.tgz',
+        repo: 'nicoverbruggen/NickelModManager',
+        match: (n) => n === 'KoboRoot.tgz',
+    },
+    {
         // Upstream publishes a bare KoboRoot.tgz; stored under a distinct local
         // name so it can't be confused with the generated .kobo/KoboRoot.tgz.
         name: 'nickelmenu',
@@ -73,10 +93,24 @@ const INSTALLABLES = [
         match: (n) => n === 'KoboRoot.tgz',
     },
     {
+        name: 'koreader-kobov5',
+        asset: 'koreader-kobov5.zip',
+        repo: 'koreader/koreader',
+        match: (n) => /^koreader-kobov5-.*\.zip$/.test(n),
+    },
+    {
         name: 'koreader',
         asset: 'koreader-kobo.zip',
         repo: 'koreader/koreader',
         match: (n) => /^koreader-kobo-.*\.zip$/.test(n),
+    },
+    {
+        // A KOReader plugin, not a standalone app: its files land inside
+        // .adds/koreader/plugins/, so it is only useful next to KOReader.
+        name: 'simpleui',
+        asset: 'simpleui.koplugin.zip',
+        repo: 'doctorhetfield-cmd/simpleui.koplugin',
+        match: (n) => n === 'simpleui.koplugin.zip',
     },
     { name: 'cadmus', asset: 'cadmus-kobo.tar.gz', repo: 'OGKevin/cadmus', match: (n) => n === 'cadmus-kobo.tar.gz' },
     {

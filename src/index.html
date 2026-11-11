@@ -241,7 +241,7 @@
                     <li><strong>Which NickelMenu option was selected</strong> &mdash; preset installation
                         or removal. This helps the author understand which options to improve first.</li>
                     <li><strong>Which NickelMenu add-ons were installed</strong> &mdash; reading apps
-                        (KOReader, Cadmus), NickelClock, better typography, page turn animations, alternative
+                        (KOReader, Cadmus), NickelClock, NickelModManager, better typography, page turn animations, alternative
                         cover handling, additional fonts, a custom screensaver, the minimal home screen, the
                         basic tab bar, <span class="nowrap">sideloaded</span> mode, or the Calibre folder
                         exclusion. Each is only recorded when that add-on is actually part of the install,
@@ -303,6 +303,7 @@
                 <h3>By the author</h3>
                 <p>Mods and fonts I maintain myself, installed or bundled by this tool:</p>
                 <ul>
+                    <li><a href="https://github.com/nicoverbruggen/NickelModManager" target="_blank">NickelModManager</a> adds Manage Mods to the More tab, so you can turn installed mods off and on. <em>(MIT)</em></li>
                     <li><a href="https://github.com/nicoverbruggen/NickelHome" target="_blank">NickelHome</a> &mdash; hides Kobo home-screen widgets (recommendations, suggestions, notices); installed when you enable a home-screen hider. <em>(MIT)</em></li>
                     <li>The <a href="https://github.com/nicoverbruggen/kobo-config" target="_blank">curated configuration</a> &mdash; the optional preset this tool can install NickelMenu from. <em>(MIT)</em></li>
                     <li><a href="https://github.com/nicoverbruggen/NickelTypeFix" target="_blank">NickelTypeFix</a> &mdash; fixes typesetting issues (justification, vertical text rendering, gridsetting) for all fonts; installed as part of &ldquo;Better typography and fixes&rdquo;. <em>(MIT)</em></li>
@@ -544,6 +545,23 @@
         </div>
     </dialog>
 
+    <dialog id="beta-os-dialog" class="modal" aria-labelledby="beta-os-title" aria-describedby="beta-os-description">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="beta-os-title">Your Kobo is running a beta operating system</h2>
+                <button id="btn-beta-os-close" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div id="beta-os-description" class="modal-body">
+                <p>These mods are expected to work, but you may encounter issues or bugs. Some may come from the operating system itself, rather than the mods, while it is still being tested.</p>
+                <p>Future Kobo OS updates may also affect mod compatibility.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-beta-os-back" class="secondary">Go back</button>
+                <button id="btn-beta-os-continue" class="primary">Continue</button>
+            </div>
+        </div>
+    </dialog>
+
     <dialog id="mobile-dialog" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -555,6 +573,20 @@
             </div>
             <div class="modal-footer">
                 <button id="btn-mobile-continue" class="secondary">Continue anyway</button>
+            </div>
+        </div>
+    </dialog>
+    <dialog id="app-updated-dialog" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="app-updated-dialog-title">The website has been updated</h2>
+            </div>
+            <div class="modal-body">
+                <p>The website has been updated since you started using it. Reload the page to make sure you have the best experience.</p>
+                <p class="app-updated-note">Nothing was written to your Kobo, but reloading starts the wizard again from the first step, so you will have to make your selections once more.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-app-updated-reload" class="primary" type="button">Reload now</button>
             </div>
         </div>
     </dialog>

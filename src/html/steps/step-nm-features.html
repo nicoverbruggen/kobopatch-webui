@@ -1,9 +1,21 @@
         <section id="step-nm-features" class="step" hidden>
-            <p>Select which features you'd like to enable.</p>
+            <p>Select which features you'd like to enable. <span id="nm-installed-features-note" hidden>Features that are currently installed are automatically selected.</span></p>
+            <div id="nm-previous-configuration-actions" class="banner banner--info banner--dismissible nm-previous-configuration-banner" hidden>
+                <button id="btn-nm-previous-configuration-dismiss" class="banner-dismiss" type="button" aria-label="Dismiss this message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+                <span>You set up your Kobo with this website before, but it appears as if the mods were removed. Do you want to apply the same features you selected last time?</span>
+                <button id="btn-nm-use-previous-configuration" class="secondary" type="button">Restore last configuration</button>
+            </div>
             <div id="nm-sideloaded-banner" class="banner banner--accent" hidden>
                 This Kobo doesn't appear to be signed into a Kobo account &mdash; it may have been factory reset. If you'd rather not sign in, enable <strong>Sideload Mode</strong> under <strong>Advanced</strong> below so you can use the device without connecting to WiFi and signing in.
             </div>
             <div id="nm-config-options" class="nm-config-options"></div>
+            <aside id="nm-os6-notice" class="banner banner--warning nm-compatibility-note" role="note" aria-labelledby="nm-compatibility-title" hidden>
+                <svg class="nm-compatibility-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                <div>
+                    <strong id="nm-compatibility-title">Kobo OS 6 compatibility</strong>
+                    <p>Kobo OS 6 is still in beta. Mods may have issues or stop working after future OS updates. Some mods available on Kobo OS 4 do not yet support Kobo OS 6. Support is still being added, so only compatible features are shown.</p>
+                </div>
+            </aside>
             <div class="step-actions">
                 <button id="btn-nm-features-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-nm-features-next" class="primary">Continue &#x203A;</button>

@@ -10,7 +10,8 @@
 import { expect } from '@playwright/test';
 import { injectMockDevice, overrideFirmwareURLs } from './mock-device.js';
 import { hasFirmwareZip } from './assets.js';
-import { buildAdditionalFilesTgz, sha256Hex } from '../../../src/js/patches/additional-files.js';
+import { buildAdditionalFilesTgz } from '../../../src/js/patches/additional-files.js';
+import { sha256Hex } from '../../../src/js/shell/digest.js';
 
 export const THEMES = ['light', 'dark'];
 
@@ -40,6 +41,7 @@ export const SCREENSHOT_DIRS = {
     manualNickelMenu: 'manual/nickelmenu',
     manualPatches: 'manual/patches',
     connectedNickelMenu: 'connected/nickelmenu/install',
+    connectedNickelMenuModify: 'connected/nickelmenu/modify',
     connectedNickelMenuRemoval: 'connected/nickelmenu/removal',
     connectedNickelMenuFactory: 'connected/nickelmenu/factory-reset',
     connectedPatches: 'connected/patches',

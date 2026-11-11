@@ -117,8 +117,8 @@ test('reviewNotices mentions NickelTypeFix exactly when the mod will be included
         globalThis.__INSTALLABLES__ = { nickeltypefix: { version: 'v0.3', available: true } };
         const notices = betterTypography.reviewNotices({ deviceInfo: { firmware: '4.45.23646' } });
         assert.equal(notices.length, 1);
-        assert.equal(notices[0].title, 'NickelTypeFix');
-        assert.equal(notices[0].link.href, 'https://github.com/nicoverbruggen/NickelTypeFix');
+        assert.equal(notices[0].mod.name, 'NickelTypeFix');
+        assert.equal(notices[0].mod.href, 'https://github.com/nicoverbruggen/NickelTypeFix');
 
         assert.equal(betterTypography.reviewNotices({ deviceInfo: { firmware: '4.20.14622' } }).length, 1);
 

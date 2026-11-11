@@ -1,6 +1,6 @@
 import { parseTarGz } from '../../archive.js';
-import { fetchWithProgress, downloadProgress } from '../../../shell/dom.js';
-import { installableVersion, installableAssetUrl, installableSize } from '../../installables.js';
+import { downloadProgress } from '../../../shell/dom.js';
+import { installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
 // Installs Cadmus, an alternative Kobo reader app, from its Kobo tarball.
 // The upstream archive is rooted at the app directory contents, so each file is
@@ -10,8 +10,7 @@ export default {
     section: 'Alternative reading apps',
     analyticsEvent: 'add-cadmus',
     title: 'Install Cadmus',
-    description:
-        'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean Reading Experience. You can launch Cadmus from the Toggle menu; it does not replace the built-in reader functionality.',
+    description: 'Installs Cadmus, an alternative e-book reader based on Plato, focused on a clean reading experience.',
     default: false,
     available: false, // set to true at runtime if Cadmus assets exist
     directories: ['.adds/cadmus'],
@@ -32,11 +31,10 @@ export default {
 
         const label = 'Downloading Cadmus ' + version + '...';
         ctx.progress(label);
-        const tarBytes = await fetchWithProgress(
-            installableAssetUrl('cadmus', 'cadmus-kobo.tar.gz'),
-            downloadProgress(ctx.progress, label, await installableSize('cadmus')),
-            'Failed to download Cadmus',
-        );
+        const tarBytes = await fetchInstallableAsset('cadmus', 'cadmus-kobo.tar.gz', {
+            onProgress: downloadProgress(ctx.progress, label, await installableSize('cadmus')),
+            errorPrefix: 'Failed to download Cadmus',
+        });
 
         ctx.progress('Extracting Cadmus...');
         return (await parseTarGz(tarBytes)).map((file) => ({
@@ -49,7 +47,7 @@ export default {
         return [
             {
                 id: 'cadmus',
-                lines: ['menu_item:main:Open Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
+                lines: ['menu_item:main:Cadmus:cmd_spawn:quiet:exec /mnt/onboard/.adds/cadmus/cadmus.sh'],
             },
         ];
     },

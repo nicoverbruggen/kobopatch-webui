@@ -353,7 +353,7 @@ export function updateMenuCustomizationDialog(draft, dialogDom, message = '') {
     dialogDom.status.textContent = valid ? message : `Use 1-${NM_MENU_LABEL_MAX_LENGTH} letters or numbers.`;
 }
 
-export function openMenuCustomizeDialog(state, dialogDom, triggerEl, shouldApply = () => true) {
+export function openMenuCustomizeDialog(state, dialogDom, shouldApply = () => true) {
     const draft = cloneMenuCustomization(state.nickelMenuCustomization);
     const session = Symbol('menu-customization-session');
     dialogDom._menuCustomizationSession = session;
@@ -385,42 +385,18 @@ export function openMenuCustomizeDialog(state, dialogDom, triggerEl, shouldApply
 
     dialogDom.labelInput.value = sanitizeMenuLabel(draft.label);
     updateMenuCustomizationDialog(draft, dialogDom);
-    dialogDom._triggerEl = triggerEl;
     dialogDom.dialog.showModal();
     dialogDom.labelInput.focus();
     dialogDom.labelInput.select();
     return draft;
 }
 
-const _focusReturnWiredDialogs = new Set();
-function wireFocusReturn(dlg) {
-    if (_focusReturnWiredDialogs.has(dlg)) return;
-    _focusReturnWiredDialogs.add(dlg);
-    dlg.addEventListener('close', () => {
-        const trigger = dlg._triggerEl;
-        if (trigger && typeof trigger.focus === 'function') {
-            trigger.focus({ preventScroll: true });
-        }
-    });
+// Trap Tab inside the dialog once the DOM is ready. Returning focus to whatever
+// opened it needs no code: the browser restores it when a modal <dialog> closes.
+function wireDialog() {
+    const dlg = $('nm-customize-dialog');
+    if (dlg) trapFocus(dlg);
 }
 
-// Lazy-wire focus management when the import first runs.
-document.addEventListener(
-    'DOMContentLoaded',
-    () => {
-        const dlg = $('nm-customize-dialog');
-        if (dlg) {
-            wireFocusReturn(dlg);
-            trapFocus(dlg);
-        }
-    },
-    { once: true },
-);
-// Also wire if DOM is already ready.
-if (document.readyState !== 'loading') {
-    const dlg = $('nm-customize-dialog');
-    if (dlg) {
-        wireFocusReturn(dlg);
-        trapFocus(dlg);
-    }
-}
+document.addEventListener('DOMContentLoaded', wireDialog, { once: true });
+if (document.readyState !== 'loading') wireDialog();

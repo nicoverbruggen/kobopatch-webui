@@ -110,6 +110,14 @@ test('installToDevice writes customized NickelMenu tab icon and label', async ()
     assert.match(items, /^experimental :menu_main_15505_label :Read$/m);
     assert.match(items, new RegExp(`^experimental :menu_main_15505_icon :/mnt/onboard/${NM_MENU_ICON_CUSTOM_PNG_PATH}$`, 'm'));
     assert.deepEqual(device.writeFor(NM_MENU_ICON_CUSTOM_PNG_PATH).data, png);
+    const manifest = JSON.parse(text(device.writeFor('.kobopatch-webui/nickelmenu.json').data));
+    assert.deepEqual(manifest.configuration.menu, {
+        label: 'Read',
+        icon: {
+            mimeType: 'image/png',
+            data: btoa('png data'),
+        },
+    });
 });
 
 test('installToDevice uses the calibre sync exclusion when exclude-calibre is selected', async () => {
@@ -306,12 +314,33 @@ test('installToDevice stops before config overwrite when Kobo eReader.conf canno
         failReadPaths: [koboEReaderConfPath],
     });
 
+    let cleanupRan = false;
     await assert.rejects(
-        () => installer.installToDevice(device, [excludeCalibre], createProgressRecorder()),
+        () =>
+            installer.installToDevice(device, [excludeCalibre], createProgressRecorder(), {
+                beforeWrite: async () => {
+                    cleanupRan = true;
+                },
+            }),
         /Refusing read of \.kobo\/Kobo\/Kobo eReader\.conf/,
     );
     assert.deepEqual(device.writePaths(), []);
     assert.equal(device.writeFor(koboEReaderConfPath), undefined);
+    assert.equal(cleanupRan, false);
+});
+
+test('modify cleanup config changes survive the prepared install', async () => {
+    const installer = createInstaller();
+    const device = new RecordingDevice({ textFiles: { [koboEReaderConfPath]: '[Reading]\r\nreadingFontFamily=Old\r\n' } });
+    await installer.installToDevice(device, [excludeCalibre], createProgressRecorder(), {
+        beforeWrite: async () => {
+            device.textFiles.set(koboEReaderConfPath, '[Reading]\r\nreadingFontFamily=\r\n');
+        },
+    });
+    const config = text(device.writeFor(koboEReaderConfPath).data);
+    assert.match(config, /readingFontFamily=\r\n/);
+    assert.ok(!config.includes('Old'));
+    assert.match(config, /ExcludeSyncFolders=/);
 });
 
 test('installToDevice stops writing remaining feature files after a feature write fails', async () => {
@@ -419,7 +448,7 @@ const tgzAddonFeature = {
 
 async function createInstallerWithBaseTgz() {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuTgz = await buildTarGz([nmTgzEntry]);
+    installer.nickelMenuArchives.set('nickelmenu', await buildTarGz([nmTgzEntry]));
     return installer;
 }
 
@@ -590,8 +619,8 @@ test('installToDevice writes the items file as bytes even when a postProcess rep
 
 test('buildKoboRootTgz keeps the base entry when a feature duplicates its path', async () => {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuTgz = await buildTarGz([{ path: 'shared/plugin.so', data: bytes('base bytes'), mode: 0o644 }]);
-    const baseBefore = installer.nickelMenuTgz.slice();
+    installer.nickelMenuArchives.set('nickelmenu', await buildTarGz([{ path: 'shared/plugin.so', data: bytes('base bytes'), mode: 0o644 }]));
+    const baseBefore = installer.nickelMenuArchives.get('nickelmenu').slice();
     const feature = {
         id: 'dup',
         title: 'Dup',
@@ -610,12 +639,12 @@ test('buildKoboRootTgz keeps the base entry when a feature duplicates its path',
     assert.equal(shared.mode, 0o644);
     assert.ok(entries.some((e) => e.path === 'feature/only'));
     // The base archive bytes must not be mutated by the merge.
-    assert.deepEqual(installer.nickelMenuTgz, baseBefore);
+    assert.deepEqual(installer.nickelMenuArchives.get('nickelmenu'), baseBefore);
 });
 
 test('buildKoboRootTgz keeps the first feature entry when two features ship the same path', async () => {
     const installer = new NickelMenuInstaller();
-    installer.nickelMenuTgz = await buildTarGz([{ path: 'base/x', data: bytes('base'), mode: 0o644 }]);
+    installer.nickelMenuArchives.set('nickelmenu', await buildTarGz([{ path: 'base/x', data: bytes('base'), mode: 0o644 }]));
     const first = { id: 'first', title: 'First', koboRootEntries: () => [{ path: 'clash', data: bytes('first'), mode: 0o644 }] };
     const second = { id: 'second', title: 'Second', koboRootEntries: () => [{ path: 'clash', data: bytes('second'), mode: 0o644 }] };
 
@@ -663,4 +692,28 @@ test('buildManifest records files, directories, conf, and menuItems-only feature
     assert.equal(manifest.features['with-dirs'].files, undefined);
     // Only revertable conf settings are recorded, with revertTo carried through.
     assert.deepEqual(manifest.features['with-conf'].conf, [{ section: 'S', key: 'k', value: 'v', revertTo: 'old' }]);
+});
+
+test('buildManifest records the version a feature installed, and omits it when there is none', async () => {
+    const installer = new NickelMenuInstaller();
+    // A feature whose id is an installable's id gets the version from the manifest;
+    // one that ships someone else's asset (better-typography ships NickelTypeFix)
+    // carries its own; a plain feature has none to record.
+    const originalManifest = globalThis.__INSTALLABLES__;
+    try {
+        globalThis.__INSTALLABLES__ = { koreader: { version: 'v2026.07.1', available: true } };
+        const byId = { id: 'koreader', title: 'KOReader', directories: [['.adds', 'koreader']] };
+        const byOwnVersion = { id: 'better-typography', title: 'Better typography', version: () => 'v0.7', menuItems: () => [] };
+        const noAsset = { id: 'exclude-calibre', title: 'Exclude Calibre', menuItems: () => [] };
+        const features = [byId, byOwnVersion, noAsset];
+
+        const { files, featureFiles } = await installer.collectFiles(features, () => {});
+        const manifest = installer.buildManifest(features, files, featureFiles, null, null);
+
+        assert.equal(manifest.features['koreader'].version, 'v2026.07.1');
+        assert.equal(manifest.features['better-typography'].version, 'v0.7');
+        assert.equal(manifest.features['exclude-calibre'].version, undefined);
+    } finally {
+        globalThis.__INSTALLABLES__ = originalManifest;
+    }
 });
