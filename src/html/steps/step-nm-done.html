@@ -12,6 +12,8 @@
                     <p id="nm-download-version-note" class="version-note"></p>
                     <ol class="install-steps">
                         <li>Connect your Kobo via USB so it appears as a removable drive.</li>
+                        <li id="nm-download-cleanup-step" hidden>Remove the following items from your existing setup before copying the new files. Extracting the ZIP does not remove existing files. All paths below are relative to the root of your Kobo drive.
+                            <ul id="nm-download-cleanup-list"></ul></li>
                         <li id="nm-download-conf-step" hidden>Open <strong>.kobo/Kobo/Kobo eReader.conf</strong> in a text editor.<br>
                             Find the <code>[FeatureSettings]</code> section (or add it at the end of the file) and add the following line <strong>inside</strong> that section (do not replace the entire file):<br>
                             <code id="nm-download-conf-line"></code><br>

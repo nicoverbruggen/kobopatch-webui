@@ -425,6 +425,8 @@ export function initNickelMenuFlow(state) {
                     writeInstructions: $('nm-write-instructions'),
                     downloadInstructions: $('nm-download-instructions'),
                     downloadVersionNote: $('nm-download-version-note'),
+                    downloadCleanupStep: $('nm-download-cleanup-step'),
+                    downloadCleanupList: $('nm-download-cleanup-list'),
                     rebootInstructions: $('nm-reboot-instructions'),
                     downloadConfStep: $('nm-download-conf-step'),
                     downloadRebootStep: $('nm-download-reboot-step'),

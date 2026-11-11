@@ -12,17 +12,41 @@ import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { AuditLog } from '../kobo/audit-log.js';
 import { DeviceWriter } from '../kobo/device-writer.js';
+import { revertableConfSettings } from '../kobo/configuration.js';
 import { executeNickelMenuFeatureCleanups, executeNickelMenuRemoval } from '../nickelmenu/uninstaller.js';
 import { featuresToInstall, featuresToRemove, alwaysCleanupFeatures, optionalCleanupToRemove } from '../nickelmenu/selection.js';
 import { featureAnalyticsEvents } from '../nickelmenu/features/index.js';
 import { getExcludeSyncFoldersLine } from '../nickelmenu/installer.js';
-import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE, nickelMenuDownloadVersionNote } from '../shell/instructions.js';
+import { CONF_DESC_DEFAULT, CONF_DESC_EXCLUDE_CALIBRE, nickelMenuDownloadVersionNote, nickelMenuCleanupInstructions } from '../shell/instructions.js';
 import { watchForEject } from '../kobo/eject-watch.js';
 
 const NM_LEGACY_ITEMS_FILE = '.adds/nm/items';
 
 function trackFeatures(features) {
     for (const event of featureAnalyticsEvents(features)) track(event);
+}
+
+function downloadCleanupInstructions(state, features, legacyItemsDetected) {
+    const deviceInfo = nickelMenuDeviceInfo(state);
+    const cleanups = featuresToRemove(state, deviceInfo).map((feature) => ({
+        ...(feature.modifyCleanup || feature.cleanup),
+        confReverts: revertableConfSettings(feature, { deviceInfo, features: [] }),
+    }));
+    if (state.nmWebuiPresetInstalled) {
+        for (const feature of features) {
+            if (!feature.reconcilePaths) continue;
+            cleanups.push({
+                paths: feature.reconcilePaths({
+                    deviceInfo,
+                    features,
+                    previousConfiguration: state.previousNickelMenuConfiguration,
+                    fontsCustomization: state.nickelMenuFontsCustomization,
+                }),
+            });
+        }
+    }
+    if (legacyItemsDetected && !state.nmKeepLegacyConfig) cleanups.push({ paths: [NM_LEGACY_ITEMS_FILE] });
+    return nickelMenuCleanupInstructions(cleanups);
 }
 
 export async function executeNmInstall({ state, flow, dom, showError }) {
@@ -76,19 +100,22 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
                         onProgress: progressFn,
                         audit,
                     });
-                    for (const feature of features) {
-                        if (!feature.reconcile) continue;
-                        progressFn(`Updating ${feature.title.toLowerCase()}...`);
-                        await feature.reconcile({
-                            device: writer,
-                            deviceInfo: nickelMenuDeviceInfo(state),
-                            features,
-                            previousConfiguration: state.previousNickelMenuConfiguration,
-                            menuCustomization: state.nickelMenuCustomization,
-                            tabsCustomization: state.nickelMenuTabsCustomization,
-                            fontsCustomization: state.nickelMenuFontsCustomization,
-                            audit,
-                        });
+                    // History alone does not authorize deleting files from a fresh install.
+                    if (state.nmWebuiPresetInstalled) {
+                        for (const feature of features) {
+                            if (!feature.reconcile) continue;
+                            progressFn(`Updating ${feature.title.toLowerCase()}...`);
+                            await feature.reconcile({
+                                device: writer,
+                                deviceInfo: nickelMenuDeviceInfo(state),
+                                features,
+                                previousConfiguration: state.previousNickelMenuConfiguration,
+                                menuCustomization: state.nickelMenuCustomization,
+                                tabsCustomization: state.nickelMenuTabsCustomization,
+                                fontsCustomization: state.nickelMenuFontsCustomization,
+                                audit,
+                            });
+                        }
                     }
                     if (dom.legacyItemsDetected && state.nickelMenuOption === 'preset') {
                         if (!state.nmKeepLegacyConfig) {
@@ -111,11 +138,13 @@ export async function executeNmInstall({ state, flow, dom, showError }) {
             state._nmDoneMode = 'written';
             await flow.go('done', state);
         } else {
+            state.nmDownloadCleanupInstructions = downloadCleanupInstructions(state, features, dom.legacyItemsDetected);
             state.resultNmZip = await state.nmInstaller.buildDownloadZip(features, progressFn, nickelMenuDeviceInfo(state), {
                 menuCustomization: state.nickelMenuCustomization,
                 tabsCustomization: state.nickelMenuTabsCustomization,
                 fontsCustomization: state.nickelMenuFontsCustomization,
                 isPreset: state.nickelMenuOption === 'preset',
+                cleanupInstructions: state.nmDownloadCleanupInstructions,
             });
             state._nmDoneMode = 'download';
             await flow.go('done', state);
@@ -220,6 +249,15 @@ export function renderNmDoneStatus(state, terminal, dom) {
         dom.doneStatus.textContent = TL.STATUS.NM_DOWNLOAD_READY;
         triggerDownload(state.resultNmZip, 'NickelMenu-install.zip', 'application/zip');
         dom.downloadInstructions.hidden = false;
+        const cleanupInstructions = state.nmDownloadCleanupInstructions || [];
+        dom.downloadCleanupStep.hidden = cleanupInstructions.length === 0;
+        dom.downloadCleanupList.replaceChildren(
+            ...cleanupInstructions.map((text) => {
+                const item = document.createElement('li');
+                item.textContent = text;
+                return item;
+            }),
+        );
         if (dom.downloadVersionNote) dom.downloadVersionNote.textContent = nickelMenuDownloadVersionNote(nickelMenuDeviceInfo(state));
         const features = state.nickelMenuOption === 'preset' ? featuresToInstall(state, nickelMenuDeviceInfo(state)) : [];
         const hasExcludeCalibre = features.some((f) => f.id === 'exclude-calibre');

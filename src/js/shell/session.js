@@ -68,6 +68,7 @@ export class Session {
         this.reloadAdditionalFiles = null;
         this.resultTgz = null;
         this.resultNmZip = null;
+        this.nmDownloadCleanupInstructions = [];
     }
 
     resetDeviceContext() {
@@ -87,5 +88,6 @@ export class Session {
         this.reloadAdditionalFiles = null;
         this.resultTgz = null;
         this.resultNmZip = null;
+        this.nmDownloadCleanupInstructions = [];
     }
 }

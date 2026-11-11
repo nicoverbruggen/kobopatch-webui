@@ -344,7 +344,7 @@ export class NickelMenuInstaller {
         features,
         progressFn,
         deviceInfo = null,
-        { menuCustomization = null, tabsCustomization = null, fontsCustomization = null, isPreset = features.length > 0 } = {},
+        { menuCustomization = null, tabsCustomization = null, fontsCustomization = null, isPreset = features.length > 0, cleanupInstructions = [] } = {},
     ) {
         await this.loadNickelMenu(progressFn, deviceInfo);
 
@@ -381,7 +381,7 @@ export class NickelMenuInstaller {
 
         // Bundle the same manual-install guidance the wizard shows on screen,
         // so the steps travel with the download.
-        zip.file('instructions.txt', this.buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization));
+        zip.file('instructions.txt', this.buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization, cleanupInstructions));
 
         progressFn('Compressing...');
         let shown = -1;
@@ -400,7 +400,7 @@ export class NickelMenuInstaller {
      * ZIP. The conf steps are only relevant for a curated preset install, which
      * is exactly when the on-screen instructions show them too.
      */
-    buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization = null) {
+    buildInstructionsText(features, deviceInfo, isPreset, fontsCustomization = null, cleanupInstructions = []) {
         const version = (typeof globalThis.__APP_VERSION__ !== 'undefined' ? globalThis.__APP_VERSION__ : null) || 'unknown';
         const settingsCtx = { deviceInfo: deviceInfo ?? null, features, fontsCustomization };
         const confSettings = isPreset ? features.flatMap((feature) => (feature.confSettings ? feature.confSettings(settingsCtx) : [])) : [];
@@ -411,6 +411,7 @@ export class NickelMenuInstaller {
             confLine: getExcludeSyncFoldersLine(features),
             confSettings,
             hasExcludeCalibre: features.some((f) => f.id === excludeCalibre.id),
+            cleanupInstructions,
         });
     }
 

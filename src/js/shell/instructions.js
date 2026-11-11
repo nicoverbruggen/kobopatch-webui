@@ -143,6 +143,27 @@ export function nickelMenuDownloadVersionNote(deviceInfo = null) {
     return `This package is for ${supported}. It contains .kobo/${pkg.filename}. Do not rename the archive or use it on another firmware family. Check your software version under More > Settings > Device information > Software version.`;
 }
 
+/** The same cleanup guidance is shown on screen and bundled in the ZIP. */
+export function nickelMenuCleanupInstructions(cleanups) {
+    const lines = [];
+    for (const cleanup of cleanups) {
+        for (const entry of cleanup.paths || []) {
+            const path = typeof entry === 'string' ? entry : entry.path.join('/');
+            lines.push(`Delete ${path}${entry.recursive ? ' and everything inside it' : ''}, if present.`);
+        }
+        for (const path of cleanup.removeParentDirsIfEmpty || []) {
+            lines.push(`Delete ${path.join('/')} only if it is empty.`);
+        }
+        for (const { section, key, value, revertTo } of cleanup.confReverts || []) {
+            const action = revertTo === null || revertTo === undefined ? `remove the ${key} line` : `set ${key}=${revertTo}`;
+            lines.push(
+                `In .kobo/Kobo/Kobo eReader.conf, under [${section}], ${action} only if its current value is ${JSON.stringify(value)}. Keep any other value and all unrelated settings.`,
+            );
+        }
+    }
+    return [...new Set(lines)];
+}
+
 /**
  * Build the instructions.txt body for the NickelMenu manual download.
  *
@@ -164,10 +185,21 @@ export function buildNickelMenuInstructions({
     confLine = '',
     confSettings = [],
     hasExcludeCalibre = false,
+    cleanupInstructions = [],
 } = {}) {
     const steps = [];
 
     steps.push(['Connect your Kobo via USB so it appears as a removable drive.']);
+
+    if (cleanupInstructions.length) {
+        steps.push([
+            'Remove the following items from your existing setup before copying',
+            'the new files. Extracting the ZIP does not remove existing files.',
+            'All paths below are relative to the root of your Kobo drive.',
+            '',
+            ...cleanupInstructions.map((line) => `- ${line}`),
+        ]);
+    }
 
     if (isPreset) {
         const confBlock = renderConfBlock(confLine, confSettings);

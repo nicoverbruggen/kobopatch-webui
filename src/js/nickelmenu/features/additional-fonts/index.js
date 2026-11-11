@@ -36,19 +36,21 @@ export default {
         paths: FONT_FAMILIES.flatMap((family) => family.files.map((file) => ({ path: ['fonts', file] }))),
     },
 
-    async reconcile(ctx) {
+    reconcilePaths(ctx) {
         const previousFamilies = new Set(ctx.previousConfiguration?.fontsCustomization?.families || []);
         const desiredFamilies = new Set(selectedFontFamilies(ctx.fontsCustomization).map((family) => family.id));
         const staleFamilies = FONT_FAMILIES.filter((family) => previousFamilies.has(family.id) && !desiredFamilies.has(family.id));
 
-        for (const family of staleFamilies) {
-            for (const file of family.files) {
-                try {
-                    await ctx.device.removeEntry(['fonts', file]);
-                    ctx.audit?.record(`Removed fonts/${file}`);
-                } catch (error) {
-                    if (error?.name !== 'NotFoundError') throw error;
-                }
+        return staleFamilies.flatMap((family) => family.files.map((file) => ({ path: ['fonts', file] })));
+    },
+
+    async reconcile(ctx) {
+        for (const { path } of this.reconcilePaths(ctx)) {
+            try {
+                await ctx.device.removeEntry(path);
+                ctx.audit?.record(`Removed ${path.join('/')}`);
+            } catch (error) {
+                if (error?.name !== 'NotFoundError') throw error;
             }
         }
     },
