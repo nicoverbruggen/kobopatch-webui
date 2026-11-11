@@ -11,40 +11,35 @@
 // arrive here, so they are deliberately absent — a device is a Tolino to this
 // app only if it could have been cross-flashed in the first place.
 const koboHardwareIds = {
-    '00000000-0000-0000-0000-000000000310': {
-        serialPrefix: 'N905',
-        serialPrefixAliases: ['KG31'],
-        channel: 'kobo3',
-        model: 'Kobo Touch A/B',
-    },
-    '00000000-0000-0000-0000-000000000320': { serialPrefix: 'N905', channel: 'kobo4', model: 'Kobo Touch C' },
-    '00000000-0000-0000-0000-000000000330': { serialPrefix: 'N613', channel: 'kobo4', model: 'Kobo Glo' },
-    '00000000-0000-0000-0000-000000000340': { serialPrefix: 'N705', channel: 'kobo4', model: 'Kobo Mini' },
-    '00000000-0000-0000-0000-000000000350': { serialPrefix: 'N204', channel: 'kobo4', model: 'Kobo Aura HD' },
-    '00000000-0000-0000-0000-000000000360': { serialPrefix: 'N514', channel: 'kobo5', model: 'Kobo Aura' },
-    '00000000-0000-0000-0000-000000000370': { serialPrefix: 'N250', channel: 'kobo5', model: 'Kobo Aura H2O' },
-    '00000000-0000-0000-0000-000000000371': { serialPrefix: 'N437', channel: 'kobo6', model: 'Kobo Glo HD' },
-    '00000000-0000-0000-0000-000000000372': { serialPrefix: 'N587', channel: 'kobo6', model: 'Kobo Touch 2.0' },
-    '00000000-0000-0000-0000-000000000373': { serialPrefix: 'N709', channel: 'kobo6', model: 'Kobo Aura ONE' },
-    '00000000-0000-0000-0000-000000000374': { serialPrefix: 'N867', channel: 'kobo6', model: 'Kobo Aura H2O Edition 2 v1' },
-    '00000000-0000-0000-0000-000000000375': { serialPrefix: 'N236', channel: 'kobo6', model: 'Kobo Aura Edition 2 v1' },
-    '00000000-0000-0000-0000-000000000376': { serialPrefix: 'N249', channel: 'kobo7', model: 'Kobo Clara HD' },
-    '00000000-0000-0000-0000-000000000377': { serialPrefix: 'N782', channel: 'kobo7', model: 'Kobo Forma' },
-    '00000000-0000-0000-0000-000000000378': { serialPrefix: 'N867', channel: 'kobo7', model: 'Kobo Aura H2O Edition 2 v2' },
-    '00000000-0000-0000-0000-000000000379': { serialPrefix: 'N236', channel: 'kobo7', model: 'Kobo Aura Edition 2 v2' },
-    '00000000-0000-0000-0000-000000000380': { serialPrefix: 'N782', channel: 'kobo7', model: 'Kobo Forma' },
-    '00000000-0000-0000-0000-000000000381': { serialPrefix: 'N709', channel: 'kobo6', model: 'Kobo Aura ONE Limited Edition' },
-    '00000000-0000-0000-0000-000000000382': { serialPrefix: 'N306', channel: 'kobo7', model: 'Kobo Nia' },
-    '00000000-0000-0000-0000-000000000383': { serialPrefix: 'N778', channel: 'kobo8', model: 'Kobo Sage' },
-    '00000000-0000-0000-0000-000000000384': { serialPrefix: 'N873', channel: 'kobo7', model: 'Kobo Libra H2O' },
-    '00000000-0000-0000-0000-000000000386': { serialPrefix: 'N506', channel: 'kobo10', model: 'Kobo Clara 2E' },
-    '00000000-0000-0000-0000-000000000387': { serialPrefix: 'N604', channel: 'kobo8', model: 'Kobo Elipsa' },
-    '00000000-0000-0000-0000-000000000388': { serialPrefix: 'N418', channel: 'kobo9', model: 'Kobo Libra 2' },
-    '00000000-0000-0000-0000-000000000389': { serialPrefix: 'N605', channel: 'kobo11', model: 'Kobo Elipsa 2E' },
-    '00000000-0000-0000-0000-000000000390': { serialPrefix: 'N428', channel: 'kobo13', model: 'Kobo Libra Colour', tolinoModel: 'Tolino Vision Color' },
-    '00000000-0000-0000-0000-000000000391': { serialPrefix: 'N365', channel: 'kobo12', model: 'Kobo Clara BW', tolinoModel: 'Tolino Shine 5' },
-    '00000000-0000-0000-0000-000000000393': { serialPrefix: 'N367', channel: 'kobo12', model: 'Kobo Clara Colour', tolinoModel: 'Tolino Shine Color' },
-    '00000000-0000-0000-0000-000000000395': { serialPrefix: 'P365', channel: 'kobo14', model: 'Kobo Clara BW', tolinoModel: 'Tolino Shine 5' },
+    '00000000-0000-0000-0000-000000000310': { serialPrefixes: ['N905', 'KG31'], channel: 'kobo3', model: 'Kobo Touch A/B' },
+    '00000000-0000-0000-0000-000000000320': { serialPrefixes: ['N905'], channel: 'kobo4', model: 'Kobo Touch C' },
+    '00000000-0000-0000-0000-000000000330': { serialPrefixes: ['N613', '613'], channel: 'kobo4', model: 'Kobo Glo' },
+    '00000000-0000-0000-0000-000000000340': { serialPrefixes: ['N705'], channel: 'kobo4', model: 'Kobo Mini' },
+    '00000000-0000-0000-0000-000000000350': { serialPrefixes: ['N204'], channel: 'kobo4', model: 'Kobo Aura HD' },
+    '00000000-0000-0000-0000-000000000360': { serialPrefixes: ['N514', '514'], channel: 'kobo5', model: 'Kobo Aura' },
+    '00000000-0000-0000-0000-000000000370': { serialPrefixes: ['N250'], channel: 'kobo5', model: 'Kobo Aura H2O' },
+    '00000000-0000-0000-0000-000000000371': { serialPrefixes: ['N437'], channel: 'kobo6', model: 'Kobo Glo HD' },
+    '00000000-0000-0000-0000-000000000372': { serialPrefixes: ['N587'], channel: 'kobo6', model: 'Kobo Touch 2.0' },
+    '00000000-0000-0000-0000-000000000373': { serialPrefixes: ['N709'], channel: 'kobo6', model: 'Kobo Aura ONE' },
+    '00000000-0000-0000-0000-000000000374': { serialPrefixes: ['N867'], channel: 'kobo6', model: 'Kobo Aura H2O Edition 2 v1' },
+    '00000000-0000-0000-0000-000000000375': { serialPrefixes: ['N236'], channel: 'kobo6', model: 'Kobo Aura Edition 2 v1' },
+    '00000000-0000-0000-0000-000000000376': { serialPrefixes: ['N249'], channel: 'kobo7', model: 'Kobo Clara HD' },
+    '00000000-0000-0000-0000-000000000377': { serialPrefixes: ['N782'], channel: 'kobo7', model: 'Kobo Forma' },
+    '00000000-0000-0000-0000-000000000378': { serialPrefixes: ['N867'], channel: 'kobo7', model: 'Kobo Aura H2O Edition 2 v2' },
+    '00000000-0000-0000-0000-000000000379': { serialPrefixes: ['N236'], channel: 'kobo7', model: 'Kobo Aura Edition 2 v2' },
+    '00000000-0000-0000-0000-000000000380': { serialPrefixes: ['N782'], channel: 'kobo7', model: 'Kobo Forma' },
+    '00000000-0000-0000-0000-000000000381': { serialPrefixes: ['N709'], channel: 'kobo6', model: 'Kobo Aura ONE Limited Edition' },
+    '00000000-0000-0000-0000-000000000382': { serialPrefixes: ['N306'], channel: 'kobo7', model: 'Kobo Nia' },
+    '00000000-0000-0000-0000-000000000383': { serialPrefixes: ['N778'], channel: 'kobo8', model: 'Kobo Sage' },
+    '00000000-0000-0000-0000-000000000384': { serialPrefixes: ['N873'], channel: 'kobo7', model: 'Kobo Libra H2O' },
+    '00000000-0000-0000-0000-000000000386': { serialPrefixes: ['N506'], channel: 'kobo10', model: 'Kobo Clara 2E' },
+    '00000000-0000-0000-0000-000000000387': { serialPrefixes: ['N604'], channel: 'kobo8', model: 'Kobo Elipsa' },
+    '00000000-0000-0000-0000-000000000388': { serialPrefixes: ['N418'], channel: 'kobo9', model: 'Kobo Libra 2' },
+    '00000000-0000-0000-0000-000000000389': { serialPrefixes: ['N605'], channel: 'kobo11', model: 'Kobo Elipsa 2E' },
+    '00000000-0000-0000-0000-000000000390': { serialPrefixes: ['N428'], channel: 'kobo13', model: 'Kobo Libra Colour', tolinoModel: 'Tolino Vision Color' },
+    '00000000-0000-0000-0000-000000000391': { serialPrefixes: ['N365'], channel: 'kobo12', model: 'Kobo Clara BW', tolinoModel: 'Tolino Shine 5' },
+    '00000000-0000-0000-0000-000000000393': { serialPrefixes: ['N367'], channel: 'kobo12', model: 'Kobo Clara Colour', tolinoModel: 'Tolino Shine Color' },
+    '00000000-0000-0000-0000-000000000395': { serialPrefixes: ['P365'], channel: 'kobo14', model: 'Kobo Clara BW', tolinoModel: 'Tolino Shine 5' },
 };
 
 const minimumSupportedFirmware = '4.23';
@@ -63,14 +58,15 @@ function isTolinoSerialPrefix(rawPrefix) {
 }
 
 function serialPrefixMatch(hardwareInfo, rawPrefix) {
-    const expected = String(hardwareInfo?.serialPrefix || '').substring(0, 4);
-    const aliases = (hardwareInfo?.serialPrefixAliases || []).map((prefix) => String(prefix).substring(0, 4));
+    const expectedPrefixes = hardwareInfo?.serialPrefixes || [];
+    const canonicalPrefix = expectedPrefixes[0];
     const actual = String(rawPrefix || '').substring(0, 4);
-    if (!expected || !actual) return { matches: false, refurbished: false, tolino: false };
+    if (!actual) return { matches: false, refurbished: false, tolino: false };
 
-    if (actual === expected) return { matches: true, refurbished: false, tolino: false };
-    if (aliases.includes(actual)) return { matches: true, refurbished: false, tolino: false };
-    if (actual.startsWith('R') && actual.substring(1) === expected.substring(1)) {
+    if (expectedPrefixes.some((prefix) => prefix && actual.startsWith(prefix))) {
+        return { matches: true, refurbished: false, tolino: false };
+    }
+    if (actual.startsWith('R') && canonicalPrefix?.length === 4 && actual.substring(1) === canonicalPrefix.substring(1)) {
         return { matches: true, refurbished: true, tolino: false };
     }
     if (hardwareInfo?.tolinoModel && isTolinoSerialPrefix(actual)) {
@@ -134,7 +130,7 @@ function parseKoboVersion(content) {
     const rawSerialPrefix = serial.substring(0, 4);
     const hardwareInfo = koboHardwareIds[hardwareId] || null;
     const verification = deviceVerificationFor(hardwareInfo, rawSerialPrefix);
-    const serialPrefix = hardwareInfo?.serialPrefix || rawSerialPrefix;
+    const serialPrefix = hardwareInfo?.serialPrefixes[0] || rawSerialPrefix;
     const koboModel = hardwareInfo?.model || null;
     // A Tolino is named as itself: the user is holding a Tolino, and saying
     // "Kobo Libra Colour" at them is confusing even though the UUID says so.
