@@ -44,7 +44,7 @@ for (const [major, id, asset, prefix] of [
     [4, 'nickelmodmanager', 'NickelModManager.tgz', 'usr/local/Kobo/'],
     [6, 'nickelmodmanager-qt6', 'NickelModManager-Qt6.tgz', ''],
 ]) {
-    test(`OS ${major} merges verified manager bytes and mode without adding an uninstall marker`, async () => {
+    test(`OS ${major} merges verified manager bytes and cancels a pending removal on reinstall`, async () => {
         const originalFetch = globalThis.fetch;
         const originalManifest = globalThis.__INSTALLABLES__;
         const pluginPath = `${prefix}imageformats/libnickelmm.so`;
@@ -68,6 +68,21 @@ for (const [major, id, asset, prefix] of [
             assert.deepEqual(manager.data, bytes('manager plugin'));
             assert.equal(manager.mode, 0o755);
             assert.ok(fetched.includes(`/assets/${asset}?v=v0.3`));
+
+            const device = new RecordingDevice({
+                textFiles: {
+                    [markerPath]: 'Delete to uninstall',
+                    '.adds/.nickel-mod-manager.initialized': '1\n',
+                    '.adds/nickel-mod-manager/state.json': '{"saved":true}',
+                },
+            });
+            device.deviceInfo = { firmware: `${major}.0` };
+            await executeNickelMenuFeatureCleanups({ device, features: [nickelModManager] });
+            assert.equal(await device.pathExists(markerPath.split('/')), false);
+            await installer.installToDevice(device, [nickelModManager], () => {});
+            assert.equal(await device.pathExists(markerPath.split('/')), true);
+            assert.equal(await device.readFile(['.adds', '.nickel-mod-manager.initialized']), '1\n');
+            assert.equal(await device.readFile(['.adds', 'nickel-mod-manager', 'state.json']), '{"saved":true}');
         } finally {
             globalThis.fetch = originalFetch;
             globalThis.__INSTALLABLES__ = originalManifest;

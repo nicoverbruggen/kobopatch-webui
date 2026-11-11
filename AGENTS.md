@@ -177,7 +177,7 @@ Removal:
 
 ### Cleanup
 
-- NickelModManager detects and removes only `.adds/nickel-mod-manager/uninstall`. The manager creates this marker on first startup and removes its plugin on reboot when the marker is gone. Keep its directory, saved mod copies, settings and external initialization receipt. Do not use the directory as an installed marker.
+- NickelModManager detects and removes only `.adds/nickel-mod-manager/uninstall`. Installation writes this marker, including on reinstall before a pending removal has run. The manager also creates it on first startup and removes its plugin on reboot when the marker is gone. Keep its directory, saved mod copies, settings and external initialization receipt. Do not use the directory as an installed marker.
 - A feature's `cleanup` declares how it is removed and how that removal is presented.
     - `detect` — files that mark it as present.
     - `paths` — files to delete.

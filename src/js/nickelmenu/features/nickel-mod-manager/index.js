@@ -39,7 +39,7 @@ export default {
         ];
     },
 
-    // The manager creates this marker on first startup. Deleting only the
+    // The manager also creates this marker on first startup. Deleting only the
     // marker requests removal while retaining settings and saved mod copies.
     // A leftover settings folder is not evidence that the manager is installed.
     cleanup: {
@@ -49,6 +49,17 @@ export default {
         description: 'Removes the manager after a restart and keeps saved mod copies and settings. Turn on any mods you want to keep using first.',
         detect: [['.adds', 'nickel-mod-manager', 'uninstall']],
         paths: [{ path: ['.adds', 'nickel-mod-manager', 'uninstall'] }],
+    },
+
+    install() {
+        // An explicit reinstall must cancel a removal requested before reboot.
+        // Keep the initialization receipt, settings and saved mod copies.
+        return [
+            {
+                path: '.adds/nickel-mod-manager/uninstall',
+                data: 'Delete this file and restart to remove NickelModManager.\n',
+            },
+        ];
     },
 
     async koboRootEntries(ctx) {

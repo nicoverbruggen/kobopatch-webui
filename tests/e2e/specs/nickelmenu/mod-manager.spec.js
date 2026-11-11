@@ -28,7 +28,14 @@ for (const major of [4, 6]) {
     for (const mode of ['manual', 'connected']) {
         test(`OS ${major} ${mode} install includes NickelModManager in the combined package`, async ({ page }) => {
             if (mode === 'connected') {
-                await connectMockDevice(page, { firmware: major === 6 ? '6.0.276679' : '4.46.23852' });
+                await connectMockDevice(page, {
+                    firmware: major === 6 ? '6.0.276679' : '4.46.23852',
+                    // A removal was requested, but the device has not rebooted yet.
+                    extraAddsFiles: [
+                        { path: ['.nickel-mod-manager.initialized'], content: '1\n' },
+                        { path: ['nickel-mod-manager', 'state.json'], content: '{"saved":true}' },
+                    ],
+                });
                 await goToNmFeatures(page);
             } else {
                 await goToManualMode(page);
@@ -60,6 +67,7 @@ for (const major of [4, 6]) {
                 expect(zip.file(`.kobo/${major === 6 ? 'KoboRoot.tgz' : 'Kobo.tgz'}`)).toBeNull();
                 const manifest = JSON.parse(await zip.file('.kobopatch-webui/nickelmenu.json').async('string'));
                 expect(manifest.selected).toContain('nickelmodmanager');
+                expect(await zip.file('.adds/nickel-mod-manager/uninstall').async('string')).toContain('Delete this file');
             } else {
                 await page.click('#btn-nm-write');
                 await expect(page.locator('#step-nm-done')).toBeVisible();
@@ -67,6 +75,9 @@ for (const major of [4, 6]) {
                 assertMergedPayload(Buffer.from(written), major);
                 const manifest = JSON.parse(await readMockFile(page, '.kobopatch-webui', 'nickelmenu.json'));
                 expect(manifest.selected).toContain('nickelmodmanager');
+                expect(await mockPathExists(page, '.adds', 'nickel-mod-manager', 'uninstall')).toBe(true);
+                expect(await readMockFile(page, '.adds', 'nickel-mod-manager', 'state.json')).toBe('{"saved":true}');
+                expect(await readMockFile(page, '.adds', '.nickel-mod-manager.initialized')).toBe('1\n');
             }
         });
     }
