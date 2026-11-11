@@ -10,6 +10,7 @@ import { installableVersion, installableSize, fetchInstallableAsset } from '../.
 // leaves KOReader itself alone.
 export default {
     id: 'simpleui',
+    hidden: true, // Withheld from 2.0; keep detection and cleanup for existing installs.
     parent: 'koreader',
     section: 'Alternative reading apps',
     analyticsEvent: 'add-simpleui',

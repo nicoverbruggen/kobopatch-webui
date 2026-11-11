@@ -146,16 +146,25 @@ test('featuresToInstall also drops a feature disabled with a string reason', () 
 function withReadingAppsAvailable(run) {
     const koreader = NICKELMENU_FEATURES.find((f) => f.id === 'koreader');
     const simpleui = NICKELMENU_FEATURES.find((f) => f.id === 'simpleui');
-    const originals = [koreader.available, simpleui.available];
+    const originals = [koreader.available, simpleui.available, simpleui.hidden];
     koreader.available = true;
     simpleui.available = true;
+    simpleui.hidden = false;
     try {
         run(koreader, simpleui);
     } finally {
         koreader.available = originals[0];
         simpleui.available = originals[1];
+        simpleui.hidden = originals[2];
     }
 }
+
+test('hidden SimpleUI is not installed or removed by stale selections during modification', () => {
+    const sess = session({ selectedFeatureIds: ['koreader', 'simpleui'], installedNickelMenuFeatureIds: ['koreader', 'simpleui'] });
+    const info = { firmware: '4.46.23852' };
+    assert.ok(!featuresToInstall(sess, info).some((feature) => feature.id === 'simpleui'));
+    assert.ok(!featuresToRemove(sess, info).some((feature) => feature.id === 'simpleui'));
+});
 
 test('subFeatures lists the features that declare a given parent', () => {
     const ids = subFeatures('koreader').map((f) => f.id);
@@ -209,15 +218,17 @@ test('featuresToInstall drops a subitem when its parent is filtered out for anot
     // be written into a directory that will not exist.
     const simpleui = NICKELMENU_FEATURES.find((f) => f.id === 'simpleui');
     const koreader = NICKELMENU_FEATURES.find((f) => f.id === 'koreader');
-    const originals = [koreader.available, simpleui.available];
+    const originals = [koreader.available, simpleui.available, simpleui.hidden];
     koreader.available = false;
     simpleui.available = true;
+    simpleui.hidden = false;
     try {
         const ids = featuresToInstall(session({ selectedFeatureIds: ['koreader', 'simpleui'] }), { firmware: '4.40.0' }).map((f) => f.id);
         assert.ok(!ids.includes('koreader') && !ids.includes('simpleui'));
     } finally {
         koreader.available = originals[0];
         simpleui.available = originals[1];
+        simpleui.hidden = originals[2];
     }
 });
 

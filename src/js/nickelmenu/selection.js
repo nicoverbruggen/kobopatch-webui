@@ -200,10 +200,7 @@ function combineModNotices(notices) {
  * rather than leave the user to infer it from the parent's description.
  */
 function withInstalledSubFeatures(session, removed) {
-    return removed.flatMap((feature) => [
-        feature,
-        ...subFeatures(feature.id).filter((sub) => !sub.hidden && session.installedNickelMenuFeatureIds?.includes(sub.id)),
-    ]);
+    return removed.flatMap((feature) => [feature, ...subFeatures(feature.id).filter((sub) => session.installedNickelMenuFeatureIds?.includes(sub.id))]);
 }
 
 /**

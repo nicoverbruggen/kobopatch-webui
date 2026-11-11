@@ -181,8 +181,7 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 // ============================================================
 // Modifying a setup this tool already installed: the feature list arrives
 // preselected from what is on the device.
-// Captured with an app and one of its plugins both present, since a plugin
-// renders differently from a top-level feature.
+// An existing SimpleUI plugin stays on the device but is not offered in 2.0.
 // ============================================================
 
 test('connected nickelmenu modify', async ({ page }, testInfo) => {
@@ -224,7 +223,8 @@ test('connected nickelmenu modify', async ({ page }, testInfo) => {
     await page.click('#btn-nm-next');
     await expect(page.locator('#step-nm-features')).not.toBeHidden();
     await openNmFeatureSection(page, 'Alternative reading apps');
-    await expect(page.locator('input[name="nm-cfg-simpleui"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-koreader"]')).toBeChecked();
+    await expect(page.locator('input[name="nm-cfg-simpleui"]')).toHaveCount(0);
     await shot(page, dir, '02-installed-features', testInfo);
 });
 
