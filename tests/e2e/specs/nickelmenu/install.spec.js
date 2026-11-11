@@ -65,14 +65,16 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#nm-config-options')).toContainText('Reading Experience');
         await expect(page.getByRole('button', { name: 'Customize NickelMenu preset tab' })).toBeVisible();
 
-        // Alternative reading apps, Advanced, and Legacy all start collapsed; a
-        // normal section stays open. And Legacy renders below Advanced.
+        // Reading apps are visible immediately. Advanced and Legacy start
+        // collapsed, with Legacy below Advanced.
         const sectionByTitle = (title) =>
             page.locator('details.nm-config-section', {
                 has: page.locator('.nm-config-section-title', { hasText: title }),
             });
         await expect(sectionByTitle('Interface Tweaks')).toHaveJSProperty('open', true);
-        await expect(sectionByTitle('Alternative reading apps')).toHaveJSProperty('open', false);
+        await expect(sectionByTitle('Alternative reading apps')).toHaveJSProperty('open', true);
+        await expect(page.locator('input[name="nm-cfg-koreader"]')).toBeVisible();
+        await expect(page.locator('input[name="nm-cfg-cadmus"]')).toBeVisible();
         await expect(sectionByTitle('Advanced')).toHaveJSProperty('open', false);
         await expect(sectionByTitle('Legacy')).toHaveJSProperty('open', false);
         const advancedBox = await sectionByTitle('Advanced').boundingBox();

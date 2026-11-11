@@ -246,7 +246,7 @@ test.describe('NickelMenu — install', () => {
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-        // KOReader lives in the collapsed "Alternative reading apps" section.
+        // KOReader lives in the "Alternative reading apps" section.
         await openNmSection(page, 'Alternative reading apps');
         await expect(page.locator('input[name="nm-cfg-koreader"]')).not.toBeChecked();
 
@@ -358,7 +358,7 @@ test.describe('NickelMenu — install', () => {
         // Feature selection step
         await expect(page.locator('#step-nm-features')).not.toBeHidden();
 
-        // Enable KOReader (in the collapsed "Alternative reading apps" section)
+        // Enable KOReader in the "Alternative reading apps" section.
         await openNmSection(page, 'Alternative reading apps');
         await page.check('input[name="nm-cfg-koreader"]');
 

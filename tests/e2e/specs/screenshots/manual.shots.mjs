@@ -47,8 +47,9 @@ test('manual nickelmenu', async ({ page }, testInfo) => {
     await shotNickelMenuTabsModal(page, dir, '03b-nickelmenu-tabs-modal', testInfo);
     await shotNickelMenuFontsModal(page, dir, '03c-nickelmenu-fonts-modal', testInfo);
 
-    // The "Alternative reading apps" section (collapsed by default) holds KOReader
-    // and Cadmus.
+    // Alternative reading apps starts open so both readers are visible.
+    await expect(page.locator('input[name="nm-cfg-koreader"]')).toBeVisible();
+    await expect(page.locator('input[name="nm-cfg-cadmus"]')).toBeVisible();
     await openNmFeatureSection(page, 'Alternative reading apps');
     await shot(page, dir, '03c-nickelmenu-features-reading-apps', testInfo);
 

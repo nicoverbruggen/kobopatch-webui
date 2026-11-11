@@ -41,7 +41,7 @@ export const NICKELMENU_FEATURES = [
     betterTypography,
     nickelclock, // merges its own KoboRoot.tgz payload via koboRootEntries
     nickelDissolve, // sits below NickelClock in Reading Experience; merges its own KoboRoot.tgz payload
-    // "Alternative reading apps" section — collapsed by default.
+    // "Alternative reading apps" section.
     koreader,
     simpleui, // a KOReader plugin, listed under it via `parent: 'koreader'`
     cadmus,

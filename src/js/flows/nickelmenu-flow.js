@@ -62,7 +62,7 @@ import { track } from '../shell/analytics.js';
 import { shouldOfferNmBackup, prepareNmBackup } from './nickelmenu-backup.js';
 import { executeNmInstall as executeNmInstallFn, renderNmDoneStatus, renderReviewNotices } from './nickelmenu-execute.js';
 
-const NM_COLLAPSED_SECTIONS = new Set(['Alternative reading apps', 'Advanced', 'Legacy']);
+const NM_COLLAPSED_SECTIONS = new Set(['Advanced', 'Legacy']);
 
 export function initNickelMenuFlow(state) {
     const {
