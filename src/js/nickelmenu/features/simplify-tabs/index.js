@@ -107,6 +107,7 @@ export function tabOverrideLines(uiLocale, customization = null) {
 // so NickelMenu removal's recursive delete cleans it up.
 export default {
     id: 'simplify-tabs',
+    supportedFirmwareMajors: [4, 6],
     section: 'Interface Tweaks',
     analyticsEvent: 'add-basic-tabs',
     title: 'Simplify navigation tabs',

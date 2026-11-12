@@ -22,6 +22,7 @@ async function expectOs6Features(page) {
     await expect(page.locator('input[name="nm-cfg-additional-fonts"]')).toBeChecked();
     const enabled = await page.locator('#nm-config-options input[type="checkbox"]:enabled').evaluateAll((inputs) => inputs.map((input) => input.name));
     expect(enabled).toEqual([
+        'nm-cfg-simplify-tabs',
         'nm-cfg-hide-recommendations',
         'nm-cfg-hide-row2col2',
         'nm-cfg-hide-notices',
@@ -31,7 +32,7 @@ async function expectOs6Features(page) {
     ]);
     await expect(page.locator('input[name="nm-cfg-nickelmodmanager"]')).toBeChecked();
     await expect(page.locator('input[name="nm-cfg-custom-menu"]')).toBeChecked();
-    for (const id of ['better-typography', 'nickelclock', 'cadmus', 'simplify-tabs', 'simpleui']) {
+    for (const id of ['better-typography', 'nickelclock', 'cadmus', 'simpleui']) {
         await expect(page.locator(`input[name="nm-cfg-${id}"]`)).toHaveCount(0);
     }
 }

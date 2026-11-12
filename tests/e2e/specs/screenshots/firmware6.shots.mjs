@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { shot, SCREENSHOT_DIRS, dismissMobileModal, connectToDeviceScreen, shotNickelMenuFontsModal } from '../../support/screenshot-helpers.mjs';
+import {
+    shot,
+    SCREENSHOT_DIRS,
+    dismissMobileModal,
+    connectToDeviceScreen,
+    shotNickelMenuFontsModal,
+    shotNickelMenuTabsModal,
+} from '../../support/screenshot-helpers.mjs';
 
 for (const mode of ['connected', 'manual']) {
     test(`Kobo OS 6 NickelMenu ${mode}`, async ({ page }, testInfo) => {
@@ -28,12 +35,14 @@ for (const mode of ['connected', 'manual']) {
         await page.click('#btn-nm-next');
         await expect(page.locator('#nm-os6-notice')).toBeVisible();
         await page.check('input[name="nm-cfg-koreader"]');
+        await page.check('input[name="nm-cfg-simplify-tabs"]');
         await page.check('input[name="nm-cfg-hide-recommendations"]');
         await page.check('input[name="nm-cfg-hide-notices"]');
         await shot(page, dir, `os6-${mode}-features`, testInfo);
         await expect(page.locator('input[name="nm-cfg-nickelmodmanager"]')).toBeChecked();
         if (mode === 'manual') {
             await shotNickelMenuFontsModal(page, dir, 'os6-fonts-dialog', testInfo);
+            await shotNickelMenuTabsModal(page, dir, 'os6-tabs-dialog', testInfo);
         }
         await page.click('#btn-nm-features-next');
         if (mode === 'connected') await page.click('input[name="nm-backup-option"][value="skip"]');

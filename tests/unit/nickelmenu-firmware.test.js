@@ -56,7 +56,7 @@ test('manual firmware selection overrides an old connected device and resets wit
     assert.equal(session.manualNickelMenuFirmware, '4');
 });
 
-test('OS 6 accepts only NickelMenu, NickelModManager, fonts and KOReader, even with stale selections from OS 4', () => {
+test('OS 6 accepts supported features and rejects stale unsupported selections from OS 4', () => {
     const available = koreader.available;
     const originalManifest = globalThis.__INSTALLABLES__;
     globalThis.__INSTALLABLES__ = { 'nickelmodmanager-qt6': { available: true, version: 'v0.3' } };
@@ -69,7 +69,7 @@ test('OS 6 accepts only NickelMenu, NickelModManager, fonts and KOReader, even w
     try {
         assert.deepEqual(
             featuresToInstall(session, os6).map((f) => f.id),
-            ['custom-menu', 'nickelmodmanager', 'additional-fonts', 'koreader'],
+            ['custom-menu', 'simplify-tabs', 'nickelmodmanager', 'additional-fonts', 'koreader'],
         );
         assert.equal(featureDisabledReason(typography, os6), 'Not yet available for Kobo OS 6.');
         session.selectedFeatureIds = ['custom-menu', 'nickelmodmanager', 'additional-fonts', 'koreader'];
