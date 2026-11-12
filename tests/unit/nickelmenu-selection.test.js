@@ -248,15 +248,21 @@ test('featuresToRemove reconciles deselected installed features with cleanup sup
 });
 
 test('featuresToRemove schedules the shared NickelHome cleanup once when hiders are deselected', () => {
-    const removed = featuresToRemove(
-        session({
-            selectedFeatureIds: [],
-            installedNickelMenuFeatureIds: ['hide-recommendations', 'hide-row2col2', 'hide-notices'],
-        }),
-        { firmware: '4.40.0' },
-    );
-    assert.equal(removed.length, 1);
-    assert.equal((removed[0].modifyCleanup || removed[0].cleanup).title, 'NickelHome');
+    const originalManifest = globalThis.__INSTALLABLES__;
+    globalThis.__INSTALLABLES__ = { nickelhome: { available: true, version: 'v0.7' } };
+    try {
+        const removed = featuresToRemove(
+            session({
+                selectedFeatureIds: [],
+                installedNickelMenuFeatureIds: ['hide-recommendations', 'hide-row2col2', 'hide-notices'],
+            }),
+            { firmware: '4.40.0' },
+        );
+        assert.equal(removed.length, 1);
+        assert.equal((removed[0].modifyCleanup || removed[0].cleanup).title, 'NickelHome');
+    } finally {
+        globalThis.__INSTALLABLES__ = originalManifest;
+    }
 });
 
 test('featuresToRemove drops an installed feature the user unticked', () => {

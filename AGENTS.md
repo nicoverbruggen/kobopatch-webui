@@ -76,8 +76,9 @@ Metadata:
     - `featureAnalyticsEvents` in `features/index.js` dedupes, so related features may share one event, like the hiders' `add-minimal-home`.
     - `tests/unit/nickelmenu-analytics.test.js` fails if a feature omits the key. See "Analytics" in PROJECT.md.
 - `hint` (optional) — a URL or plain text. Renders a "?" badge in the feature list that opens the link in a new tab, or shows the text in a popup.
-- `supportedFirmwareMajors` (optional) defaults to `[4]`. A feature must opt into another firmware family in its own module. `custom-menu`, `nickelmodmanager`, `additional-fonts` and `koreader` currently declare `[4, 6]`. The same gate controls rendering, installation and modify cleanup; unsupported installed features are preserved. OS 6 hides unavailable features and subitems and shows a single compatibility note below the list.
+- `supportedFirmwareMajors` (optional) defaults to `[4]`. A feature must opt into another firmware family in its own module. `custom-menu`, the three home-content hiders, `nickelmodmanager`, `additional-fonts` and `koreader` currently declare `[4, 6]`. The same gate controls rendering, installation and modify cleanup; unsupported installed features are preserved. OS 6 hides unavailable features and subitems and shows a single compatibility note below the list.
 - `description`, `default`, `available` and `version` may be functions of `deviceInfo` when a feature has firmware-specific packages or defaults. The manifest decoration must preserve these functions. Version lookup for the list, review and persisted manifest uses the same device context.
+- `showVersion: false` (optional) hides the version in the feature list while retaining it in install records. Shared NickelHome options use this to avoid repeating the same package version.
 - `minimumVersion` (optional) — a Kobo software version like `4.31`. The flow disables the feature with a red explanation when the connected device's firmware is older.
 - `unsupportedDeviceReason(deviceInfo)` (optional) — returns a reason string when the feature does not support the connected device, or `null` when supported or when the device cannot be identified (e.g. NickelDissolve's hardware-UUID allowlist).
     - The flow disables the checkbox with it and `featuresToInstall` drops the feature.
@@ -148,6 +149,7 @@ Removal:
 - `installer.js`'s `buildKoboRootTgz(features)` merges them into NickelMenu's base archive and writes one combined tarball.
     - It uses `archive.js`'s `parseTarGz`/`buildTarGz`, which preserve executable modes.
     - With no contributing feature it returns the base tgz verbatim.
+- Home-content hiders select separate `nickelhome` (Qt5) and `nickelhome-qt6` packages. Keep their caches separate, restore the uninstall marker on reinstall, and retain the shared directory while any hider remains selected.
 - Such a feature is removed like any other add-on via `cleanup`. NickelClock self-removes its root-filesystem plugin on reboot once its `.adds/nickelclock` marker is gone.
 - To add one:
     - add the asset to `tools/installables/installables.mjs`,

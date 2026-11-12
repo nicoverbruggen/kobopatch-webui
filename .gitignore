@@ -32,6 +32,7 @@ src/assets/NickelTypeFix.tgz
 src/assets/NickelCoverFix.tgz
 src/assets/NickelDissolve.tgz
 src/assets/NickelHome.tgz
+src/assets/NickelHome-Qt6.tgz
 # Asset size index, regenerated from the lock by setup:installables (CI/prod)
 src/assets/index.json
 # Font preview specimens, derived from the font archives by setup:installables

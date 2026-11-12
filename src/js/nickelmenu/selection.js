@@ -101,7 +101,9 @@ export function featuresToInstall(session, deviceInfo) {
 export function featuresToRemove(session, deviceInfo) {
     if (!session.nmWebuiPresetInstalled) return [];
     const desired = new Set(featuresToInstall(session, deviceInfo).map((feature) => feature.id));
-    const cleanupGroups = new Set();
+    // Features can share a mod directory. Keep it while any selected feature
+    // still needs it; its generated configuration drops the unselected flags.
+    const cleanupGroups = new Set(NICKELMENU_FEATURES.filter((feature) => desired.has(feature.id)).map((feature) => feature.modifyCleanup || feature.cleanup));
     return NICKELMENU_FEATURES.filter(
         (feature) =>
             !feature.hidden &&

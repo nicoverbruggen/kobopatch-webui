@@ -86,6 +86,12 @@ const INSTALLABLES = [
         match: (n) => n === 'KoboRoot.tgz',
     },
     {
+        name: 'nickelhome-qt6',
+        asset: 'NickelHome-Qt6.tgz',
+        repo: 'nicoverbruggen/NickelHome',
+        match: (n) => n === 'Kobo.tgz',
+    },
+    {
         // Same shape as NickelTypeFix: a bare KoboRoot.tgz under a distinct local name.
         name: 'nickelhome',
         asset: 'NickelHome.tgz',

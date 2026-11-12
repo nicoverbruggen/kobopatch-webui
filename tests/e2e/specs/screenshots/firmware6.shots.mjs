@@ -28,6 +28,8 @@ for (const mode of ['connected', 'manual']) {
         await page.click('#btn-nm-next');
         await expect(page.locator('#nm-os6-notice')).toBeVisible();
         await page.check('input[name="nm-cfg-koreader"]');
+        await page.check('input[name="nm-cfg-hide-recommendations"]');
+        await page.check('input[name="nm-cfg-hide-notices"]');
         await shot(page, dir, `os6-${mode}-features`, testInfo);
         await expect(page.locator('input[name="nm-cfg-nickelmodmanager"]')).toBeChecked();
         if (mode === 'manual') {

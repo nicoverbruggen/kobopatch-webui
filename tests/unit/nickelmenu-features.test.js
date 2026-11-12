@@ -787,7 +787,7 @@ test('a home-content hider ships the shared toggle script to .adds/nm/scripts', 
     assert.equal(requestedUrl, TOGGLE_HIDDEN_HOME_SCRIPT_URL);
     assert.deepEqual(
         files.map((file) => file.path),
-        ['.adds/nm/scripts/toggle_hidden_home.sh'],
+        ['.adds/nm/scripts/toggle_hidden_home.sh', '.adds/nickel-home/uninstall'],
     );
 });
 

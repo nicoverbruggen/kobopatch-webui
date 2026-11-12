@@ -403,6 +403,7 @@ test('buildDownloadZip with features includes feature files but not Kobo eReader
             '.adds/nm/.cog.png',
             '.adds/nm/scripts/toggle_screenshots.sh',
             '.adds/nm/scripts/toggle_hidden_home.sh',
+            '.adds/nickel-home/uninstall',
             NM_ITEMS_FILE,
             NICKELHOME_CONFIG_FILE,
             '.kobopatch-webui/nickelmenu.json',

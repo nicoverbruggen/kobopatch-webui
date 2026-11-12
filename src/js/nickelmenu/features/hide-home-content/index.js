@@ -1,4 +1,5 @@
 import { appendToNickelHomeConfig } from '../helpers.js';
+import { firmwareMajor } from '../../../kobo/version.js';
 import { loadBundledAsset } from '../assets.js';
 import { parseTarGz } from '../../archive.js';
 import { downloadProgress } from '../../../shell/dom.js';
@@ -11,7 +12,7 @@ export const TOGGLE_HIDDEN_HOME_SCRIPT_URL = new URL('./scripts/toggle_hidden_ho
 // toggle — the "Minimal Home" Toggle-menu item plus a script that flips every
 // hide_home_*_enabled flag at once. The hiding is done by the NickelHome mod (a
 // standalone sibling of NickelMenu); this UI writes NickelHome's config, folds the
-// NickelHome KoboRoot.tgz into the combined archive, and installs the NickelMenu
+// matching NickelHome package into the combined archive, and installs the NickelMenu
 // toggle that flips it. Rather than repeat that across three feature files, we
 // generate the features from a table below. Each generated feature owns the shared
 // toggle, and the installer de-duplicates the identical menu item (by id), script
@@ -19,34 +20,47 @@ export const TOGGLE_HIDDEN_HOME_SCRIPT_URL = new URL('./scripts/toggle_hidden_ho
 // of how many hiders are selected.
 
 // The NickelHome mod is a shared dependency of every home-content hider. Fetch and
-// parse its KoboRoot.tgz once (memoised) so selecting several hiders doesn't download
+// parse each firmware package once so selecting several hiders doesn't download
 // it three times; the installer also de-duplicates the merged tar entries by path.
 // Contributes nothing when the deployment doesn't ship the NickelHome asset.
-let nickelHomeEntriesPromise = null;
+function homePackage(deviceInfo) {
+    return firmwareMajor(deviceInfo?.firmware) === 6
+        ? { id: 'nickelhome-qt6', asset: 'NickelHome-Qt6.tgz', filename: 'Kobo.tgz' }
+        : { id: 'nickelhome', asset: 'NickelHome.tgz', filename: 'KoboRoot.tgz' };
+}
+
+const nickelHomeEntries = new Map();
 function nickelHomeKoboRootEntries(ctx) {
-    if (!installableAvailable('nickelhome')) return Promise.resolve([]);
-    if (!nickelHomeEntriesPromise) {
-        nickelHomeEntriesPromise = (async () => {
-            const version = installableVersion('nickelhome');
+    const pkg = homePackage(ctx.deviceInfo);
+    if (!installableAvailable(pkg.id)) return Promise.resolve([]);
+    const key = `${pkg.id}:${installableVersion(pkg.id)}`;
+    if (!nickelHomeEntries.has(key)) {
+        const pending = (async () => {
+            const version = installableVersion(pkg.id);
             const label = 'Downloading NickelHome ' + version + '...';
             ctx.progress(label);
-            const tgz = await fetchInstallableAsset('nickelhome', 'NickelHome.tgz', {
-                onProgress: downloadProgress(ctx.progress, label, await installableSize('nickelhome')),
+            const tgz = await fetchInstallableAsset(pkg.id, pkg.asset, {
+                onProgress: downloadProgress(ctx.progress, label, await installableSize(pkg.id)),
                 errorPrefix: 'Failed to download NickelHome',
             });
-            ctx.progress('Merging NickelHome into KoboRoot.tgz...');
+            ctx.progress(`Merging NickelHome into ${pkg.filename}...`);
             return parseTarGz(tgz);
         })().catch((err) => {
-            nickelHomeEntriesPromise = null; // clear so a later attempt can retry
+            nickelHomeEntries.delete(key); // clear so a later attempt can retry
             throw err;
         });
+        nickelHomeEntries.set(key, pending);
     }
-    return nickelHomeEntriesPromise;
+    return nickelHomeEntries.get(key);
 }
 
 function makeHider({ id, title, description, flag }) {
     return {
         id,
+        supportedFirmwareMajors: [4, 6],
+        available: (deviceInfo) => installableAvailable(homePackage(deviceInfo).id),
+        version: (deviceInfo) => installableVersion(homePackage(deviceInfo).id),
+        showVersion: false,
         section: 'Interface Tweaks',
         // All hiders share one event: what matters is that a minimal home was
         // set up, not which rows were hidden.
@@ -71,7 +85,12 @@ function makeHider({ id, title, description, flag }) {
         // so the script is fetched exactly once even when several hiders are selected.
         async install(ctx = {}) {
             const data = ctx.bundledAsset ? await ctx.bundledAsset(TOGGLE_HIDDEN_HOME_SCRIPT_URL) : await loadBundledAsset(TOGGLE_HIDDEN_HOME_SCRIPT_URL);
-            return [{ path: '.adds/nm/scripts/toggle_hidden_home.sh', data }];
+            return [
+                { path: '.adds/nm/scripts/toggle_hidden_home.sh', data },
+                // Qt6 keeps an initialization receipt outside the mod directory.
+                // Restore the marker on reinstall, even before removal has rebooted.
+                { path: '.adds/nickel-home/uninstall', data: 'Delete this file and restart to remove NickelHome.\n' },
+            ];
         },
 
         // Contribute the shared Toggle item. Every hider returns this identical
@@ -90,7 +109,7 @@ function makeHider({ id, title, description, flag }) {
         postProcess: appendToNickelHomeConfig(`${flag}:1`),
 
         // Fold the NickelHome mod (which does the actual hiding) into the combined
-        // KoboRoot.tgz. Shared across hiders: fetched once and de-duplicated by path.
+        // firmware package. Shared across hiders: fetched once and de-duplicated by path.
         koboRootEntries: nickelHomeKoboRootEntries,
 
         // One shared NickelHome notice for the review step. Every hider returns the
@@ -102,7 +121,7 @@ function makeHider({ id, title, description, flag }) {
                     mod: {
                         name: 'NickelHome',
                         href: 'https://github.com/nicoverbruggen/NickelHome',
-                        summary: 'hides the home-screen widgets you selected.',
+                        summary: 'hides the home-screen widgets you selected and prevents promotions from replacing My Books.',
                         detail: 'You can turn the minimal home on or off any time with the "Minimal Home" menu item.',
                     },
                 },

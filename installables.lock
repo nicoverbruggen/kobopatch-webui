@@ -45,10 +45,10 @@
     },
     "nickelhome": {
       "asset": "NickelHome.tgz",
-      "version": "v0.6",
-      "url": "https://github.com/nicoverbruggen/NickelHome/releases/download/v0.6/KoboRoot.tgz",
-      "sha256": "05b131d8d185b00dbf48bbfc7cba1fb63b7bcb7276f2ebc31324422de1fd187e",
-      "size": 16804
+      "version": "v0.7",
+      "url": "https://github.com/nicoverbruggen/NickelHome/releases/download/v0.7/KoboRoot.tgz",
+      "sha256": "ec654da158f17d3a386f1401cd37c96165c96e621d5aa0ec620a38d8cc749028",
+      "size": 21229
     },
     "ebook-fonts-core": {
       "asset": "kobo-core-fonts.zip",
@@ -98,6 +98,13 @@
       "url": "https://github.com/koreader/koreader/releases/download/v2026.07.1/koreader-kobov5-v2026.07.1.zip",
       "sha256": "b20ec657a4abe745994590b7b1233c692909b8f4b4160643a4bd453622aba1e6",
       "size": 42349662
+    },
+    "nickelhome-qt6": {
+      "asset": "NickelHome-Qt6.tgz",
+      "version": "v0.7",
+      "url": "https://github.com/nicoverbruggen/NickelHome/releases/download/v0.7/Kobo.tgz",
+      "sha256": "77bfd0d933f6c3312bb394ccd0a7d6207be88a02748504e2ab42165ed42fddff",
+      "size": 33454
     }
   }
 }
