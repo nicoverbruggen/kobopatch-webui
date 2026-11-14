@@ -297,9 +297,9 @@ test.describe('NickelMenu — install', () => {
         await expect(page.locator('#step-nm-review')).not.toBeHidden();
         await expect(page.locator('#nm-review-list')).toContainText('KOReader');
         await expect(page.locator('#nm-review-notices')).toBeVisible();
-        await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
-        await expect(page.locator('#nm-review-notices')).toContainText('while Bluetooth is enabled');
-        await expect(page.locator('#nm-review-notices')).toContainText('NickelMenu to uninstall itself');
+        await expect(page.locator('#nm-review-notices')).toContainText('Exiting KOReader restarts your Kobo');
+        await expect(page.locator('#nm-review-notices')).toContainText('Choosing Exit in KOReader will ask to restart your Kobo');
+        await expect(page.locator('#nm-review-notices')).toContainText('Keep the included KOReader user patch enabled');
 
         // Download
         const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btn-nm-download')]);
@@ -312,6 +312,9 @@ test.describe('NickelMenu — install', () => {
         const zipFiles = Object.keys(zip.files);
 
         expect(zipFiles).toContainEqual('.kobo/KoboRoot.tgz');
+        expect(await zip.file('.adds/koreader/patches/2-webui-os6-exit.lua').async('string')).toBe(
+            fs.readFileSync(paths.repo('src/js/nickelmenu/features/koreader/2-webui-os6-exit.lua'), 'utf8'),
+        );
         expect(zipFiles).toContainEqual('.adds/nm/webui-preset');
         // KOReader files should be present under .adds/koreader/
         expect(zipFiles.some((f) => f.startsWith('.adds/koreader/'))).toBe(true);
@@ -407,9 +410,9 @@ test.describe('NickelMenu — install', () => {
         // Review step
         await expect(page.locator('#nm-review-list')).toContainText('KOReader');
         await expect(page.locator('#nm-review-notices')).toBeVisible();
-        await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
-        await expect(page.locator('#nm-review-notices')).toContainText('while Bluetooth is enabled');
-        await expect(page.locator('#nm-review-notices')).toContainText('NickelMenu to uninstall itself');
+        await expect(page.locator('#nm-review-notices')).toContainText('Exiting KOReader restarts your Kobo');
+        await expect(page.locator('#nm-review-notices')).toContainText('Choosing Exit in KOReader will ask to restart your Kobo');
+        await expect(page.locator('#nm-review-notices')).toContainText('Keep the included KOReader user patch enabled');
 
         // Write to device
         await page.click('#btn-nm-write');

@@ -48,6 +48,7 @@ for (const mode of ['connected', 'manual']) {
         if (mode === 'connected') await page.click('input[name="nm-backup-option"][value="skip"]');
         await page.click('#btn-nm-backup-next');
         await expect(page.locator('#nm-review-list')).toContainText('NickelMenu (Kobo.tgz)');
+        await expect(page.locator('#nm-review-notices')).toContainText('Choosing Exit in KOReader will ask to restart your Kobo');
         await shot(page, dir, `os6-${mode}-review`, testInfo);
         if (mode === 'manual') {
             await page.click('#btn-nm-download');

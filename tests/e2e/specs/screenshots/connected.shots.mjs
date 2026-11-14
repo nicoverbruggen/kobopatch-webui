@@ -185,7 +185,7 @@ test('connected nickelmenu review notices — older device + KOReader', async ({
 
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
     await expect(page.locator('#nm-review-notices')).toContainText('Dark Mode is not supported');
-    await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+    await expect(page.locator('#nm-review-notices')).toContainText('Exiting KOReader restarts your Kobo');
     await shot(page, dir, '08b-nickelmenu-review-two-warnings', testInfo);
 });
 

@@ -134,7 +134,7 @@ test('manual nickelmenu review notices', async ({ page }, testInfo) => {
     await expect(page.locator('#step-nm-backup')).not.toBeHidden();
     await page.click('#btn-nm-backup-next');
     await expect(page.locator('#step-nm-review')).not.toBeHidden();
-    await expect(page.locator('#nm-review-notices')).toContainText('Known issue with KOReader');
+    await expect(page.locator('#nm-review-notices')).toContainText('Exiting KOReader restarts your Kobo');
     await shot(page, dir, '05a-nickelmenu-review-notices', testInfo);
 });
 

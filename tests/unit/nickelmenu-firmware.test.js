@@ -17,12 +17,14 @@ import { RecordingDevice, bytes, createResponse } from './test-helpers.js';
 const os6 = { firmware: '6.0.276679' };
 const os4 = { firmware: '4.46.23852' };
 
-test('KOReader review explains the OS 6 exit workaround and keeps the OS 4 Bluetooth warning', () => {
-    const notice6 = JSON.stringify(koreader.reviewNotices({ deviceInfo: os6 }));
-    assert.match(notice6, /hides the normal Exit action/);
-    assert.match(notice6, /power button/);
-    assert.ok(!notice6.includes('Bluetooth'));
-    assert.match(JSON.stringify(koreader.reviewNotices({ deviceInfo: os4 })), /Bluetooth/);
+test('KOReader review explains the reboot confirmation on both firmware families', () => {
+    for (const deviceInfo of [os4, os6]) {
+        const notice = JSON.stringify(koreader.reviewNotices({ deviceInfo }));
+        assert.match(notice, /Choosing Exit in KOReader will ask to restart your Kobo/);
+        assert.match(notice, /Keep the included KOReader user patch enabled/);
+        assert.ok(!notice.includes('Bluetooth'));
+        assert.ok(!notice.includes('hides'));
+    }
 });
 
 function seededInstaller() {

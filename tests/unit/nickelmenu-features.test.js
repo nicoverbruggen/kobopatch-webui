@@ -355,7 +355,7 @@ for (const [major, id, asset] of [
 
                 assert.deepEqual(
                     files.map((file) => file.path),
-                    ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua', ...(major === 6 ? ['.adds/koreader/patches/2-webui-os6-exit.lua'] : [])],
+                    ['.adds/koreader/koreader.sh', '.adds/koreader/defaults.lua', '.adds/koreader/patches/2-webui-os6-exit.lua'],
                 );
                 assert.equal(text(files[0].data), '#!/bin/sh');
                 assert.deepEqual(progressMessages, ['Downloading KOReader v2026.01...', 'Extracting KOReader...']);

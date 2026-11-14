@@ -3,7 +3,7 @@ import { firmwareMajor } from '../../../kobo/version.js';
 import { downloadProgress } from '../../../shell/dom.js';
 import { installableAvailable, installableVersion, installableSize, fetchInstallableAsset } from '../../installables.js';
 
-const os6ExitPatch = new URL('./2-webui-os6-exit.lua', import.meta.url);
+const exitRebootPatch = new URL('./2-webui-os6-exit.lua', import.meta.url);
 
 function readerPackage(deviceInfo) {
     return firmwareMajor(deviceInfo?.firmware) === 6 ? { id: 'koreader-kobov5', asset: 'koreader-kobov5.zip' } : { id: 'koreader', asset: 'koreader-kobo.zip' };
@@ -34,29 +34,14 @@ export default {
         return rev?.trim() || null;
     },
 
-    reviewNotices({ deviceInfo } = {}) {
-        if (firmwareMajor(deviceInfo?.firmware) === 6) {
-            return [
-                {
-                    type: 'warning',
-                    title: 'Exiting KOReader on Kobo OS 6',
-                    paragraphs: [
-                        'Returning from KOReader to Kobo can get stuck on the startup screen. This installation hides the normal Exit action and its long-press shortcut. Use Exit → Reboot the device instead. If your Kobo gets stuck, hold the power button until it shuts down, then press it again to turn it on. Keep the included KOReader user patch enabled.',
-                    ],
-                },
-            ];
-        }
+    reviewNotices() {
         return [
             {
                 type: 'warning',
-                title: 'Known issue with KOReader',
+                title: 'Exiting KOReader restarts your Kobo',
                 paragraphs: [
-                    "KOReader has a known issue where exiting while Bluetooth is enabled may cause NickelMenu to uninstall itself. Use KOReader's reboot option instead, or turn Bluetooth off before starting KOReader.",
+                    'Choosing Exit in KOReader will ask to restart your Kobo. This avoids problems when returning directly to Kobo’s reader, including hangs or disabled mods. Keep the included KOReader user patch enabled.',
                 ],
-                link: {
-                    label: 'GitHub issue',
-                    href: 'https://github.com/koreader/koreader/issues/12739',
-                },
             },
         ];
     },
@@ -94,9 +79,7 @@ export default {
             });
         }
 
-        if (firmwareMajor(ctx.deviceInfo?.firmware) === 6) {
-            files.push({ path: '.adds/koreader/patches/2-webui-os6-exit.lua', data: await ctx.bundledAsset(os6ExitPatch) });
-        }
+        files.push({ path: '.adds/koreader/patches/2-webui-os6-exit.lua', data: await ctx.bundledAsset(exitRebootPatch) });
         return files;
     },
 
