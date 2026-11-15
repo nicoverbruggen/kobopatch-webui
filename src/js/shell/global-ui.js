@@ -9,12 +9,14 @@
 import { $, trapFocus } from './dom.js';
 import { isEnabled as analyticsEnabled } from './analytics.js';
 
+export const previewSiteUrl = new URL('https://kp-dev.nicoverbruggen.be/');
+
 function isDevBuild() {
     return typeof globalThis.__DEV_BUILD__ !== 'undefined' && globalThis.__DEV_BUILD__;
 }
 
 function isPreviewDeploy() {
-    return window.location.hostname === 'kp-dev.nicoverbruggen.be';
+    return window.location.hostname === previewSiteUrl.hostname;
 }
 
 function shouldShowPreviewChrome() {
@@ -72,14 +74,22 @@ function showEnvironmentPill() {
 }
 
 function injectPreviewBanner() {
-    if (!shouldShowPreviewChrome() || $('preview-banner')) return;
+    if ($('preview-banner')) return;
 
     const main = $('main-content');
     if (!main) return;
 
-    const banner = document.createElement('div');
+    const preview = shouldShowPreviewChrome();
+    const message = preview
+        ? `<strong>This is a preview version.</strong> You can test upcoming changes here.
+           Visit the <a href="https://kp.nicoverbruggen.be" target="_blank" rel="noopener">stable version</a>
+           instead if you're unsure which one to use.`
+        : `Running the <strong>Kobo OS 6 beta</strong>? <a href="${previewSiteUrl.href}">Try KoboPatch Web UI 2.0</a> for experimental support.`;
+
+    const banner = document.createElement('aside');
+    banner.setAttribute('aria-label', 'Site announcement');
     banner.id = 'preview-banner';
-    banner.className = 'preview-banner';
+    banner.className = preview ? 'preview-banner' : 'preview-banner preview-banner--stable';
     banner.innerHTML = `
         <div class="preview-banner-inner">
             <div class="preview-banner-message">
@@ -91,17 +101,16 @@ function injectPreviewBanner() {
                     </svg>
                 </span>
                 <p class="preview-banner-text">
-                    <strong>This is a preview version.</strong> You can test upcoming changes here.
-                    Visit the <a href="https://kp.nicoverbruggen.be" target="_blank" rel="noopener">stable version</a>
-                    instead if you're unsure which one to use.
+                    ${message}
                 </p>
             </div>
-            <button id="btn-preview-banner-close" class="preview-banner-close" type="button" aria-label="Dismiss preview banner">&times;</button>
+            <button id="btn-preview-banner-close" class="preview-banner-close" type="button" aria-label="Dismiss announcement">&times;</button>
         </div>
     `;
     main.before(banner);
     $('btn-preview-banner-close')?.addEventListener('click', () => {
         banner.remove();
+        main.focus({ preventScroll: true });
     });
 }
 

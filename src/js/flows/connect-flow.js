@@ -14,6 +14,7 @@ import { localeDisplayName } from '../kobo/locale.js';
 import { minimumSupportedFirmware } from '../kobo/version.js';
 import { $, collect } from '../shell/dom.js';
 import { setNavLabels, setNavStep, showNav, showStep } from '../shell/navigation.js';
+import { previewSiteUrl } from '../shell/global-ui.js';
 import { TL } from '../shell/strings.js';
 import { track } from '../shell/analytics.js';
 import { latestPatchVersionForFamily } from '../patches/catalog.js';
@@ -256,6 +257,11 @@ export function initConnectFlow(state, { patches }) {
     btnConnectReady.addEventListener('click', async () => {
         try {
             const info = await state.device.connect();
+
+            if (info.firmware.split('.')[0] === '6' && location.origin !== previewSiteUrl.origin) {
+                location.assign(previewSiteUrl.href);
+                return;
+            }
 
             displayDeviceInfo(info);
 

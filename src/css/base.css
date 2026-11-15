@@ -125,6 +125,16 @@ body {
     border-radius: 6px;
 }
 
+.preview-banner--stable {
+    background: var(--primary);
+    border: 0;
+    text-align: center;
+
+    & .preview-banner-icon { display: none; }
+    & .preview-banner-text { font-size: 0.9rem; line-height: 1.45; }
+    & .preview-banner-close:focus-visible { outline-color: #111827; }
+}
+
 main {
     max-width: 640px;
     margin: 0 auto;

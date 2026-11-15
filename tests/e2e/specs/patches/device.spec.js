@@ -111,7 +111,18 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#firmware-device-label')).toContainText('Kobo Libra 2');
     });
 
-    for (const firmware of ['5.0.0', '6.0.0']) {
+    test('connecting a Kobo OS 6 device opens the experimental site', async ({ page }) => {
+        const betaUrl = 'https://kp-dev.nicoverbruggen.be/';
+        await page.route(betaUrl, (route) => route.fulfill({ status: 200, contentType: 'text/html', body: 'Beta' }));
+        await page.goto('/');
+        await page.getByRole('button', { name: 'Dismiss announcement' }).click();
+        await injectMockDevice(page, { firmware: '6.1.12345' });
+        await page.click('#btn-connect');
+        await page.click('#btn-connect-ready');
+        await expect(page).toHaveURL(betaUrl);
+    });
+
+    for (const firmware of ['5.0.0', '7.0.0']) {
         test(`with device — incompatible version ${firmware} shows error`, async ({ page }) => {
             await page.goto('/');
             await injectMockDevice(page, { firmware });

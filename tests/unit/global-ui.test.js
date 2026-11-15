@@ -123,9 +123,9 @@ test('dev builds show the dev pill and preview banner on non-preview hosts', asy
     }
 });
 
-test('stable hosts show neither a preview banner nor a firmware banner', async () => {
+test('stable hosts show the Kobo OS 6 invitation', async () => {
     await withChromeDom('kp.nicoverbruggen.be', async (document) => {
-        assert.equal(document.getElementById('preview-banner'), null);
+        assert.equal(document.querySelector('#preview-banner a').href, 'https://kp-dev.nicoverbruggen.be/');
         assert.equal(document.getElementById('env-pill').hidden, true);
         assert.equal(document.getElementById('firmware-banner'), null);
     });

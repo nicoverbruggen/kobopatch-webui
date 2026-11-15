@@ -7,11 +7,22 @@ const { test, expect } = require('@playwright/test');
 // the iPadOS/Safari connect gating in src/js/flows/connect-flow.js. All of this
 // is reachable on the landing page without a device or firmware.
 test.describe('Global shell UI', () => {
-    test('stable builds have no top banner', async ({ page }) => {
+    test('stable builds link to the Kobo OS 6 beta at the top of the page', async ({ page }) => {
         await page.goto('/');
         await expect(page.locator('#step-connect')).toBeVisible();
-        await expect(page.locator('#firmware-banner')).toHaveCount(0);
-        await expect(page.locator('#preview-banner')).toHaveCount(0);
+        const banner = page.getByRole('complementary', { name: 'Site announcement' });
+        await expect(banner).toBeVisible();
+        await expect(banner.getByRole('link', { name: 'Try KoboPatch Web UI 2.0' })).toHaveAttribute('href', 'https://kp-dev.nicoverbruggen.be/');
+        const close = page.getByRole('button', { name: 'Dismiss announcement' });
+        await banner.getByRole('link').focus();
+        await page.keyboard.press('Tab');
+        await expect(close).toBeFocused();
+        await expect(close).toHaveCSS('outline-color', 'rgb(17, 24, 39)');
+        await page.keyboard.press('Enter');
+        await expect(banner).toBeHidden();
+        await page.reload();
+        await expect(page.locator('#step-connect')).toBeVisible();
+        await expect(close).toBeVisible();
     });
 
     test('footer dialogs open, focus their close button, and close every way', async ({ page }) => {
@@ -115,7 +126,7 @@ test.describe('Global shell UI', () => {
             await expect(page.locator('#mobile-dialog')).toBeVisible();
             await page.click('#btn-mobile-continue');
             await expect(page.locator('#mobile-dialog')).toBeHidden();
-            await expect(page.locator('#firmware-banner')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Dismiss announcement' })).toBeVisible();
         });
     });
 });
