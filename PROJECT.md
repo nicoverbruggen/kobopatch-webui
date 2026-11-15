@@ -52,7 +52,7 @@ tools/
   kobopatch-wasm/               # Go/WASM wrapper around kobopatch
 
 scripts/
-  build.mjs                     # Vite production build plus patch ZIPs, worker/WASM placement, cache-bust queries, precompression
+  build.mjs                     # Vite production build plus patch ZIPs, worker/WASM placement, fingerprinted asset paths, precompression
   serve-dist.mjs                # Production static server: Content-Length, cache tiers, ETag revalidation, br/gzip negotiation (see "Production Serving")
   verify.mjs                    # Phase runner for `npm run verify` (full) and `npm run test` (--quick subset)
   serve-local.mjs               # Sets up local assets/WASM, then starts Vite dev or the production static server
@@ -291,10 +291,9 @@ injection, so the server is kept but made production-grade. The behaviour and *w
   archive would make its `Content-Length` (compressed) smaller than the decompressed stream the
   browser reads, breaking the progress percentage. Precompression is skipped for Vite dev.
 - **Cache tiers** (`cacheControl`): just two. **Versioned URLs are `immutable, max-age=1yr`** —
-  `?h=<content hash>` on `bundle.js`/`style.css`/`kobopatch.wasm`, and `?v=<pinned version>` on the
+  `/static/<content hash>/<filename>` for `bundle.js`, `style.css` and `kobopatch.wasm`, and `?v=<pinned version>` on the
   `assets/*` add-on archives (the version comes from the build-time manifest; see Build And Assets).
-  Their URL changes whenever the bytes do, so a CDN can serve even the 40 MB archives forever without
-  revalidating. **Everything else** (`index.html`, `*.json` metadata, feature scripts, and any
+  Missing build assets return a non-cacheable 404, including legacy `?h=` requests for a different build. **Everything else** (`index.html`, `*.json` metadata, feature scripts, and any
   *bare* `assets/*` request) is `no-cache`: stored, but revalidated before reuse. `no-cache` does
   **not** mean re-download — paired with the content-hash ETag below, an unchanged asset is reused on
   a tiny `304`, while a changed one is fetched fresh on the next request.

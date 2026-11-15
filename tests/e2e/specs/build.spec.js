@@ -1,21 +1,34 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
+const { createHash } = require('node:crypto');
 const path = require('path');
 
 const appDir = path.join(__dirname, '..', '..', '..');
 const distDir = path.join(appDir, 'dist');
 
 test.describe('Build output', () => {
-    test('CSS cache-bust hash is present on style.css link', async () => {
-        const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
-        expect(html).toMatch(/css\/style\.css\?h=[0-9a-f]{8}/);
-    });
-
-    test('JS cache-bust hash is present on bundle.js script', async () => {
-        const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');
-        expect(html).toMatch(/bundle\.js\?h=[0-9a-f]{8}/);
-    });
+    for (const [file, referrer] of [
+        ['bundle.js', 'index.html'],
+        ['css/style.css', 'index.html'],
+        ['wasm/kobopatch.wasm', 'js/workers/patch-worker.js'],
+    ]) {
+        test(`${file} can only be cached as an immutable build asset at its content address`, async ({ request }) => {
+            const bytes = fs.readFileSync(path.join(distDir, file));
+            const fingerprint = createHash('sha256').update(bytes).digest('hex').slice(0, 16);
+            const url = `/static/${fingerprint}/${path.basename(file)}`;
+            expect(fs.readFileSync(path.join(distDir, referrer), 'utf8')).toContain(url);
+            const current = await request.get(url);
+            expect(current.status()).toBe(200);
+            expect(current.headers()['cache-control']).toContain('immutable');
+            expect((await current.body()).equals(bytes)).toBe(true);
+            for (const stale of [url.replace(fingerprint, '0000000000000000'), `/${file}?h=00000000`]) {
+                const response = await request.get(stale, { headers: { 'If-None-Match': current.headers().etag } });
+                expect(response.status()).toBe(404);
+                expect(response.headers()['cache-control']).toContain('no-store');
+            }
+        });
+    }
 
     test('critical CSS is inlined with :root tokens', async () => {
         const html = fs.readFileSync(path.join(distDir, 'index.html'), 'utf-8');

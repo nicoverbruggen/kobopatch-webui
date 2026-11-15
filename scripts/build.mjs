@@ -1,7 +1,7 @@
 import { build as viteBuild } from 'vite';
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { constants as fsConstants, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { extname, join } from 'node:path';
+import { basename, dirname, extname, join } from 'node:path';
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib';
 import JSZip from 'jszip';
 
@@ -103,19 +103,26 @@ function cleanDist() {
     }
 }
 
-function injectHashQueries() {
-    const bundleContent = readFileSync(join(distDir, 'bundle.js'));
-    const bundleHash = createHash('md5').update(bundleContent).digest('hex').slice(0, 8);
+// Keep the original paths for local tooling. Production pages request files that
+// physically exist only in builds containing those bytes.
+const fingerprintedAssets = new Map();
+function assetUrl(relativePath) {
+    const file = join(distDir, relativePath);
+    if (isDev) return `/${relativePath}`;
 
-    const cssContent = readFileSync(join(distDir, 'css/style.css'));
-    const cssHash = createHash('md5').update(cssContent).digest('hex').slice(0, 8);
+    const hash = createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 16);
+    const url = `/static/${hash}/${basename(file)}`;
+    fingerprintedAssets.set(file, join(distDir, url));
+    return url;
+}
 
-    let html = readFileSync(join(distDir, 'index.html'), 'utf-8');
-    html = html.replace(/\/?bundle\.js(?:\?[^"]*)?/, `/bundle.js?h=${bundleHash}`);
-    html = html.replace(/\/?css\/style\.css(?:\?[^"]*)?/, `/css/style.css?h=${cssHash}`);
-    writeFileSync(join(distDir, 'index.html'), html);
-
-    return { bundleHash, cssHash };
+function copyFingerprintedAssets() {
+    for (const [file, destination] of fingerprintedAssets) {
+        mkdirSync(dirname(destination), { recursive: true });
+        for (const suffix of ['', '.br', '.gz']) {
+            if (existsSync(file + suffix)) copyFileSync(file + suffix, destination + suffix, fsConstants.COPYFILE_FICLONE);
+        }
+    }
 }
 
 function copyWorkerFiles() {
@@ -131,8 +138,7 @@ function copyWorkerFiles() {
         let workerContent = readFileSync(workerSrc, 'utf-8');
         const wasmFile = join(distDir, 'wasm', 'kobopatch.wasm');
         if (existsSync(wasmFile)) {
-            const wasmHash = createHash('md5').update(readFileSync(wasmFile)).digest('hex').slice(0, 8);
-            workerContent = workerContent.replace("kobopatch.wasm'", `kobopatch.wasm?h=${wasmHash}'`);
+            workerContent = workerContent.replace('../../wasm/kobopatch.wasm', assetUrl('wasm/kobopatch.wasm'));
         }
         writeFileSync(join(distDir, 'js', 'workers', 'patch-worker.js'), workerContent);
     }
@@ -155,13 +161,18 @@ async function build() {
     await buildPatchZips();
     copyWorkerFiles();
 
-    const { bundleHash, cssHash } = injectHashQueries();
+    const index = join(distDir, 'index.html');
+    const html = readFileSync(index, 'utf8')
+        .replace(/\/?bundle\.js(?:\?[^"]*)?/, assetUrl('bundle.js'))
+        .replace(/\/?css\/style\.css(?:\?[^"]*)?/, assetUrl('css/style.css'));
+    writeFileSync(index, html);
 
     if (!isDev) {
         precompressDir(distDir);
+        copyFingerprintedAssets();
     }
 
-    console.log(`Built to ${distDir} (bundle: ${bundleHash}, css: ${cssHash})`);
+    console.log(`Built to ${distDir}`);
 }
 
 await build();

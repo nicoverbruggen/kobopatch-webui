@@ -191,7 +191,7 @@ const liveReloadSnippet = liveReload
       es.addEventListener('css', () => {
         for (const link of document.querySelectorAll('link[rel="stylesheet"][href*="style.css"]')) {
           const u = new URL(link.href, location.href);
-          u.searchParams.set('h', Date.now());
+          u.searchParams.set('t', Date.now());
           link.href = u.href;
         }
         console.info('[live-reload] CSS updated');
@@ -260,7 +260,7 @@ const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '
 
 /**
  * Cache-Control policy. Two tiers:
- *  - versioned URLs (`?h=<content hash>` on bundle.js / style.css / kobopatch.wasm,
+ *  - versioned URLs (a content hash in the path for bundle.js / style.css / kobopatch.wasm,
  *    or `?v=<pinned version>` on the `assets/*` add-on archives): the URL changes
  *    whenever the bytes do, so cache forever as immutable. This is what lets a CDN
  *    serve the 40 MB archives without ever revalidating.
@@ -281,8 +281,11 @@ const COMPRESSIBLE = new Set(['.js', '.css', '.json', '.svg', '.wasm', '.map', '
  * `fetchWithProgress` falls back to a single unmetered read. `no-transform` (RFC 7234)
  * is the standard signal to forbid that; honoured by nginx's gzip module and others.
  */
-function cacheControl(search, compressible) {
-    const base = noCache ? 'no-cache' : /[?&][hv]=/.test(search) ? 'public, max-age=31536000, immutable' : 'no-cache';
+function cacheControl(url, compressible) {
+    const versioned =
+        /^\/static\/[0-9a-f]{16}\/(?:bundle\.js|style\.css|kobopatch\.wasm)$/.test(url.pathname) ||
+        (url.pathname.startsWith('/assets/') && url.searchParams.get('v'));
+    const base = versioned && !noCache ? 'public, max-age=31536000, immutable' : 'no-cache';
     return compressible ? base : `${base}, no-transform`;
 }
 
@@ -417,7 +420,7 @@ createServer((req, res) => {
 
     let filePath = join(DIST, decodedPath);
     if (!filePath.startsWith(DIST + '/') && filePath !== DIST) {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.writeHead(404, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
         res.end('Not found');
         return;
     }
@@ -468,10 +471,21 @@ createServer((req, res) => {
         // The ETag hashes the identity bytes, so it 304s regardless of which encoding
         // the client cached (paired with Vary below) and changes iff the content does.
         const etag = contentEtag(filePath, srcStat);
+        // Older pages still request ?h=<8 hex digits of MD5>. Never send another
+        // build's bytes under that URL, including on a conditional request.
+        if (
+            url.searchParams.has('h') &&
+            ['/bundle.js', '/css/style.css', '/wasm/kobopatch.wasm'].includes(url.pathname) &&
+            url.searchParams.get('h') !== etag.slice(1, 9)
+        ) {
+            res.writeHead(404, { 'Cache-Control': 'no-store' });
+            res.end('Asset version not found');
+            return;
+        }
         const compressible = COMPRESSIBLE.has(extname(filePath));
         const headers = {
             'Content-Type': MIME[extname(filePath)] || 'application/octet-stream',
-            'Cache-Control': cacheControl(url.search, compressible),
+            'Cache-Control': cacheControl(url, compressible),
             ETag: etag,
             ...securityHeaders(),
         };
@@ -497,7 +511,7 @@ createServer((req, res) => {
         // (mostly routine aborts) need no handling beyond that.
         pipeline(createReadStream(picked ? picked.path : filePath), res, () => {});
     } catch {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.writeHead(404, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
         res.end('Not found');
     }
 })
