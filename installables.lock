@@ -80,10 +80,10 @@
     },
     "nickelmenu-qt6": {
       "asset": "NickelMenu-Qt6.tgz",
-      "version": "fork-v1.2",
-      "url": "https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.2/Kobo.tgz",
-      "sha256": "2ec56131888d39fdb3842b7b086da839f83da6f17ffa3b69e758dc6bcbdaa3ce",
-      "size": 69870
+      "version": "fork-v1.4",
+      "url": "https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.4/Kobo.tgz",
+      "sha256": "9d638f260646cf1c1f506c82921d92d482bd33565c84686578d90a7a513de9a4",
+      "size": 73942
     },
     "nickelmodmanager-qt6": {
       "asset": "NickelModManager-Qt6.tgz",

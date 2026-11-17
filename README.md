@@ -60,7 +60,7 @@ If you choose to apply custom patches, **patching happens fully client-side** â€
 If you want to install **NickelMenu**:
 
 - Kobo OS 4.23 through 4.x supports the existing NickelMenu add-ons.
-- Kobo OS 6.x supports NickelMenu (including simplified navigation tabs), NickelHome, NickelModManager, additional fonts and KOReader. It uses [NickelMenu fork-v1.2](https://github.com/nicoverbruggen/NickelMenu/releases/tag/fork-v1.2); other add-ons need compatible updates. NickelModManager is selected by default on OS 6 because it restores enabled mods after supported firmware updates. You can untick it.
+- Kobo OS 6.x supports NickelMenu (including simplified navigation tabs), NickelHome, NickelModManager, additional fonts and KOReader. It uses [NickelMenu fork-v1.4](https://github.com/nicoverbruggen/NickelMenu/releases/tag/fork-v1.4); other add-ons need compatible updates. NickelModManager is selected by default on OS 6 because it restores enabled mods after supported firmware updates. You can untick it.
 - On Kobo OS 4 and 6, choosing **Exit** in KOReader asks to restart your Kobo. This avoids hangs or disabled mods when returning directly to Koboâ€™s reader. Keep the included KOReader user patch enabled. You can cancel the restart to stay in KOReader.
 
 If you want to apply **custom patches**:

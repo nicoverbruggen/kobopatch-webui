@@ -33,8 +33,8 @@ const INSTALLABLES = [
         name: 'nickelmenu-qt6',
         asset: 'NickelMenu-Qt6.tgz',
         pinned: {
-            version: 'fork-v1.2',
-            url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.2/Kobo.tgz',
+            version: 'fork-v1.4',
+            url: 'https://github.com/nicoverbruggen/NickelMenu/releases/download/fork-v1.4/Kobo.tgz',
         },
     },
     {
