@@ -44,19 +44,22 @@
     "kobo11": "https://ereaderfiles.kobo.com/firmwares/kobo11/Sep2026/kobo-update-4.38.23828.zip",
     "kobo10": "https://ereaderfiles.kobo.com/firmwares/kobo10/Sep2026/kobo-update-4.38.23828.zip",
     "kobo9": "https://ereaderfiles.kobo.com/firmwares/kobo9/Sep2026/kobo-update-4.38.23828.zip",
-    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Sep2026/kobo-update-4.38.23828.zip"
+    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Sep2026/kobo-update-4.38.23828.zip",
+    "kobo7": "https://ereaderfiles.kobo.com/firmwares/kobo7/Sep2026/kobo-update-4.38.23828.zip"
   },
   "4.38.23697": {
     "kobo11": "https://ereaderfiles.kobo.com/firmwares/kobo11/May2026/kobo-update-4.38.23697.zip",
     "kobo10": "https://ereaderfiles.kobo.com/firmwares/kobo10/May2026/kobo-update-4.38.23697.zip",
     "kobo9": "https://ereaderfiles.kobo.com/firmwares/kobo9/May2026/kobo-update-4.38.23697.zip",
-    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/May2026/kobo-update-4.38.23697.zip"
+    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/May2026/kobo-update-4.38.23697.zip",
+    "kobo7": "https://ereaderfiles.kobo.com/firmwares/kobo7/May2026/kobo-update-4.38.23697.zip"
   },
   "4.38.23684": {
     "kobo11": "https://ereaderfiles.kobo.com/firmwares/kobo11/Apr2026/kobo-update-4.38.23684.zip",
     "kobo10": "https://ereaderfiles.kobo.com/firmwares/kobo10/Apr2026/kobo-update-4.38.23684.zip",
     "kobo9": "https://ereaderfiles.kobo.com/firmwares/kobo9/Apr2026/kobo-update-4.38.23684.zip",
-    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Apr2026/kobo-update-4.38.23684.zip"
+    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Apr2026/kobo-update-4.38.23684.zip",
+    "kobo7": "https://ereaderfiles.kobo.com/firmwares/kobo7/Apr2026/kobo-update-4.38.23684.zip"
   },
   "4.38.23648": {
     "kobo9": "https://ereaderfiles.kobo.com/firmwares/kobo9/Mar2026/kobo-update-4.38.23648.zip"
@@ -71,6 +74,7 @@
     "kobo11": "https://ereaderfiles.kobo.com/firmwares/kobo11/Aug2025/kobo-update-4.38.23429.zip",
     "kobo10": "https://ereaderfiles.kobo.com/firmwares/kobo10/Aug2025/kobo-update-4.38.23429.zip",
     "kobo9": "https://ereaderfiles.kobo.com/firmwares/kobo9/Aug2025/kobo-update-4.38.23429.zip",
-    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Aug2025/kobo-update-4.38.23429.zip"
+    "kobo8": "https://ereaderfiles.kobo.com/firmwares/kobo8/Aug2025/kobo-update-4.38.23429.zip",
+    "kobo7": "https://ereaderfiles.kobo.com/firmwares/kobo7/Aug2025/kobo-update-4.38.23429.zip"
   }
 }
