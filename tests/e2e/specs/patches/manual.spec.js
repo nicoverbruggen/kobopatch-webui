@@ -89,7 +89,7 @@ test.describe('Custom patches', () => {
         await page.click('#btn-mode-next');
         await page.selectOption('#manual-version', '4.38.23828');
         const channels = await page.locator('#manual-model option[value^="kobo"]').evaluateAll((options) => options.map((option) => option.value));
-        expect(channels).toEqual(['kobo11', 'kobo10', 'kobo9', 'kobo8']);
+        expect(channels).toEqual(['kobo11', 'kobo10', 'kobo9', 'kobo8', 'kobo7']);
         await page.selectOption('#manual-model', 'kobo9');
         await page.click('#btn-manual-confirm');
         await expect(page.locator('#step-patches')).toBeVisible();
