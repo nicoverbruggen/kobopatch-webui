@@ -15,6 +15,9 @@
                     <li>This website will attempt to write a temporary file to your device to validate the connection to your device is stable. <b>No files (mods) are written</b> unless <b>you</b> press the "Write to Kobo" button at the end of the wizard. You also have the option to download an archive instead.</li>
                 </ol>
             </details>
+            <div id="connect-linux-notice" class="banner banner--info" hidden>
+                On Linux, Chromium-based browsers can block access to your Kobo if it is mounted under <code>/run/media</code>. If the browser says the folder contains system files, see <a href="https://github.com/nicoverbruggen/kobalt/discussions/225" target="_blank" rel="noopener noreferrer">GitHub discussion #225</a> for workarounds reported by other users.
+            </div>
             <div class="step-actions">
                 <button id="btn-connect-instructions-back" class="secondary">&#x2039; Back</button>
                 <button id="btn-connect-ready" class="primary">Select "KOBOeReader"</button>

@@ -53,6 +53,8 @@ Here's the obligatory legal disclaimer:
 
 The app uses the **Filesystem Access API** (Chromium) to interface with connected Kobo devices, or falls back to manual model/software version selection with a downloadable ZIP on other browsers.
 
+On Linux, Chromium-based browsers can refuse to open a Kobo mounted under `/run/media`. If the folder picker says the drive contains system files, see [GitHub discussion #225](https://github.com/nicoverbruggen/kobalt/discussions/225) for workarounds.
+
 If you choose to apply custom patches, **patching happens fully client-side** — no backend needed, can be hosted as a static site. Patches are community-contributed via the [MobileRead forums](https://www.mobileread.com/forums/forumdisplay.php?f=247) and need to be manually updated when new Kobo software versions come out.
 
 ## Device support
