@@ -93,11 +93,11 @@ async function gotoManualPatchesStep(page) {
 }
 
 test.describe('Custom patches', () => {
-    test('with device — September 2026 firmware enables custom patches on Libra 2', async ({ page }) => {
+    test('with device — October 2026 firmware enables custom patches on Libra 2', async ({ page }) => {
         await connectMockDevice(page, {
             serial: 'N4180A0000000',
             hardwareId: '00000000-0000-0000-0000-000000000388',
-            firmware: '4.38.23828',
+            firmware: '4.38.23852',
             expectedModel: 'Kobo Libra 2',
         });
         await page.click('#btn-device-next');
@@ -107,7 +107,7 @@ test.describe('Custom patches', () => {
         await expect(page.locator('#step-patches')).toBeVisible();
         await expect(page.locator('#patch-container .patch-file-section')).not.toHaveCount(0);
         await page.click('#btn-patches-next');
-        await expect(page.locator('#firmware-version-label')).toHaveText('4.38.23828');
+        await expect(page.locator('#firmware-version-label')).toHaveText('4.38.23852');
         await expect(page.locator('#firmware-device-label')).toContainText('Kobo Libra 2');
     });
 
