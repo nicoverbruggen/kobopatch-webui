@@ -120,6 +120,10 @@
     margin-bottom: 0;
 }
 
+#connect-linux-notice {
+    margin-top: 1rem;
+}
+
 /* Connection instruction steps with numbered accent circles */
 .connect-steps {
     list-style: none;

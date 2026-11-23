@@ -63,6 +63,7 @@ export function initConnectFlow(state, { patches }) {
 
     const hasFileSystemAccess = KoboDevice.isSupported();
     const canConnectDirectly = hasFileSystemAccess && !isAndroidDevice;
+    $('connect-linux-notice').hidden = !canConnectDirectly || !/\bLinux\b/.test(navigator.userAgent) || /CrOS/.test(navigator.userAgent);
     if (!canConnectDirectly) {
         btnConnect.disabled = true;
         $('connect-unsupported-hint').hidden = false;

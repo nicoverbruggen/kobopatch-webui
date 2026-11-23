@@ -25,6 +25,26 @@ test.describe('Global shell UI', () => {
         await expect(close).toBeVisible();
     });
 
+    for (const platform of ['Linux x86_64', 'Windows NT 10.0']) {
+        test(`the folder picker instructions on ${platform}`, async ({ page }) => {
+            await page.addInitScript((platform) => Object.defineProperty(navigator, 'userAgent', { value: `Mozilla/5.0 (${platform})` }), platform);
+            await page.goto('/');
+            await page.locator('#btn-connect').click();
+            await expect(page.locator('#btn-connect-ready')).toBeVisible();
+            const notice = page.locator('#connect-linux-notice');
+            if (platform.startsWith('Linux')) {
+                await expect(notice).toBeVisible();
+                await expect(notice).toContainText('/run/media');
+                await expect(notice.getByRole('link', { name: 'GitHub discussion #225' })).toHaveAttribute(
+                    'href',
+                    'https://github.com/nicoverbruggen/kobalt/discussions/225',
+                );
+            } else {
+                await expect(notice).toBeHidden();
+            }
+        });
+    }
+
     test('footer dialogs open, focus their close button, and close every way', async ({ page }) => {
         await page.goto('/');
 
